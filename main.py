@@ -45,15 +45,15 @@ class GameWorld(Widget):
         entity = {'id': self.number_entities}
         self.entities.append(entity)
         self.number_entities += 1
-        return entity
+        return entity['id']
 
     def init_entity(self, components_to_use):
         if self.deactivated_entities == []:
-            entity = self.create_entity()
+            entity_id = self.create_entity()
         else:
-            entity = self.entities[self.deactivated_entities.pop()]
+            entity_id = self.deactivated_entities.pop()
         for component in components_to_use:
-            self.systems[component].create_component(entity['id'])
+            self.systems[component].create_component(entity_id)
         
     def remove_entity(self, entity_id):
         entity = self.entities[entity_id]

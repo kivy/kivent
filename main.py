@@ -21,8 +21,6 @@ class GameWorld(Widget):
         super(GameWorld, self).__init__(**kwargs)
         self.entities = []
         self.deactivated_entities = []
-        Clock.schedule_once(self.test_remove_system, .5)
-        Clock.schedule_once(self.test_add_system, 1.0)
         Clock.schedule_once(self.test_entity, 2.0)
         Clock.schedule_once(self.test_remove_entity, 2.5)
         Clock.schedule_once(self.test_entity, 3.0)
@@ -32,14 +30,6 @@ class GameWorld(Widget):
 
     def test_remove_entity(self, dt):
         self.remove_entity(0)
-
-    def test_remove_system(self, dt):
-        #self.remove_system('position')
-        self.remove_widget(self.systems['position'])
-
-    def test_add_system(self, dt):
-        #self.add_widget(BasicPositionSystem())
-        self.add_widget(self.systems['position'])
 
     def create_entity(self):
         entity = {'id': self.number_entities}
@@ -78,9 +68,6 @@ class GameWorld(Widget):
     def clear_entities(self):
         pass
 
-    def on_state(self, instance, value):
-        print value
-        
     def remove_system(self, system_id):
         self.systems[system_id].on_delete_system()
         self.remove_widget(self.systems[system_id])
@@ -97,12 +84,6 @@ class GameWorld(Widget):
     def remove_widget(self, widget):
         super(GameWorld, self).remove_widget(widget)
         widget.on_remove_system()
-
-    def on_children(self, instance, value):
-        print 'widget children: ', value
-
-    def on_systems(self, instance, value):
-        print 'systems: ', value
 
 class GameSystem(Widget):
     system_id = StringProperty('default_id')
@@ -160,10 +141,6 @@ class BasicPositionSystem(GameSystem):
         self.generate_component_data(entity[self.system_id])
         self.entity_ids.append(entity_id)
 
-
-class BasicPositionSystem2(BasicPositionSystem):
-    system_id = StringProperty('position2')
-
 class BasicRenderSystem(GameSystem):
     system_id = StringProperty('position_renderer')
     render_information_from = StringProperty('position')
@@ -204,12 +181,6 @@ class BasicRenderSystem(GameSystem):
 
     def update(self, dt):
         pass
-
-
-
-
-
-
 
 class KivEntApp(App):
     def build(self):

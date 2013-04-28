@@ -24,6 +24,11 @@ class GameWorld(Widget):
         Clock.schedule_once(self.test_entity, 2.0)
         Clock.schedule_once(self.test_remove_entity, 2.5)
         Clock.schedule_once(self.test_entity, 3.0)
+        #Clock.schedule_once(self.test_remove_system, 3.5)
+        #Clock.schedule_interval(self.update, .05)
+
+    def test_remove_system(self, dt):
+        self.remove_system('position_renderer')
 
     def test_entity(self, dt):
         self.init_entity(('position', 'position_renderer'))
@@ -42,21 +47,30 @@ class GameWorld(Widget):
             entity_id = self.create_entity()
         else:
             entity_id = self.deactivated_entities.pop()
+        systems = self.systems
         for component in components_to_use:
-            self.systems[component].create_component(entity_id)
+            systems[component].create_component(entity_id)
         
     def remove_entity(self, entity_id):
         entity = self.entities[entity_id]
         components_to_delete = []
+        systems = self.systems
         for data in entity:
             if data == 'id':
                 pass
             else:
                 components_to_delete.append(data)
-                self.systems[data].remove_entity(entity_id)
+                systems[data].remove_entity(entity_id)
         for component in components_to_delete:
-            del self.entities[entity_id][component]
+            del entity[component]
         self.deactivated_entities.append(entity_id)
+
+    def update(self, dt):
+        systems = self.systems
+        for system_name in systems:
+            system = systems[system_name]
+            if system.updateable:
+                system.update(dt)
 
     def load_entity(self, entity_dict):
         pass
@@ -69,9 +83,10 @@ class GameWorld(Widget):
         pass
 
     def remove_system(self, system_id):
-        self.systems[system_id].on_delete_system()
-        self.remove_widget(self.systems[system_id])
-        del self.systems[system_id]
+        systems = self.systems
+        systems[system_id].on_delete_system()
+        self.remove_widget(systems[system_id])
+        del systems[system_id]
 
     def add_widget(self, widget):
         super(GameWorld, self).add_widget(widget)
@@ -88,7 +103,6 @@ class GameWorld(Widget):
 class GameSystem(Widget):
     system_id = StringProperty('default_id')
     updateable = BooleanProperty(False)
-    update_time = NumericProperty(0.0)
 
     def __init__(self, **kwargs):
         super(GameSystem, self).__init__(**kwargs)
@@ -144,6 +158,7 @@ class BasicPositionSystem(GameSystem):
 class BasicRenderSystem(GameSystem):
     system_id = StringProperty('position_renderer')
     render_information_from = StringProperty('position')
+    updateable = BooleanProperty(True)
 
     def __init__(self, **kwargs):
         super(BasicRenderSystem, self).__init__(**kwargs)
@@ -180,7 +195,8 @@ class BasicRenderSystem(GameSystem):
                 self.canvas.remove(system_data[data])
 
     def update(self, dt):
-        pass
+        print self, 'update test'
+
 
 class KivEntApp(App):
     def build(self):

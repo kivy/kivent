@@ -21,13 +21,36 @@ class GameWorld(Widget):
     def __init__(self, **kwargs):
         super(GameWorld, self).__init__(**kwargs)
         self.entities = []
+        self.states = {}
         self.deactivated_entities = []
-        Clock.schedule_once(self.test_entity, 2.0)
-        Clock.schedule_once(self.test_entity, 3.0)
-        Clock.schedule_once(self.test_clear_entities, 3.5)
-        Clock.schedule_once(self.test_entity, 3.8)
-        Clock.schedule_once(self.test_entity, 3.8)
+        for x in range(1000):
+            Clock.schedule_once(self.test_entity)
+        self.add_state(state_name='paused', systems_added=['position', 'position_renderer'], 
+            systems_removed=[], systems_paused=['position_renderer', 'position'])
+        self.state = 'paused'
+        self.add_state(state_name='no_render', systems_added=[], 
+            systems_removed=['position', 'position_renderer'], systems_paused=['position', 'position_renderer'])
         #Clock.schedule_interval(self.update, .03)
+
+    def add_state(self, state_name, systems_added, systems_removed, systems_paused):
+        self.states[state_name] = {'systems_added': systems_added, 
+        'systems_removed': systems_removed, 'systems_paused': systems_paused}
+
+    def on_state(self, instance, value):
+        state_dict = self.states[value]
+        print state_dict
+        systems = self.systems
+        children = self.children
+        for system in state_dict['systems_added']:
+            if systems[system] in children:
+                pass
+            else:
+                self.add_widget(systems[system])
+        for system in state_dict['systems_removed']:
+            if systems[system] in children:
+                self.remove_widget(systems[system])
+        for system in state_dict['systems_paused']:
+            systems[system].paused = True
 
     def test_clear_entities(self, dt):
         self.clear_entities()
@@ -49,8 +72,8 @@ class GameWorld(Widget):
     def on_camera_pos(self, instance, value):
         systems = self.systems
         for system in systems:
-            if systems[system].renderable:
-                systems[system].update(.01)
+            if systems[system].renderable and systems[system].active:
+                systems[system].update(None)
 
     def on_touch_down(self, touch):
         self.last_touch = touch.x, touch.y
@@ -100,7 +123,7 @@ class GameWorld(Widget):
         systems = self.systems
         for system_name in systems:
             system = systems[system_name]
-            if system.updateable:
+            if system.updateable and not system.paused:
                 system.update(dt)
 
     def load_entity(self, entity_dict):
@@ -136,6 +159,8 @@ class GameSystem(Widget):
     system_id = StringProperty('default_id')
     updateable = BooleanProperty(False)
     renderable = BooleanProperty(False)
+    paused = BooleanProperty(False)
+    active = BooleanProperty(True)
 
     def __init__(self, **kwargs):
         super(GameSystem, self).__init__(**kwargs)
@@ -169,10 +194,10 @@ class GameSystem(Widget):
         pass
 
     def on_remove_system(self):
-        pass
+        self.active = False
 
     def on_add_system(self):
-        pass
+        self.active = True
 
     def on_delete_system(self):
         pass
@@ -290,7 +315,6 @@ class QuadRenderer(GameSystem):
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
             system_data = entity[system_id]
-            print system_data['render'], entity_id
             if system_data['render']:
                 render_information = entity[render_information_from]
                 if do_scale or do_color:

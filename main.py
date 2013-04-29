@@ -110,7 +110,6 @@ class GameWorld(Widget):
         self.camera_pos[1] += dist_y
         self.last_touch = touch.x, touch.y
 
-
     def create_entity(self):
         entity = {'id': self.number_entities}
         self.entities.append(entity)
@@ -299,7 +298,8 @@ class CymunkPhysicsSystem(GameSystem):
             shapes.append(new_shape)
             self.space.add(new_shape)
             
-        component_dict = {'body': body, 'shapes': shapes, 'position': body.position, 'angle': body.angle}
+        component_dict = {'body': body, 'shapes': shapes, 'position': body.position, 
+        'angle': body.angle, 'shape_type': entity_component_dict['col_shapes'][0]['shape_type']}
 
         return component_dict
 
@@ -311,12 +311,29 @@ class CymunkPhysicsSystem(GameSystem):
             space.remove(shape)
         super(CymunkPhysicsSystem, self).remove_entity(entity_id)
 
+    def check_bounds(self, system_data):
+        gs_pos = self.pos
+        gs_size = self.size
+        body = system_data['body']
+        x_pos, y_pos = body.position
+        if system_data['shape_type'] == 'circle':
+            size_x = size_y = system_data['shapes'][0].radius
+        if x_pos - size_x > gs_size[0]:
+            body.position = gs_pos[0], y_pos
+        if x_pos + size_x < gs_pos[0]:
+            body.position = gs_pos[0] + gs_size[0], y_pos
+        if y_pos - size_y > gs_pos[1] + gs_size[1]:
+            body.position = x_pos, gs_pos[1]
+        if y_pos + size_y < gs_pos[1]:
+            body.position = x_pos, gs_pos[1] + gs_size[1]
+
     def update(self, dt):
         entities = self.parent.entities
         self.space.step(dt)
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
             system_data = entity[self.system_id]
+            self.check_bounds(system_data)
             system_data['position'] = system_data['body'].position
             system_data['angle'] = system_data['body'].angle
 

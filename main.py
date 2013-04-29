@@ -11,6 +11,16 @@ from kivy.graphics import PushMatrix, PopMatrix, Translate, Quad, Instruction, R
 import cymunk
 import math
 
+class DebugPanel(Widget):
+    fps = StringProperty(None)
+
+    def __init__(self, **kwargs):
+        super(DebugPanel, self).__init__(**kwargs)
+        Clock.schedule_once(self.update_fps)
+
+    def update_fps(self,dt):
+        self.fps = str(int(Clock.get_fps()))
+        Clock.schedule_once(self.update_fps, .05)
 
 class GameWorld(Widget):
     state = StringProperty('initial')
@@ -25,7 +35,7 @@ class GameWorld(Widget):
         self.entities = []
         self.states = {}
         self.deactivated_entities = []
-        for x in range(1000):
+        for x in range(100):
             Clock.schedule_once(self.test_entity)
         for x in range(25):
             Clock.schedule_once(self.test_physics_entity)

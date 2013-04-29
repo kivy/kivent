@@ -10,6 +10,9 @@ GameWorld:
 	BoxLayout:
 		Label:
 			text: 'Game World'
+		DebugPanel:
+			pos: root.size[0] * .5, root.size[1] *.05
+			size: (25, 25)
 	BasicPositionSystem:
 		pos: root.pos
 		size: root.size
@@ -26,6 +29,16 @@ GameWorld:
 <CymunkPhysicsSystem>:
 
 <GameSystem>:
+
+<DebugPanel>:
+    Label:
+        pos: root.pos
+        size: root.size
+        font_size: root.size[1]*.5
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1)
+        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'
 
 <QuadRenderer>:
 

@@ -3,7 +3,7 @@ kivy.require('1.6.0')
 
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.properties import StringProperty, ListProperty, NumericProperty, DictProperty, BooleanProperty
+from kivy.properties import StringProperty, ListProperty, NumericProperty, DictProperty, BooleanProperty, ObjectProperty
 import random
 from kivy.core.image import Image as CoreImage
 from kivy.clock import Clock
@@ -207,6 +207,90 @@ class BasicPositionSystem(GameSystem):
     def __init__(self, **kwargs):
         super(BasicPositionSystem, self).__init__(**kwargs)
 
+class CymunkPhysicsSystem(GameSystem):
+    system_id = StringProperty('cymunk-physics')
+    space = ObjectProperty(None)
+    gravity = ListProperty((0, 0))
+    updateable = BooleanProperty(True)
+
+    def __init__(self, **kwargs):
+        super(CymunkPhysicsSystem, self).__init__(**kwargs)
+        self.init_physics()
+
+    def init_physics(self):
+        # create the space for physics simulation
+        self.space = space = cymunk.Space()
+        space.iterations = 5
+        space.gravity = self.gravity
+        space.sleep_time_threshold = 0.5
+        space.collision_slop = 0.5
+
+    def generate_component_data(self, entity_component_dict):
+        '''entity_component_dict of the form {'entity_id': id, 'main_shape': string_shape_name, 
+        'velocity': (x, y), 'position': (x, y), 'angle': radians, 
+        'angular_velocity': radians, 'mass': float, col_shapes': [col_shape_dicts]}
+
+        col_shape_dicts look like : {'shape_type': string_shape_name, 'elasticity': float, 
+        'collision_type': int, 'shape_info': shape_specific_dict}
+
+        shape_info:
+        box: {'width': float, 'height': float, 'mass': float}
+        circle: {'inner_radius': float, 'outer_radius': float, 'mass': float, 'offset': tuple}
+        solid cirlces have an inner_radius of 0
+
+        outputs component dict: {'body': body, 'shapes': array_of_shapes, 
+        'position': body.position, angle': body.angle}
+
+        '''
+        shape = entity_component_dict['col_shapes'][0]
+
+        if shape['shape_type'] == 'circle':
+            moment = cymunk.moment_for_circle(shape['shape_info']['mass'], 
+                shape['shape_info']['inner_radius'], shape['shape_info']['outer_radius'], 
+                shape['shape_info']['offset'])
+        elif shape['shape_type'] == 'box':
+            moment = cymunk.moment_for_box(shape['shape_info']['mass'], 
+                shape['shape_info']['width'], shape['shape_info']['height'])
+        else:
+            print 'error: shape ', shape['shape_type'], 'not supported'
+
+        body = cymunk.Body(entity_component_dict['mass'], moment)
+        body.position = entity_component_dict['position']
+        body.data = entity_component_dict['entity_id']
+        body.velocity = entity_component_dict['velocity']
+        body.angle = entity_component_dict['angle']
+        body.angular_velocity = entity_component_dict['angular_velocity']
+        self.space.add(body)
+        shapes = []
+        for shape in entity_component_dict[col_shapes]:
+            shape_info = shape['shape_info']
+            if shape['shape_type'] == 'circle':
+                shape = cymunk.Circle(body, shape_info['outer_radius']) 
+            elif shape['shape_type'] == 'box':
+                shape = cymunk.BoxShape(body, shape_info['width'], shape_info['height'])
+            else:
+                print 'shape not created'
+            shape.elasticity = shape['elasticity']
+            shape.collision_type = shape['collision_type']
+            shapes.append(shape)
+            self.space.add(shape)
+            
+        component_dict = {'body': body, 'shapes': shapes, 'position': body.position, 'angle': body.angle}
+
+        return component_dict
+
+    def remove_entity(self, entity_id):
+        space = self.space
+        system_data = self.parent.entities[entity_id][self.system_id]
+        space.remove(system_data['body'])
+        for shape in system_data['shapes']:
+            space.remove(shape)
+        super(CymunkPhysicsSystem, self).remove_entity(entity_id)
+
+    def update(self, dt):
+        self.space.step(dt)
+
+
 class QuadRenderer(GameSystem):
     system_id = StringProperty('position_renderer')
     render_information_from = StringProperty('position')
@@ -330,7 +414,6 @@ class QuadRenderer(GameSystem):
             else:
                 if not system_data['translate'].x == off_screen_pos[0]:
                     system_data['translate'].xy = off_screen_pos
-
             
     def update(self, dt):
         self.update_render_state()

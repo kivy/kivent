@@ -28,7 +28,7 @@ class GameWorld(Widget):
     number_entities = NumericProperty(0)
     systems = DictProperty({})
     num_children = NumericProperty(0)
-    last_touch = ListProperty((0,0))
+    map_size = ListProperty((2000, 2000))
 
     def __init__(self, **kwargs):
         super(GameWorld, self).__init__(**kwargs)
@@ -74,8 +74,8 @@ class GameWorld(Widget):
         self.remove_system('position_renderer')
 
     def test_physics_entity(self, dt):
-        rand_x = random.randint(0, self.width)
-        rand_y = random.randint(0, self.height)
+        rand_x = random.randint(0, self.map_size[0])
+        rand_y = random.randint(0, self.map_size[1])
         x_vel = random.randint(-150, 150)
         y_vel = random.randint(-150, 150)
         angle = math.radians(random.randint(-360, 360))
@@ -93,8 +93,8 @@ class GameWorld(Widget):
         self.init_entity(create_component_dict, component_order)
 
     def test_entity(self, dt):
-        rand_x = random.randint(0, self.width)
-        rand_y = random.randint(0, self.height)
+        rand_x = random.randint(0, self.map_size[0])
+        rand_y = random.randint(0, self.map_size[1])
         create_component_dict = {'position': {'position': (rand_x, rand_y)}, 
         'position_renderer': {'texture': 'star1.png', 'render': True}}
         component_order = ['position', 'position_renderer']
@@ -109,16 +109,11 @@ class GameWorld(Widget):
             if systems[system].renderable and systems[system].active:
                 systems[system].update(None)
 
-    def on_touch_down(self, touch):
-        self.last_touch = touch.x, touch.y
-
     def on_touch_move(self, touch):
-        last_touch = self.last_touch
-        dist_x = touch.x - last_touch[0]
-        dist_y = touch.y - last_touch[1]
+        dist_x = touch.dx
+        dist_y = touch.dy
         self.camera_pos[0] += dist_x
         self.camera_pos[1] += dist_y
-        self.last_touch = touch.x, touch.y
 
     def create_entity(self):
         entity = {'id': self.number_entities}
@@ -327,11 +322,13 @@ class CymunkPhysicsSystem(GameSystem):
 
     def check_bounds(self, system_data):
         gs_pos = self.pos
-        gs_size = self.size
+        gs_size = self.parent.map_size
         body = system_data['body']
         x_pos, y_pos = body.position
         if system_data['shape_type'] == 'circle':
             size_x = size_y = system_data['shapes'][0].radius
+        elif system_data['shape_type'] == 'box':
+            size_x, size_y = system_data['shapes'][0].width, system_data['shapes'][0].height
         if x_pos - size_x > gs_size[0]:
             body.position = gs_pos[0], y_pos
         if x_pos + size_x < gs_pos[0]:

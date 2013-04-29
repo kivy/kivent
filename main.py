@@ -22,16 +22,23 @@ class GameWorld(Widget):
         self.entities = []
         self.deactivated_entities = []
         Clock.schedule_once(self.test_entity, 2.0)
-        Clock.schedule_once(self.test_remove_entity, 2.5)
         Clock.schedule_once(self.test_entity, 3.0)
         #Clock.schedule_once(self.test_remove_system, 3.5)
         #Clock.schedule_interval(self.update, .05)
+        Clock.schedule_once(self.test_clear_entities, 3.5)
+
+    def test_clear_entities(self, dt):
+        self.clear_entities()
 
     def test_remove_system(self, dt):
         self.remove_system('position_renderer')
 
     def test_entity(self, dt):
-        self.init_entity(('position', 'position_renderer'))
+        rand_x = random.randint(0, self.width)
+        rand_y = random.randint(0, self.height)
+        create_component_dict = {'position': {'x': rand_x, 'y': rand_y}, 'position_renderer': {'texture': 'star1.png', 'render': True}}
+        component_order = ['position', 'position_renderer']
+        self.init_entity(create_component_dict, component_order)
 
     def test_remove_entity(self, dt):
         self.remove_entity(0)
@@ -42,14 +49,16 @@ class GameWorld(Widget):
         self.number_entities += 1
         return entity['id']
 
-    def init_entity(self, components_to_use):
+    def init_entity(self, components_to_use, component_order):
         if self.deactivated_entities == []:
             entity_id = self.create_entity()
         else:
             entity_id = self.deactivated_entities.pop()
         systems = self.systems
-        for component in components_to_use:
-            systems[component].create_component(entity_id)
+        self.entities[entity_id]['entity_load_order'] = component_order
+        for component in component_order:
+            systems[component].create_component(entity_id, components_to_use[component])
+        print self.entities[entity_id]
         
     def remove_entity(self, entity_id):
         entity = self.entities[entity_id]
@@ -58,8 +67,11 @@ class GameWorld(Widget):
         for data in entity:
             if data == 'id':
                 pass
+            elif data == 'entity_load_order':
+                components_to_delete.append(data)
             else:
                 components_to_delete.append(data)
+                print entity_id
                 systems[data].remove_entity(entity_id)
         for component in components_to_delete:
             del entity[component]
@@ -80,7 +92,8 @@ class GameWorld(Widget):
         return entity_dict
 
     def clear_entities(self):
-        pass
+        for entity in self.entities:
+            self.remove_entity(entity['id'])
 
     def remove_system(self, system_id):
         systems = self.systems
@@ -103,6 +116,7 @@ class GameWorld(Widget):
 class GameSystem(Widget):
     system_id = StringProperty('default_id')
     updateable = BooleanProperty(False)
+    renderable = BooleanProperty(False)
 
     def __init__(self, **kwargs):
         super(GameSystem, self).__init__(**kwargs)
@@ -111,69 +125,66 @@ class GameSystem(Widget):
     def update(self, dt):
         pass
 
-    def create_component(self, entity_id):
-        pass
-
-    def save_component(self, entity_id):
-        entity_component_dict = {}
+    def generate_component_data(self, entity_component_dict):
         return entity_component_dict
 
-    def load_component(self, entity_component_dict):
-        pass
+    def create_component(self, entity_id, entity_component_dict):
+        entity = self.parent.entities[entity_id]
+        entity[self.system_id] = self.generate_component_data(entity_component_dict)
+        if self.renderable:
+            self.draw_entity(entity_id)
+        self.entity_ids.append(entity_id)
+
+    def generate_entity_component_dict(self, entity_id):
+        entity = self.parent.entities[entity_id]
+        return entity[self.system_id]
+
+    def save_component(self, entity_id):
+        entity_component_dict = self.generate_entity_component_dict(entity_id)
+        return entity_component_dict
 
     def remove_entity(self, entity_id):
-        print self, 'removing entity'
+        self.entity_ids.remove(entity_id)
 
     def on_init_system(self):
-        print self, 'system initialized'
+        pass
 
     def on_remove_system(self):
-        print self, 'system removed'
+        pass
 
     def on_add_system(self):
-        print self, 'system added'
+        pass
 
     def on_delete_system(self):
-        print self, 'deleted system'
-
+        pass
 
 class BasicPositionSystem(GameSystem):
     system_id = StringProperty('position')
-
     def __init__(self, **kwargs):
         super(BasicPositionSystem, self).__init__(**kwargs)
-
-    def generate_component_data(self, entity_component_dict):
-        rand_x = random.randint(0, self.width)
-        rand_y = random.randint(0, self.height)
-        entity_component_dict['x'] = rand_x 
-        entity_component_dict['y'] = rand_y
-
-    def create_component(self, entity_id):
-        entity = self.parent.entities[entity_id]
-        entity[self.system_id] = {'x': 0, 'y': 0}
-        self.generate_component_data(entity[self.system_id])
-        self.entity_ids.append(entity_id)
 
 class BasicRenderSystem(GameSystem):
     system_id = StringProperty('position_renderer')
     render_information_from = StringProperty('position')
     updateable = BooleanProperty(True)
+    renderable = BooleanProperty(True)
 
     def __init__(self, **kwargs):
         super(BasicRenderSystem, self).__init__(**kwargs)
 
     def generate_component_data(self, entity_component_dict):
-        entity_component_dict['texture'] = 'star1.png'
-        entity_component_dict['render'] = True
+        entity_component_dict['translate'] = None
+        entity_component_dict['quad'] = None
+        return entity_component_dict
 
-    def create_component(self, entity_id):
+    def generate_entity_component_dict(self, entity_id):
         entity = self.parent.entities[entity_id]
-        entity[self.system_id] = {'texture': None, 'render': False, 'translate': None, 'quad': None}
-        self.generate_component_data(entity[self.system_id])
-        self.draw_entity(entity)
+        entity_system_dict = entity[self.system_id]
+        entity_component_dict = {'texture': entity_system_dict['texture'], 'render': entity_system_dict['render']}
+        return entity_component_dict
 
-    def draw_entity(self, entity):
+    def draw_entity(self, entity_id):
+        entity = self.parent.entities[entity_id]
         system_data = entity[self.system_id]
         position = entity[self.render_information_from]
         texture = CoreImage(system_data['texture']).texture
@@ -187,16 +198,12 @@ class BasicRenderSystem(GameSystem):
             PopMatrix()
 
     def remove_entity(self, entity_id):
-        print 'removing', entity_id
         system_data = self.parent.entities[entity_id][self.system_id]
         for data in system_data:
             if isinstance(system_data[data], Instruction):
                 print 'removing instruction', data
                 self.canvas.remove(system_data[data])
-
-    def update(self, dt):
-        print self, 'update test'
-
+        super(BasicRenderSystem, self).remove_entity(entity_id)
 
 class KivEntApp(App):
     def build(self):

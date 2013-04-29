@@ -7,7 +7,9 @@ from kivy.properties import StringProperty, ListProperty, NumericProperty, DictP
 import random
 from kivy.core.image import Image as CoreImage
 from kivy.clock import Clock
-from kivy.graphics import PushMatrix, PopMatrix, Translate, Quad, Instruction
+from kivy.graphics import PushMatrix, PopMatrix, Translate, Quad, Instruction, Rotate, Color, Scale
+import cymunk
+import math
 
 
 class GameWorld(Widget):
@@ -25,6 +27,9 @@ class GameWorld(Widget):
         self.deactivated_entities = []
         for x in range(1000):
             Clock.schedule_once(self.test_entity)
+        for x in range(25):
+            Clock.schedule_once(self.test_physics_entity)
+        Clock.schedule_interval(self.update, .03)
         self.add_state(state_name='paused', systems_added=['position', 'position_renderer'], 
             systems_removed=[], systems_paused=['position_renderer', 'position'])
         self.state = 'paused'
@@ -58,10 +63,29 @@ class GameWorld(Widget):
     def test_remove_system(self, dt):
         self.remove_system('position_renderer')
 
+    def test_physics_entity(self, dt):
+        rand_x = random.randint(0, self.width)
+        rand_y = random.randint(0, self.height)
+        x_vel = random.randint(-150, 150)
+        y_vel = random.randint(-150, 150)
+        angle = math.radians(random.randint(-360, 360))
+        angular_velocity = math.radians(random.randint(-360, 360))
+        shape_dict = {'inner_radius': 0, 'outer_radius': 45, 'mass': 100, 'offset': (0, 0)}
+        col_shape = {'shape_type': 'circle', 'elasticity': 1.0, 
+        'collision_type': 1, 'shape_info': shape_dict}
+        col_shapes = [col_shape]
+        physics_component = {'entity_id': self.number_entities, 'main_shape': 'circle', 
+        'velocity': (x_vel, y_vel), 'position': (rand_x, rand_y), 'angle': angle, 
+        'angular_velocity': angular_velocity, 'mass': 100, 'col_shapes': col_shapes}
+        create_component_dict = {'cymunk-physics': physics_component, 
+        'physics_renderer': {'texture': 'asteroid2.png', 'render': True}}
+        component_order = ['cymunk-physics', 'physics_renderer']
+        self.init_entity(create_component_dict, component_order)
+
     def test_entity(self, dt):
         rand_x = random.randint(0, self.width)
         rand_y = random.randint(0, self.height)
-        create_component_dict = {'position': {'x': rand_x, 'y': rand_y}, 
+        create_component_dict = {'position': {'position': (rand_x, rand_y)}, 
         'position_renderer': {'texture': 'star1.png', 'render': True}}
         component_order = ['position', 'position_renderer']
         self.init_entity(create_component_dict, component_order)
@@ -262,18 +286,18 @@ class CymunkPhysicsSystem(GameSystem):
         body.angular_velocity = entity_component_dict['angular_velocity']
         self.space.add(body)
         shapes = []
-        for shape in entity_component_dict[col_shapes]:
+        for shape in entity_component_dict['col_shapes']:
             shape_info = shape['shape_info']
             if shape['shape_type'] == 'circle':
-                shape = cymunk.Circle(body, shape_info['outer_radius']) 
+                new_shape = cymunk.Circle(body, shape_info['outer_radius']) 
             elif shape['shape_type'] == 'box':
-                shape = cymunk.BoxShape(body, shape_info['width'], shape_info['height'])
+                new_shape = cymunk.BoxShape(body, shape_info['width'], shape_info['height'])
             else:
                 print 'shape not created'
-            shape.elasticity = shape['elasticity']
-            shape.collision_type = shape['collision_type']
-            shapes.append(shape)
-            self.space.add(shape)
+            new_shape.elasticity = shape['elasticity']
+            new_shape.collision_type = shape['collision_type']
+            shapes.append(new_shape)
+            self.space.add(new_shape)
             
         component_dict = {'body': body, 'shapes': shapes, 'position': body.position, 'angle': body.angle}
 
@@ -288,8 +312,13 @@ class CymunkPhysicsSystem(GameSystem):
         super(CymunkPhysicsSystem, self).remove_entity(entity_id)
 
     def update(self, dt):
+        entities = self.parent.entities
         self.space.step(dt)
-
+        for entity_id in self.entity_ids:
+            entity = entities[entity_id]
+            system_data = entity[self.system_id]
+            system_data['position'] = system_data['body'].position
+            system_data['angle'] = system_data['body'].angle
 
 class QuadRenderer(GameSystem):
     system_id = StringProperty('position_renderer')
@@ -343,7 +372,6 @@ class QuadRenderer(GameSystem):
         size = texture.size[0] * .5, texture.size[1] *.5
         system_data['size'] = size
         camera_pos = parent.camera_pos
-        
         with self.canvas:
             PushMatrix()
             system_data['translate'] = Translate()
@@ -359,7 +387,7 @@ class QuadRenderer(GameSystem):
                 system_date['color'].rgba = context_information['color']
             system_data['quad'] = Quad(texture = texture, points = (-size[0], -size[1], size[0], -size[1],
                 size[0], size[1], -size[0], size[1]))
-            system_data['translate'].xy = render_information['x'] + camera_pos[0], render_information['y'] + camera_pos[1]
+            system_data['translate'].xy = render_information['position'][0] + camera_pos[0], render_information['position'][1] + camera_pos[1]
             PopMatrix()
 
     def update_render_state(self):
@@ -373,8 +401,8 @@ class QuadRenderer(GameSystem):
             entity = entities[entity_id]
             system_data = entity[system_id]
             render_information = entity[self.render_information_from]
-            if render_information['x'] + system_data['size'][0] > pos[0] - camera_pos[0] and render_information['x'] - system_data['size'][0] < pos[0] - camera_pos[0] + camera_size[0]:
-                if render_information['y'] + system_data['size'][1] > pos[1] - camera_pos[1] and render_information['y'] - system_data['size'][1] < pos[1] - camera_pos[1] + camera_size[1]:
+            if render_information['position'][0] + system_data['size'][0] > pos[0] - camera_pos[0] and render_information['position'][0] - system_data['size'][0] < pos[0] - camera_pos[0] + camera_size[0]:
+                if render_information['position'][1] + system_data['size'][1] > pos[1] - camera_pos[1] and render_information['position'][1] - system_data['size'][1] < pos[1] - camera_pos[1] + camera_size[1]:
                     if not system_data['render']:
                         system_data['render'] = True
                 else:
@@ -403,9 +431,9 @@ class QuadRenderer(GameSystem):
                 render_information = entity[render_information_from]
                 if do_scale or do_color:
                     context_information = entity[context_information_from]
-                system_data['translate'].xy = render_information['x'] + camera_pos[0], render_information['y'] + camera_pos[1]
+                system_data['translate'].xy = render_information['position'][0] + camera_pos[0], render_information['position'][1] + camera_pos[1]
                 if do_rotate:
-                    system_data['rotate'].angle = render_information['angle']
+                    system_data['rotate'].angle = math.degrees(render_information['angle'])
                 if do_scale:
                     system_data['scale'].x = context_information['scale_x']
                     system_data['scale'].y = context_information['scale_y']
@@ -426,6 +454,11 @@ class QuadRenderer(GameSystem):
             if isinstance(system_data[data], Instruction):
                 self.canvas.remove(system_data[data])
         super(QuadRenderer, self).remove_entity(entity_id)
+
+class PhysicsRenderer(QuadRenderer):
+    system_id = StringProperty('physics_renderer')
+    render_information_from = StringProperty('cymunk-physics')
+    do_rotate = BooleanProperty(True)
 
 class KivEntApp(App):
     def build(self):

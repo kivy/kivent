@@ -84,9 +84,9 @@ class GameWorld(Widget):
         col_shape = {'shape_type': 'circle', 'elasticity': 1.0, 
         'collision_type': 1, 'shape_info': shape_dict}
         col_shapes = [col_shape]
-        physics_component = {'entity_id': self.number_entities, 'main_shape': 'circle', 
-        'velocity': (x_vel, y_vel), 'position': (rand_x, rand_y), 'angle': angle, 
-        'angular_velocity': angular_velocity, 'mass': 100, 'col_shapes': col_shapes}
+        physics_component = {'main_shape': 'circle', 'velocity': (x_vel, y_vel), 
+        'position': (rand_x, rand_y), 'angle': angle, 'angular_velocity': angular_velocity, 
+        'mass': 100, 'col_shapes': col_shapes}
         create_component_dict = {'cymunk-physics': physics_component, 
         'physics_renderer': {'texture': 'asteroid2.png', 'render': True}}
         component_order = ['cymunk-physics', 'physics_renderer']
@@ -312,6 +312,10 @@ class CymunkPhysicsSystem(GameSystem):
         'angle': body.angle, 'shape_type': entity_component_dict['col_shapes'][0]['shape_type']}
 
         return component_dict
+
+    def create_component(self, entity_id, entity_component_dict):
+        entity_component_dict['entity_id'] = entity_id
+        super(CymunkPhysicsSystem, self).create_component(entity_id, entity_component_dict)
 
     def remove_entity(self, entity_id):
         space = self.space

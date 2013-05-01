@@ -27,8 +27,8 @@ class GameWorld(Widget):
     camera_pos = ListProperty((0, 0))
     number_entities = NumericProperty(0)
     systems = DictProperty({})
-    num_children = NumericProperty(0)
     map_size = ListProperty((2000, 2000))
+    lock_scroll = BooleanProperty(True)
 
     def __init__(self, **kwargs):
         super(GameWorld, self).__init__(**kwargs)
@@ -39,17 +39,41 @@ class GameWorld(Widget):
             Clock.schedule_once(self.test_entity)
         for x in range(25):
             Clock.schedule_once(self.test_physics_entity)
+        print self.entities
         Clock.schedule_interval(self.update, .03)
         self.add_state(state_name='paused', systems_added=['position', 'position_renderer'], 
             systems_removed=[], systems_paused=['position_renderer', 'position'])
         self.state = 'paused'
         self.add_state(state_name='no_render', systems_added=[], 
             systems_removed=['position', 'position_renderer'], systems_paused=['position', 'position_renderer'])
-        #Clock.schedule_interval(self.update, .03)
 
     def add_state(self, state_name, systems_added, systems_removed, systems_paused):
         self.states[state_name] = {'systems_added': systems_added, 
         'systems_removed': systems_removed, 'systems_paused': systems_paused}
+
+    def on_size(self, instance, value):
+        if self.lock_scroll:
+            dist_x, dist_y = self.lock_scroll(0, 0)
+            self.camera_pos[0] += dist_x
+            self.camera_pos[1] += dist_y
+
+    def lock_scroll(self, distance_x, distance_y):
+        camera_pos = self.camera_pos
+        map_size = self.map_size
+        size = self.size
+        pos = self.pos
+
+        if camera_pos[0] + distance_x > pos[0]:
+            distance_x = pos[0] - camera_pos[0]
+        elif camera_pos[0] + map_size[0] + distance_x <= pos[0] + size[0]:
+            distance_x = pos[0] + size[0] - camera_pos[0] - map_size[0]
+
+        if camera_pos[1] + distance_y > pos[1]:
+            distance_y = pos[1] - camera_pos[1]
+        elif camera_pos[1] + map_size[1] + distance_y <= pos[1] + size[1]:
+            distance_y = pos[1] + size[1] - camera_pos[1] - map_size[1]
+
+        return distance_x, distance_y
 
     def on_state(self, instance, value):
         state_dict = self.states[value]
@@ -88,7 +112,7 @@ class GameWorld(Widget):
         'position': (rand_x, rand_y), 'angle': angle, 'angular_velocity': angular_velocity, 
         'mass': 100, 'col_shapes': col_shapes}
         create_component_dict = {'cymunk-physics': physics_component, 
-        'physics_renderer': {'texture': 'asteroid2.png', 'render': True}}
+        'physics_renderer': {'texture': 'asteroid2.png', 'render': False}}
         component_order = ['cymunk-physics', 'physics_renderer']
         self.init_entity(create_component_dict, component_order)
 
@@ -112,6 +136,8 @@ class GameWorld(Widget):
     def on_touch_move(self, touch):
         dist_x = touch.dx
         dist_y = touch.dy
+        if self.lock_scroll:
+            dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
         self.camera_pos[0] += dist_x
         self.camera_pos[1] += dist_y
 
@@ -130,6 +156,7 @@ class GameWorld(Widget):
         self.entities[entity_id]['entity_load_order'] = component_order
         for component in component_order:
             systems[component].create_component(entity_id, components_to_use[component])
+        print self.entities[entity_id]
         
     def remove_entity(self, entity_id):
         entity = self.entities[entity_id]
@@ -197,6 +224,9 @@ class GameSystem(Widget):
     def update(self, dt):
         pass
 
+    def draw_entity(self, entity_id):
+        pass
+
     def generate_component_data(self, entity_component_dict):
         return entity_component_dict
 
@@ -241,8 +271,10 @@ class CymunkPhysicsSystem(GameSystem):
     gravity = ListProperty((0, 0))
     updateable = BooleanProperty(True)
 
+
     def __init__(self, **kwargs):
         super(CymunkPhysicsSystem, self).__init__(**kwargs)
+        self.current_on_screen = list()
         self.init_physics()
 
     def init_physics(self):
@@ -251,7 +283,30 @@ class CymunkPhysicsSystem(GameSystem):
         space.iterations = 5
         space.gravity = self.gravity
         space.sleep_time_threshold = 0.5
+        
         space.collision_slop = 0.5
+        space.register_bb_query_func(self.bb_query_func)
+
+    def test_bb_query(self, dt):
+        camera_pos = self.parent.camera_pos
+        size = self.parent.size
+        bb_list = [camera_pos[0], camera_pos[1], size[0], size[1]]
+        bb = cymunk.BB(bb_list[0], bb_list[1], bb_list[2], bb_list[3])
+        self.space.space_bb_query_func(bb)
+
+    def bb_query_func(self, shape):
+        self.current_on_screen.append(shape.body.data)
+
+
+    def query_on_screen(self):
+        camera_pos = self.parent.camera_pos
+        size = self.parent.size
+        bb_list = [-camera_pos[0], -camera_pos[1], -camera_pos[0] + size[0], -camera_pos[1] + size[1]]
+        bb = cymunk.BB(bb_list[0], bb_list[1], bb_list[2], bb_list[3])
+        self.current_on_screen = []
+        self.space.space_bb_query_func(bb)
+        return self.current_on_screen
+        
 
     def generate_component_data(self, entity_component_dict):
         '''entity_component_dict of the form {'entity_id': id, 'main_shape': string_shape_name, 
@@ -487,6 +542,22 @@ class PhysicsRenderer(QuadRenderer):
     system_id = StringProperty('physics_renderer')
     render_information_from = StringProperty('cymunk-physics')
     do_rotate = BooleanProperty(True)
+
+    def update_render_state(self):
+        parent = self.parent
+        entities = parent.entities
+        system_id = self.system_id
+        entity_ids = self.entity_ids
+        physics_system = parent.systems[self.render_information_from]
+        on_screen = physics_system.query_on_screen()
+        for entity_id in entity_ids:
+            entity = entities[entity_id]
+            system_data = entity[system_id]
+            if not system_data['render'] and entity_id in on_screen:
+                system_data['render'] = True
+            if system_data['render'] and not entity_id in on_screen:
+                system_data['render'] = False
+
 
 class KivEntApp(App):
     def build(self):

@@ -66,18 +66,10 @@ class GameWorld(Widget):
         self.add_state(state_name='main_menu', systems_added=[], 
             systems_removed=['position_renderer', 'position', 'physics_renderer', 'cymunk-physics'], 
             systems_paused=[], 
-            screenmanager_screen='main_menu')
-        
+            screenmanager_screen='main_menu')       
         self.add_state(state_name='main_game', systems_added=['position_renderer', 'position', 'physics_renderer', 'cymunk-physics'], 
             systems_removed=[], systems_paused=[], screenmanager_screen='main_game')
-        Clock.schedule_once(self.test_state, 5.0)
-        Clock.schedule_once(self.test_state_2, 6.5)
-
-    def test_state(self, dt):
         self.state = 'main_menu'
-
-    def test_state_2(self, dt):
-        self.state = 'main_game'
 
     def add_state(self, state_name, systems_added, systems_removed, systems_paused, screenmanager_screen):
         self.states[state_name] = {'systems_added': systems_added, 
@@ -217,6 +209,7 @@ class GameSystem(Widget):
     renderable = BooleanProperty(False)
     paused = BooleanProperty(False)
     active = BooleanProperty(True)
+    gameworld = ObjectProperty(None)
     viewport = StringProperty('default_gameview')
 
     def __init__(self, **kwargs):
@@ -233,14 +226,14 @@ class GameSystem(Widget):
         return entity_component_dict
 
     def create_component(self, entity_id, entity_component_dict):
-        entity = self.parent.entities[entity_id]
+        entity = self.gameworld.entities[entity_id]
         entity[self.system_id] = self.generate_component_data(entity_component_dict)
         if self.renderable:
             self.draw_entity(entity_id)
         self.entity_ids.append(entity_id)
 
     def generate_entity_component_dict(self, entity_id):
-        entity = self.parent.entities[entity_id]
+        entity = self.gameworld.entities[entity_id]
         return entity[self.system_id]
 
     def save_component(self, entity_id):
@@ -276,7 +269,7 @@ class GameView(GameSystem):
             self.camera_pos[1] += dist_y
 
     def on_camera_pos(self, instance, value):
-        systems = self.parent.systems
+        systems = self.gameworld.systems
         for system in systems:
             if systems[system].renderable and systems[system].active:
                 systems[system].update(None)
@@ -291,7 +284,7 @@ class GameView(GameSystem):
 
     def lock_scroll(self, distance_x, distance_y):
         camera_pos = self.camera_pos
-        map_size = self.parent.map_size
+        map_size = self.gameworld.map_size
         size = self.size
         pos = self.pos
 
@@ -335,7 +328,7 @@ class CymunkPhysicsSystem(GameSystem):
         space.register_bb_query_func(self.bb_query_func)
 
     def test_bb_query(self, dt):
-        viewport = self.parent.systems[self.viewport]
+        viewport = self.gameworld.systems[self.viewport]
         camera_pos = viewport.camera_pos
         size = viewport.size
         bb_list = [camera_pos[0], camera_pos[1], size[0], size[1]]
@@ -347,7 +340,7 @@ class CymunkPhysicsSystem(GameSystem):
 
 
     def query_on_screen(self):
-        viewport = self.parent.systems[self.viewport]
+        viewport = self.gameworld.systems[self.viewport]
         camera_pos = viewport.camera_pos
         size = viewport.size
         bb_list = [-camera_pos[0], -camera_pos[1], -camera_pos[0] + size[0], -camera_pos[1] + size[1]]
@@ -418,15 +411,15 @@ class CymunkPhysicsSystem(GameSystem):
 
     def remove_entity(self, entity_id):
         space = self.space
-        system_data = self.parent.entities[entity_id][self.system_id]
+        system_data = self.gameworld.entities[entity_id][self.system_id]
         space.remove(system_data['body'])
         for shape in system_data['shapes']:
             space.remove(shape)
         super(CymunkPhysicsSystem, self).remove_entity(entity_id)
 
     def check_bounds(self, system_data):
-        map_pos = self.parent.pos
-        map_size = self.parent.map_size
+        map_pos = self.gameworld.pos
+        map_size = self.gameworld.map_size
         body = system_data['body']
         x_pos, y_pos = body.position
         if system_data['shape_type'] == 'circle':
@@ -443,7 +436,8 @@ class CymunkPhysicsSystem(GameSystem):
             body.position = x_pos, map_pos[1] + map_size[1]
 
     def update(self, dt):
-        entities = self.parent.entities
+        print 'physics updating'
+        entities = self.gameworld.entities
         self.space.step(dt)
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
@@ -488,13 +482,13 @@ class QuadRenderer(GameSystem):
         return texture
 
     def generate_entity_component_dict(self, entity_id):
-        entity = self.parent.entities[entity_id]
+        entity = self.gameworld.entities[entity_id]
         entity_system_dict = entity[self.system_id]
         entity_component_dict = {'texture': entity_system_dict['texture'], 'render': entity_system_dict['render']}
         return entity_component_dict
 
     def draw_entity(self, entity_id):
-        parent = self.parent
+        parent = self.gameworld
         entity = parent.entities[entity_id]
         system_data = entity[self.system_id]
         render_information = entity[self.render_information_from]
@@ -523,7 +517,7 @@ class QuadRenderer(GameSystem):
             PopMatrix()
 
     def update_render_state(self):
-        parent = self.parent
+        parent = self.gameworld
         viewport = parent.systems[self.viewport]
         camera_pos = viewport.camera_pos
         camera_size = viewport.size
@@ -546,7 +540,7 @@ class QuadRenderer(GameSystem):
                     system_data['render'] = False
 
     def render(self):
-        parent = self.parent
+        parent = self.gameworld
         entities = parent.entities
         system_id = self.system_id
         do_color = self.do_color
@@ -582,7 +576,7 @@ class QuadRenderer(GameSystem):
 
 
     def remove_entity(self, entity_id):
-        system_data = self.parent.entities[entity_id][self.system_id]
+        system_data = self.gameworld.entities[entity_id][self.system_id]
         for data in system_data:
             if isinstance(system_data[data], Instruction):
                 self.canvas.remove(system_data[data])
@@ -594,7 +588,7 @@ class PhysicsRenderer(QuadRenderer):
     do_rotate = BooleanProperty(True)
 
     def update_render_state(self):
-        parent = self.parent
+        parent = self.gameworld
         entities = parent.entities
         system_id = self.system_id
         entity_ids = self.entity_ids

@@ -13,22 +13,28 @@ GameWorld:
 			size: (25, 25)
 	GameScreenManager:
 		id: gamescreenmanager
+		gameworld: root
 		transition: FadeTransition()
 		pos: root.pos
 		size: root.size
 	GameView:
+		gameworld: root
 		pos: root.pos
 		size: root.size
 	BasicPositionSystem:
+		gameworld: root
 		pos: root.pos
 		size: root.size
 	QuadRenderer:
+		gameworld: root
 		pos: root.pos
 		size: root.size
 	CymunkPhysicsSystem:
+		gameworld: root
 		pos: root.pos
 		size: root.size
 	PhysicsRenderer:
+		gameworld: root
 		pos: root.pos
 		size: root.size
 
@@ -67,10 +73,20 @@ GameWorld:
 			text: 'Main Menu'
 		Button:
 			text: 'Play Game'
+			on_press: root.manager.gameworld.state = 'main_game'
 
 
 
 <MainGameScreen>:
+	FloatLayout:
+		size: root.size
+		pos: root.pos
+		Button:
+			pos: (10, 10)
+			size: (100, 100)
+			size_hint: (None, None)
+			text: 'Main Menu'
+			on_press: root.manager.gameworld.state = 'main_menu'
 
 
 

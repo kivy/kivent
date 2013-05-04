@@ -10,6 +10,7 @@ from kivy.clock import Clock
 from kivy.graphics import PushMatrix, PopMatrix, Translate, Quad, Instruction, Rotate, Color, Scale
 import cymunk
 import math
+from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 
 class DebugPanel(Widget):
     fps = StringProperty(None)
@@ -22,13 +23,35 @@ class DebugPanel(Widget):
         self.fps = str(int(Clock.get_fps()))
         Clock.schedule_once(self.update_fps, .05)
 
+class GameScreenManager(ScreenManager):
+    state = StringProperty('initial')
+
+    def __init__(self, **kwargs):
+        super(GameScreenManager, self).__init__(**kwargs)
+        self.states = {}
+
+    def on_state(self, instance, value):
+        self.current = self.states[value]
+        
+
+
+class GameScreen(Screen):
+    name = StringProperty('default_screen_id')
+
+class MainMenuScreen(GameScreen):
+    name = StringProperty('main_menu')
+
+class MainGameScreen(GameScreen):
+    name = StringProperty('main_game')
+
+
 class GameWorld(Widget):
     state = StringProperty('initial')
-    camera_pos = ListProperty((0, 0))
     number_entities = NumericProperty(0)
     systems = DictProperty({})
     map_size = ListProperty((2000, 2000))
-    lock_scroll = BooleanProperty(True)
+    gamescreenmanager = ObjectProperty(None)
+    
 
     def __init__(self, **kwargs):
         super(GameWorld, self).__init__(**kwargs)
@@ -39,45 +62,33 @@ class GameWorld(Widget):
             Clock.schedule_once(self.test_entity)
         for x in range(25):
             Clock.schedule_once(self.test_physics_entity)
-        print self.entities
         Clock.schedule_interval(self.update, .03)
-        self.add_state(state_name='paused', systems_added=['position', 'position_renderer'], 
-            systems_removed=[], systems_paused=['position_renderer', 'position'])
-        self.state = 'paused'
-        self.add_state(state_name='no_render', systems_added=[], 
-            systems_removed=['position', 'position_renderer'], systems_paused=['position', 'position_renderer'])
+        self.add_state(state_name='main_menu', systems_added=[], 
+            systems_removed=['position_renderer', 'position', 'physics_renderer', 'cymunk-physics'], 
+            systems_paused=[], 
+            screenmanager_screen='main_menu')
+        
+        self.add_state(state_name='main_game', systems_added=['position_renderer', 'position', 'physics_renderer', 'cymunk-physics'], 
+            systems_removed=[], systems_paused=[], screenmanager_screen='main_game')
+        Clock.schedule_once(self.test_state, 5.0)
+        Clock.schedule_once(self.test_state_2, 6.5)
 
-    def add_state(self, state_name, systems_added, systems_removed, systems_paused):
+    def test_state(self, dt):
+        self.state = 'main_menu'
+
+    def test_state_2(self, dt):
+        self.state = 'main_game'
+
+    def add_state(self, state_name, systems_added, systems_removed, systems_paused, screenmanager_screen):
         self.states[state_name] = {'systems_added': systems_added, 
         'systems_removed': systems_removed, 'systems_paused': systems_paused}
+        self.gamescreenmanager.states[state_name] = screenmanager_screen
 
-    def on_size(self, instance, value):
-        if self.lock_scroll:
-            dist_x, dist_y = self.lock_scroll(0, 0)
-            self.camera_pos[0] += dist_x
-            self.camera_pos[1] += dist_y
-
-    def lock_scroll(self, distance_x, distance_y):
-        camera_pos = self.camera_pos
-        map_size = self.map_size
-        size = self.size
-        pos = self.pos
-
-        if camera_pos[0] + distance_x > pos[0]:
-            distance_x = pos[0] - camera_pos[0]
-        elif camera_pos[0] + map_size[0] + distance_x <= pos[0] + size[0]:
-            distance_x = pos[0] + size[0] - camera_pos[0] - map_size[0]
-
-        if camera_pos[1] + distance_y > pos[1]:
-            distance_y = pos[1] - camera_pos[1]
-        elif camera_pos[1] + map_size[1] + distance_y <= pos[1] + size[1]:
-            distance_y = pos[1] + size[1] - camera_pos[1] - map_size[1]
-
-        return distance_x, distance_y
 
     def on_state(self, instance, value):
         state_dict = self.states[value]
         print state_dict
+        self.gamescreenmanager.state = value
         systems = self.systems
         children = self.children
         for system in state_dict['systems_added']:
@@ -90,6 +101,8 @@ class GameWorld(Widget):
                 self.remove_widget(systems[system])
         for system in state_dict['systems_paused']:
             systems[system].paused = True
+        
+
 
     def test_clear_entities(self, dt):
         self.clear_entities()
@@ -127,19 +140,7 @@ class GameWorld(Widget):
     def test_remove_entity(self, dt):
         self.remove_entity(0)
 
-    def on_camera_pos(self, instance, value):
-        systems = self.systems
-        for system in systems:
-            if systems[system].renderable and systems[system].active:
-                systems[system].update(None)
-
-    def on_touch_move(self, touch):
-        dist_x = touch.dx
-        dist_y = touch.dy
-        if self.lock_scroll:
-            dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
-        self.camera_pos[0] += dist_x
-        self.camera_pos[1] += dist_y
+    
 
     def create_entity(self):
         entity = {'id': self.number_entities}
@@ -156,8 +157,7 @@ class GameWorld(Widget):
         self.entities[entity_id]['entity_load_order'] = component_order
         for component in component_order:
             systems[component].create_component(entity_id, components_to_use[component])
-        print self.entities[entity_id]
-        
+
     def remove_entity(self, entity_id):
         entity = self.entities[entity_id]
         components_to_delete = []
@@ -199,16 +199,17 @@ class GameWorld(Widget):
         del systems[system_id]
 
     def add_widget(self, widget):
-        super(GameWorld, self).add_widget(widget)
         if isinstance(widget, GameSystem):
             if widget.system_id not in self.systems:
                 self.systems[widget.system_id] = widget
                 widget.on_init_system()
             widget.on_add_system()
+        super(GameWorld, self).add_widget(widget)
+        
 
     def remove_widget(self, widget):
-        super(GameWorld, self).remove_widget(widget)
         widget.on_remove_system()
+        super(GameWorld, self).remove_widget(widget)
 
 class GameSystem(Widget):
     system_id = StringProperty('default_id')
@@ -216,6 +217,7 @@ class GameSystem(Widget):
     renderable = BooleanProperty(False)
     paused = BooleanProperty(False)
     active = BooleanProperty(True)
+    viewport = StringProperty('default_gameview')
 
     def __init__(self, **kwargs):
         super(GameSystem, self).__init__(**kwargs)
@@ -253,12 +255,57 @@ class GameSystem(Widget):
 
     def on_remove_system(self):
         self.active = False
+        self.paused = True
 
     def on_add_system(self):
         self.active = True
+        self.paused = False
 
     def on_delete_system(self):
         pass
+
+class GameView(GameSystem):
+    system_id = StringProperty('default_gameview')
+    lock_scroll = BooleanProperty(True)
+    camera_pos = ListProperty((0, 0))
+
+    def on_size(self, instance, value):
+        if self.lock_scroll:
+            dist_x, dist_y = self.lock_scroll(0, 0)
+            self.camera_pos[0] += dist_x
+            self.camera_pos[1] += dist_y
+
+    def on_camera_pos(self, instance, value):
+        systems = self.parent.systems
+        for system in systems:
+            if systems[system].renderable and systems[system].active:
+                systems[system].update(None)
+
+    def on_touch_move(self, touch):
+        dist_x = touch.dx
+        dist_y = touch.dy
+        if self.lock_scroll:
+            dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
+        self.camera_pos[0] += dist_x
+        self.camera_pos[1] += dist_y
+
+    def lock_scroll(self, distance_x, distance_y):
+        camera_pos = self.camera_pos
+        map_size = self.parent.map_size
+        size = self.size
+        pos = self.pos
+
+        if camera_pos[0] + distance_x > pos[0]:
+            distance_x = pos[0] - camera_pos[0]
+        elif camera_pos[0] + map_size[0] + distance_x <= pos[0] + size[0]:
+            distance_x = pos[0] + size[0] - camera_pos[0] - map_size[0]
+
+        if camera_pos[1] + distance_y > pos[1]:
+            distance_y = pos[1] - camera_pos[1]
+        elif camera_pos[1] + map_size[1] + distance_y <= pos[1] + size[1]:
+            distance_y = pos[1] + size[1] - camera_pos[1] - map_size[1]
+
+        return distance_x, distance_y
 
 class BasicPositionSystem(GameSystem):
     system_id = StringProperty('position')
@@ -288,8 +335,9 @@ class CymunkPhysicsSystem(GameSystem):
         space.register_bb_query_func(self.bb_query_func)
 
     def test_bb_query(self, dt):
-        camera_pos = self.parent.camera_pos
-        size = self.parent.size
+        viewport = self.parent.systems[self.viewport]
+        camera_pos = viewport.camera_pos
+        size = viewport.size
         bb_list = [camera_pos[0], camera_pos[1], size[0], size[1]]
         bb = cymunk.BB(bb_list[0], bb_list[1], bb_list[2], bb_list[3])
         self.space.space_bb_query_func(bb)
@@ -299,8 +347,9 @@ class CymunkPhysicsSystem(GameSystem):
 
 
     def query_on_screen(self):
-        camera_pos = self.parent.camera_pos
-        size = self.parent.size
+        viewport = self.parent.systems[self.viewport]
+        camera_pos = viewport.camera_pos
+        size = viewport.size
         bb_list = [-camera_pos[0], -camera_pos[1], -camera_pos[0] + size[0], -camera_pos[1] + size[1]]
         bb = cymunk.BB(bb_list[0], bb_list[1], bb_list[2], bb_list[3])
         self.current_on_screen = []
@@ -376,22 +425,22 @@ class CymunkPhysicsSystem(GameSystem):
         super(CymunkPhysicsSystem, self).remove_entity(entity_id)
 
     def check_bounds(self, system_data):
-        gs_pos = self.pos
-        gs_size = self.parent.map_size
+        map_pos = self.parent.pos
+        map_size = self.parent.map_size
         body = system_data['body']
         x_pos, y_pos = body.position
         if system_data['shape_type'] == 'circle':
             size_x = size_y = system_data['shapes'][0].radius
         elif system_data['shape_type'] == 'box':
             size_x, size_y = system_data['shapes'][0].width, system_data['shapes'][0].height
-        if x_pos - size_x > gs_size[0]:
-            body.position = gs_pos[0], y_pos
-        if x_pos + size_x < gs_pos[0]:
-            body.position = gs_pos[0] + gs_size[0], y_pos
-        if y_pos - size_y > gs_pos[1] + gs_size[1]:
-            body.position = x_pos, gs_pos[1]
-        if y_pos + size_y < gs_pos[1]:
-            body.position = x_pos, gs_pos[1] + gs_size[1]
+        if x_pos - size_x > map_size[0]:
+            body.position = map_pos[0], y_pos
+        if x_pos + size_x < map_pos[0]:
+            body.position = map_pos[0] + map_size[0], y_pos
+        if y_pos - size_y > map_pos[1] + map_size[1]:
+            body.position = x_pos, map_pos[1]
+        if y_pos + size_y < map_pos[1]:
+            body.position = x_pos, map_pos[1] + map_size[1]
 
     def update(self, dt):
         entities = self.parent.entities
@@ -454,7 +503,7 @@ class QuadRenderer(GameSystem):
         texture = self.load_texture(system_data['texture'])
         size = texture.size[0] * .5, texture.size[1] *.5
         system_data['size'] = size
-        camera_pos = parent.camera_pos
+        camera_pos = parent.systems[self.viewport].camera_pos
         with self.canvas:
             PushMatrix()
             system_data['translate'] = Translate()
@@ -475,8 +524,9 @@ class QuadRenderer(GameSystem):
 
     def update_render_state(self):
         parent = self.parent
-        camera_pos = parent.camera_pos
-        camera_size = parent.size
+        viewport = parent.systems[self.viewport]
+        camera_pos = viewport.camera_pos
+        camera_size = viewport.size
         pos = self.pos
         system_id = self.system_id
         entities = parent.entities
@@ -503,7 +553,7 @@ class QuadRenderer(GameSystem):
         do_scale = self.do_scale
         do_rotate = self.do_rotate
         off_screen_pos = self.off_screen_pos
-        camera_pos = parent.camera_pos
+        camera_pos = parent.systems[self.viewport].camera_pos
         render_information_from = self.render_information_from
         if do_scale or do_color:
             context_information_from = self.context_information_from

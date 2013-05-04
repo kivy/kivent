@@ -1,18 +1,24 @@
 #:kivy 1.6.0
-#:import Window kivy.core.window
-
+#:import FadeTransition kivy.uix.screenmanager.FadeTransition 
 
 GameWorld:
 
 <GameWorld>:
 	pos: root.pos
 	size: root.size
+	gamescreenmanager: gamescreenmanager
 	BoxLayout:
-		Label:
-			text: 'Game World'
 		DebugPanel:
 			pos: root.size[0] * .5, root.size[1] *.05
 			size: (25, 25)
+	GameScreenManager:
+		id: gamescreenmanager
+		transition: FadeTransition()
+		pos: root.pos
+		size: root.size
+	GameView:
+		pos: root.pos
+		size: root.size
 	BasicPositionSystem:
 		pos: root.pos
 		size: root.size
@@ -42,7 +48,29 @@ GameWorld:
 
 <QuadRenderer>:
 
+<GameView>:
+
 <PhysicsRenderer>:
+
+<GameScreenManager>:
+	current: 'main_game'
+	MainMenuScreen:
+	MainGameScreen:
+
+<MainMenuScreen>:
+
+	BoxLayout:
+		size: root.size
+		pos: root.pos
+		orientation: 'vertical'
+		Label:
+			text: 'Main Menu'
+		Button:
+			text: 'Play Game'
+
+
+
+<MainGameScreen>:
 
 
 

@@ -129,11 +129,12 @@ class TestGame(Widget):
 
     def setup_gameobjects(self):
         Clock.schedule_once(self.test_prerendered_background)
-        for x in range(50):
+        for x in range(1000):
             Clock.schedule_once(self.test_entity)
         print 'generating asteroids'
-        for x in range(50):
+        for x in range(500):
             Clock.schedule_once(self.test_physics_entity)
+        Clock.schedule_once(self.test_player_character)
 
     def _init_game(self, dt):
         self.setup_states()
@@ -158,13 +159,17 @@ class TestGame(Widget):
         y_distance = map_size[1]/side_length_y
         position_dict = {}
         index = 0
+        size = (x_distance, y_distance)
+        print size
         for y in range(int(side_length_y)):
             for x in range(int(side_length_x)):
                 position_dict[index] = (x * x_distance + x_distance *.5, y * y_distance + y_distance*.5)
                 index += 1
         for num in range(num_tiles):
-            create_component_dict = {'position': {'position': position_dict[num], 'scale_x': scale_x, 'scale_y': scale_y}, 
-            'background_renderer': {'texture': atlas_address, 'texture_key': str(num+1), 'render': True}}
+            create_component_dict = {'position': {'position': position_dict[num], 
+            'scale_x': scale_x, 'scale_y': scale_y}, 
+            'background_renderer': {'texture': atlas_address, 'texture_key': str(num+1), 
+            'render': False, 'size': size}}
             component_order = ['position', 'background_renderer']
             self.gameworld.init_entity(create_component_dict, component_order)
 
@@ -183,7 +188,8 @@ class TestGame(Widget):
         'position': (rand_x, rand_y), 'angle': angle, 'angular_velocity': angular_velocity, 
         'mass': 100, 'col_shapes': col_shapes}
         create_component_dict = {'cymunk-physics': physics_component, 
-        'physics_renderer': {'texture': 'assets/background_objects/asteroid2.png', 'render': False}}
+        'physics_renderer': {'texture': 'assets/background_objects/asteroid2.png', 
+        'render': False, 'size': (45, 45)}}
         component_order = ['cymunk-physics', 'physics_renderer']
         self.gameworld.init_entity(create_component_dict, component_order)
 
@@ -191,30 +197,27 @@ class TestGame(Widget):
         rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
         rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
         create_component_dict = {'position': {'position': (rand_x, rand_y)}, 
-        'quadtree_renderer': {'texture': 'assets/background_objects/star1.png', 'render': True}}
+        'quadtree_renderer': {'texture': 'assets/background_objects/star1.png', 'render': False, 'size': (14,14)}}
         component_order = ['position', 'quadtree_renderer']
         self.gameworld.init_entity(create_component_dict, component_order)
 
-    def test_entity2(self, dt):
-        rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
-        rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
-        create_component_dict = {'position': {'position': (rand_x, rand_y)}, 
-        'position_renderer': {'texture': 'assets/background_objects/star1.png', 'render': True}}
-        component_order = ['position', 'position_renderer']
-        self.gameworld.init_entity(create_component_dict, component_order)
 
     def test_remove_entity(self, dt):
         self.gameworld.remove_entity(0)
 
     def test_player_character(self, dt):
-
-        box_dict = {'width': 128, 'height': 104, 'mass': 250}
+        box_dict = {'width': 108, 'height': 96, 'mass': 250}
         col_shape_dict = {'shape_type': 'box', 'elasticity': .5, 
-        'collision_type': 2, 'shape_info': box_dict}
-
+        'collision_type': 2, 'shape_info': box_dict, 'friction': .5}
         physics_component_dict = { 'main_shape': 'box', 
-        'velocity': (0, 0), 'position': (100, 100), 'angle': 0, 
-        'angular_velocity': 0, 'mass': 250, 'col_shapes': col_shape_dict}
+        'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
+        'angular_velocity': 0, 'mass': 250, 'col_shapes': [col_shape_dict]}
+        ship_dict = {'health': 100, 'max_speed': 180, 'accel': 15, 'max_turn_speed': 25}
+        create_component_dict = {'cymunk-physics': physics_component_dict, 
+        'physics_renderer': {'texture': 'assets/ships/ship1-1.png', 
+        'render': False, 'size': (64, 52)}, 'player_character': ship_dict}
+        component_order = ['cymunk-physics', 'physics_renderer', 'player_character']
+        self.gameworld.init_entity(create_component_dict, component_order)
 
 
 class KivEntApp(App):

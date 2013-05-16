@@ -32,8 +32,6 @@ class GameSystem(Widget):
     def create_component(self, entity_id, entity_component_dict):
         entity = self.gameworld.entities[entity_id]
         entity[self.system_id] = self.generate_component_data(entity_component_dict)
-        if self.renderable:
-            self.draw_entity(entity_id)
         self.entity_ids.append(entity_id)
 
     def generate_entity_component_dict(self, entity_id):

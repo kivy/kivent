@@ -29,7 +29,6 @@ class QuadRenderer(GameSystem):
     def generate_component_data(self, entity_component_dict):
         entity_component_dict['translate'] = None
         entity_component_dict['quad'] = None
-        entity_component_dict['size'] = None
         if self.do_rotate:
             entity_component_dict['rotate'] = None
         if self.do_color:
@@ -59,6 +58,20 @@ class QuadRenderer(GameSystem):
         'render': entity_system_dict['render']}
         return entity_component_dict
 
+    def remove_entity_from_canvas(self, entity_id):
+        self.canvas.remove_group(str(entity_id))
+        entity = self.gameworld.entities[entity_id]
+        system_data = entity[self.system_id]
+        system_data['render'] = False
+        system_data['translate'] = None
+        system_data['quad'] = None
+        if self.do_rotate:
+            system_data['rotate'] = None
+        if self.do_color:
+            system_data['color'] = None
+        if self.do_scale:
+            system_data['scale'] = None
+
     def draw_entity(self, entity_id):
         parent = self.gameworld
         entity = parent.entities[entity_id]
@@ -78,24 +91,27 @@ class QuadRenderer(GameSystem):
 
         camera_pos = parent.systems[self.viewport].camera_pos
         with self.canvas:
-            PushMatrix()
-            system_data['translate'] = Translate()
+            group_id = str(entity_id)
+            PushMatrix(group=group_id)
+            system_data['translate'] = Translate(group=group_id)
             if self.do_rotate:
-                system_data['rotate'] = Rotate()
+                system_data['rotate'] = Rotate(group=group_id)
                 system_data['rotate'].angle = render_information['angle']
             if self.do_scale:
-                system_data['scale'] = Scale()
+                system_data['scale'] = Scale(group=group_id)
                 system_data['scale'].x = context_information['scale_x']
                 system_data['scale'].y = context_information['scale_y']
             if self.do_color:
-                system_data['color'] = Color()
+                system_data['color'] = Color(group=group_id)
                 system_date['color'].rgba = context_information['color']
             system_data['quad'] = Quad(texture = texture, points = (-size[0], 
                 -size[1], size[0], -size[1],
                 size[0], size[1], -size[0], size[1]))
             system_data['translate'].xy = (render_information['position'][0] + camera_pos[0], 
             render_information['position'][1] + camera_pos[1])
-            PopMatrix()
+
+            PopMatrix(group=group_id)
+        system_data['render'] = True
 
     def update_render_state(self):
         parent = self.gameworld
@@ -110,19 +126,21 @@ class QuadRenderer(GameSystem):
             system_data = entity[system_id]
             render_information = entity[self.render_information_from]
             size = system_data['size']
+            if size == None:
+                print 'problem'
             position = render_information['position']
             if (position[0] + size[0] > pos[0] - camera_pos[0] and position[0] 
                 - size[0] < pos[0] - camera_pos[0] + camera_size[0]):
                 if (position[1] + size[1] > pos[1] - camera_pos[1] and position[1] - 
                 size[1] < pos[1] - camera_pos[1] + camera_size[1]):
                     if not system_data['render']:
-                        system_data['render'] = True
+                        self.draw_entity(entity_id)
                 else:
                     if system_data['render']:
-                        system_data['render'] = False
+                        self.remove_entity_from_canvas(entity_id)
             else:
-                if system_data['render']:
-                    system_data['render'] = False
+                if system_data['render']:                  
+                    self.remove_entity_from_canvas(entity_id)
 
     def render(self):
         parent = self.gameworld
@@ -152,9 +170,6 @@ class QuadRenderer(GameSystem):
                     system_data['scale'].y = context_information['scale_y']
                 if do_color:
                     system_data['color'].rgba = context_information['color']
-            else:
-                if not system_data['translate'].x == off_screen_pos[0]:
-                    system_data['translate'].xy = off_screen_pos
             
     def update(self, dt):
         self.update_render_state()
@@ -184,9 +199,9 @@ class PhysicsRenderer(QuadRenderer):
             entity = entities[entity_id]
             system_data = entity[system_id]
             if not system_data['render'] and entity_id in on_screen:
-                system_data['render'] = True
+                self.draw_entity(entity_id)
             if system_data['render'] and not entity_id in on_screen:
-                system_data['render'] = False
+                self.remove_entity_from_canvas(entity_id)
 
 class QuadTreeQuadRenderer(QuadRenderer):
     system_id = StringProperty('quadtree_renderer')
@@ -198,13 +213,17 @@ class QuadTreeQuadRenderer(QuadRenderer):
         super(QuadTreeQuadRenderer, self).__init__(**kwargs)
         Clock.schedule_once(self.setup_quadtree)
 
+    def create_component(self, entity_id, entity_component_dict):
+        super(QuadTreeQuadRenderer, self).create_component(entity_id, entity_component_dict)
+        self.quadtree.add_items([entity_id], 7)
+
     def setup_quadtree(self, dt):
         self.quadtree = QuadTree(self.gameworld, self.render_information_from, self.system_id, 
             self.entity_ids, depth=7, bounding_rect=(0, 0, self.quadtree_size[0], self.quadtree_size[1]))
 
     def draw_entity(self, entity_id):
         super(QuadTreeQuadRenderer, self).draw_entity(entity_id)
-        self.quadtree.add_items([entity_id], 7)
+        
 
     def update_render_state(self):
         parent = self.gameworld
@@ -216,9 +235,9 @@ class QuadTreeQuadRenderer(QuadRenderer):
             entity = entities[entity_id]
             system_data = entity[system_id]
             if not system_data['render'] and entity_id in on_screen:
-                system_data['render'] = True
+                self.draw_entity(entity_id)
             if system_data['render'] and not entity_id in on_screen:
-                system_data['render'] = False
+                self.remove_entity_from_canvas(entity_id)
 
     def query_on_screen(self):
         viewport = self.gameworld.systems[self.viewport]

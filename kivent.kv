@@ -1,46 +1,76 @@
 #:kivy 1.6.0
 #:import FadeTransition kivy.uix.screenmanager.FadeTransition 
 
-GameWorld:
+TestGame:
 
-<GameWorld>:
+<TestGame>:
+	gameworld: gameworld
 	pos: root.pos
 	size: root.size
-	gamescreenmanager: gamescreenmanager
-	BoxLayout:
-		DebugPanel:
-			pos: root.size[0] * .5, root.size[1] *.05
-			size: (25, 25)
-	GameScreenManager:
-		id: gamescreenmanager
-		gameworld: root
-		transition: FadeTransition()
-		pos: root.pos
-		size: root.size
-	GameView:
-		gameworld: root
-		pos: root.pos
-		size: root.size
-	BasicPositionSystem:
-		gameworld: root
-		pos: root.pos
-		size: root.size
-	QuadRenderer:
-		gameworld: root
-		pos: root.pos
-		size: root.size
-	CymunkPhysicsSystem:
-		gameworld: root
-		pos: root.pos
-		size: root.size
-	PhysicsRenderer:
-		gameworld: root
-		pos: root.pos
-		size: root.size
+	GameWorld:
+		id: gameworld
+		mapoverlay: mapoverlay
+		gamescreenmanager: gamescreenmanager
+		GameMap:
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+		TiledGameMap:
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+		QuadRenderer:
+			system_id: 'background_renderer'
+	    	render_information_from: 'position'
+	    	context_information_from: 'position'
+	    	image_mode: 'atlas'
+	    	do_scale: True
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+		QuadTreeQuadRenderer:
+			system_id: 'quadtree_renderer'
+			render_information_from: 'position'
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+		GameView:
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+			on_camera_pos: self.gameworld.mapoverlay.pos = self.camera_pos
+		GameSystem:
+			system_id: 'position'
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+		GameSystem:
+			system_id: 'player_character'
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+		QuadRenderer:
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+		CymunkPhysics:
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+		PhysicsRenderer:
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+		GameScreenManager:
+			id: gamescreenmanager
+			gameworld: root.gameworld
+			transition: FadeTransition()
+			pos: root.pos
+			size: root.size
+		MapOverlay:
+			id: mapoverlay
+			gameworld: root.gameworld
 
-<CymunkPhysicsSystem>:
-
-<GameSystem>:
 
 <DebugPanel>:
     Label:
@@ -52,19 +82,12 @@ GameWorld:
         color: (1,1,1,1)
         text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'
 
-<QuadRenderer>:
-
-<GameView>:
-
-<PhysicsRenderer>:
-
 <GameScreenManager>:
-	current: 'main_game'
+	current: 'main_menu'
 	MainMenuScreen:
 	MainGameScreen:
 
 <MainMenuScreen>:
-
 	BoxLayout:
 		size: root.size
 		pos: root.pos
@@ -74,8 +97,9 @@ GameWorld:
 		Button:
 			text: 'Play Game'
 			on_press: root.manager.gameworld.state = 'main_game'
-
-
+		Button:
+			text: 'Map Editor'
+			on_press: root.manager.gameworld.state = 'map_editor'
 
 <MainGameScreen>:
 	FloatLayout:
@@ -87,6 +111,10 @@ GameWorld:
 			size_hint: (None, None)
 			text: 'Main Menu'
 			on_press: root.manager.gameworld.state = 'main_menu'
+		DebugPanel:
+			pos: root.size[0] * .5, root.size[1] *.05
+			size: (25, 25)
+			size_hint: (None, None)
 
 
 

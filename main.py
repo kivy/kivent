@@ -3,7 +3,8 @@ kivy.require('1.6.0')
 
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.properties import StringProperty, ObjectProperty, ListProperty, NumericProperty, BooleanProperty
+from kivy.properties import (StringProperty, ObjectProperty, ListProperty, 
+NumericProperty, BooleanProperty)
 from kivy.clock import Clock
 from kivy.graphics import Line, Translate, PushMatrix, PopMatrix
 from kivent.gamescreens import GameScreenManager, GameScreen
@@ -18,29 +19,39 @@ import cProfile
 
 class PlayerCharacter(GameSystem):
     current_character_id = NumericProperty(None)
+    do_fire_engines = BooleanProperty(False)
+    updateable = BooleanProperty(True)
 
     def create_component(self, entity_id, entity_component_dict):
         super(PlayerCharacter, self).create_component(entity_id, entity_component_dict)
         self.current_character_id = entity_id
+        self.gameworld.systems[self.viewport].entity_to_focus = entity_id
 
     def turn_ship(self, value):
         character = self.gameworld.entities[self.current_character_id]
         physics_body = character['cymunk-physics']['body']
         physics_body.angular_velocity = value
 
+    def update(self, dt):
+        if self.do_fire_engines:
+            character = self.gameworld.entities[self.current_character_id]
+            physics_body = character['cymunk-physics']['body']
+            system_data = character[self.system_id]
+            unit_vector = physics_body.rotation_vector
+            offset = {'x': system_data['offset_distance'] * -unit_vector['x'], 
+            'y': system_data['offset_distance'] * -unit_vector['y']}
+            force = {'x': system_data['accel']*dt * -unit_vector['x'], 
+            'y': system_data['accel']*dt * -unit_vector['y']}
+            physics_body.apply_impulse(force, offset)
 
-    def fire_engines(self):
-        print 'fired engine'
-        character = self.gameworld.entities[self.current_character_id]
-        physics_body = character['cymunk-physics']['body']
-        system_data = character[self.system_id]
-        unit_vector = physics_body.rotation_vector
-        print unit_vector
-        offset = {'x': system_data['offset_distance'] * -unit_vector['x'], 
-        'y': system_data['offset_distance'] * -unit_vector['y']}
-        force = {'x': system_data['accel'] * -unit_vector['x'], 
-        'y': system_data['accel'] * -unit_vector['y']}
-        physics_body.apply_impulse(force, offset)
+    def fire_engines(self, state):
+        if state == 'down':
+            self.do_fire_engines = True
+        if state == 'normal':
+            self.do_fire_engines = False
+
+        
+        
 
 class DebugPanel(Widget):
     fps = StringProperty(None)
@@ -134,13 +145,13 @@ class TestGame(Widget):
         self.gameworld.add_state(state_name='main_menu', systems_added=[], 
             systems_removed=['position_renderer', 'physics_renderer', 
             'map_overlay', 'background_renderer', 'quadtree_renderer'], 
-            systems_paused=['cymunk-physics'], systems_unpaused=[],
+            systems_paused=['cymunk-physics', 'default_gameview'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='main_game', systems_added=[ 'quadtree_renderer', 
             'position_renderer', 'background_renderer', 
             'physics_renderer', 'cymunk-physics', 'default_map'], 
             systems_removed=['map_overlay', 'default_tiled_map'], systems_paused=[], 
-            systems_unpaused=['cymunk-physics'], screenmanager_screen='main_game')
+            systems_unpaused=['cymunk-physics', 'default_gameview'], screenmanager_screen='main_game')
         self.gameworld.add_state(state_name='map_editor', systems_added=['map_overlay', 
             'default_tiled_map'], 
             systems_removed=['physics_renderer'], 
@@ -155,10 +166,10 @@ class TestGame(Widget):
 
     def setup_gameobjects(self):
         Clock.schedule_once(self.test_prerendered_background)
-        for x in range(500):
+        for x in range(100):
             Clock.schedule_once(self.test_entity)
         print 'generating asteroids'
-        for x in range(0):
+        for x in range(50):
             Clock.schedule_once(self.test_physics_entity)
         Clock.schedule_once(self.test_player_character)
 

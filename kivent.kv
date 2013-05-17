@@ -39,7 +39,6 @@ TestGame:
 			gameworld: root.gameworld
 			pos: root.pos
 			size: root.size
-			do_scroll: True
 			on_camera_pos: self.gameworld.mapoverlay.pos = self.camera_pos
 		GameSystem:
 			system_id: 'position'
@@ -118,7 +117,7 @@ TestGame:
 			size: (100, 50)
 			size_hint: (None, None)
 			text: 'Fire Engines'
-			on_press: root.manager.gameworld.systems['player_character'].fire_engines()
+			on_state: root.manager.gameworld.systems['player_character'].fire_engines(self.state)
 		Slider:
 			pos: (root.size[0] - 50, root.center[1])
 			size: (50, 250)

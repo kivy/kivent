@@ -78,6 +78,30 @@ class GameView(GameSystem):
     lock_scroll = BooleanProperty(True)
     camera_pos = ListProperty((0, 0))
     do_scroll = BooleanProperty(True)
+    focus_entity = BooleanProperty(False)
+    entity_to_focus = NumericProperty(None)
+    focus_position_info_from = StringProperty('cymunk-physics')
+    updateable = BooleanProperty(True)
+    paused = BooleanProperty(True)
+
+    def on_entity_to_focus(self, instance, value):
+        if not value ==  None:
+            self.focus_entity = True
+
+    def update(self, dt):
+        if self.focus_entity:
+            entity_to_focus = self.entity_to_focus
+            entity = self.gameworld.entities[entity_to_focus]
+            position_data = entity[self.focus_position_info_from]['position']
+            camera_pos = self.camera_pos
+            size = self.size
+            dist_x = -camera_pos[0] - position_data[0] + size[0]*.5
+            dist_y = -camera_pos[1] - position_data[1] + size[1]*.5
+            if self.lock_scroll:
+               dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
+            self.camera_pos[0] += dist_x
+            self.camera_pos[1] += dist_y
+
 
     def on_size(self, instance, value):
         if self.lock_scroll and self.gameworld.currentmap:
@@ -93,6 +117,7 @@ class GameView(GameSystem):
 
     def on_touch_move(self, touch):
         if self.do_scroll:
+            print 'doing scroll'
             dist_x = touch.dx
             dist_y = touch.dy
             if math.fabs(dist_x) + math.fabs(dist_y) > 2:

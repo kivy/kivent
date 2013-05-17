@@ -14,7 +14,6 @@ class QuadRenderer(GameSystem):
     system_id = StringProperty('position_renderer')
     render_information_from = StringProperty('position')
     context_information_from = StringProperty(None)
-    off_screen_pos = ListProperty((-1000, -1000))
     updateable = BooleanProperty(True)
     renderable = BooleanProperty(True)
     do_rotate = BooleanProperty(False)
@@ -63,14 +62,8 @@ class QuadRenderer(GameSystem):
         entity = self.gameworld.entities[entity_id]
         system_data = entity[self.system_id]
         system_data['render'] = False
-        system_data['translate'] = None
-        system_data['quad'] = None
-        if self.do_rotate:
-            system_data['rotate'] = None
-        if self.do_color:
-            system_data['color'] = None
-        if self.do_scale:
-            system_data['scale'] = None
+        
+        
 
     def draw_entity(self, entity_id):
         parent = self.gameworld
@@ -106,7 +99,7 @@ class QuadRenderer(GameSystem):
                 system_date['color'].rgba = context_information['color']
             system_data['quad'] = Quad(texture = texture, points = (-size[0], 
                 -size[1], size[0], -size[1],
-                size[0], size[1], -size[0], size[1]))
+                size[0], size[1], -size[0], size[1]), group=group_id)
             system_data['translate'].xy = (render_information['position'][0] + camera_pos[0], 
             render_information['position'][1] + camera_pos[1])
 
@@ -149,7 +142,6 @@ class QuadRenderer(GameSystem):
         do_color = self.do_color
         do_scale = self.do_scale
         do_rotate = self.do_rotate
-        off_screen_pos = self.off_screen_pos
         camera_pos = parent.systems[self.viewport].camera_pos
         render_information_from = self.render_information_from
         if do_scale or do_color:

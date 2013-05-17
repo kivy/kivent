@@ -19,6 +19,9 @@ class CymunkPhysics(GameSystem):
         self.current_on_screen = list()
         self.init_physics()
 
+    def on_gravity(self, instance, value):
+        self.space.gravity = value
+
     def init_physics(self):
         self.space = space = cymunk.Space()
         space.iterations = self.iterations
@@ -86,6 +89,10 @@ class CymunkPhysics(GameSystem):
         body.angle = entity_component_dict['angle']
 
         body.angular_velocity = entity_component_dict['angular_velocity']
+        if 'vel_limit' in entity_component_dict:
+            body.velocity_limit = entity_component_dict['vel_limit']
+        if 'ang_vel_limit' in entity_component_dict:
+            body.angular_velocity_limit = entity_component_dict['ang_vel_limit']
         self.space.add(body)
         shapes = []
         for shape in entity_component_dict['col_shapes']:
@@ -148,4 +155,4 @@ class CymunkPhysics(GameSystem):
             system_data = entity[self.system_id]
             self.check_bounds(system_data)
             system_data['position'] = system_data['body'].position
-            system_data['angle'] = math.degrees(system_data['body'].angle)
+            system_data['angle'] = math.degrees(system_data['body'].angle)+90

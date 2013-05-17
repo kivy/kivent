@@ -16,6 +16,32 @@ import random
 import math
 import cProfile
 
+class PlayerCharacter(GameSystem):
+    current_character_id = NumericProperty(None)
+
+    def create_component(self, entity_id, entity_component_dict):
+        super(PlayerCharacter, self).create_component(entity_id, entity_component_dict)
+        self.current_character_id = entity_id
+
+    def turn_ship(self, value):
+        character = self.gameworld.entities[self.current_character_id]
+        physics_body = character['cymunk-physics']['body']
+        physics_body.angular_velocity = value
+
+
+    def fire_engines(self):
+        print 'fired engine'
+        character = self.gameworld.entities[self.current_character_id]
+        physics_body = character['cymunk-physics']['body']
+        system_data = character[self.system_id]
+        unit_vector = physics_body.rotation_vector
+        print unit_vector
+        offset = {'x': system_data['offset_distance'] * -unit_vector['x'], 
+        'y': system_data['offset_distance'] * -unit_vector['y']}
+        force = {'x': system_data['accel'] * -unit_vector['x'], 
+        'y': system_data['accel'] * -unit_vector['y']}
+        physics_body.apply_impulse(force, offset)
+
 class DebugPanel(Widget):
     fps = StringProperty(None)
 
@@ -129,10 +155,10 @@ class TestGame(Widget):
 
     def setup_gameobjects(self):
         Clock.schedule_once(self.test_prerendered_background)
-        for x in range(1000):
+        for x in range(500):
             Clock.schedule_once(self.test_entity)
         print 'generating asteroids'
-        for x in range(500):
+        for x in range(0):
             Clock.schedule_once(self.test_physics_entity)
         Clock.schedule_once(self.test_player_character)
 
@@ -211,13 +237,15 @@ class TestGame(Widget):
         'collision_type': 2, 'shape_info': box_dict, 'friction': .5}
         physics_component_dict = { 'main_shape': 'box', 
         'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
-        'angular_velocity': 0, 'mass': 250, 'col_shapes': [col_shape_dict]}
-        ship_dict = {'health': 100, 'max_speed': 180, 'accel': 15, 'max_turn_speed': 25}
+        'angular_velocity': 0, 'mass': 250, 'vel_limit': 180, 'ang_vel_limit': math.radians(45),
+         'col_shapes': [col_shape_dict]}
+        ship_dict = {'health': 100, 'accel': 5000, 'offset_distance': 50}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
         'physics_renderer': {'texture': 'assets/ships/ship1-1.png', 
         'render': False, 'size': (64, 52)}, 'player_character': ship_dict}
         component_order = ['cymunk-physics', 'physics_renderer', 'player_character']
         self.gameworld.init_entity(create_component_dict, component_order)
+
 
 
 class KivEntApp(App):

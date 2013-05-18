@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
   <particleEmitterConfig>
-  <texture name="./media/particles/smokeparticle.png"/>
+  <texture name="./assets/particles/smokeparticle.png"/>
   <sourcePositionVariance x="16" y="0"/>
   <gravity x="0" y="0"/>
   <emitterType value="0"/>

@@ -22,7 +22,7 @@ class GameWorld(Widget):
         Clock.schedule_once(self.init_world)
         
     def init_world(self, dt):
-        Clock.schedule_interval(self.update, .03)
+        Clock.schedule_interval(self.update, .05)
 
     def add_state(self, state_name, systems_added, systems_removed, systems_paused, systems_unpaused, screenmanager_screen):
         self.states[state_name] = {'systems_added': systems_added, 

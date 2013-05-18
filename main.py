@@ -63,21 +63,22 @@ class PlayerCharacter(GameSystem):
         super(PlayerCharacter, self).remove_entity(entity_id)
 
     def fire_projectiles(self, dt):
-        character = self.gameworld.entities[self.current_character_id]
-        system_data = character[self.system_id]
-        for projectile in system_data['projectiles']:
-            projectile_dict = copy.deepcopy(projectile)
-            physics_info = projectile_dict['cymunk-physics']
-            position_offset = projectile_dict['projectile_system']['offset']
-            character_physics = character['cymunk-physics']
-            character_position = character_physics['position']
-            position_offset_rotated = Vector(position_offset).rotate(character_physics['angle'])
-            physics_info['position'] = (character_position[0] + position_offset_rotated[0],
-                character_position[1] + position_offset_rotated[1])
-            physics_info['angle'] = character_physics['body'].angle
-            component_order = ['cymunk-physics', 'physics_renderer', 'projectile_system']
-            new_ent = self.gameworld.init_entity(projectile_dict, component_order)
-            self.fire_projectile(new_ent)
+        if not self.current_character_id == None:
+            character = self.gameworld.entities[self.current_character_id]
+            system_data = character[self.system_id]
+            for projectile in system_data['projectiles']:
+                projectile_dict = copy.deepcopy(projectile)
+                physics_info = projectile_dict['cymunk-physics']
+                position_offset = projectile_dict['projectile_system']['offset']
+                character_physics = character['cymunk-physics']
+                character_position = character_physics['position']
+                position_offset_rotated = Vector(position_offset).rotate(character_physics['angle'])
+                physics_info['position'] = (character_position[0] + position_offset_rotated[0],
+                    character_position[1] + position_offset_rotated[1])
+                physics_info['angle'] = character_physics['body'].angle
+                component_order = ['cymunk-physics', 'physics_renderer', 'projectile_system']
+                new_ent = self.gameworld.init_entity(projectile_dict, component_order)
+                self.fire_projectile(new_ent)
 
     def spawn_projectile(self, state):
         if state == 'down':
@@ -88,15 +89,16 @@ class PlayerCharacter(GameSystem):
         
     def fire_projectile(self, entity_id):
         entities = self.gameworld.entities
-        character = entities[self.current_character_id]
-        system_data = character[self.system_id]
-        bullet = entities[entity_id]
-        physics_data = character['cymunk-physics']
-        unit_vector = physics_data['unit_vector']
-        bullet_accel = bullet['projectile_system']['accel']
-        force = {'x': bullet_accel*-unit_vector['x'], 'y': bullet_accel*-unit_vector['y']}
-        force_offset = {'x': -unit_vector['x'], 'y': -unit_vector['y']}
-        bullet['cymunk-physics']['body'].apply_impulse(force, force_offset)
+        if not self.current_character_id == None:
+            character = entities[self.current_character_id]
+            system_data = character[self.system_id]
+            bullet = entities[entity_id]
+            physics_data = character['cymunk-physics']
+            unit_vector = physics_data['unit_vector']
+            bullet_accel = bullet['projectile_system']['accel']
+            force = {'x': bullet_accel*-unit_vector['x'], 'y': bullet_accel*-unit_vector['y']}
+            force_offset = {'x': -unit_vector['x'], 'y': -unit_vector['y']}
+            bullet['cymunk-physics']['body'].apply_impulse(force, force_offset)
 
     def update(self, dt):
         if not self.current_character_id == None:
@@ -122,18 +124,20 @@ class PlayerCharacter(GameSystem):
 
     def on_turning(self, instance, value):
         if value == 'zero':
-            character = self.gameworld.entities[self.current_character_id]
-            physics_body = character['cymunk-physics']['body']
-            physics_body.angular_velocity = 0
+            if not self.current_character_id == None:
+                character = self.gameworld.entities[self.current_character_id]
+                physics_body = character['cymunk-physics']['body']
+                physics_body.angular_velocity = 0
 
     def fire_engines(self, state):
-        entity = self.gameworld.entities[self.current_character_id]
-        if state == 'down':
-            self.do_fire_engines = True
-            entity['particle_manager']['particle_system_on'] = True
-        if state == 'normal':
-            self.do_fire_engines = False
-            entity['particle_manager']['particle_system_on'] = False
+        if not self.current_character_id == None:
+            entity = self.gameworld.entities[self.current_character_id]
+            if state == 'down':
+                self.do_fire_engines = True
+                entity['particle_manager']['particle_system_on'] = True
+            if state == 'normal':
+                self.do_fire_engines = False
+                entity['particle_manager']['particle_system_on'] = False
 
     def turn_left(self, state):
         if state == 'down':
@@ -176,6 +180,8 @@ class PlayerCharacter(GameSystem):
         bullet = entities[bullet_id]
         bullet_damage = bullet['projectile_system']['damage']
         self.damage(ship_id, bullet_damage)
+        Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id))
+        return True
 
     def collision_solve_ship_asteroid(self, arbiter, space):
         gameworld = self.gameworld
@@ -187,6 +193,7 @@ class PlayerCharacter(GameSystem):
         asteroid_damage = asteroid['asteroid_system']['damage']
         print asteroid_damage
         self.damage(ship_id, asteroid_damage)
+        return True
 
 class DebugPanel(Widget):
     fps = StringProperty(None)
@@ -223,14 +230,16 @@ class TestGame(Widget):
             systems_removed=['position_renderer', 'physics_renderer', 
             'background_renderer', 'quadtree_renderer', 'particle_manager'], 
             systems_paused=['cymunk-physics', 'default_gameview', 'position_renderer', 
-            'physics_renderer', 'background_renderer', 'quadtree_renderer', 'particle_manager'], systems_unpaused=[],
+            'physics_renderer', 'background_renderer', 'quadtree_renderer', 'particle_manager', 
+            'asteroid_system', 'player_character'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='main_game', systems_added=[ 'quadtree_renderer', 
             'position_renderer', 'background_renderer', 
             'physics_renderer', 'cymunk-physics', 'default_map', 'particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 'position_renderer', 
-            'physics_renderer', 'background_renderer', 'quadtree_renderer', 'particle_manager'], screenmanager_screen='main_game')
+            'physics_renderer', 'background_renderer', 'quadtree_renderer', 'particle_manager',
+            'asteroid_system', 'player_character'], screenmanager_screen='main_game')
 
     def set_main_menu_state(self):
         self.gameworld.state = 'main_menu'
@@ -239,11 +248,11 @@ class TestGame(Widget):
         self.gameworld.currentmap = self.gameworld.systems['default_map']
 
     def setup_gameobjects(self):
-        Clock.schedule_once(self.test_prerendered_background)
+        #Clock.schedule_once(self.test_prerendered_background)
         for x in range(100):
             Clock.schedule_once(self.test_entity)
-        for x in range(50):
-            Clock.schedule_once(self.test_physics_entity)
+        #for x in range(5):
+        #    Clock.schedule_once(self.test_physics_entity)
         Clock.schedule_once(self.test_player_character)
 
     def _init_game(self, dt):
@@ -331,14 +340,14 @@ class TestGame(Widget):
         'collision_type': 2, 'shape_info': box_dict, 'friction': 1.0}
         physics_component_dict = { 'main_shape': 'box', 
         'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
-        'angular_velocity': 0, 'mass': 250, 'vel_limit': 180, 
+        'angular_velocity': 0, 'mass': 250, 'vel_limit': 130, 
         'ang_vel_limit': math.radians(55), 'col_shapes': [col_shape_dict]}
         projectile_box_dict = {'width': 14, 'height': 14, 'mass': 50}
         projectile_col_shape_dict = {'shape_type': 'box', 'elasticity': 1.0, 
         'collision_type': 3, 'shape_info': projectile_box_dict, 'friction': .3}
         projectile_physics_component_dict = { 'main_shape': 'box', 
         'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
-        'angular_velocity': 0, 'mass': 50, 'vel_limit': 500, 
+        'angular_velocity': 0, 'mass': 50, 'vel_limit': 250, 
         'ang_vel_limit': math.radians(60),'col_shapes': [projectile_col_shape_dict]}
         projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-14px.png', 
         'render': False, 'size': (7, 7)}
@@ -349,7 +358,7 @@ class TestGame(Widget):
         'physics_renderer': projectile_renderer_dict, 
         'projectile_system': {'damage': 5, 'offset': (-46, 49), 'accel': 50000}}
         ship_dict = {'health': 100, 'accel': 10000, 'offset_distance': 50, 
-        'ang_vel_accel': math.radians(35), 'projectiles': [projectile_dict, projectile_dict_2]}
+        'ang_vel_accel': math.radians(60), 'projectiles': [projectile_dict, projectile_dict_2]}
         particle_system = {'particle_file': 'assets/pexfiles/engine_burn_effect3.pex', 
         'offset': 65}
         create_component_dict = {'cymunk-physics': physics_component_dict, 

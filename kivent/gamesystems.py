@@ -60,7 +60,7 @@ class GameSystem(Widget):
 
 class GameMap(GameSystem):
     system_id = StringProperty('default_map')
-    map_size = ListProperty((2000., 2000.))
+    map_size = ListProperty((1500., 1500.))
 
     def on_add_system(self):
         super(GameMap, self).on_add_system()
@@ -83,6 +83,8 @@ class GameView(GameSystem):
     focus_position_info_from = StringProperty('cymunk-physics')
     updateable = BooleanProperty(True)
     paused = BooleanProperty(True)
+    has_camera_updated = BooleanProperty(False)
+    force_camera_update = BooleanProperty(False)
 
     def on_entity_to_focus(self, instance, value):
         if not value ==  None:
@@ -101,8 +103,9 @@ class GameView(GameSystem):
             dist_y = -camera_pos[1] - position_data[1] + size[1]*.5
             if self.lock_scroll:
                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
-            self.camera_pos[0] += dist_x
-            self.camera_pos[1] += dist_y
+            if math.fabs(dist_x) + math.fabs(dist_y) >= 1:
+                self.camera_pos[0] += dist_x
+                self.camera_pos[1] += dist_y
 
 
     def on_size(self, instance, value):
@@ -112,10 +115,16 @@ class GameView(GameSystem):
             self.camera_pos[1] += dist_y
 
     def on_camera_pos(self, instance, value):
-        systems = self.gameworld.systems
-        for system in systems:
-            if systems[system].renderable and systems[system].active:
-                systems[system].update(None)
+        if self.force_camera_update:
+            if not self.has_camera_updated:
+                print 'camera updating'
+                systems = self.gameworld.systems
+                for system in systems:
+                    if systems[system].renderable and systems[system].active:
+                        systems[system].update(None)
+                self.has_camera_updated = True
+            else:
+                self.has_camera_updated = False
 
     def on_touch_move(self, touch):
         if self.do_scroll:

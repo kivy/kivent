@@ -1,6 +1,11 @@
 #:kivy 1.6.0
 #:import FadeTransition kivy.uix.screenmanager.FadeTransition 
 #:import radians math.radians
+#:set BUTTON_SIZE_WIDTH (.08 * 1.61)
+#:set BUTTON_SIZE_HEIGHT (.08)
+#:set BUTTON_MARGIN_WIDTH (.015)
+#:set BUTTON_MARGIN_HEIGHT (.015)
+
 
 TestGame:
 
@@ -62,6 +67,10 @@ TestGame:
 			gameworld: root.gameworld
 			pos: root.pos
 			size: root.size
+		ParticleManager:
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
 		GameScreenManager:
 			id: gamescreenmanager
 			gameworld: root.gameworld
@@ -85,8 +94,11 @@ TestGame:
 
 <GameScreenManager>:
 	current: 'main_menu'
+	gameworld: root.gameworld
 	MainMenuScreen:
+		gameworld: root.gameworld
 	MainGameScreen:
+		gameworld: root.gameworld
 
 <MainMenuScreen>:
 	BoxLayout:
@@ -97,35 +109,36 @@ TestGame:
 			text: 'Main Menu'
 		Button:
 			text: 'Play Game'
-			on_press: root.manager.gameworld.state = 'main_game'
+			on_press: root.gameworld.state = 'main_game'
 		Button:
 			text: 'Map Editor'
-			on_press: root.manager.gameworld.state = 'map_editor'
+			on_press: root.gameworld.state = 'map_editor'
 
 <MainGameScreen>:
 	FloatLayout:
 		size: root.size
 		pos: root.pos
 		Button:
-			pos: (10, 10)
-			size: (100, 100)
-			size_hint: (None, None)
+			pos_hint: {'x': 1-(BUTTON_SIZE_WIDTH + BUTTON_MARGIN_WIDTH), 'y': 1-(BUTTON_SIZE_HEIGHT + BUTTON_MARGIN_HEIGHT)}
+			size_hint: (BUTTON_SIZE_WIDTH, BUTTON_SIZE_HEIGHT)
 			text: 'Main Menu'
-			on_press: root.manager.gameworld.state = 'main_menu'
+			on_press: root.gameworld.state = 'main_menu'
 		Button:
-			pos: (5, root.center[1])
-			size: (100, 50)
-			size_hint: (None, None)
+			pos_hint: {'x': BUTTON_MARGIN_WIDTH, 'y': BUTTON_MARGIN_HEIGHT}
+			size_hint: (BUTTON_SIZE_WIDTH, BUTTON_SIZE_HEIGHT)
 			text: 'Fire Engines'
-			on_state: root.manager.gameworld.systems['player_character'].fire_engines(self.state)
-		Slider:
-			pos: (root.size[0] - 50, root.center[1])
-			size: (50, 250)
-			size_hint: (None, None)
-			orientation: 'vertical'
-			min: radians(-45)
-			max: radians(45)
-			on_value: root.manager.gameworld.systems['player_character'].turn_ship(self.value)
+			on_state: root.gameworld.systems['player_character'].fire_engines(self.state)
+		Button:
+			pos_hint: {'x': 1-(2*BUTTON_SIZE_WIDTH + 2*BUTTON_MARGIN_WIDTH), 'y': BUTTON_MARGIN_HEIGHT}
+			size_hint: (BUTTON_SIZE_WIDTH, BUTTON_SIZE_HEIGHT)
+			text: 'Turn Left'
+			on_state: root.gameworld.systems['player_character'].turn_left(self.state)
+		Button:
+			pos_hint: {'x': 1-(BUTTON_SIZE_WIDTH + BUTTON_MARGIN_WIDTH), 'y': BUTTON_MARGIN_HEIGHT}
+			size_hint: (BUTTON_SIZE_WIDTH, BUTTON_SIZE_HEIGHT)
+			text: 'Turn Right'
+			on_state: root.gameworld.systems['player_character'].turn_right(self.state)
+
 		DebugPanel:
 			pos: root.size[0] * .5, root.size[1] *.05
 			size: (25, 25)

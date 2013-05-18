@@ -10,6 +10,7 @@ from kivy.graphics import Line, Translate, PushMatrix, PopMatrix
 from kivent.gamescreens import GameScreenManager, GameScreen
 from kivent.gameworld import GameWorld
 from kivent.gamesystems import GameSystem, GameMap, GameView
+from kivent.particlemanager import ParticleManager
 from kivent.renderers import QuadRenderer, PhysicsRenderer, QuadTreeQuadRenderer
 from kivent.physics import CymunkPhysics
 from kivy.atlas import Atlas
@@ -21,6 +22,7 @@ class PlayerCharacter(GameSystem):
     current_character_id = NumericProperty(None)
     do_fire_engines = BooleanProperty(False)
     updateable = BooleanProperty(True)
+    turning = StringProperty('left')
 
     def create_component(self, entity_id, entity_component_dict):
         super(PlayerCharacter, self).create_component(entity_id, entity_component_dict)
@@ -33,25 +35,48 @@ class PlayerCharacter(GameSystem):
         physics_body.angular_velocity = value
 
     def update(self, dt):
-        if self.do_fire_engines:
+        if not self.current_character_id == None:
             character = self.gameworld.entities[self.current_character_id]
             physics_body = character['cymunk-physics']['body']
             system_data = character[self.system_id]
-            unit_vector = physics_body.rotation_vector
-            offset = {'x': system_data['offset_distance'] * -unit_vector['x'], 
-            'y': system_data['offset_distance'] * -unit_vector['y']}
-            force = {'x': system_data['accel']*dt * -unit_vector['x'], 
-            'y': system_data['accel']*dt * -unit_vector['y']}
-            physics_body.apply_impulse(force, offset)
+            if self.do_fire_engines:   
+                unit_vector = physics_body.rotation_vector
+                offset = {'x': system_data['offset_distance'] * -unit_vector['x'], 
+                'y': system_data['offset_distance'] * -unit_vector['y']}
+                force = {'x': system_data['accel']*dt * -unit_vector['x'], 
+                'y': system_data['accel']*dt * -unit_vector['y']}
+                physics_body.apply_impulse(force, offset)
+            if self.turning == 'left':
+                physics_body.angular_velocity += system_data['ang_vel_accel']*dt
+            elif self.turning == 'right':
+                physics_body.angular_velocity -= system_data['ang_vel_accel']*dt
+
+    def on_turning(self, instance, value):
+        if value == 'zero':
+            character = self.gameworld.entities[self.current_character_id]
+            physics_body = character['cymunk-physics']['body']
+            physics_body.angular_velocity = 0
 
     def fire_engines(self, state):
+        entity = self.gameworld.entities[self.current_character_id]
         if state == 'down':
             self.do_fire_engines = True
+            entity['particle_manager']['particle_system_on'] = True
         if state == 'normal':
             self.do_fire_engines = False
+            entity['particle_manager']['particle_system_on'] = False
 
-        
-        
+    def turn_left(self, state):
+        if state == 'down':
+            self.turning = 'left'
+        if state == 'normal':
+            self.turning = 'zero'
+
+    def turn_right(self, state):
+        if state == 'down':
+            self.turning = 'right'
+        if state == 'normal':
+            self.turning = 'zero'
 
 class DebugPanel(Widget):
     fps = StringProperty(None)
@@ -144,14 +169,16 @@ class TestGame(Widget):
     def setup_states(self):
         self.gameworld.add_state(state_name='main_menu', systems_added=[], 
             systems_removed=['position_renderer', 'physics_renderer', 
-            'map_overlay', 'background_renderer', 'quadtree_renderer'], 
-            systems_paused=['cymunk-physics', 'default_gameview'], systems_unpaused=[],
+            'map_overlay', 'background_renderer', 'quadtree_renderer', 'particle_manager'], 
+            systems_paused=['cymunk-physics', 'default_gameview', 'position_renderer', 
+            'physics_renderer', 'background_renderer', 'quadtree_renderer', 'particle_manager'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='main_game', systems_added=[ 'quadtree_renderer', 
             'position_renderer', 'background_renderer', 
-            'physics_renderer', 'cymunk-physics', 'default_map'], 
+            'physics_renderer', 'cymunk-physics', 'default_map', 'particle_manager'], 
             systems_removed=['map_overlay', 'default_tiled_map'], systems_paused=[], 
-            systems_unpaused=['cymunk-physics', 'default_gameview'], screenmanager_screen='main_game')
+            systems_unpaused=['cymunk-physics', 'default_gameview', 'position_renderer', 
+            'physics_renderer', 'background_renderer', 'quadtree_renderer', 'particle_manager'], screenmanager_screen='main_game')
         self.gameworld.add_state(state_name='map_editor', systems_added=['map_overlay', 
             'default_tiled_map'], 
             systems_removed=['physics_renderer'], 
@@ -168,7 +195,6 @@ class TestGame(Widget):
         Clock.schedule_once(self.test_prerendered_background)
         for x in range(100):
             Clock.schedule_once(self.test_entity)
-        print 'generating asteroids'
         for x in range(50):
             Clock.schedule_once(self.test_physics_entity)
         Clock.schedule_once(self.test_player_character)
@@ -197,7 +223,6 @@ class TestGame(Widget):
         position_dict = {}
         index = 0
         size = (x_distance, y_distance)
-        print size
         for y in range(int(side_length_y)):
             for x in range(int(side_length_x)):
                 position_dict[index] = (x * x_distance + x_distance *.5, y * y_distance + y_distance*.5)
@@ -219,7 +244,7 @@ class TestGame(Widget):
         angular_velocity = math.radians(random.randint(-150, -150))
         shape_dict = {'inner_radius': 0, 'outer_radius': 45, 'mass': 100, 'offset': (0, 0)}
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
-        'collision_type': 1, 'shape_info': shape_dict, 'friction': .4}
+        'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         physics_component = {'main_shape': 'circle', 'velocity': (x_vel, y_vel), 
         'position': (rand_x, rand_y), 'angle': angle, 'angular_velocity': angular_velocity, 
@@ -234,10 +259,10 @@ class TestGame(Widget):
         rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
         rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
         create_component_dict = {'position': {'position': (rand_x, rand_y)}, 
-        'quadtree_renderer': {'texture': 'assets/background_objects/star1.png', 'render': False, 'size': (14,14)}}
+        'quadtree_renderer': {'texture': 'assets/background_objects/star1.png', 
+        'render': False, 'size': (14,14)}}
         component_order = ['position', 'quadtree_renderer']
         self.gameworld.init_entity(create_component_dict, component_order)
-
 
     def test_remove_entity(self, dt):
         self.gameworld.remove_entity(0)
@@ -248,16 +273,16 @@ class TestGame(Widget):
         'collision_type': 2, 'shape_info': box_dict, 'friction': .5}
         physics_component_dict = { 'main_shape': 'box', 
         'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
-        'angular_velocity': 0, 'mass': 250, 'vel_limit': 180, 'ang_vel_limit': math.radians(45),
+        'angular_velocity': 0, 'mass': 250, 'vel_limit': 180, 'ang_vel_limit': math.radians(60),
          'col_shapes': [col_shape_dict]}
-        ship_dict = {'health': 100, 'accel': 5000, 'offset_distance': 50}
+        ship_dict = {'health': 100, 'accel': 10000, 'offset_distance': 50, 'ang_vel_accel': math.radians(20)}
+        particle_system = {'particle_file': 'assets/pexfiles/engine_burn_effect3.pex', 'offset': 65}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
         'physics_renderer': {'texture': 'assets/ships/ship1-1.png', 
-        'render': False, 'size': (64, 52)}, 'player_character': ship_dict}
-        component_order = ['cymunk-physics', 'physics_renderer', 'player_character']
+        'render': False, 'size': (64, 52)}, 'player_character': ship_dict,
+        'particle_manager': particle_system}
+        component_order = ['cymunk-physics', 'physics_renderer', 'player_character', 'particle_manager']
         self.gameworld.init_entity(create_component_dict, component_order)
-
-
 
 class KivEntApp(App):
     def build(self):

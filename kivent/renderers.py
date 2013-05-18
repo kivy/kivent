@@ -167,6 +167,17 @@ class QuadRenderer(GameSystem):
         self.update_render_state()
         self.render()
 
+    # def on_remove_system(self):
+    #     self.paused = True
+    #     super(QuadRenderer, self).on_remove_system()
+        
+
+    # def on_add_system(self):
+    #     self.paused = False
+    #     super(QuadRenderer, self).on_add_system()
+        
+
+
 
     def remove_entity(self, entity_id):
         system_data = self.gameworld.entities[entity_id][self.system_id]

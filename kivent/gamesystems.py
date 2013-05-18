@@ -77,7 +77,7 @@ class GameView(GameSystem):
     system_id = StringProperty('default_gameview')
     lock_scroll = BooleanProperty(True)
     camera_pos = ListProperty((0, 0))
-    do_scroll = BooleanProperty(True)
+    do_scroll = BooleanProperty(False)
     focus_entity = BooleanProperty(False)
     entity_to_focus = NumericProperty(None)
     focus_position_info_from = StringProperty('cymunk-physics')
@@ -143,3 +143,4 @@ class GameView(GameSystem):
             distance_y = pos[1] + size[1] - camera_pos[1] - map_size[1]
 
         return distance_x, distance_y
+

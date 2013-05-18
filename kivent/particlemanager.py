@@ -17,6 +17,15 @@ class ParticleManager(GameSystem):
         entity_component_dict['particle_system_on'] = False
         return entity_component_dict
 
+    def on_paused(self, instance, value):
+        entities = self.gameworld.entities
+        system_data_from = self.system_id
+        if value == True:
+            for entity_id in self.entity_ids:
+                entity = entities[entity_id]
+                particle_system = entity[system_data_from]['particle_system']
+                particle_system.pause(with_clear = True)
+
     def update(self, dt):
         systems = self.gameworld.systems
         entities = self.gameworld.entities
@@ -52,6 +61,6 @@ class ParticleManager(GameSystem):
         system_data = entity[self.system_id]
         offset = system_data['offset']
         pos = position_data['position']
-        unit_vector = position_data['body'].rotation_vector
+        unit_vector = position_data['unit_vector']
         effect_pos = (pos[0] - offset * -unit_vector['x'], pos[1] - offset * -unit_vector['y'])
         return effect_pos

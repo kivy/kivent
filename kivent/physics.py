@@ -18,6 +18,12 @@ class CymunkPhysics(GameSystem):
         super(CymunkPhysics, self).__init__(**kwargs)
         self.current_on_screen = list()
         self.init_physics()
+        
+
+    def add_collision_handler(self, type_a, type_b, begin_func=None, 
+        pre_solve_func=None, post_solve_func=None, separate_func=None):
+        self.space.add_collision_handler(type_a, type_b, begin_func, pre_solve_func, 
+            post_solve_func, separate_func)
 
     def on_gravity(self, instance, value):
         self.space.gravity = value
@@ -122,9 +128,12 @@ class CymunkPhysics(GameSystem):
     def remove_entity(self, entity_id):
         space = self.space
         system_data = self.gameworld.entities[entity_id][self.system_id]
-        space.remove(system_data['body'])
         for shape in system_data['shapes']:
             space.remove(shape)
+        system_data['shapes'] = None
+        space.remove(system_data['body'])
+        system_data['body'] = None
+
         super(CymunkPhysics, self).remove_entity(entity_id)
 
     def check_bounds(self, system_data):
@@ -150,9 +159,15 @@ class CymunkPhysics(GameSystem):
     def update(self, dt):
         entities = self.gameworld.entities
         self.space.step(dt)
+        system_id = self.system_id
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
-            system_data = entity[self.system_id]
+            if system_id not in entity:
+                continue
+            system_data = entity[system_id]
             self.check_bounds(system_data)
-            system_data['position'] = system_data['body'].position
+            body = system_data['body']
+            system_data['position'] = body.position
             system_data['angle'] = math.degrees(system_data['body'].angle)+90
+            system_data['unit_vector'] = body.rotation_vector
+

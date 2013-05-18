@@ -50,6 +50,11 @@ TestGame:
 			gameworld: root.gameworld
 			pos: root.pos
 			size: root.size
+		GameSystem:
+			system_id: 'projectile_system'
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
 		PlayerCharacter:
 			system_id: 'player_character'
 			gameworld: root.gameworld
@@ -128,6 +133,11 @@ TestGame:
 			size_hint: (BUTTON_SIZE_WIDTH, BUTTON_SIZE_HEIGHT)
 			text: 'Fire Engines'
 			on_state: root.gameworld.systems['player_character'].fire_engines(self.state)
+		Button:
+			pos_hint: {'x': BUTTON_MARGIN_WIDTH, 'y': BUTTON_SIZE_HEIGHT + 2*BUTTON_MARGIN_HEIGHT}
+			size_hint: (BUTTON_SIZE_WIDTH, BUTTON_SIZE_HEIGHT)
+			text: 'Fire Weapons'
+			on_state: root.gameworld.systems['player_character'].spawn_projectile(self.state)
 		Button:
 			pos_hint: {'x': 1-(2*BUTTON_SIZE_WIDTH + 2*BUTTON_MARGIN_WIDTH), 'y': BUTTON_MARGIN_HEIGHT}
 			size_hint: (BUTTON_SIZE_WIDTH, BUTTON_SIZE_HEIGHT)

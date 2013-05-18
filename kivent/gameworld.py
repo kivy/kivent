@@ -18,6 +18,7 @@ class GameWorld(Widget):
         self.entities = []
         self.states = {}
         self.deactivated_entities = []
+        self.entities_to_remove = []
         Clock.schedule_once(self.init_world)
         
     def init_world(self, dt):
@@ -66,6 +67,13 @@ class GameWorld(Widget):
         for component in component_order:
             systems[component].create_component(entity_id, 
                 components_to_use[component])
+        return entity_id
+
+    def timed_remove_entity(self, entity_id, dt):
+        self.remove_entity(entity_id)
+
+    def timed_remove_entity(self, entity_id, dt):
+        self.entities_to_remove.append(entity_id)
 
     def remove_entity(self, entity_id):
         entity = self.entities[entity_id]
@@ -89,6 +97,12 @@ class GameWorld(Widget):
             system = systems[system_name]
             if system.updateable and not system.paused:
                 system.update(dt)
+        Clock.schedule_once(self.remove_entities)
+
+    def remove_entities(self, dt):
+        for entity_id in self.entities_to_remove:
+            self.remove_entity(entity_id)
+            self.entities_to_remove.remove(entity_id)
 
     def load_entity(self, entity_dict):
         pass

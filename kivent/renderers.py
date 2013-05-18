@@ -62,6 +62,7 @@ class QuadRenderer(GameSystem):
         entity = self.gameworld.entities[entity_id]
         system_data = entity[self.system_id]
         system_data['render'] = False
+
         
         
 
@@ -148,6 +149,8 @@ class QuadRenderer(GameSystem):
             context_information_from = self.context_information_from
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
+            if system_id not in entity:
+                continue
             system_data = entity[system_id]
             if system_data['render']:
                 render_information = entity[render_information_from]
@@ -180,10 +183,7 @@ class QuadRenderer(GameSystem):
 
 
     def remove_entity(self, entity_id):
-        system_data = self.gameworld.entities[entity_id][self.system_id]
-        for data in system_data:
-            if isinstance(system_data[data], Instruction):
-                self.canvas.remove(system_data[data])
+        self.remove_entity_from_canvas(entity_id)
         super(QuadRenderer, self).remove_entity(entity_id)
 
 class PhysicsRenderer(QuadRenderer):
@@ -200,6 +200,8 @@ class PhysicsRenderer(QuadRenderer):
         on_screen = physics_system.query_on_screen()
         for entity_id in entity_ids:
             entity = entities[entity_id]
+            if system_id not in entity:
+                continue
             system_data = entity[system_id]
             if not system_data['render'] and entity_id in on_screen:
                 self.draw_entity(entity_id)
@@ -236,6 +238,8 @@ class QuadTreeQuadRenderer(QuadRenderer):
         on_screen = self.query_on_screen()
         for entity_id in entity_ids:
             entity = entities[entity_id]
+            if system_id not in entity:
+                continue
             system_data = entity[system_id]
             if not system_data['render'] and entity_id in on_screen:
                 self.draw_entity(entity_id)

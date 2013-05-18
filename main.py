@@ -17,6 +17,7 @@ from kivy.atlas import Atlas
 from kivy.vector import Vector
 import random
 import copy
+#import cProfile
 import math
 from functools import partial
 
@@ -83,7 +84,7 @@ class PlayerCharacter(GameSystem):
     def spawn_projectile(self, state):
         if state == 'down':
             Clock.schedule_once(self.fire_projectiles)
-            Clock.schedule_interval(self.fire_projectiles, .25)
+            Clock.schedule_interval(self.fire_projectiles, .5)
         if state == 'normal':
             Clock.unschedule(self.fire_projectiles)
         
@@ -248,11 +249,11 @@ class TestGame(Widget):
         self.gameworld.currentmap = self.gameworld.systems['default_map']
 
     def setup_gameobjects(self):
-        #Clock.schedule_once(self.test_prerendered_background)
-        for x in range(100):
+        Clock.schedule_once(self.test_prerendered_background)
+        for x in range(50):
             Clock.schedule_once(self.test_entity)
-        #for x in range(5):
-        #    Clock.schedule_once(self.test_physics_entity)
+        for x in range(10):
+            Clock.schedule_once(self.test_physics_entity)
         Clock.schedule_once(self.test_player_character)
 
     def _init_game(self, dt):
@@ -304,8 +305,8 @@ class TestGame(Widget):
     def test_physics_entity(self, dt):
         rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
         rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
-        x_vel = random.randint(-150, 150)
-        y_vel = random.randint(-150, 150)
+        x_vel = random.randint(-75, 75)
+        y_vel = random.randint(-75, 75)
         angle = math.radians(random.randint(-360, 360))
         angular_velocity = math.radians(random.randint(-150, -150))
         shape_dict = {'inner_radius': 0, 'outer_radius': 45, 'mass': 100, 'offset': (0, 0)}
@@ -353,11 +354,11 @@ class TestGame(Widget):
         'render': False, 'size': (7, 7)}
         projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 5, 'offset': (46, 49), 'accel': 50000}}
+        'projectile_system': {'damage': 10, 'offset': (46, 49), 'accel': 50000}}
         projectile_dict_2 = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 5, 'offset': (-46, 49), 'accel': 50000}}
-        ship_dict = {'health': 100, 'accel': 10000, 'offset_distance': 50, 
+        'projectile_system': {'damage': 10, 'offset': (-46, 49), 'accel': 50000}}
+        ship_dict = {'health': 200, 'accel': 10000, 'offset_distance': 50, 
         'ang_vel_accel': math.radians(60), 'projectiles': [projectile_dict, projectile_dict_2]}
         particle_system = {'particle_file': 'assets/pexfiles/engine_burn_effect3.pex', 
         'offset': 65}
@@ -375,3 +376,4 @@ class KivEntApp(App):
 
 if __name__ == '__main__':
     KivEntApp().run()
+    #cProfile.run('KivEntApp().run()', 'prof')

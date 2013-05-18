@@ -18,15 +18,35 @@ from kivy.vector import Vector
 import random
 import copy
 import math
-import cProfile
 from functools import partial
 
+class AsteroidSystem(GameSystem):
+    system_id = StringProperty('asteroid_system')
+    updateable = BooleanProperty(True)
+
+    def update(self, dt):
+        system_id = self.system_id
+        entities = self.gameworld.entities
+        for entity_id in self.entity_ids:
+            entity = entities[entity_id]
+            if system_id not in entity:
+                continue
+            system_data = entity[system_id]
+            if system_data['health'] <= 0:
+                Clock.schedule_once(partial(self.gameworld.timed_remove_entity, entity_id))
+
+    def damage(self, entity_id, damage):
+        system_id = self.system_id
+        entities = self.gameworld.entities
+        entity = entities[entity_id]
+        system_data = entity[system_id]
+        system_data['health'] -= damage
 
 class PlayerCharacter(GameSystem):
-    current_character_id = NumericProperty(None)
+    current_character_id = NumericProperty(None, allownone=True)
     do_fire_engines = BooleanProperty(False)
     updateable = BooleanProperty(True)
-    turning = StringProperty('left')
+    turning = StringProperty('zero')
 
     def create_component(self, entity_id, entity_component_dict):
         super(PlayerCharacter, self).create_component(entity_id, entity_component_dict)
@@ -38,11 +58,15 @@ class PlayerCharacter(GameSystem):
         physics_body = character['cymunk-physics']['body']
         physics_body.angular_velocity = value
 
-    def spawn_projectile(self, state):
-        if state == 'down':
-            character = self.gameworld.entities[self.current_character_id]
-            system_data = character[self.system_id]
-            projectile_dict = copy.deepcopy(system_data['projectile'])
+    def remove_entity(self, entity_id):
+        self.current_character_id = None
+        super(PlayerCharacter, self).remove_entity(entity_id)
+
+    def fire_projectiles(self, dt):
+        character = self.gameworld.entities[self.current_character_id]
+        system_data = character[self.system_id]
+        for projectile in system_data['projectiles']:
+            projectile_dict = copy.deepcopy(projectile)
             physics_info = projectile_dict['cymunk-physics']
             position_offset = projectile_dict['projectile_system']['offset']
             character_physics = character['cymunk-physics']
@@ -54,8 +78,14 @@ class PlayerCharacter(GameSystem):
             component_order = ['cymunk-physics', 'physics_renderer', 'projectile_system']
             new_ent = self.gameworld.init_entity(projectile_dict, component_order)
             self.fire_projectile(new_ent)
-        
 
+    def spawn_projectile(self, state):
+        if state == 'down':
+            Clock.schedule_once(self.fire_projectiles)
+            Clock.schedule_interval(self.fire_projectiles, .25)
+        if state == 'normal':
+            Clock.unschedule(self.fire_projectiles)
+        
     def fire_projectile(self, entity_id):
         entities = self.gameworld.entities
         character = entities[self.current_character_id]
@@ -81,10 +111,14 @@ class PlayerCharacter(GameSystem):
                 force = {'x': system_data['accel']*dt * -unit_vector['x'], 
                 'y': system_data['accel']*dt * -unit_vector['y']}
                 physics_body.apply_impulse(force, offset)
+            if physics_body.is_sleeping:
+                physics_body.activate()
             if self.turning == 'left':
                 physics_body.angular_velocity += system_data['ang_vel_accel']*dt
             elif self.turning == 'right':
                 physics_body.angular_velocity -= system_data['ang_vel_accel']*dt
+            if system_data['health'] <= 0:
+                Clock.schedule_once(partial(self.gameworld.timed_remove_entity, self.current_character_id))
 
     def on_turning(self, instance, value):
         if value == 'zero':
@@ -103,6 +137,7 @@ class PlayerCharacter(GameSystem):
 
     def turn_left(self, state):
         if state == 'down':
+            print 'turning_left'
             self.turning = 'left'
         if state == 'normal':
             self.turning = 'zero'
@@ -113,11 +148,45 @@ class PlayerCharacter(GameSystem):
         if state == 'normal':
             self.turning = 'zero'
 
+    def damage(self, entity_id, damage):
+        system_id = self.system_id
+        entities = self.gameworld.entities
+        entity = entities[entity_id]
+        system_data = entity[system_id]
+        system_data['health'] -= damage
 
-    def begin_collision_solve_bullets_asteroids(self, arbiter, space):
+    def begin_collision_solve_asteroid_bullet(self, arbiter, space):
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        entities = gameworld.entities
         bullet_id = arbiter.shapes[1].body.data
-        Clock.schedule_once(partial(self.gameworld.timed_remove_entity, bullet_id), 1.0)
+        asteroid_id = arbiter.shapes[0].body.data
+        bullet = entities[bullet_id]
+        bullet_damage = bullet['projectile_system']['damage']
+        systems['asteroid_system'].damage(asteroid_id, bullet_damage)
+        Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id))
         return True
+
+    def collision_solve_ship_bullet(self, arbiter, space):
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        entities = gameworld.entities
+        bullet_id = arbiter.shapes[1].body.data
+        ship_id = arbiter.shapes[0].body.data
+        bullet = entities[bullet_id]
+        bullet_damage = bullet['projectile_system']['damage']
+        self.damage(ship_id, bullet_damage)
+
+    def collision_solve_ship_asteroid(self, arbiter, space):
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        entities = gameworld.entities
+        asteroid_id = arbiter.shapes[1].body.data
+        ship_id = arbiter.shapes[0].body.data
+        asteroid = entities[asteroid_id]
+        asteroid_damage = asteroid['asteroid_system']['damage']
+        print asteroid_damage
+        self.damage(ship_id, asteroid_damage)
 
 class DebugPanel(Widget):
     fps = StringProperty(None)
@@ -129,64 +198,6 @@ class DebugPanel(Widget):
     def update_fps(self,dt):
         self.fps = str(int(Clock.get_fps()))
         Clock.schedule_once(self.update_fps, .05)
-
-
-class MapOverlay(GameSystem):
-    system_id = StringProperty('map_overlay')
-    def __init__(self, **kwargs):
-        super(MapOverlay, self).__init__(**kwargs)
-        Clock.schedule_once(self.draw_overlay)
-        
-    def on_pos(self, instance, value):
-        self.map_translate.xy = self.pos
-
-    def draw_overlay(self, dt):
-        gameworld = self.gameworld
-        if not gameworld.currentmap:
-            Clock.schedule_once(self.draw_overlay)
-            return
-        currentmap = gameworld.currentmap
-        num_cols = currentmap.num_cols
-        num_rows = currentmap.num_rows
-        tile_size = currentmap.tile_size
-        with self.canvas:
-            PushMatrix()
-            self.map_translate = Translate()
-            for row in xrange(num_rows+1):
-                line_start_pos = (0, tile_size[1] * row)
-                line_end_pos = (tile_size[0] * num_cols, tile_size[1] * row)
-                Line(points =[line_start_pos[0], line_start_pos[1], line_end_pos[0], 
-                    line_end_pos[1]], width = 1)
-            for col in xrange(num_cols+1):
-                line_start_pos = (tile_size[0] * col, 0)
-                line_end_pos = (tile_size[0] * col, num_rows * tile_size[1])
-                Line(points =[line_start_pos[0], line_start_pos[1], line_end_pos[0], 
-                    line_end_pos[1]], width = 1)
-            PopMatrix()
-
-
-class TiledGameMap(GameMap):
-    system_id = StringProperty('default_tiled_map')
-    num_cols = NumericProperty(30)
-    num_rows = NumericProperty(30)
-    tile_size = ListProperty((80, 80))
-
-    def __init__(self, **kwargs):
-        super(TiledGameMap, self).__init__(**kwargs)
-        Clock.schedule_once(self.init_map)
-
-    def init_map(self, dt):
-        tile_size = self.tile_size
-        self.map_size = (float(self.num_cols * tile_size[0]), float(self.num_rows * tile_size[1]))
-
-    def on_touch_down(self, touch):
-        if self.active:
-            camera_pos = self.gameworld.systems[self.viewport].camera_pos
-            touch_x_adjusted = touch.x - camera_pos[0]
-            touch_y_adjusted = touch.y - camera_pos[1]
-            tile_size = self.tile_size
-        
-            print math.floor(touch_x_adjusted/tile_size[0]), math.floor(touch_y_adjusted/tile_size[1])
 
 class MainMenuScreen(GameScreen):
     name = StringProperty('main_menu')
@@ -210,21 +221,16 @@ class TestGame(Widget):
     def setup_states(self):
         self.gameworld.add_state(state_name='main_menu', systems_added=[], 
             systems_removed=['position_renderer', 'physics_renderer', 
-            'map_overlay', 'background_renderer', 'quadtree_renderer', 'particle_manager'], 
+            'background_renderer', 'quadtree_renderer', 'particle_manager'], 
             systems_paused=['cymunk-physics', 'default_gameview', 'position_renderer', 
             'physics_renderer', 'background_renderer', 'quadtree_renderer', 'particle_manager'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='main_game', systems_added=[ 'quadtree_renderer', 
             'position_renderer', 'background_renderer', 
             'physics_renderer', 'cymunk-physics', 'default_map', 'particle_manager'], 
-            systems_removed=['map_overlay', 'default_tiled_map'], systems_paused=[], 
+            systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 'position_renderer', 
             'physics_renderer', 'background_renderer', 'quadtree_renderer', 'particle_manager'], screenmanager_screen='main_game')
-        self.gameworld.add_state(state_name='map_editor', systems_added=['map_overlay', 
-            'default_tiled_map'], 
-            systems_removed=['physics_renderer'], 
-            systems_paused=['cymunk-physics'], systems_unpaused=[],
-            screenmanager_screen='main_game')
 
     def set_main_menu_state(self):
         self.gameworld.state = 'main_menu'
@@ -251,8 +257,11 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         physics = systems['cymunk-physics']
         character_system = systems['player_character']
-        physics.add_collision_handler(1,3, separate_func=character_system.begin_collision_solve_bullets_asteroids)
-
+        physics.add_collision_handler(1,3, 
+            separate_func=character_system.begin_collision_solve_asteroid_bullet)
+        physics.add_collision_handler(2,3, 
+            separate_func=character_system.collision_solve_ship_bullet)
+        physics.add_collision_handler(2,1, separate_func=character_system.collision_solve_ship_asteroid)
     def test_prerendered_background(self, dt):
         atlas_address = 'assets/prerendered_backgrounds/stardust_backgrounds/stardust7.atlas'
         self.generate_prerendered_background(atlas_address, (512, 512))
@@ -297,10 +306,11 @@ class TestGame(Widget):
         physics_component = {'main_shape': 'circle', 'velocity': (x_vel, y_vel), 
         'position': (rand_x, rand_y), 'angle': angle, 'angular_velocity': angular_velocity, 
         'mass': 100, 'col_shapes': col_shapes}
+        asteroid_component = {'health': 30, 'damage': 15}
         create_component_dict = {'cymunk-physics': physics_component, 
         'physics_renderer': {'texture': 'assets/background_objects/asteroid2.png', 
-        'render': False, 'size': (45, 45)}}
-        component_order = ['cymunk-physics', 'physics_renderer']
+        'render': False, 'size': (45, 45)}, 'asteroid_system': asteroid_component}
+        component_order = ['cymunk-physics', 'physics_renderer', 'asteroid_system']
         self.gameworld.init_entity(create_component_dict, component_order)
 
     def test_entity(self, dt):
@@ -318,11 +328,11 @@ class TestGame(Widget):
     def test_player_character(self, dt):
         box_dict = {'width': 108, 'height': 96, 'mass': 250}
         col_shape_dict = {'shape_type': 'box', 'elasticity': .5, 
-        'collision_type': 2, 'shape_info': box_dict, 'friction': .5}
+        'collision_type': 2, 'shape_info': box_dict, 'friction': 1.0}
         physics_component_dict = { 'main_shape': 'box', 
         'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
         'angular_velocity': 0, 'mass': 250, 'vel_limit': 180, 
-        'ang_vel_limit': math.radians(60), 'col_shapes': [col_shape_dict]}
+        'ang_vel_limit': math.radians(55), 'col_shapes': [col_shape_dict]}
         projectile_box_dict = {'width': 14, 'height': 14, 'mass': 50}
         projectile_col_shape_dict = {'shape_type': 'box', 'elasticity': 1.0, 
         'collision_type': 3, 'shape_info': projectile_box_dict, 'friction': .3}
@@ -334,9 +344,12 @@ class TestGame(Widget):
         'render': False, 'size': (7, 7)}
         projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 10, 'offset': (46, 49), 'accel': 50000}}
+        'projectile_system': {'damage': 5, 'offset': (46, 49), 'accel': 50000}}
+        projectile_dict_2 = {'cymunk-physics': projectile_physics_component_dict, 
+        'physics_renderer': projectile_renderer_dict, 
+        'projectile_system': {'damage': 5, 'offset': (-46, 49), 'accel': 50000}}
         ship_dict = {'health': 100, 'accel': 10000, 'offset_distance': 50, 
-        'ang_vel_accel': math.radians(20), 'projectile': projectile_dict}
+        'ang_vel_accel': math.radians(35), 'projectiles': [projectile_dict, projectile_dict_2]}
         particle_system = {'particle_file': 'assets/pexfiles/engine_burn_effect3.pex', 
         'offset': 65}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
@@ -352,4 +365,4 @@ class KivEntApp(App):
         pass
 
 if __name__ == '__main__':
-    cProfile.run('KivEntApp().run()', 'prof')
+    KivEntApp().run()

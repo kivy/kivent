@@ -13,6 +13,7 @@ class CymunkPhysics(GameSystem):
     iterations = NumericProperty(5)
     sleep_time_threshold = NumericProperty(.5)
     collision_slop = NumericProperty(.1)
+    damping = NumericProperty(1.0)
 
     def __init__(self, **kwargs):
         super(CymunkPhysics, self).__init__(**kwargs)
@@ -28,10 +29,14 @@ class CymunkPhysics(GameSystem):
     def on_gravity(self, instance, value):
         self.space.gravity = value
 
+    def on_damping(self, instance, value):
+        self.space.damping = value
+
     def init_physics(self):
         self.space = space = cymunk.Space()
         space.iterations = self.iterations
         space.gravity = self.gravity
+        space.damping = self.damping
         space.sleep_time_threshold = self.sleep_time_threshold
         
         space.collision_slop = self.collision_slop

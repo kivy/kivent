@@ -79,7 +79,7 @@ class GameView(GameSystem):
     camera_pos = ListProperty((0, 0))
     do_scroll = BooleanProperty(False)
     focus_entity = BooleanProperty(False)
-    entity_to_focus = NumericProperty(None)
+    entity_to_focus = NumericProperty(None, allownone=True)
     focus_position_info_from = StringProperty('cymunk-physics')
     updateable = BooleanProperty(True)
     paused = BooleanProperty(True)
@@ -87,6 +87,8 @@ class GameView(GameSystem):
     def on_entity_to_focus(self, instance, value):
         if not value ==  None:
             self.focus_entity = True
+        else:
+            self.focus_entity = False
 
     def update(self, dt):
         if self.focus_entity:

@@ -13,18 +13,12 @@ TestGame:
 	gameworld: gameworld
 	pos: root.pos
 	size: root.size
+	player_character: player_character
 	GameWorld:
 		id: gameworld
-		mapoverlay: mapoverlay
 		gamescreenmanager: gamescreenmanager
 		GameMap:
 			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
-		TiledGameMap:
-			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
 		QuadRenderer:
 			system_id: 'background_renderer'
 	    	render_information_from: 'position'
@@ -32,59 +26,42 @@ TestGame:
 	    	image_mode: 'atlas'
 	    	do_scale: True
 			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
 		QuadTreeQuadRenderer:
 			system_id: 'quadtree_renderer'
 			render_information_from: 'position'
 			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
 		GameView:
+			entity_to_focus: root.player_character.current_character_id
 			gameworld: root.gameworld
 			pos: root.pos
 			size: root.size
-			on_camera_pos: self.gameworld.mapoverlay.pos = self.camera_pos
 		GameSystem:
 			system_id: 'position'
 			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
 		GameSystem:
 			system_id: 'projectile_system'
 			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
 		PlayerCharacter:
+			id: player_character
 			system_id: 'player_character'
 			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
+			current_character_id: self.current_character_id
+		AsteroidSystem:
+			gameworld: root.gameworld
 		QuadRenderer:
 			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
 		CymunkPhysics:
 			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
 		PhysicsRenderer:
 			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
 		ParticleManager:
 			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
 		GameScreenManager:
 			id: gamescreenmanager
 			gameworld: root.gameworld
 			transition: FadeTransition()
 			pos: root.pos
 			size: root.size
-		MapOverlay:
-			id: mapoverlay
-			gameworld: root.gameworld
 
 
 <DebugPanel>:
@@ -115,9 +92,6 @@ TestGame:
 		Button:
 			text: 'Play Game'
 			on_press: root.gameworld.state = 'main_game'
-		Button:
-			text: 'Map Editor'
-			on_press: root.gameworld.state = 'map_editor'
 
 <MainGameScreen>:
 	FloatLayout:

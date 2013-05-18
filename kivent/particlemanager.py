@@ -10,7 +10,6 @@ class ParticleManager(GameSystem):
     render_information_from = StringProperty('physics_renderer')
     updateable = BooleanProperty(True)
 
-
     def generate_component_data(self, entity_component_dict):
         entity_component_dict['particle_system'] = particle_system = kivyparticle.ParticleSystem(entity_component_dict['particle_file'])
         particle_system.stop()
@@ -50,7 +49,6 @@ class ParticleManager(GameSystem):
                 elif particle_system.emission_time > 0:
                     particle_system.stop()
             elif not particle_system._is_paused:
-                print 'removing system'
                 particle_system.pause(with_clear = True)
                 if particle_system in self.children:
                     self.remove_widget(particle_system)

@@ -11,7 +11,9 @@ try:
     from kivent_cython import (GameWorld, GameScreenManager, GameScreen,
     GameSystem, GameMap, GameView, ParticleManager, QuadRenderer, PhysicsRenderer, 
     QuadTreeQuadRenderer, CymunkPhysics)
+    print 'kivent_cython imported'
 except:
+    print 'kivent imported'
     from kivent.gamescreens import GameScreenManager, GameScreen
     from kivent.gameworld import GameWorld
     from kivent.gamesystems import GameSystem, GameMap, GameView

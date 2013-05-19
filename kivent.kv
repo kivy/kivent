@@ -16,7 +16,14 @@ TestGame:
 	player_character: player_character
 	GameWorld:
 		id: gameworld
+		asteroid_system: asteroid_system
+		number_of_asteroids: self.asteroid_system.number_of_asteroids
 		gamescreenmanager: gamescreenmanager
+		GameView:
+			entity_to_focus: root.player_character.current_character_id
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
 		GameMap:
 			gameworld: root.gameworld
 		QuadRenderer:
@@ -30,11 +37,7 @@ TestGame:
 			system_id: 'quadtree_renderer'
 			render_information_from: 'position'
 			gameworld: root.gameworld
-		GameView:
-			entity_to_focus: root.player_character.current_character_id
-			gameworld: root.gameworld
-			pos: root.pos
-			size: root.size
+		
 		GameSystem:
 			system_id: 'position'
 			gameworld: root.gameworld
@@ -47,6 +50,7 @@ TestGame:
 			gameworld: root.gameworld
 			current_character_id: self.current_character_id
 		AsteroidSystem:
+			id: asteroid_system
 			gameworld: root.gameworld
 		QuadRenderer:
 			gameworld: root.gameworld
@@ -60,6 +64,7 @@ TestGame:
 			id: gamescreenmanager
 			gameworld: root.gameworld
 			transition: FadeTransition()
+			number_of_asteroids: self.gameworld.number_of_asteroids
 			pos: root.pos
 			size: root.size
 
@@ -76,11 +81,13 @@ TestGame:
 
 <GameScreenManager>:
 	current: 'main_menu'
+	number_of_asteroids: root.number_of_asteroids
 	gameworld: root.gameworld
 	MainMenuScreen:
 		gameworld: root.gameworld
 	MainGameScreen:
 		gameworld: root.gameworld
+		number_of_asteroids: root.number_of_asteroids
 
 <MainMenuScreen>:
 	BoxLayout:
@@ -94,9 +101,15 @@ TestGame:
 			on_press: root.gameworld.state = 'main_game'
 
 <MainGameScreen>:
+	gameworld: self.gameworld
+	number_of_asteroids: self.number_of_asteroids
 	FloatLayout:
 		size: root.size
 		pos: root.pos
+		Label:
+			pos_hint: {'x': .5, 'y': .9}
+			text: str(root.number_of_asteroids) if not root.gameworld == None else '0'
+			size_hint: (.1, .1)
 		Button:
 			pos_hint: {'x': 1-(BUTTON_SIZE_WIDTH + BUTTON_MARGIN_WIDTH), 'y': 1-(BUTTON_SIZE_HEIGHT + BUTTON_MARGIN_HEIGHT)}
 			size_hint: (BUTTON_SIZE_WIDTH, BUTTON_SIZE_HEIGHT)

@@ -26,10 +26,63 @@ import random
 import profile
 import math
 from functools import partial
+import gc
 
 class AsteroidSystem(GameSystem):
     system_id = StringProperty('asteroid_system')
     updateable = BooleanProperty(True)
+    number_of_asteroids = NumericProperty(0)
+
+    def create_asteroid_2(self, dt):
+        rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
+        rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
+        x_vel = random.randint(-75, 75)
+        y_vel = random.randint(-75, 75)
+        angle = math.radians(random.randint(-360, 360))
+        angular_velocity = math.radians(random.randint(-150, -150))
+        shape_dict = {'inner_radius': 0, 'outer_radius': 43, 'mass': 150, 'offset': (0, 0)}
+        col_shape = {'shape_type': 'circle', 'elasticity': .5, 
+        'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
+        col_shapes = [col_shape]
+        physics_component = {'main_shape': 'circle', 'velocity': (x_vel, y_vel), 
+        'position': (rand_x, rand_y), 'angle': angle, 'angular_velocity': angular_velocity, 
+        'mass': 100, 'col_shapes': col_shapes}
+        asteroid_component = {'health': 30, 'damage': 15, 'asteroid_size': 2, 'pending_destruction': False}
+        create_component_dict = {'cymunk-physics': physics_component, 
+        'physics_renderer': {'texture': 'assets/background_objects/asteroid2.png', 
+        'render': False, 'size': (45, 45)}, 'asteroid_system': asteroid_component}
+        component_order = ['cymunk-physics', 'physics_renderer', 'asteroid_system']
+        self.gameworld.init_entity(create_component_dict, component_order)
+
+    def create_asteroid_1(self, pos, dt):
+        print 'creating small asteroid'
+        x = pos[0]
+        y = pos[1]
+        x_vel = random.randint(-100, 100)
+        y_vel = random.randint(-100, 100)
+        angle = math.radians(random.randint(-360, 360))
+        angular_velocity = math.radians(random.randint(-150, -150))
+        shape_dict = {'inner_radius': 0, 'outer_radius': 32, 'mass': 50, 'offset': (0, 0)}
+        col_shape = {'shape_type': 'circle', 'elasticity': .5, 
+        'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
+        col_shapes = [col_shape]
+        physics_component = {'main_shape': 'circle', 'velocity': (x_vel, y_vel), 
+        'position': (x, y), 'angle': angle, 'angular_velocity': angular_velocity, 
+        'mass': 50, 'col_shapes': col_shapes}
+        asteroid_component = {'health': 15, 'damage': 5, 'asteroid_size': 1, 'pending_destruction': False}
+        create_component_dict = {'cymunk-physics': physics_component, 
+        'physics_renderer': {'texture': 'assets/background_objects/asteroid1.png', 
+        'render': False, 'size': (45, 45)}, 'asteroid_system': asteroid_component}
+        component_order = ['cymunk-physics', 'physics_renderer', 'asteroid_system']
+        self.gameworld.init_entity(create_component_dict, component_order)
+
+    def create_component(self, entity_id, entity_component_dict):
+        super(AsteroidSystem, self).create_component(entity_id, entity_component_dict)
+        self.number_of_asteroids += 1
+
+    def remove_entity(self, entity_id):
+        super(AsteroidSystem, self).remove_entity(entity_id)
+        self.number_of_asteroids -= 1
 
     def update(self, dt):
         system_id = self.system_id
@@ -39,8 +92,14 @@ class AsteroidSystem(GameSystem):
             if system_id not in entity:
                 continue
             system_data = entity[system_id]
-            if system_data['health'] <= 0:
+            if system_data['health'] <= 0 and not system_data['pending_destruction']:
+                system_data['pending_destruction'] = True
+                if system_data['asteroid_size'] == 2:
+                    print 'asteroid of size 2 destroyed'
+                    for x in range(4):
+                        Clock.schedule_once(partial(self.create_asteroid_1, entity['cymunk-physics']['position']))
                 Clock.schedule_once(partial(self.gameworld.timed_remove_entity, entity_id))
+                
 
     def damage(self, entity_id, damage):
         system_id = self.system_id
@@ -212,7 +271,7 @@ class DebugPanel(Widget):
         Clock.schedule_once(self.update_fps)
 
     def update_fps(self,dt):
-        self.fps = str(int(Clock.get_fps()))
+        self.fps = str(int(Clock.get_rfps()))
         Clock.schedule_once(self.update_fps, .05)
 
 class MainMenuScreen(GameScreen):
@@ -258,10 +317,10 @@ class TestGame(Widget):
 
     def setup_gameobjects(self):
         Clock.schedule_once(self.test_prerendered_background)
-        for x in range(50):
+        for x in range(30):
             Clock.schedule_once(self.test_entity)
-        for x in range(10):
-            Clock.schedule_once(self.test_physics_entity)
+        for x in range(15):
+            Clock.schedule_once(self.gameworld.systems['asteroid_system'].create_asteroid_2)
         Clock.schedule_once(self.test_player_character)
 
     def _init_game(self, dt):
@@ -270,10 +329,11 @@ class TestGame(Widget):
         self.set_main_menu_state()
         self.setup_collision_callbacks()
         self.setup_gameobjects()
-        Clock.schedule_interval(self.update, 1./30.)
+        Clock.schedule_interval(self.update, 1./60.)
 
     def update(self, dt):
         self.gameworld.update(dt)
+        
 
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems
@@ -284,6 +344,7 @@ class TestGame(Widget):
         physics.add_collision_handler(2,3, 
             separate_func=character_system.collision_solve_ship_bullet)
         physics.add_collision_handler(2,1, separate_func=character_system.collision_solve_ship_asteroid)
+    
     def test_prerendered_background(self, dt):
         atlas_address = 'assets/prerendered_backgrounds/stardust_backgrounds/stardust7.atlas'
         self.generate_prerendered_background(atlas_address, (512, 512))
@@ -314,27 +375,6 @@ class TestGame(Widget):
             component_order = ['position', 'background_renderer']
             self.gameworld.init_entity(create_component_dict, component_order)
 
-    def test_physics_entity(self, dt):
-        rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
-        rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
-        x_vel = random.randint(-75, 75)
-        y_vel = random.randint(-75, 75)
-        angle = math.radians(random.randint(-360, 360))
-        angular_velocity = math.radians(random.randint(-150, -150))
-        shape_dict = {'inner_radius': 0, 'outer_radius': 45, 'mass': 100, 'offset': (0, 0)}
-        col_shape = {'shape_type': 'circle', 'elasticity': .5, 
-        'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
-        col_shapes = [col_shape]
-        physics_component = {'main_shape': 'circle', 'velocity': (x_vel, y_vel), 
-        'position': (rand_x, rand_y), 'angle': angle, 'angular_velocity': angular_velocity, 
-        'mass': 100, 'col_shapes': col_shapes}
-        asteroid_component = {'health': 30, 'damage': 15}
-        create_component_dict = {'cymunk-physics': physics_component, 
-        'physics_renderer': {'texture': 'assets/background_objects/asteroid2.png', 
-        'render': False, 'size': (45, 45)}, 'asteroid_system': asteroid_component}
-        component_order = ['cymunk-physics', 'physics_renderer', 'asteroid_system']
-        self.gameworld.init_entity(create_component_dict, component_order)
-
     def test_entity(self, dt):
         rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
         rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
@@ -353,8 +393,8 @@ class TestGame(Widget):
         'collision_type': 2, 'shape_info': box_dict, 'friction': 1.0}
         physics_component_dict = { 'main_shape': 'box', 
         'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
-        'angular_velocity': 0, 'mass': 250, 'vel_limit': 130, 
-        'ang_vel_limit': math.radians(55), 'col_shapes': [col_shape_dict]}
+        'angular_velocity': 0, 'mass': 250, 'vel_limit': 150, 
+        'ang_vel_limit': math.radians(65), 'col_shapes': [col_shape_dict]}
         projectile_box_dict = {'width': 14, 'height': 14, 'mass': 50}
         projectile_col_shape_dict = {'shape_type': 'box', 'elasticity': 1.0, 
         'collision_type': 3, 'shape_info': projectile_box_dict, 'friction': .3}
@@ -370,9 +410,9 @@ class TestGame(Widget):
         projectile_dict_2 = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_renderer': projectile_renderer_dict, 
         'projectile_system': {'damage': 10, 'offset': (-46, 49), 'accel': 50000}}
-        ship_dict = {'health': 200, 'accel': 10000, 'offset_distance': 50, 
-        'ang_vel_accel': math.radians(60), 'projectiles': [projectile_dict, projectile_dict_2]}
-        particle_system = {'particle_file': 'assets/pexfiles/engine_burn_effect3.pex', 
+        ship_dict = {'health': 200, 'accel': 15000, 'offset_distance': 50, 
+        'ang_vel_accel': math.radians(95), 'projectiles': [projectile_dict, projectile_dict_2]}
+        particle_system = {'particle_file': 'assets/pexfiles/smoke_particle_effect.pex', 
         'offset': 65}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
         'physics_renderer': {'texture': 'assets/ships/ship1-1.png', 
@@ -382,10 +422,11 @@ class TestGame(Widget):
         'particle_manager']
         self.gameworld.init_entity(create_component_dict, component_order)
 
+
 class KivEntApp(App):
     def build(self):
         pass
 
 if __name__ == '__main__':
-    #KivEntApp().run()
-    profile.run('KivEntApp().run()', 'prof')
+    KivEntApp().run()
+    #profile.run('KivEntApp().run()', 'prof')

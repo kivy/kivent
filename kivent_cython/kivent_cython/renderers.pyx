@@ -63,9 +63,6 @@ class QuadRenderer(GameSystem):
         system_data = entity[self.system_id]
         system_data['render'] = False
 
-        
-        
-
     def draw_entity(self, int entity_id):
         cdef object parent = self.gameworld
         cdef dict entity = parent.entities[entity_id]

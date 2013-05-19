@@ -60,7 +60,7 @@ class GameSystem(Widget):
 
 class GameMap(GameSystem):
     system_id = StringProperty('default_map')
-    map_size = ListProperty((1500., 1500.))
+    map_size = ListProperty((2000., 2000.))
 
     def on_add_system(self):
         super(GameMap, self).on_add_system()
@@ -102,9 +102,9 @@ class GameView(GameSystem):
             dist_x = -camera_pos[0] - position_data[0] + size[0]*.5
             dist_y = -camera_pos[1] - position_data[1] + size[1]*.5
             if self.lock_scroll:
-               dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
-            self.camera_pos[0] += dist_x
-            self.camera_pos[1] += dist_y
+                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
+            self.camera_pos[0] += dist_x * dt
+            self.camera_pos[1] += dist_y * dt
 
 
     def on_size(self, instance, value):
@@ -112,15 +112,20 @@ class GameView(GameSystem):
             dist_x, dist_y = self.lock_scroll(0, 0)
             self.camera_pos[0] += dist_x
             self.camera_pos[1] += dist_y
+            systems = self.gameworld.systems
+
+    def force_camera_update(self):
+        systems = self.gameworld.systems
+        for system in systems:
+            if systems[system].renderable and systems[system].active:
+                systems[system].update(None)
 
     def on_camera_pos(self, instance, value):
         if self.force_camera_update:
             if not self.has_camera_updated:
                 print 'camera updating'
-                systems = self.gameworld.systems
-                for system in systems:
-                    if systems[system].renderable and systems[system].active:
-                        systems[system].update(None)
+                self.force_camera_update()
+                
                 self.has_camera_updated = True
             else:
                 self.has_camera_updated = False

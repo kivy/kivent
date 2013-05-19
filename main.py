@@ -1,22 +1,26 @@
+KIVENT_CYTHON = True
 import kivy
 kivy.require('1.6.0')
-
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.properties import (StringProperty, ObjectProperty, ListProperty, 
 NumericProperty, BooleanProperty)
 from kivy.clock import Clock
 from kivy.graphics import Line, Translate, PushMatrix, PopMatrix
-from kivent.gamescreens import GameScreenManager, GameScreen
-from kivent.gameworld import GameWorld
-from kivent.gamesystems import GameSystem, GameMap, GameView
-from kivent.particlemanager import ParticleManager
-from kivent.renderers import QuadRenderer, PhysicsRenderer, QuadTreeQuadRenderer
-from kivent.physics import CymunkPhysics
+if not KIVENT_CYTHON:
+    from kivent.gamescreens import GameScreenManager, GameScreen
+    from kivent.gameworld import GameWorld
+    from kivent.gamesystems import GameSystem, GameMap, GameView
+    from kivent.particlemanager import ParticleManager
+    from kivent.renderers import QuadRenderer, PhysicsRenderer, QuadTreeQuadRenderer
+    from kivent.physics import CymunkPhysics
+else:
+    from kivent_cython import (GameWorld, GameScreenManager, GameScreen,
+    GameSystem, GameMap, GameView, ParticleManager, QuadRenderer, PhysicsRenderer, 
+    QuadTreeQuadRenderer, CymunkPhysics)
 from kivy.atlas import Atlas
 from kivy.vector import Vector
 import random
-import copy
 import profile
 import math
 from functools import partial
@@ -68,7 +72,9 @@ class PlayerCharacter(GameSystem):
             character = self.gameworld.entities[self.current_character_id]
             system_data = character[self.system_id]
             for projectile in system_data['projectiles']:
-                projectile_dict = copy.deepcopy(projectile)
+                projectile_dict = {}
+                for data in projectile:
+                    projectile_dict[data] = projectile[data].copy()
                 physics_info = projectile_dict['cymunk-physics']
                 position_offset = projectile_dict['projectile_system']['offset']
                 character_physics = character['cymunk-physics']

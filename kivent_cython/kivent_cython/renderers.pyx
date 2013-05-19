@@ -4,11 +4,11 @@ DictProperty, BooleanProperty, ObjectProperty)
 from kivy.graphics import (PushMatrix, PopMatrix, Translate, Quad, Instruction, 
 Rotate, Color, Scale)
 from kivy.core.image import Image as CoreImage
-from kivent.gamesystems import GameSystem
 import math
 from kivy.atlas import Atlas
 from quadtree import QuadTree
 from kivy.clock import Clock
+
 
 class QuadRenderer(GameSystem):
     system_id = StringProperty('position_renderer')
@@ -25,7 +25,7 @@ class QuadRenderer(GameSystem):
     def __init__(self, **kwargs):
         super(QuadRenderer, self).__init__(**kwargs)
 
-    def generate_component_data(self, entity_component_dict):
+    def generate_component_data(self, dict entity_component_dict):
         entity_component_dict['translate'] = None
         entity_component_dict['quad'] = None
         if self.do_rotate:
@@ -36,28 +36,28 @@ class QuadRenderer(GameSystem):
             entity_component_dict['scale'] = None
         return entity_component_dict
 
-    def load_texture(self, texture_str):
+    def load_texture(self, str texture_str):
         textures = self.textures
         if texture_str not in textures:
             textures[texture_str] = CoreImage(texture_str).texture
         texture = textures[texture_str]
         return texture
 
-    def load_texture_from_atlas(self, atlas_address, key):
+    def load_texture_from_atlas(self, str atlas_address, str key):
         textures = self.textures
         if atlas_address not in textures:
             textures[atlas_address] = Atlas(atlas_address)
         texture = textures[atlas_address]
         return texture[key]
 
-    def generate_entity_component_dict(self, entity_id):
+    def generate_entity_component_dict(self, int entity_id):
         entity = self.gameworld.entities[entity_id]
         entity_system_dict = entity[self.system_id]
         entity_component_dict = {'texture': entity_system_dict['texture'], 
         'render': entity_system_dict['render']}
         return entity_component_dict
 
-    def remove_entity_from_canvas(self, entity_id):
+    def remove_entity_from_canvas(self, int entity_id):
         self.canvas.remove_group(str(entity_id))
         entity = self.gameworld.entities[entity_id]
         system_data = entity[self.system_id]
@@ -66,18 +66,19 @@ class QuadRenderer(GameSystem):
         
         
 
-    def draw_entity(self, entity_id):
-        parent = self.gameworld
-        entity = parent.entities[entity_id]
-        system_data = entity[self.system_id]
-        render_information = entity[self.render_information_from]
+    def draw_entity(self, int entity_id):
+        cdef object parent = self.gameworld
+        cdef dict entity = parent.entities[entity_id]
+        cdef dict system_data = entity[self.system_id]
+        cdef dict render_information = entity[self.render_information_from]
+        cdef dict context_information
         if self.do_scale or self.do_color:
             context_information = entity[self.context_information_from]
         if self.image_mode == 'image':
             texture = self.load_texture(system_data['texture'])
         elif self.image_mode == 'atlas':
             texture = self.load_texture_from_atlas(system_data['texture'], system_data['texture_key'])
-        size = texture.size[0] * .5, texture.size[1] *.5
+        cdef tuple size = (texture.size[0] * .5, texture.size[1] *.5)
         if self.do_scale:
             system_data['size'] = (size[0] * context_information['scale_x'], size[1] * context_information['scale_y'])
         else:
@@ -108,13 +109,18 @@ class QuadRenderer(GameSystem):
         system_data['render'] = True
 
     def update_render_state(self):
-        parent = self.gameworld
-        viewport = parent.systems[self.viewport]
+        cdef object parent = self.gameworld
+        cdef object viewport = parent.systems[self.viewport]
         camera_pos = viewport.camera_pos
         camera_size = viewport.size
         pos = self.pos
-        system_id = self.system_id
-        entities = parent.entities
+        cdef str system_id = self.system_id
+        cdef list entities = parent.entities
+        cdef dict system_data
+        cdef dict render_information
+        cdef tuple size
+        cdef tuple position
+        cdef dict entity
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
             system_data = entity[system_id]
@@ -137,16 +143,23 @@ class QuadRenderer(GameSystem):
                     self.remove_entity_from_canvas(entity_id)
 
     def render(self):
-        parent = self.gameworld
-        entities = parent.entities
-        system_id = self.system_id
+        cdef object parent = self.gameworld
+        cdef list entities = parent.entities
+        cdef str system_id = self.system_id
         do_color = self.do_color
         do_scale = self.do_scale
         do_rotate = self.do_rotate
         camera_pos = parent.systems[self.viewport].camera_pos
-        render_information_from = self.render_information_from
+        cdef str render_information_from = self.render_information_from
+        cdef str context_information_from
         if do_scale or do_color:
             context_information_from = self.context_information_from
+
+        cdef dict entity
+        cdef dict system_data
+        cdef dict render_information
+        cdef dict context_information
+
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
             if system_id not in entity:
@@ -179,10 +192,7 @@ class QuadRenderer(GameSystem):
     #     self.paused = False
     #     super(QuadRenderer, self).on_add_system()
         
-
-
-
-    def remove_entity(self, entity_id):
+    def remove_entity(self, int entity_id):
         self.remove_entity_from_canvas(entity_id)
         super(QuadRenderer, self).remove_entity(entity_id)
 
@@ -192,12 +202,15 @@ class PhysicsRenderer(QuadRenderer):
     do_rotate = BooleanProperty(True)
 
     def update_render_state(self):
-        parent = self.gameworld
-        entity_ids = self.entity_ids
-        entities = parent.entities
-        system_id = self.system_id
-        physics_system = parent.systems[self.render_information_from]
-        on_screen = physics_system.query_on_screen()
+        cdef object parent = self.gameworld
+        cdef list entities = parent.entities
+        cdef str system_id = self.system_id
+        cdef list entity_ids = self.entity_ids
+        cdef object physics_system = parent.systems[self.render_information_from]
+        cdef list on_screen = physics_system.query_on_screen()
+        cdef dict entity
+        cdef dict system_data
+
         for entity_id in entity_ids:
             entity = entities[entity_id]
             if system_id not in entity:
@@ -231,11 +244,13 @@ class QuadTreeQuadRenderer(QuadRenderer):
         
 
     def update_render_state(self):
-        parent = self.gameworld
-        entities = parent.entities
-        system_id = self.system_id
-        entity_ids = self.entity_ids
-        on_screen = self.query_on_screen()
+        cdef object parent = self.gameworld
+        cdef list entities = parent.entities
+        cdef str system_id = self.system_id
+        cdef list entity_ids = self.entity_ids
+        cdef set on_screen = self.query_on_screen()
+        cdef dict entity
+        cdef dict system_data
         for entity_id in entity_ids:
             entity = entities[entity_id]
             if system_id not in entity:
@@ -247,9 +262,9 @@ class QuadTreeQuadRenderer(QuadRenderer):
                 self.remove_entity_from_canvas(entity_id)
 
     def query_on_screen(self):
-        viewport = self.gameworld.systems[self.viewport]
+        cdef object viewport = self.gameworld.systems[self.viewport]
         camera_pos = viewport.camera_pos
         size = viewport.size
-        bb_list = [-camera_pos[0] + size[0], -camera_pos[0],  -camera_pos[1] + size[1], -camera_pos[1]]
-        current_on_screen = self.quadtree.bb_hit(bb_list[0], bb_list[1], bb_list[2], bb_list[3])
+        cdef list bb_list = [-camera_pos[0] + size[0], -camera_pos[0],  -camera_pos[1] + size[1], -camera_pos[1]]
+        cdef set current_on_screen = self.quadtree.bb_hit(bb_list[0], bb_list[1], bb_list[2], bb_list[3])
         return current_on_screen

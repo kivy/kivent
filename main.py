@@ -17,7 +17,7 @@ from kivy.atlas import Atlas
 from kivy.vector import Vector
 import random
 import copy
-#import cProfile
+import profile
 import math
 from functools import partial
 
@@ -234,8 +234,8 @@ class TestGame(Widget):
             'physics_renderer', 'background_renderer', 'quadtree_renderer', 'particle_manager', 
             'asteroid_system', 'player_character'], systems_unpaused=[],
             screenmanager_screen='main_menu')
-        self.gameworld.add_state(state_name='main_game', systems_added=[ 'quadtree_renderer', 
-            'position_renderer', 'background_renderer', 
+        self.gameworld.add_state(state_name='main_game', systems_added=['background_renderer',
+            'quadtree_renderer', 'position_renderer', 
             'physics_renderer', 'cymunk-physics', 'default_map', 'particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 'position_renderer', 
@@ -375,5 +375,5 @@ class KivEntApp(App):
         pass
 
 if __name__ == '__main__':
-    KivEntApp().run()
-    #cProfile.run('KivEntApp().run()', 'prof')
+    #KivEntApp().run()
+    profile.run('KivEntApp().run()', 'prof')

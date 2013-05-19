@@ -103,9 +103,8 @@ class GameView(GameSystem):
             dist_y = -camera_pos[1] - position_data[1] + size[1]*.5
             if self.lock_scroll:
                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
-            if math.fabs(dist_x) + math.fabs(dist_y) >= 1:
-                self.camera_pos[0] += dist_x
-                self.camera_pos[1] += dist_y
+            self.camera_pos[0] += dist_x
+            self.camera_pos[1] += dist_y
 
 
     def on_size(self, instance, value):

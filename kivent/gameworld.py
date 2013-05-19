@@ -19,7 +19,7 @@ class GameWorld(Widget):
         self.states = {}
         self.deactivated_entities = []
         self.entities_to_remove = []
-        Clock.schedule_once(self.init_world)
+        #Clock.schedule_once(self.init_world)
         
     def init_world(self, dt):
         Clock.schedule_interval(self.update, 1./30.)

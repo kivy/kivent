@@ -1,4 +1,4 @@
-KIVENT_CYTHON = True
+
 import kivy
 kivy.require('1.6.0')
 from kivy.app import App
@@ -6,18 +6,18 @@ from kivy.uix.widget import Widget
 from kivy.properties import (StringProperty, ObjectProperty, ListProperty, 
 NumericProperty, BooleanProperty)
 from kivy.clock import Clock
-from kivy.graphics import Line, Translate, PushMatrix, PopMatrix
-if not KIVENT_CYTHON:
+from kivy.graphics import Line, Translate, PushMatrix, PopMatrix    
+try:
+    from kivent_cython import (GameWorld, GameScreenManager, GameScreen,
+    GameSystem, GameMap, GameView, ParticleManager, QuadRenderer, PhysicsRenderer, 
+    QuadTreeQuadRenderer, CymunkPhysics)
+except:
     from kivent.gamescreens import GameScreenManager, GameScreen
     from kivent.gameworld import GameWorld
     from kivent.gamesystems import GameSystem, GameMap, GameView
     from kivent.particlemanager import ParticleManager
     from kivent.renderers import QuadRenderer, PhysicsRenderer, QuadTreeQuadRenderer
     from kivent.physics import CymunkPhysics
-else:
-    from kivent_cython import (GameWorld, GameScreenManager, GameScreen,
-    GameSystem, GameMap, GameView, ParticleManager, QuadRenderer, PhysicsRenderer, 
-    QuadTreeQuadRenderer, CymunkPhysics)
 from kivy.atlas import Atlas
 from kivy.vector import Vector
 import random
@@ -268,6 +268,10 @@ class TestGame(Widget):
         self.set_main_menu_state()
         self.setup_collision_callbacks()
         self.setup_gameobjects()
+        Clock.schedule_interval(self.update, 1./30.)
+
+    def update(self, dt):
+        self.gameworld.update(dt)
 
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems

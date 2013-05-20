@@ -7,6 +7,7 @@ import math
 
 
 
+
 class GameSystem(Widget):
     system_id = StringProperty('default_id')
     updateable = BooleanProperty(False)

@@ -7,26 +7,15 @@ from kivy.properties import (StringProperty, ObjectProperty, ListProperty,
 NumericProperty, BooleanProperty)
 from kivy.clock import Clock
 from kivy.graphics import Line, Translate, PushMatrix, PopMatrix    
-try:
-    from kivent_cython import (GameWorld, GameScreenManager, GameScreen,
-    GameSystem, GameMap, GameView, ParticleManager, QuadRenderer, PhysicsRenderer, 
-    QuadTreeQuadRenderer, CymunkPhysics)
-    print 'kivent_cython imported'
-except:
-    print 'kivent imported'
-    from kivent.gamescreens import GameScreenManager, GameScreen
-    from kivent.gameworld import GameWorld
-    from kivent.gamesystems import GameSystem, GameMap, GameView
-    from kivent.particlemanager import ParticleManager
-    from kivent.renderers import QuadRenderer, PhysicsRenderer, QuadTreeQuadRenderer
-    from kivent.physics import CymunkPhysics
+from kivent_cython import (GameWorld, GameScreenManager, GameScreen,
+GameSystem, GameMap, GameView, ParticleManager, QuadRenderer, PhysicsRenderer, 
+QuadTreeQuadRenderer, CymunkPhysics)
 from kivy.atlas import Atlas
 from kivy.vector import Vector
 import random
 import profile
 import math
 from functools import partial
-import gc
 
 class AsteroidSystem(GameSystem):
     system_id = StringProperty('asteroid_system')
@@ -319,7 +308,7 @@ class TestGame(Widget):
         Clock.schedule_once(self.test_prerendered_background)
         for x in range(30):
             Clock.schedule_once(self.test_entity)
-        for x in range(15):
+        for x in range(40):
             Clock.schedule_once(self.gameworld.systems['asteroid_system'].create_asteroid_2)
         Clock.schedule_once(self.test_player_character)
 
@@ -410,9 +399,9 @@ class TestGame(Widget):
         projectile_dict_2 = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_renderer': projectile_renderer_dict, 
         'projectile_system': {'damage': 10, 'offset': (-46, 49), 'accel': 50000}}
-        ship_dict = {'health': 200, 'accel': 15000, 'offset_distance': 50, 
+        ship_dict = {'health': 30, 'accel': 15000, 'offset_distance': 50, 
         'ang_vel_accel': math.radians(95), 'projectiles': [projectile_dict, projectile_dict_2]}
-        particle_system = {'particle_file': 'assets/pexfiles/smoke_particle_effect.pex', 
+        particle_system = {'particle_file': 'assets/pexfiles/engine_burn_effect3.pex', 
         'offset': 65}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
         'physics_renderer': {'texture': 'assets/ships/ship1-1.png', 

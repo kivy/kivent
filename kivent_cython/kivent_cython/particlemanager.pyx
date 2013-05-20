@@ -15,6 +15,15 @@ class ParticleManager(GameSystem):
         entity_component_dict['particle_system_on'] = False
         return entity_component_dict
 
+    def remove_entity(self, entity_id):
+        cdef list entities = self.gameworld.entities
+        cdef str system_id = self.system_id
+        cdef dict entity = entities[entity_id]
+        cdef object particle_system = entity[system_id]['particle_system']
+        particle_system.stop(clear=True)
+        del particle_system
+        super(ParticleManager, self).remove_entity(entity_id)
+
     def on_paused(self, instance, value):
         cdef list entities = self.gameworld.entities
         cdef str system_data_from = self.system_id

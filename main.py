@@ -6,7 +6,6 @@ from kivy.uix.label import Label
 from kivy.properties import (StringProperty, ObjectProperty, ListProperty, 
 NumericProperty, BooleanProperty)
 from kivy.clock import Clock
-from kivy.graphics import Line, Translate, PushMatrix, PopMatrix    
 from kivent_cython import (GameWorld, GameScreenManager, GameScreen,
 GameSystem, GameMap, GameView, ParticleManager, QuadRenderer, PhysicsRenderer, 
 CymunkPhysics, PhysicsPointRenderer, QuadTreePointRenderer)
@@ -18,6 +17,10 @@ import random
 from kivyparticle import ParticleSystem
 import math
 from functools import partial
+from kivy.core.audio import SoundLoader
+#import cProfile
+import os
+import sys
 
 class YACSLabel(Label):
     pass
@@ -51,10 +54,10 @@ class AsteroidsLevel(GameSystem):
         color_choice = [star_choice_gold, star_choice_green, star_choice_purple, star_choice_blue]
         first_color_choice = random.choice(color_choice)
         second_color_choice = random.choice(color_choice)
-        num_star_1 = random.randint(0, 60)
-        num_star_2 = random.randint(0, 75)
-        num_star_3 = random.randint(0, 20)
-        num_star_4 = random.randint(0, 30)
+        num_star_1 = random.randint(0, 25)
+        num_star_2 = random.randint(0, 15)
+        num_star_3 = random.randint(0, 10)
+        num_star_4 = random.randint(0, 10)
         self.generate_stars(first_color_choice[0], first_color_choice[1], second_color_choice[0], second_color_choice[1], 
             num_star_1, num_star_2, num_star_3, num_star_4)
         #generate background
@@ -73,7 +76,6 @@ class AsteroidsLevel(GameSystem):
         
         
     def clear_level(self):
-        print 'clearing level'
         for entity_id in self.entity_ids:
             Clock.schedule_once(partial(self.gameworld.timed_remove_entity, entity_id))
 
@@ -181,11 +183,13 @@ class AsteroidSystem(GameSystem):
 
     def generate_asteroids(self, dt):
         current_level_id = self.gameworld.systems['asteroids_level'].current_level_id
-        level_asteroids = [(0, 10), (1, 25), (5, 20), (10, 15), (25,25)]
-        num_small_asteroids = level_asteroids[current_level_id][1]
-        num_big_asteroids = level_asteroids[current_level_id][0]
+        level_asteroids = [(0, 5), (1, 9), (5, 15), (10, 20), (15,25)]
+        if current_level_id <= 4:
+            num_small_asteroids = level_asteroids[current_level_id][1]
+            num_big_asteroids = level_asteroids[current_level_id][0]
         if current_level_id > 4:
-            num_big_asteroids +=(current_level_id - 4) * 10
+            num_big_asteroids = (current_level_id - 1) * 5
+            num_small_asteroids = (current_level_id + 1) * 5
 
         #small asteroids
         for x in range(num_small_asteroids):
@@ -265,7 +269,6 @@ class AsteroidSystem(GameSystem):
             if system_data['health'] <= 0 and not system_data['pending_destruction']:
                 system_data['pending_destruction'] = True
                 if system_data['asteroid_size'] == 2:
-                    print 'asteroid of size 2 destroyed'
                     for x in range(4):
                         position = entity['cymunk-physics']['position']
                         self.create_asteroid_1(position)
@@ -278,6 +281,51 @@ class AsteroidSystem(GameSystem):
         entity = entities[entity_id]
         system_data = entity[system_id]
         system_data['health'] -= damage
+
+class MusicController(Widget):
+    music_dir = StringProperty('assets/music/final/')
+    def __init__(self, **kwargs):
+        super(MusicController, self).__init__(**kwargs)
+        self.music_dict = {}
+        self.track_names = ['track1', 'track2', 'track3', 'track4', 'track5']
+        Clock.schedule_once(self.load_music)
+        
+        
+    def load_music(self, dt):
+        print 'loading music'
+        print self.music_dir
+        track_names = self.track_names
+        music_dict = self.music_dict
+        for track_name in track_names:
+            music_dict[track_name] = SoundLoader.load(self.music_dir + track_name + '.ogg')
+            print music_dict[track_name].get_pos()
+            music_dict[track_name].seek(0)
+            print music_dict[track_name].source
+            print music_dict[track_name].length
+            print music_dict[track_name].get_pos()
+
+        print music_dict
+
+    def play_new_song(self, dt):
+        self.play(random.choice(self.track_names))
+
+    def schedule_choose_new_song(self, value):
+        start_delay = random.random() * 20.0
+        print start_delay, 'start delay'
+        Clock.schedule_once(self.play_new_song, start_delay)
+
+    def play(self, sound_name):
+        if sound_name in self.music_dict:
+            self.music_dict[sound_name].play()
+            self.music_dict[sound_name].bind(on_stop=self.schedule_choose_new_song)
+        else:
+            print "file",sound_name,"not found in", self.music_dir
+
+    def stop(self, sound_name):
+        if sound_name in self.music_dict:
+            self.music_dict[sound_name].stop()
+        else:
+            print "file", sound_name, "not found in", self.music_dir
 
 class ProjectileSystem(GameSystem):
 
@@ -400,7 +448,6 @@ class PlayerCharacter(GameSystem):
 
 
     def update_death_animation(self, dt):
-        print 'updating death animation'
         entity = self.gameworld.entities[self.current_character_id]
         self.gameworld.systems['physics_renderer'].canvas.remove(entity['physics_renderer']['quad'])
         entity['particle_manager']['explosion_effect']['particle_system'].emitter_type = 0
@@ -466,7 +513,6 @@ class PlayerCharacter(GameSystem):
         ship_id = arbiter.shapes[0].body.data
         asteroid = entities[asteroid_id]
         asteroid_damage = asteroid['asteroid_system']['damage']
-        print asteroid_damage
         self.damage(ship_id, asteroid_damage)
         return True
 
@@ -486,6 +532,9 @@ class MainMenuScreen(GameScreen):
 
 class MainGameScreen(GameScreen):
     name = StringProperty('main_game')
+
+class GameOverScreen(GameScreen):
+    name = StringProperty('game_over')
 
 class ChooseCharacterWidget(Widget):
     pass
@@ -510,22 +559,19 @@ class TestGame(Widget):
             Clock.schedule_once(self.init_game)
 
     def on_state(self, instance, value):
-        print value
         if value == 'choose_character':
-            self.loading_new_level = True
             self.gameworld.systems['quadtree_renderer'].enter_delete_mode()
             self.gameworld.systems['asteroids_level'].clear_level()
             self.clear_gameworld_objects()
-            Clock.schedule_once(self.setup_new_quadtree, 2.5)
-            Clock.schedule_once(self.setup_new_level, 5.0)
+            Clock.schedule_once(self.setup_new_quadtree, 1.0)
+            Clock.schedule_once(self.setup_new_level, 1.5)
     
     def setup_new_quadtree(self, dt):
         Clock.schedule_once(self.gameworld.systems['quadtree_renderer'].setup_quadtree)
 
     def setup_new_level(self, dt):
-        self.gameworld.systems['quadtree_renderer'].paused = False
         Clock.schedule_once(self.gameworld.systems['asteroids_level'].generate_new_level)
-        self.loading_new_level = False
+        
 
     def setup_states(self):
         self.gameworld.add_state(state_name='main_menu', systems_added=['background_renderer', 
@@ -547,8 +593,15 @@ class TestGame(Widget):
             'default_map', 'particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'particle_manager',
+            'physics_renderer', 'particle_manager', 'quadtree_renderer',
             'asteroid_system', 'player_character', 'physics_point_renderer'], screenmanager_screen='main_game')
+        self.gameworld.add_state(state_name='game_over', systems_added=[ 'background_renderer', 
+            'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
+            'default_map', 'particle_manager'], 
+            systems_removed=[], systems_paused=[], 
+            systems_unpaused=['cymunk-physics', 'default_gameview', 
+            'physics_renderer', 'particle_manager',
+            'asteroid_system', 'player_character', 'physics_point_renderer'], screenmanager_screen='game_over')
 
     def clear_gameworld_objects(self):
         systems = self.gameworld.systems
@@ -558,6 +611,7 @@ class TestGame(Widget):
 
     def set_main_menu_state(self):
         self.gameworld.state = 'main_menu'
+        self.gameworld.music_controller.play('track5')
 
     def setup_map(self):
         self.gameworld.currentmap = self.gameworld.systems['default_map']
@@ -594,22 +648,19 @@ class TestGame(Widget):
         physics.add_collision_handler(2,3, 
             separate_func=character_system.collision_solve_ship_bullet)
         physics.add_collision_handler(2,1, separate_func=character_system.collision_solve_ship_asteroid)
-        #physics.add_collision_handler(3,3, separate_func=character_system.collision_solve_bullet_bullet)
+        physics.add_collision_handler(3,3, separate_func=character_system.collision_solve_bullet_bullet)
     
     def test_remove_entity(self, dt):
         self.gameworld.remove_entity(0)
 
     def on_number_of_asteroids(self, instance, value):
-        print 'main game number', value
         if value == 0 and self.state == 'main_game':
             self.gameworld.systems['asteroids_level'].current_level_id += 1
             self.gameworld.state = 'choose_character'
 
     def player_lose(self, dt):
-        self.gameworld.state = 'choose_character'
+        self.gameworld.state = 'game_over'
             
-
-
     def spawn_player_character_2(self, dt):
         box_dict = {'width': 78, 'height': 110, 'mass': 175}
         col_shape_dict = {'shape_type': 'box', 'elasticity': .5, 
@@ -629,20 +680,20 @@ class TestGame(Widget):
         'render': False, 'size': (14, 14)}
         projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 3, 'offset': (38, 30), 'accel': 50000}}
+        'projectile_system': {'damage': 9, 'offset': (38, 30), 'accel': 50000}}
         projectile_dict_2 = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 3, 'offset': (-38, 30), 'accel': 50000}}
+        'projectile_system': {'damage': 9, 'offset': (-38, 30), 'accel': 50000}}
         projectile_dict_3 = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 3, 'offset': (52, 30), 'accel': 50000}}
+        'projectile_system': {'damage': 9, 'offset': (52, 30), 'accel': 50000}}
         projectile_dict_4 = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 3, 'offset': (-52, 30), 'accel': 50000}}
+        'projectile_system': {'damage': 9, 'offset': (-52, 30), 'accel': 50000}}
         ship_dict = {'health': 150, 'accel': 20000, 'offset_distance': 50, 
         'ang_vel_accel': math.radians(150), 'projectiles': [projectile_dict, projectile_dict_2, projectile_dict_3, projectile_dict_4]}
         particle_system1 = {'particle_file': 'assets/pexfiles/engine_burn_effect4.pex', 
-        'offset': 35}
+        'offset': 30}
         particle_system2 = {'particle_file': 'assets/pexfiles/ship_explosion1.pex', 'offset': 0}
         particle_systems = {'engine_effect': particle_system1, 'explosion_effect': particle_system2}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
@@ -696,5 +747,11 @@ class KivEntApp(App):
         pass
 
 if __name__ == '__main__':
-    KivEntApp().run()
-    #cProfile.run('KivEntApp().run()', 'prof')
+   KivEntApp().run()
+    # sd_card_path = os.path.dirname('/sdcard/profiles/')
+    # print sd_card_path
+    # if not os.path.exists(sd_card_path):
+    #     print 'making directory'
+    #     os.mkdir(sd_card_path)
+    # print 'path: ', sd_card_path
+    # cProfile.run('KivEntApp().run()', sd_card_path + '/asteroidsprof.prof')

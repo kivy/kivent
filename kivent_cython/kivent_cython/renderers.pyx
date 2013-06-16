@@ -423,7 +423,6 @@ class QuadTreeQuadRenderer(QuadRenderer):
         Clock.schedule_once(self.setup_quadtree)
 
     def remove_entity(self, int entity_id):
-        self.remove_entities_from_quadtree([entity_id])
         super(QuadTreeQuadRenderer, self).remove_entity(entity_id)
 
     def create_component(self, entity_id, entity_component_dict):
@@ -436,12 +435,7 @@ class QuadTreeQuadRenderer(QuadRenderer):
 
     def draw_entity(self, entity_id):
         super(QuadTreeQuadRenderer, self).draw_entity(entity_id)
-
-    def remove_entities_from_quadtree(self, entity_id_list):
-        print entity_id_list
-        self.quadtree.remove_items(entity_id_list, 7)
         
-
     def update_render_state(self):
         cdef object parent = self.gameworld
         cdef list entities = parent.entities
@@ -495,7 +489,6 @@ class QuadTreePointRenderer(PointRenderer):
         self.paused = True
         self.quadtree = None
         
-
     def update_render_state(self):
         cdef object parent = self.gameworld
         cdef list entities = parent.entities

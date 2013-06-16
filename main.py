@@ -18,6 +18,7 @@ from kivyparticle import ParticleSystem
 import math
 from functools import partial
 from kivy.core.audio import SoundLoader
+from kivy.core.window import Window
 #import cProfile
 import os
 import sys
@@ -550,6 +551,7 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         Clock.schedule_once(self.init_game)
+        print kwargs
 
     def init_game(self, dt):
         try: 
@@ -744,7 +746,8 @@ class TestGame(Widget):
 
 class KivEntApp(App):
     def build(self):
-        pass
+        Window.clearcolor = (0, 0, 0, 1.)
+        
 
 if __name__ == '__main__':
    KivEntApp().run()

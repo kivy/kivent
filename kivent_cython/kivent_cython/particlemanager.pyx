@@ -59,7 +59,7 @@ class ParticleManager(GameSystem):
             particle_systems = entity[system_data_from]
             for particle_effect in particle_systems:
                 particle_system = particle_systems[particle_effect]['particle_system']
-                if entity[render_information_from]['render']:
+                if entity[render_information_from]['on_screen']:
                     if particle_systems[particle_effect]['particle_system_on']:
                         particle_system.current_scroll = camera_pos
                         particle_system.pos = self.calculate_particle_offset(entity_id, particle_effect)

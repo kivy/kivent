@@ -84,20 +84,19 @@ class AsteroidsLevel(GameSystem):
     def generate_stars(self, first_star_choice1, first_star_choice2, second_star_choice1, 
         second_star_choice2, num_star_1, num_star_2, num_star_3, num_star_4):
         for x in range(num_star_1):
-            self.generate_star(first_star_choice1)
+            self.generate_star(first_star_choice1, (14, 14))
         for x in range(num_star_2):
-            self.generate_star(first_star_choice2)
+            self.generate_star(first_star_choice2, (8, 8))
         for x in range(num_star_3):
-            self.generate_star(second_star_choice1)
+            self.generate_star(second_star_choice1, (14, 14))
         for x in range(num_star_4):
-            self.generate_star(second_star_choice2)
+            self.generate_star(second_star_choice2, (8, 8))
 
-    def generate_star(self, star_graphic):
+    def generate_star(self, star_graphic, star_size):
         rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
         rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
         create_component_dict = {'position': {'position': (rand_x, rand_y)}, 
-        'quadtree_renderer': {'texture': star_graphic, 
-        'render': False, 'size': (14,14)}, 'asteroids_level': {'level_id': self.current_level_id}}
+        'quadtree_renderer': {'texture': star_graphic, 'size': star_size}, 'asteroids_level': {'level_id': self.current_level_id}}
         component_order = ['position', 'quadtree_renderer', 'asteroids_level']
         self.gameworld.init_entity(create_component_dict, component_order)
     
@@ -122,8 +121,8 @@ class AsteroidsLevel(GameSystem):
         for num in range(num_tiles):
             create_component_dict = {'position': {'position': position_dict[num], 
             'scale_x': scale_x, 'scale_y': scale_y}, 
-            'background_renderer': {'texture': atlas_address, 'texture_key': str(num+1), 
-            'render': False, 'size': size}, 'asteroids_level': {'level_id': self.current_level_id}}
+            'background_renderer': {'texture': atlas_address, 'texture_key': str(num+1), 'size': size}, 
+            'asteroids_level': {'level_id': self.current_level_id}}
             component_order = ['position', 'background_renderer', 'asteroids_level']
             self.gameworld.init_entity(create_component_dict, component_order)
 
@@ -225,8 +224,8 @@ class AsteroidSystem(GameSystem):
         asteroid_component = {'health': 30, 'damage': 15, 
         'asteroid_size': 2, 'pending_destruction': False}
         create_component_dict = {'cymunk-physics': physics_component, 
-        'physics_renderer': {'texture': 'assets/background_objects/asteroid2.png', 
-        'render': False, 'size': (45, 45)}, 'asteroid_system': asteroid_component}
+        'physics_renderer': {'texture': 'assets/background_objects/asteroid2.png'}, 
+        'asteroid_system': asteroid_component}
         component_order = ['cymunk-physics', 'physics_renderer', 'asteroid_system']
         self.gameworld.init_entity(create_component_dict, component_order)
 
@@ -246,8 +245,8 @@ class AsteroidSystem(GameSystem):
         'mass': 50, 'col_shapes': col_shapes}
         asteroid_component = {'health': 15, 'damage': 5, 'asteroid_size': 1, 'pending_destruction': False}
         create_component_dict = {'cymunk-physics': physics_component, 
-        'physics_renderer': {'texture': 'assets/background_objects/asteroid1.png', 
-        'render': False, 'size': (45, 45)}, 'asteroid_system': asteroid_component}
+        'physics_renderer': {'texture': 'assets/background_objects/asteroid1.png'}, 
+        'asteroid_system': asteroid_component}
         component_order = ['cymunk-physics', 'physics_renderer', 'asteroid_system']
         self.gameworld.init_entity(create_component_dict, component_order)
 
@@ -439,9 +438,9 @@ class PlayerCharacter(GameSystem):
             if physics_body.is_sleeping:
                 physics_body.activate()
             if self.turning == 'left':
-                physics_body.angular_velocity += self.turn_speed_multiplier*system_data['ang_vel_accel']*dt
+                physics_body.angular_velocity += self.turn_speed_multiplier*system_data['ang_accel']*dt
             elif self.turning == 'right':
-                physics_body.angular_velocity -= self.turn_speed_multiplier*system_data['ang_vel_accel']*dt
+                physics_body.angular_velocity -= self.turn_speed_multiplier*system_data['ang_accel']*dt
             if system_data['health'] <= 0 and not self.character_dying:
                 self.do_death()
                 self.character_dying = True
@@ -450,7 +449,7 @@ class PlayerCharacter(GameSystem):
 
     def update_death_animation(self, dt):
         entity = self.gameworld.entities[self.current_character_id]
-        self.gameworld.systems['physics_renderer'].canvas.remove(entity['physics_renderer']['quad'])
+        entity['physics_renderer']['render'] = False
         entity['particle_manager']['explosion_effect']['particle_system'].emitter_type = 0
 
     def do_death(self):
@@ -678,8 +677,7 @@ class TestGame(Widget):
         'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
         'angular_velocity': 0, 'mass': 50, 'vel_limit': 280, 
         'ang_vel_limit': math.radians(60),'col_shapes': [projectile_col_shape_dict]}
-        projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-6px.png', 
-        'render': False, 'size': (14, 14)}
+        projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-6px.png'}
         projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_point_renderer': projectile_renderer_dict, 
         'projectile_system': {'damage': 9, 'offset': (38, 30), 'accel': 50000}}
@@ -693,14 +691,13 @@ class TestGame(Widget):
         'physics_point_renderer': projectile_renderer_dict, 
         'projectile_system': {'damage': 9, 'offset': (-52, 30), 'accel': 50000}}
         ship_dict = {'health': 150, 'accel': 20000, 'offset_distance': 50, 
-        'ang_vel_accel': math.radians(150), 'projectiles': [projectile_dict, projectile_dict_2, projectile_dict_3, projectile_dict_4]}
+        'ang_accel': math.radians(150), 'projectiles': [projectile_dict, projectile_dict_2, projectile_dict_3, projectile_dict_4]}
         particle_system1 = {'particle_file': 'assets/pexfiles/engine_burn_effect4.pex', 
         'offset': 30}
         particle_system2 = {'particle_file': 'assets/pexfiles/ship_explosion1.pex', 'offset': 0}
         particle_systems = {'engine_effect': particle_system1, 'explosion_effect': particle_system2}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
-        'physics_renderer': {'texture': 'assets/ships/ship3.png', 
-        'render': False, 'size': (64, 43)}, 'player_character': ship_dict,
+        'physics_renderer': {'texture': 'assets/ships/ship3.png'}, 'player_character': ship_dict,
         'particle_manager': particle_systems}
         component_order = ['cymunk-physics', 'physics_renderer', 'player_character', 
         'particle_manager']
@@ -721,23 +718,21 @@ class TestGame(Widget):
         'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
         'angular_velocity': 0, 'mass': 50, 'vel_limit': 250, 
         'ang_vel_limit': math.radians(60),'col_shapes': [projectile_col_shape_dict]}
-        projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-14px.png', 
-        'render': False, 'size': (14, 14)}
+        projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-14px.png'}
         projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_point_renderer': projectile_renderer_dict, 
         'projectile_system': {'damage': 10, 'offset': (46, 49), 'accel': 50000}}
         projectile_dict_2 = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_point_renderer': projectile_renderer_dict, 
         'projectile_system': {'damage': 10, 'offset': (-46, 49), 'accel': 50000}}
-        ship_dict = {'health': 180, 'accel': 15000, 'offset_distance': 50, 
-        'ang_vel_accel': math.radians(95), 'projectiles': [projectile_dict, projectile_dict_2]}
+        ship_dict = {'health': 1, 'accel': 15000, 'offset_distance': 50, 
+        'ang_accel': math.radians(95), 'projectiles': [projectile_dict, projectile_dict_2]}
         particle_system1 = {'particle_file': 'assets/pexfiles/engine_burn_effect3.pex', 
         'offset': 65}
         particle_system2 = {'particle_file': 'assets/pexfiles/ship_explosion1.pex', 'offset': 0}
         particle_systems = {'engine_effect': particle_system1, 'explosion_effect': particle_system2}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
-        'physics_renderer': {'texture': 'assets/ships/ship1-1.png', 
-        'render': False, 'size': (64, 52)}, 'player_character': ship_dict,
+        'physics_renderer': {'texture': 'assets/ships/ship1-1.png'}, 'player_character': ship_dict,
         'particle_manager': particle_systems}
         component_order = ['cymunk-physics', 'physics_renderer', 'player_character', 
         'particle_manager']

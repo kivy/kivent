@@ -35,6 +35,8 @@ class PointRenderer(GameSystem):
             entity_component_dict['rotate'] = None
         if self.do_color:
             entity_component_dict['color'] = None
+        entity_component_dict['on_screen'] = False
+        entity_component_dict['render'] = True
         
         return entity_component_dict
 
@@ -55,15 +57,13 @@ class PointRenderer(GameSystem):
     def generate_entity_component_dict(self, int entity_id):
         entity = self.gameworld.entities[entity_id]
         entity_system_dict = entity[self.system_id]
-        entity_component_dict = {'texture': entity_system_dict['texture'], 
-        'render': entity_system_dict['render']}
+        entity_component_dict = {'texture': entity_system_dict['texture']}
         return entity_component_dict
 
     def remove_entity_from_canvas(self, int entity_id):
         self.canvas.remove_group(str(entity_id))
         entity = self.gameworld.entities[entity_id]
         system_data = entity[self.system_id]
-        system_data['render'] = False
 
     def draw_entity(self, int entity_id):
         cdef object parent = self.gameworld
@@ -71,42 +71,44 @@ class PointRenderer(GameSystem):
         cdef dict system_data = entity[self.system_id]
         cdef dict render_information = entity[self.render_information_from]
         cdef dict context_information
-        if self.do_scale or self.do_color:
-            context_information = entity[self.context_information_from]
-        if self.image_mode == 'image':
-            texture = self.load_texture(system_data['texture'])
-        elif self.image_mode == 'atlas':
-            texture = self.load_texture_from_atlas(system_data['texture'], 
-                system_data['texture_key'])
-        cdef tuple size = (texture.size[0] * .5, texture.size[1] *.5)
-        
-        if self.do_scale:
-            system_data['size'] = (size[0] * context_information['scale_x'], 
-                size[1] * context_information['scale_y'])
-        else:
-            system_data['size'] = size
-        camera_pos = parent.systems[self.viewport].camera_pos
-        with self.canvas:
-            group_id = str(entity_id)
-            PushMatrix(group=group_id)
-            system_data['translate'] = Translate(group=group_id)
-            if self.do_rotate:
-                system_data['rotate'] = Rotate(group=group_id)
-                system_data['rotate'].angle = render_information['angle']
+        cdef tuple size
+        if system_data['render']:
+            if self.do_scale or self.do_color:
+                context_information = entity[self.context_information_from]
+            if self.image_mode == 'image':
+                texture = self.load_texture(system_data['texture'])
+            elif self.image_mode == 'atlas':
+                texture = self.load_texture_from_atlas(system_data['texture'], 
+                    system_data['texture_key'])
+            size = (texture.size[0] * .5, texture.size[1] *.5)
+            
             if self.do_scale:
-                system_data['scale'] = Scale(group=group_id)
-                system_data['scale'].x = context_information['scale_x'] * size[0]
-                system_data['scale'].y = context_information['scale_y'] * size[1]
-            if self.do_color:
-                system_data['color'] = Color(group=group_id)
-                system_data['color'].rgba = context_information['color']
-            system_data['point'] = Point(texture = texture, points = (0, 0), 
-                pointsize=size[0], group=group_id)
-            system_data['translate'].xy = (render_information['position'][0] + camera_pos[0], 
-            render_information['position'][1] + camera_pos[1])
+                system_data['size'] = (size[0] * context_information['scale_x'], 
+                    size[1] * context_information['scale_y'])
+            else:
+                system_data['size'] = size
+            camera_pos = parent.systems[self.viewport].camera_pos
+            with self.canvas:
+                group_id = str(entity_id)
+                PushMatrix(group=group_id)
+                system_data['translate'] = Translate(group=group_id)
+                if self.do_rotate:
+                    system_data['rotate'] = Rotate(group=group_id)
+                    system_data['rotate'].angle = render_information['angle']
+                if self.do_scale:
+                    system_data['scale'] = Scale(group=group_id)
+                    system_data['scale'].x = context_information['scale_x'] * size[0]
+                    system_data['scale'].y = context_information['scale_y'] * size[1]
+                if self.do_color:
+                    system_data['color'] = Color(group=group_id)
+                    system_data['color'].rgba = context_information['color']
+                system_data['point'] = Point(texture = texture, points = (0, 0), 
+                    pointsize=size[0], group=group_id)
+                system_data['translate'].xy = (render_information['position'][0] + camera_pos[0], 
+                render_information['position'][1] + camera_pos[1])
 
-            PopMatrix(group=group_id)
-        system_data['render'] = True
+                PopMatrix(group=group_id)
+            system_data['on_screen'] = True
 
     def update_render_state(self):
         cdef object parent = self.gameworld
@@ -133,14 +135,18 @@ class PointRenderer(GameSystem):
                 - size[0] < pos[0] - camera_pos[0] + camera_size[0]):
                 if (position[1] + size[1] > pos[1] - camera_pos[1] and position[1] - 
                 size[1] < pos[1] - camera_pos[1] + camera_size[1]):
-                    if not system_data['render']:
+                    if not system_data['on_screen']:
                         self.draw_entity(entity_id)
                 else:
-                    if system_data['render']:
+                    if system_data['on_screen']:
                         self.remove_entity_from_canvas(entity_id)
+                        system_data['on_screen'] = False
             else:
-                if system_data['render']:                  
+                if system_data['on_screen']:                  
                     self.remove_entity_from_canvas(entity_id)
+                    system_data['on_screen'] = False
+            if system_data['on_screen'] and not system_data['render']:
+                self.remove_entity_from_canvas(entity_id)
 
     def render(self):
         cdef object parent = self.gameworld
@@ -165,7 +171,7 @@ class PointRenderer(GameSystem):
             if system_id not in entity:
                 continue
             system_data = entity[system_id]
-            if system_data['render']:
+            if system_data['on_screen'] and system_data['render']:
                 render_information = entity[render_information_from]
                 if do_scale or do_color:
                     context_information = entity[context_information_from]
@@ -212,6 +218,8 @@ class QuadRenderer(GameSystem):
             entity_component_dict['color'] = None
         if self.do_scale:
             entity_component_dict['scale'] = None
+        entity_component_dict['on_screen'] = False
+        entity_component_dict['render'] = True
         return entity_component_dict
 
     def load_texture(self, str texture_str):
@@ -231,15 +239,14 @@ class QuadRenderer(GameSystem):
     def generate_entity_component_dict(self, int entity_id):
         entity = self.gameworld.entities[entity_id]
         entity_system_dict = entity[self.system_id]
-        entity_component_dict = {'texture': entity_system_dict['texture'], 
-        'render': entity_system_dict['render']}
+        entity_component_dict = {'texture': entity_system_dict['texture']}
         return entity_component_dict
 
     def remove_entity_from_canvas(self, int entity_id):
         self.canvas.remove_group(str(entity_id))
         entity = self.gameworld.entities[entity_id]
         system_data = entity[self.system_id]
-        system_data['render'] = False
+        
 
     def draw_entity(self, int entity_id):
         cdef object parent = self.gameworld
@@ -247,41 +254,43 @@ class QuadRenderer(GameSystem):
         cdef dict system_data = entity[self.system_id]
         cdef dict render_information = entity[self.render_information_from]
         cdef dict context_information
-        if self.do_scale or self.do_color:
-            context_information = entity[self.context_information_from]
-        if self.image_mode == 'image':
-            texture = self.load_texture(system_data['texture'])
-        elif self.image_mode == 'atlas':
-            texture = self.load_texture_from_atlas(system_data['texture'], system_data['texture_key'])
-        cdef tuple size = (texture.size[0] * .5, texture.size[1] *.5)
-        if self.do_scale:
-            system_data['size'] = (size[0] * context_information['scale_x'], size[1] * context_information['scale_y'])
-        else:
-            system_data['size'] = size
-
-        camera_pos = parent.systems[self.viewport].camera_pos
-        with self.canvas:
-            group_id = str(entity_id)
-            PushMatrix(group=group_id)
-            system_data['translate'] = Translate(group=group_id)
-            if self.do_rotate:
-                system_data['rotate'] = Rotate(group=group_id)
-                system_data['rotate'].angle = render_information['angle']
+        cdef tuple size
+        if system_data['render']:
+            if self.do_scale or self.do_color:
+                context_information = entity[self.context_information_from]
+            if self.image_mode == 'image':
+                texture = self.load_texture(system_data['texture'])
+            elif self.image_mode == 'atlas':
+                texture = self.load_texture_from_atlas(system_data['texture'], system_data['texture_key'])
+            size = (texture.size[0] * .5, texture.size[1] *.5)
             if self.do_scale:
-                system_data['scale'] = Scale(group=group_id)
-                system_data['scale'].x = context_information['scale_x']
-                system_data['scale'].y = context_information['scale_y']
-            if self.do_color:
-                system_data['color'] = Color(group=group_id)
-                system_data['color'].rgba = context_information['color']
-            system_data['quad'] = Quad(texture = texture, points = (-size[0], 
-                -size[1], size[0], -size[1],
-                size[0], size[1], -size[0], size[1]), group=group_id)
-            system_data['translate'].xy = (render_information['position'][0] + camera_pos[0], 
-            render_information['position'][1] + camera_pos[1])
+                system_data['size'] = (size[0] * context_information['scale_x'], size[1] * context_information['scale_y'])
+            else:
+                system_data['size'] = size
 
-            PopMatrix(group=group_id)
-        system_data['render'] = True
+            camera_pos = parent.systems[self.viewport].camera_pos
+            with self.canvas:
+                group_id = str(entity_id)
+                PushMatrix(group=group_id)
+                system_data['translate'] = Translate(group=group_id)
+                if self.do_rotate:
+                    system_data['rotate'] = Rotate(group=group_id)
+                    system_data['rotate'].angle = render_information['angle']
+                if self.do_scale:
+                    system_data['scale'] = Scale(group=group_id)
+                    system_data['scale'].x = context_information['scale_x']
+                    system_data['scale'].y = context_information['scale_y']
+                if self.do_color:
+                    system_data['color'] = Color(group=group_id)
+                    system_data['color'].rgba = context_information['color']
+                system_data['quad'] = Quad(texture = texture, points = (-size[0], 
+                    -size[1], size[0], -size[1],
+                    size[0], size[1], -size[0], size[1]), group=group_id)
+                system_data['translate'].xy = (render_information['position'][0] + camera_pos[0], 
+                render_information['position'][1] + camera_pos[1])
+
+                PopMatrix(group=group_id)
+            system_data['on_screen'] = True
 
     def update_render_state(self):
         cdef object parent = self.gameworld
@@ -308,14 +317,18 @@ class QuadRenderer(GameSystem):
                 - size[0] < pos[0] - camera_pos[0] + camera_size[0]):
                 if (position[1] + size[1] > pos[1] - camera_pos[1] and position[1] - 
                 size[1] < pos[1] - camera_pos[1] + camera_size[1]):
-                    if not system_data['render']:
+                    if not system_data['on_screen']:
                         self.draw_entity(entity_id)
                 else:
-                    if system_data['render']:
+                    if system_data['on_screen']:
                         self.remove_entity_from_canvas(entity_id)
+                        system_data['on_screen'] = False
             else:
-                if system_data['render']:                  
+                if system_data['on_screen']:                  
                     self.remove_entity_from_canvas(entity_id)
+                    system_data['on_screen'] = False
+            if system_data['on_screen'] and not system_data['render']:
+                self.remove_entity_from_canvas(entity_id)
 
     def render(self):
         cdef object parent = self.gameworld
@@ -340,7 +353,7 @@ class QuadRenderer(GameSystem):
             if system_id not in entity:
                 continue
             system_data = entity[system_id]
-            if system_data['render']:
+            if system_data['on_screen'] and system_data['render']:
                 render_information = entity[render_information_from]
                 if do_scale or do_color:
                     context_information = entity[context_information_from]
@@ -382,9 +395,12 @@ class PhysicsPointRenderer(PointRenderer):
             if system_id not in entity:
                 continue
             system_data = entity[system_id]
-            if not system_data['render'] and entity_id in on_screen:
+            if not system_data['on_screen'] and entity_id in on_screen:
                 self.draw_entity(entity_id)
-            if system_data['render'] and not entity_id in on_screen:
+            if system_data['on_screen'] and not entity_id in on_screen:
+                self.remove_entity_from_canvas(entity_id)
+                system_data['on_screen'] = False
+            if system_data['on_screen'] and not system_data['render']:
                 self.remove_entity_from_canvas(entity_id)
 
 class PhysicsRenderer(QuadRenderer):
@@ -407,9 +423,12 @@ class PhysicsRenderer(QuadRenderer):
             if system_id not in entity:
                 continue
             system_data = entity[system_id]
-            if not system_data['render'] and entity_id in on_screen:
+            if not system_data['on_screen'] and entity_id in on_screen:
                 self.draw_entity(entity_id)
-            if system_data['render'] and not entity_id in on_screen:
+            if system_data['on_screen'] and not entity_id in on_screen:
+                self.remove_entity_from_canvas(entity_id)
+                system_data['on_screen'] = False
+            if system_data['on_screen'] and not system_data['render']:
                 self.remove_entity_from_canvas(entity_id)
 
 class QuadTreeQuadRenderer(QuadRenderer):
@@ -449,9 +468,12 @@ class QuadTreeQuadRenderer(QuadRenderer):
             if system_id not in entity:
                 continue
             system_data = entity[system_id]
-            if not system_data['render'] and entity_id in on_screen:
+            if not system_data['on_screen'] and entity_id in on_screen:
                 self.draw_entity(entity_id)
-            if system_data['render'] and not entity_id in on_screen:
+            if system_data['on_screen'] and not entity_id in on_screen:
+                self.remove_entity_from_canvas(entity_id)
+                system_data['on_screen'] = False
+            if system_data['on_screen'] and not system_data['render']:
                 self.remove_entity_from_canvas(entity_id)
 
     def query_on_screen(self):
@@ -502,9 +524,12 @@ class QuadTreePointRenderer(PointRenderer):
             if system_id not in entity:
                 continue
             system_data = entity[system_id]
-            if not system_data['render'] and entity_id in on_screen:
+            if not system_data['on_screen'] and entity_id in on_screen:
                 self.draw_entity(entity_id)
-            if system_data['render'] and not entity_id in on_screen:
+            if system_data['on_screen'] and not entity_id in on_screen:
+                self.remove_entity_from_canvas(entity_id)
+                system_data['on_screen'] = False
+            if system_data['on_screen'] and not system_data['render']:
                 self.remove_entity_from_canvas(entity_id)
 
     def query_on_screen(self):

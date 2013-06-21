@@ -129,7 +129,7 @@ class CymunkPhysics(GameSystem):
             space.add(new_shape)
             
         cdef dict component_dict = {'body': body, 'shapes': shapes, 'position': body.position, 
-        'angle': body.angle, 'shape_type': entity_component_dict['col_shapes'][0]['shape_type']}
+        'angle': body.angle, 'unit_vector': body.rotation_vector, 'shape_type': entity_component_dict['col_shapes'][0]['shape_type']}
 
         return component_dict
 

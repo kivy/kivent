@@ -298,13 +298,8 @@ class MusicController(Widget):
         music_dict = self.music_dict
         for track_name in track_names:
             music_dict[track_name] = SoundLoader.load(self.music_dir + track_name + '.ogg')
-            print music_dict[track_name].get_pos()
             music_dict[track_name].seek(0)
-            print music_dict[track_name].source
-            print music_dict[track_name].length
-            print music_dict[track_name].get_pos()
-
-        print music_dict
+ 
 
     def play_new_song(self, dt):
         self.play(random.choice(self.track_names))
@@ -328,6 +323,57 @@ class MusicController(Widget):
             print "file", sound_name, "not found in", self.music_dir
 
 class ProjectileSystem(GameSystem):
+
+
+    def spawn_projectile(self, projectile_type, location, angle):
+        if projectile_type == '14px':
+            bullet_ent_id = self.spawn_projectile_14px_bullet(location, angle)
+        if projectile_type == '6px':
+            bullet_ent_id = self.spawn_projectile_6px_bullet(location, angle)
+        
+        self.fire_projectile(bullet_ent_id)
+
+    def spawn_projectile_14px_bullet(self, location, angle):
+        projectile_box_dict = {'width': 14, 'height': 14, 'mass': 50}
+        projectile_col_shape_dict = {'shape_type': 'box', 'elasticity': 1.0, 
+        'collision_type': 3, 'shape_info': projectile_box_dict, 'friction': .3}
+        projectile_physics_component_dict = { 'main_shape': 'box', 
+        'velocity': (0, 0), 'position': location, 'angle': angle, 
+        'angular_velocity': 0, 'mass': 50, 'vel_limit': 250, 
+        'ang_vel_limit': math.radians(60),'col_shapes': [projectile_col_shape_dict]}
+        projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-14px.png'}
+        projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
+        'physics_point_renderer': projectile_renderer_dict, 
+        'projectile_system': {'damage': 10, 'accel': 50000}}
+        component_order = ['cymunk-physics', 'physics_point_renderer', 'projectile_system']
+        bullet_ent_id = self.gameworld.init_entity(projectile_dict, component_order)
+        return bullet_ent_id
+
+    def spawn_projectile_6px_bullet(self, location, angle):
+        projectile_box_dict = {'width': 6, 'height': 6, 'mass': 35}
+        projectile_col_shape_dict = {'shape_type': 'box', 'elasticity': 1.0, 
+        'collision_type': 3, 'shape_info': projectile_box_dict, 'friction': .3}
+        projectile_physics_component_dict = { 'main_shape': 'box', 
+        'velocity': (0, 0), 'position': location, 'angle': angle, 
+        'angular_velocity': 0, 'mass': 50, 'vel_limit': 280, 
+        'ang_vel_limit': math.radians(60),'col_shapes': [projectile_col_shape_dict]}
+        projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-6px.png'}
+        projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
+        'physics_point_renderer': projectile_renderer_dict, 
+        'projectile_system': {'damage': 9, 'offset': (38, 30), 'accel': 50000}}
+        component_order = ['cymunk-physics', 'physics_point_renderer', 'projectile_system']
+        bullet_ent_id = self.gameworld.init_entity(projectile_dict, component_order)
+        return bullet_ent_id
+
+    def fire_projectile(self, entity_id):
+        entities = self.gameworld.entities
+        bullet = entities[entity_id]
+        physics_data = bullet['cymunk-physics']
+        unit_vector = physics_data['unit_vector']
+        bullet_accel = bullet['projectile_system']['accel']
+        force = {'x': bullet_accel*-unit_vector['x'], 'y': bullet_accel*-unit_vector['y']}
+        force_offset = {'x': -unit_vector['x'], 'y': -unit_vector['y']}
+        bullet['cymunk-physics']['body'].apply_impulse(force, force_offset)
 
     def clear_projectiles(self):
         for entity_id in self.entity_ids:
@@ -385,22 +431,17 @@ class PlayerCharacter(GameSystem):
     def fire_projectiles(self, dt):
         if not self.current_character_id == None:
             character = self.gameworld.entities[self.current_character_id]
+            projectile_system = self.gameworld.systems['projectile_system']
             system_data = character[self.system_id]
-            for projectile in system_data['projectiles']:
-                projectile_dict = {}
-                for data in projectile:
-                    projectile_dict[data] = projectile[data].copy()
-                physics_info = projectile_dict['cymunk-physics']
-                position_offset = projectile_dict['projectile_system']['offset']
+            for hard_point in system_data['hard_points']:
                 character_physics = character['cymunk-physics']
                 character_position = character_physics['position']
+                position_offset = hard_point
                 position_offset_rotated = Vector(position_offset).rotate(character_physics['angle'])
-                physics_info['position'] = (character_position[0] + position_offset_rotated[0],
+                location = (character_position[0] + position_offset_rotated[0],
                     character_position[1] + position_offset_rotated[1])
-                physics_info['angle'] = character_physics['body'].angle
-                component_order = ['cymunk-physics', 'physics_point_renderer', 'projectile_system']
-                new_ent = self.gameworld.init_entity(projectile_dict, component_order)
-                self.fire_projectile(new_ent)
+                angle = character_physics['body'].angle
+                projectile_system.spawn_projectile(system_data['projectile_type'], location, angle)
 
     def spawn_projectile(self, state):
         if state == 'down':
@@ -409,19 +450,6 @@ class PlayerCharacter(GameSystem):
         if state == 'normal':
             Clock.unschedule(self.fire_projectiles)
         
-    def fire_projectile(self, entity_id):
-        entities = self.gameworld.entities
-        if not self.current_character_id == None:
-            character = entities[self.current_character_id]
-            system_data = character[self.system_id]
-            bullet = entities[entity_id]
-            physics_data = character['cymunk-physics']
-            unit_vector = physics_data['unit_vector']
-            bullet_accel = bullet['projectile_system']['accel']
-            force = {'x': bullet_accel*-unit_vector['x'], 'y': bullet_accel*-unit_vector['y']}
-            force_offset = {'x': -unit_vector['x'], 'y': -unit_vector['y']}
-            bullet['cymunk-physics']['body'].apply_impulse(force, force_offset)
-
     def update(self, dt):
         if not self.current_character_id == None:
             character = self.gameworld.entities[self.current_character_id]
@@ -444,8 +472,6 @@ class PlayerCharacter(GameSystem):
             if system_data['health'] <= 0 and not self.character_dying:
                 self.do_death()
                 self.character_dying = True
-
-
 
     def update_death_animation(self, dt):
         entity = self.gameworld.entities[self.current_character_id]
@@ -670,28 +696,9 @@ class TestGame(Widget):
         'velocity': (0, 0), 'position': self.center, 'angle': 0, 
         'angular_velocity': 0, 'mass': 175, 'vel_limit': 200, 
         'ang_vel_limit': math.radians(80), 'col_shapes': [col_shape_dict]}
-        projectile_box_dict = {'width': 6, 'height': 6, 'mass': 35}
-        projectile_col_shape_dict = {'shape_type': 'box', 'elasticity': 1.0, 
-        'collision_type': 3, 'shape_info': projectile_box_dict, 'friction': .3}
-        projectile_physics_component_dict = { 'main_shape': 'box', 
-        'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
-        'angular_velocity': 0, 'mass': 50, 'vel_limit': 280, 
-        'ang_vel_limit': math.radians(60),'col_shapes': [projectile_col_shape_dict]}
-        projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-6px.png'}
-        projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
-        'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 9, 'offset': (38, 30), 'accel': 50000}}
-        projectile_dict_2 = {'cymunk-physics': projectile_physics_component_dict, 
-        'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 9, 'offset': (-38, 30), 'accel': 50000}}
-        projectile_dict_3 = {'cymunk-physics': projectile_physics_component_dict, 
-        'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 9, 'offset': (52, 30), 'accel': 50000}}
-        projectile_dict_4 = {'cymunk-physics': projectile_physics_component_dict, 
-        'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 9, 'offset': (-52, 30), 'accel': 50000}}
+        hard_points = [(38, 30), (-38, 30), (52, 30), (-52, 30)]
         ship_dict = {'health': 150, 'accel': 20000, 'offset_distance': 50, 
-        'ang_accel': math.radians(150), 'projectiles': [projectile_dict, projectile_dict_2, projectile_dict_3, projectile_dict_4]}
+        'ang_accel': math.radians(150), 'hard_points': hard_points, 'projectile_type': '6px'}
         particle_system1 = {'particle_file': 'assets/pexfiles/engine_burn_effect4.pex', 
         'offset': 30}
         particle_system2 = {'particle_file': 'assets/pexfiles/ship_explosion1.pex', 'offset': 0}
@@ -711,22 +718,9 @@ class TestGame(Widget):
         'velocity': (0, 0), 'position': self.center, 'angle': 0, 
         'angular_velocity': 0, 'mass': 250, 'vel_limit': 150, 
         'ang_vel_limit': math.radians(65), 'col_shapes': [col_shape_dict]}
-        projectile_box_dict = {'width': 14, 'height': 14, 'mass': 50}
-        projectile_col_shape_dict = {'shape_type': 'box', 'elasticity': 1.0, 
-        'collision_type': 3, 'shape_info': projectile_box_dict, 'friction': .3}
-        projectile_physics_component_dict = { 'main_shape': 'box', 
-        'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
-        'angular_velocity': 0, 'mass': 50, 'vel_limit': 250, 
-        'ang_vel_limit': math.radians(60),'col_shapes': [projectile_col_shape_dict]}
-        projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-14px.png'}
-        projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
-        'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 10, 'offset': (46, 49), 'accel': 50000}}
-        projectile_dict_2 = {'cymunk-physics': projectile_physics_component_dict, 
-        'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 10, 'offset': (-46, 49), 'accel': 50000}}
-        ship_dict = {'health': 1, 'accel': 15000, 'offset_distance': 50, 
-        'ang_accel': math.radians(95), 'projectiles': [projectile_dict, projectile_dict_2]}
+        hard_points = [(46, 49), (-46, 49)]
+        ship_dict = {'health': 180, 'accel': 15000, 'offset_distance': 50, 
+        'ang_accel': math.radians(95), 'hard_points': hard_points, 'projectile_type': '14px'}
         particle_system1 = {'particle_file': 'assets/pexfiles/engine_burn_effect3.pex', 
         'offset': 65}
         particle_system2 = {'particle_file': 'assets/pexfiles/ship_explosion1.pex', 'offset': 0}

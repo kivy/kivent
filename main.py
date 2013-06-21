@@ -74,12 +74,9 @@ class AsteroidsLevel(GameSystem):
                 bg_choice = random.choice(dust_choices_purple)
             self.generate_prerendered_background(bg_choice, (512, 512))
 
-        
-        
     def clear_level(self):
         for entity_id in self.entity_ids:
             Clock.schedule_once(partial(self.gameworld.timed_remove_entity, entity_id))
-
 
     def generate_stars(self, first_star_choice1, first_star_choice2, second_star_choice1, 
         second_star_choice2, num_star_1, num_star_2, num_star_3, num_star_4):
@@ -96,7 +93,8 @@ class AsteroidsLevel(GameSystem):
         rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
         rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
         create_component_dict = {'position': {'position': (rand_x, rand_y)}, 
-        'quadtree_renderer': {'texture': star_graphic, 'size': star_size}, 'asteroids_level': {'level_id': self.current_level_id}}
+        'quadtree_renderer': {'texture': star_graphic, 'size': star_size}, 
+        'asteroids_level': {'level_id': self.current_level_id}}
         component_order = ['position', 'quadtree_renderer', 'asteroids_level']
         self.gameworld.init_entity(create_component_dict, component_order)
     
@@ -116,12 +114,14 @@ class AsteroidsLevel(GameSystem):
         size = (x_distance, y_distance)
         for y in range(int(side_length_y)):
             for x in range(int(side_length_x)):
-                position_dict[index] = (x * x_distance + x_distance *.5, y * y_distance + y_distance*.5)
+                position_dict[index] = (x * x_distance + x_distance *.5, 
+                    y * y_distance + y_distance*.5)
                 index += 1
         for num in range(num_tiles):
             create_component_dict = {'position': {'position': position_dict[num], 
             'scale_x': scale_x, 'scale_y': scale_y}, 
-            'background_renderer': {'texture': atlas_address, 'texture_key': str(num+1), 'size': size}, 
+            'background_renderer': {'texture': atlas_address, 
+            'texture_key': str(num+1), 'size': size}, 
             'asteroids_level': {'level_id': self.current_level_id}}
             component_order = ['position', 'background_renderer', 'asteroids_level']
             self.gameworld.init_entity(create_component_dict, component_order)
@@ -243,7 +243,8 @@ class AsteroidSystem(GameSystem):
         physics_component = {'main_shape': 'circle', 'velocity': (x_vel, y_vel), 
         'position': (x, y), 'angle': angle, 'angular_velocity': angular_velocity, 
         'mass': 50, 'col_shapes': col_shapes}
-        asteroid_component = {'health': 15, 'damage': 5, 'asteroid_size': 1, 'pending_destruction': False}
+        asteroid_component = {'health': 15, 'damage': 5, 
+        'asteroid_size': 1, 'pending_destruction': False}
         create_component_dict = {'cymunk-physics': physics_component, 
         'physics_renderer': {'texture': 'assets/background_objects/asteroid1.png'}, 
         'asteroid_system': asteroid_component}
@@ -299,7 +300,6 @@ class MusicController(Widget):
         for track_name in track_names:
             music_dict[track_name] = SoundLoader.load(self.music_dir + track_name + '.ogg')
             music_dict[track_name].seek(0)
- 
 
     def play_new_song(self, dt):
         self.play(random.choice(self.track_names))
@@ -324,12 +324,25 @@ class MusicController(Widget):
 
 class ProjectileSystem(GameSystem):
 
+    def create_rocket_explosion(self, entity_id):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        entity = entities[entity_id]
+        entity['physics_point_renderer']['render'] = False
+        entity['projectile_system']['armed'] = False
+        entity['cymunk-physics']['body'].velocity = (0, 0)
+        entity['point_particle_manager']['engine_effect']['particle_system_on'] = False
+        entity['point_particle_manager']['explosion_effect']['particle_system_on'] = True
+        Clock.schedule_once(partial(gameworld.timed_remove_entity, entity_id), 2.0)
+
 
     def spawn_projectile(self, projectile_type, location, angle):
         if projectile_type == '14px':
             bullet_ent_id = self.spawn_projectile_14px_bullet(location, angle)
         if projectile_type == '6px':
             bullet_ent_id = self.spawn_projectile_6px_bullet(location, angle)
+        if projectile_type == '14px_rocket':
+            bullet_ent_id = self.spawn_projectile_14px_rocket(location, angle)
         
         self.fire_projectile(bullet_ent_id)
 
@@ -344,9 +357,39 @@ class ProjectileSystem(GameSystem):
         projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-14px.png'}
         projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 10, 'accel': 50000}}
+        'projectile_system': {'damage': 10, 'accel': 50000, 'armed': True}}
         component_order = ['cymunk-physics', 'physics_point_renderer', 'projectile_system']
         bullet_ent_id = self.gameworld.init_entity(projectile_dict, component_order)
+        return bullet_ent_id
+
+    def set_armed(self, entity_id, dt):
+        entities = self.gameworld.entities
+        bullet = entities[entity_id]
+        bullet['projectile_system']['armed'] = True
+
+    def spawn_projectile_14px_rocket(self, location, angle):
+        projectile_box_dict = {'width': 14, 'height': 28, 'mass': 150}
+        projectile_col_shape_dict = {'shape_type': 'box', 'elasticity': 1.0, 
+        'collision_type': 3, 'shape_info': projectile_box_dict, 'friction': .3}
+        projectile_physics_component_dict = { 'main_shape': 'box', 
+        'velocity': (0, 0), 'position': (location[0], location[1]), 'angle': angle, 
+        'angular_velocity': 0, 'mass': 150, 'vel_limit': 160, 
+        'ang_vel_limit': math.radians(60),'col_shapes': [projectile_col_shape_dict]}
+        projectile_renderer_dict = {'texture': 'assets/projectiles/rocket-14px.png'}
+        particle_system1 = {'particle_file': 'assets/pexfiles/rocket_burn_effect1.pex', 
+        'offset': 6}
+        particle_system2 = {'particle_file': 'assets/pexfiles/rocket_explosion_1.pex', 
+        'offset': 0}
+        particle_systems = {'engine_effect': particle_system1, 
+        'explosion_effect': particle_system2}
+        projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
+        'physics_point_renderer': projectile_renderer_dict, 
+        'projectile_system': {'damage': 25, 'accel': 25000, 'armed': False}, 
+        'point_particle_manager': particle_systems}
+        component_order = ['cymunk-physics', 'physics_point_renderer', 
+        'projectile_system', 'point_particle_manager']
+        bullet_ent_id = self.gameworld.init_entity(projectile_dict, component_order)
+        Clock.schedule_once(partial(self.set_armed, bullet_ent_id), 1.0)
         return bullet_ent_id
 
     def spawn_projectile_6px_bullet(self, location, angle):
@@ -360,7 +403,7 @@ class ProjectileSystem(GameSystem):
         projectile_renderer_dict = {'texture': 'assets/projectiles/bullet-6px.png'}
         projectile_dict = {'cymunk-physics': projectile_physics_component_dict, 
         'physics_point_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': 9, 'offset': (38, 30), 'accel': 50000}}
+        'projectile_system': {'damage': 9, 'offset': (38, 30), 'accel': 50000, 'armed': True}}
         component_order = ['cymunk-physics', 'physics_point_renderer', 'projectile_system']
         bullet_ent_id = self.gameworld.init_entity(projectile_dict, component_order)
         return bullet_ent_id
@@ -374,10 +417,88 @@ class ProjectileSystem(GameSystem):
         force = {'x': bullet_accel*-unit_vector['x'], 'y': bullet_accel*-unit_vector['y']}
         force_offset = {'x': -unit_vector['x'], 'y': -unit_vector['y']}
         bullet['cymunk-physics']['body'].apply_impulse(force, force_offset)
+        if 'point_particle_manager' in bullet:
+
+            bullet['point_particle_manager']['engine_effect']['particle_system_on'] = True
 
     def clear_projectiles(self):
         for entity_id in self.entity_ids:
             Clock.schedule_once(partial(self.gameworld.timed_remove_entity, entity_id))
+
+    def begin_collision_solve_asteroid_bullet(self, arbiter, space):
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        entities = gameworld.entities
+        bullet_id = arbiter.shapes[1].body.data
+        asteroid_id = arbiter.shapes[0].body.data
+        bullet = entities[bullet_id]
+        if bullet['projectile_system']['armed']:
+            bullet_damage = bullet['projectile_system']['damage']
+            systems['asteroid_system'].damage(asteroid_id, bullet_damage)
+            if 'point_particle_manager' in bullet:
+                self.create_rocket_explosion(bullet_id)
+            else:
+                Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id))
+            return True
+        else:
+            return False
+
+    def collision_solve_bullet_bullet(self, arbiter, space):
+        bullet_id2 = arbiter.shapes[1].body.data
+        bullet_id1 = arbiter.shapes[0].body.data
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        bullet1 = entities[bullet_id1]
+        bullet2 = entities[bullet_id2]
+        if 'point_particle_manager' in bullet1:
+            self.create_rocket_explosion(bullet_id1)
+        else:
+            Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id1))
+        if 'point_particle_manager' in bullet2:
+            self.create_rocket_explosion(bullet_id2)
+        else:
+            Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id2))
+
+    def collision_begin_ship_bullet(self, arbiter, space):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        bullet_id = arbiter.shapes[1].body.data
+        ship_id = arbiter.shapes[0].body.data
+        bullet = entities[bullet_id]
+        if bullet['projectile_system']['armed']:
+            return True
+        else:
+            return False
+
+    def collision_begin_asteroid_bullet(self, arbiter, space):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        bullet_id = arbiter.shapes[1].body.data
+        asteroid_id = arbiter.shapes[0].body.data
+        bullet = entities[bullet_id]
+        if bullet['projectile_system']['armed']:
+            return True
+        else:
+            return False
+
+    def collision_solve_ship_bullet(self, arbiter, space):
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        entities = gameworld.entities
+        bullet_id = arbiter.shapes[1].body.data
+        ship_id = arbiter.shapes[0].body.data
+        bullet = entities[bullet_id]
+        if bullet['projectile_system']['armed']:
+            bullet_damage = bullet['projectile_system']['damage']
+            systems['player_character'].damage(ship_id, bullet_damage)
+            if 'point_particle_manager' in bullet:
+                self.create_rocket_explosion(bullet_id)
+            else:
+                Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id))
+            return True
+        else:
+            print 'collision with bullet after explosion'
+            return False
 
 class PlayerCharacter(GameSystem):
     current_character_id = NumericProperty(None, allownone=True)
@@ -500,36 +621,6 @@ class PlayerCharacter(GameSystem):
         system_data = entity[system_id]
         system_data['health'] -= damage
 
-    def begin_collision_solve_asteroid_bullet(self, arbiter, space):
-        gameworld = self.gameworld
-        systems = gameworld.systems
-        entities = gameworld.entities
-        bullet_id = arbiter.shapes[1].body.data
-        asteroid_id = arbiter.shapes[0].body.data
-        bullet = entities[bullet_id]
-        bullet_damage = bullet['projectile_system']['damage']
-        systems['asteroid_system'].damage(asteroid_id, bullet_damage)
-        Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id))
-        return True
-
-    def collision_solve_bullet_bullet(self, arbiter, space):
-        bullet_id2 = arbiter.shapes[1].body.data
-        bullet_id1 = arbiter.shapes[0].body.data
-        gameworld = self.gameworld
-        Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id1))
-        Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id2))
-
-    def collision_solve_ship_bullet(self, arbiter, space):
-        gameworld = self.gameworld
-        systems = gameworld.systems
-        entities = gameworld.entities
-        bullet_id = arbiter.shapes[1].body.data
-        ship_id = arbiter.shapes[0].body.data
-        bullet = entities[bullet_id]
-        bullet_damage = bullet['projectile_system']['damage']
-        self.damage(ship_id, bullet_damage)
-        Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id))
-        return True
 
     def collision_solve_ship_asteroid(self, arbiter, space):
         gameworld = self.gameworld
@@ -603,31 +694,35 @@ class TestGame(Widget):
     def setup_states(self):
         self.gameworld.add_state(state_name='main_menu', systems_added=['background_renderer', 
             'quadtree_renderer', 'default_map'], 
-            systems_removed=['physics_renderer', 'particle_manager', 'physics_point_renderer'], 
+            systems_removed=['physics_renderer', 'particle_manager', 'point_particle_manager',
+            'physics_point_renderer'], 
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'physics_point_renderer',
-            'particle_manager', 'asteroid_system', 'player_character'], systems_unpaused=[],
+            'particle_manager', 'point_particle_manager', 'asteroid_system', 
+            'player_character'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='choose_character', systems_added=[
             'background_renderer', 'quadtree_renderer',  'default_map'], 
-            systems_removed=['physics_renderer', 'particle_manager', 'physics_point_renderer'], 
+            systems_removed=['physics_renderer', 'particle_manager', 'point_particle_manager',
+             'physics_point_renderer'], 
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'physics_point_renderer', 'quadtree_renderer',
-            'particle_manager', 'asteroid_system', 'player_character'], systems_unpaused=[],
+            'particle_manager', 'point_particle_manager', 'asteroid_system', 
+            'player_character'], systems_unpaused=[],
             screenmanager_screen='choose_character')
         self.gameworld.add_state(state_name='main_game', systems_added=[ 'background_renderer', 
             'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
-            'default_map', 'particle_manager'], 
+            'default_map', 'particle_manager', 'point_particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'particle_manager', 'quadtree_renderer',
+            'physics_renderer', 'particle_manager', 'point_particle_manager', 'quadtree_renderer',
             'asteroid_system', 'player_character', 'physics_point_renderer'], screenmanager_screen='main_game')
         self.gameworld.add_state(state_name='game_over', systems_added=[ 'background_renderer', 
             'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
-            'default_map', 'particle_manager'], 
+            'default_map', 'particle_manager', 'point_particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'particle_manager',
+            'physics_renderer', 'particle_manager', 'point_particle_manager',
             'asteroid_system', 'player_character', 'physics_point_renderer'], screenmanager_screen='game_over')
 
     def clear_gameworld_objects(self):
@@ -670,12 +765,14 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         physics = systems['cymunk-physics']
         character_system = systems['player_character']
+        projectile_system = systems['projectile_system']
         physics.add_collision_handler(1,3, 
-            separate_func=character_system.begin_collision_solve_asteroid_bullet)
-        physics.add_collision_handler(2,3, 
-            separate_func=character_system.collision_solve_ship_bullet)
+            separate_func=projectile_system.begin_collision_solve_asteroid_bullet)
+        physics.add_collision_handler(2,3, begin_func=projectile_system.collision_begin_ship_bullet,
+            separate_func=projectile_system.collision_solve_ship_bullet)
         physics.add_collision_handler(2,1, separate_func=character_system.collision_solve_ship_asteroid)
-        physics.add_collision_handler(3,3, separate_func=character_system.collision_solve_bullet_bullet)
+        physics.add_collision_handler(3,3, begin_func=projectile_system.collision_begin_asteroid_bullet, 
+            separate_func=projectile_system.collision_solve_bullet_bullet)
     
     def test_remove_entity(self, dt):
         self.gameworld.remove_entity(0)
@@ -720,7 +817,7 @@ class TestGame(Widget):
         'ang_vel_limit': math.radians(65), 'col_shapes': [col_shape_dict]}
         hard_points = [(46, 49), (-46, 49)]
         ship_dict = {'health': 180, 'accel': 15000, 'offset_distance': 50, 
-        'ang_accel': math.radians(95), 'hard_points': hard_points, 'projectile_type': '14px'}
+        'ang_accel': math.radians(95), 'hard_points': hard_points, 'projectile_type': '14px_rocket'}
         particle_system1 = {'particle_file': 'assets/pexfiles/engine_burn_effect3.pex', 
         'offset': 65}
         particle_system2 = {'particle_file': 'assets/pexfiles/ship_explosion1.pex', 'offset': 0}

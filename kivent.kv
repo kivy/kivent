@@ -5,8 +5,11 @@
 #:set COLOR_BACKGROUND (0.349019608, 0.082352941, 0.658823529)
 #:set COLOR_BACKGROUND_A50 (0.349019608, 0.082352941, 0.658823529, .5)
 #:set COLOR_BORDER (0.643137255, 0.160784314, 1)
-#:set COLOR_BORDER_A50 (0.643137255, 0.160784314, 1, 1)
+#:set COLOR_BORDER_A50 (0.643137255, 0.160784314, 1, .5)
 #:set COLOR_HIGHLIGHT_A50 (0.788235294, 0.643137255, 1, .5)
+#:set COLOR_HIGHLIGHT_A100 (0.788235294, 0.643137255, 1, 1.0)
+#:set COLOR_BACKGROUND_A100 (0.349019608, 0.082352941, 0.658823529, 1.0)
+#:set COLOR_BORDER_A100 (0.643137255, 0.160784314, 1, 1.0)
 
 
 TestGame:
@@ -174,6 +177,10 @@ TestGame:
 			rectangle: (self.pos[0], self.pos[1], self.size[0], self.size[1])
 			joint: 'bevel'
 
+<YACSLabelNoBox>:
+	font_name: 'assets/fonts/Aldrich-Regular.ttf'
+	shorten: True
+	font_size: 16
 
 <YACSLabel>:
 	font_name: 'assets/fonts/Aldrich-Regular.ttf'
@@ -233,6 +240,7 @@ TestGame:
 <MainGameScreen>:
 	gameworld: self.gameworld
 	number_of_asteroids: self.number_of_asteroids
+	fire_button: fire_button
 	FloatLayout:
 		size: root.size
 		pos: root.pos
@@ -242,12 +250,18 @@ TestGame:
 			size_hint: (.2, .05)
 			font_size: self.size[1]*.5
 		YACSButtonCircle:
+			id: fire_button
 			pos_hint: {'x': .05, 'y': .05}
 			size_hint: (None, None)
 			size: (.15*root.width, .15*root.width)
 			text: 'FIRE'
 			font_size: 16
 			on_state: root.gameworld.systems['player_character'].spawn_projectile(self.state)
+		ToggleButton:
+			pos_hint: {'x': .05, 'y': .075 + root.fire_button.size[1]/root.height}
+			size_hint: (.15, .05)
+			text: 'Toggle Weapon'
+			on_press: root.toggle_weapons(self.state)
 		CharacterInputPanel:
 			gameworld: root.gameworld
 			size_hint: (.20, .3)
@@ -270,6 +284,7 @@ TestGame:
 			text: 'Choose Your Ship:'
 		ChooseCharacterWidget:
 			id: choose_character
+			gameworld: root.gameworld
 			pos_hint: {'x': .2, 'y':.2}
 			size_hint: (.6, .6)
 			center: root.center
@@ -280,8 +295,23 @@ TestGame:
 			text: 'Play Game'
 			on_press: root.gameworld.parent.start_round(root.current_ship)
 
+<StatBox>:
+	stat_name: self.stat_name
+	stat_value: self.stat_value
+	orientation: 'horizontal'
+	YACSLabelNoBox:
+		text: root.stat_name
+		size_hint: (.5, 1.0)
+		color: COLOR_HIGHLIGHT_A100
+	YACSLabelNoBox:
+		text: root.stat_value
+		size_hint: (.5, 1.0)
+		color: COLOR_BORDER_A100
+
+
+
 <ChooseCharacterWidget>:
-	current_ship: 'ship_1'
+	
 	pos: root.pos
 	size: root.size
 	canvas:
@@ -299,24 +329,63 @@ TestGame:
 		size: root.size
 		pos: root.pos
 		orientation: 'vertical'
-		YACSLabel:
-			text: 'Current Ship: ' + root.current_ship
+		YACSLabelNoBox:
+			text: 'Current Ship: ' + root.ship_dict['name'] if root.ship_dict else 'Current Ship: None'
 			size_hint: (.8, .2)
 			pos_hint: {'x': .1, 'y': .8}
 		Image:
 			size_hint: (None, None)
 			pos_hint: {'x': .4}
-			source: 'assets/ships/ship1-1.png' if root.current_ship == 'ship_1' else 'assets/ships/ship3.png'
-		YACSButton:
-			text: 'Choose Ship 1'
-			size_hint: (.6, .2)
-			on_press: root.current_ship = 'ship_1'
-			pos_hint: {'x': .2, 'y': .5}
-		YACSButton:
-			text: 'Choose Ship 2'
-			on_press: root.current_ship = 'ship_2'
-			size_hint: (.6, .2)
-			pos_hint: {'x': .2, 'y': .15}
+			source: root.ship_dict['texture'] if root.ship_dict else None
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: (.8, .2)
+			pos_hint: {'x': .1}
+			YACSButton:
+				text: 'Prev'
+				on_press: root.get_prev_ship()
+				size_hint: (.5, 1.0)
+			YACSButton:
+				text: 'Next'
+				size_hint: (.5, 1.0)
+				on_press: root.get_next_ship()
+		BoxLayout:
+			orientation: 'horizontal'
+			size_hint: (.8, .5)
+			pos_hint: {'x': .1}
+			BoxLayout:
+				orientation: 'vertical'
+				size_hint: (.5, 1.)
+				StatBox:
+					stat_name: 'health'
+					stat_value: str(root.ship_dict['health']) if root.ship_dict else 'Default'
+				StatBox:
+					stat_name: 'mass'
+					stat_value: str(root.ship_dict['mass']) if root.ship_dict else 'Default'
+				StatBox:
+					stat_name: 'weapons'
+					stat_value: str(root.ship_dict['num_weapons']) if root.ship_dict else 'Default'
+				StatBox:
+					stat_name: 'caliber'
+					stat_value: str(root.ship_dict['caliber']) if root.ship_dict else 'Default'
+			BoxLayout:
+				orientation: 'vertical'
+				size_hint: (.5, 1.)
+				StatBox:
+					stat_name: 'max speed'
+					stat_value: str(root.ship_dict['max_speed']) if root.ship_dict else 'Default'
+				StatBox:
+					stat_name: 'turn speed'
+					stat_value: str(root.ship_dict['max_turn_speed']) if root.ship_dict else 'Default'
+				StatBox:
+					stat_name: 'accel'
+					stat_value: str(root.ship_dict['accel']) if root.ship_dict else 'Default'
+				StatBox:
+					stat_name: 'turn accel'
+					stat_value: str(root.ship_dict['angular_accel']) if root.ship_dict else 'Default'
+
+
+				
 
 	
 	

@@ -63,7 +63,7 @@ class ParticleManager(GameSystem):
                     if particle_systems[particle_effect]['particle_system_on']:
                         particle_system.current_scroll = camera_pos
                         particle_system.pos = self.calculate_particle_offset(entity_id, particle_effect)
-                        particle_system.emit_angle = radians(entity[position_data_from]['angle'])
+                        particle_system.emit_angle = radians(entity[position_data_from]['angle']-90)
                         if particle_system._is_paused:
                             particle_system.resume()
                         if particle_system.emission_time <= 0:

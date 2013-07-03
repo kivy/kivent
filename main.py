@@ -1,5 +1,4 @@
 import kivy
-kivy.require('1.7.0')
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.properties import (StringProperty, ObjectProperty, NumericProperty, 
@@ -17,16 +16,18 @@ import musiccontroller
 import os
 import sys
 
-
 class TestGame(Widget):
     gameworld = ObjectProperty(None)
     state = StringProperty(None)
     number_of_asteroids = NumericProperty(0, allownone=True)
     loading_new_level = BooleanProperty(False)
+    cleared = BooleanProperty(True)
+
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         Clock.schedule_once(self.init_game)
         print kwargs
+
 
     def init_game(self, dt):
         try: 
@@ -40,9 +41,19 @@ class TestGame(Widget):
             self.gameworld.systems['quadtree_renderer'].enter_delete_mode()
             self.gameworld.systems['asteroids_level'].clear_level()
             self.clear_gameworld_objects()
+            self.cleared = False
             Clock.schedule_once(self.check_clear)
-            
 
+    def check_quadtree_created(self, dt):
+        systems = self.gameworld.systems
+        quadtree_renderer = systems['quadtree_renderer']
+        if quadtree_renderer.quadtree:
+            Clock.schedule_once(self.setup_new_level)
+            self.cleared = True
+        else:
+            Clock.schedule_once(self.check_quadtree_created)
+
+            
     def check_clear(self, dt):
         systems = self.gameworld.systems
         systems_to_check = ['asteroids_level', 'asteroid_system', 'projectile_system', 'quadtree_renderer']
@@ -56,18 +67,16 @@ class TestGame(Widget):
             if self.check_clear_counter > 10:
                 self.clear_gameworld_objects()
             Clock.schedule_once(self.check_clear, .01)
-            
         else:
             Clock.schedule_once(self.setup_new_quadtree)
-            Clock.schedule_once(self.setup_new_level)
-    
+            Clock.schedule_once(self.check_quadtree_created)
+                
     def setup_new_quadtree(self, dt):
         Clock.schedule_once(self.gameworld.systems['quadtree_renderer'].setup_quadtree)
 
     def setup_new_level(self, dt):
         Clock.schedule_once(self.gameworld.systems['asteroids_level'].generate_new_level)
         
-
     def setup_states(self):
         self.gameworld.add_state(state_name='main_menu', systems_added=['background_renderer', 
             'quadtree_renderer', 'default_map'], 
@@ -118,10 +127,12 @@ class TestGame(Widget):
         self.gameworld.currentmap = self.gameworld.systems['default_map']
 
     def start_round(self, character_to_spawn):
-        character_system = self.gameworld.systems['player_character']
-        character_system.spawn_player_character(character_to_spawn)
-        Clock.schedule_once(self.gameworld.systems['asteroid_system'].generate_asteroids)
-        self.gameworld.state = 'main_game'
+        print self.cleared
+        if self.cleared:
+            character_system = self.gameworld.systems['player_character']
+            character_system.spawn_player_character(character_to_spawn)
+            Clock.schedule_once(self.gameworld.systems['asteroid_system'].generate_asteroids)
+            self.gameworld.state = 'main_game'
 
 
     def setup_gameobjects(self):
@@ -167,7 +178,6 @@ class KivEntApp(App):
     def build(self):
         Window.clearcolor = (0, 0, 0, 1.)
         
-
 if __name__ == '__main__':
    KivEntApp().run()
     # sd_card_path = os.path.dirname('/sdcard/profiles/')

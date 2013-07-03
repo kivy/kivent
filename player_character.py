@@ -14,13 +14,31 @@ class PlayerCharacter(GameSystem):
     touch_values = ListProperty([])
     turn_speed_multiplier = NumericProperty(1.)
     engine_speed_multiplier = NumericProperty(1.)
+    current_health = NumericProperty(1., allownone=True)
     character_dying = BooleanProperty(False)
     ship_dicts = DictProperty(None)
     current_projectile_type = StringProperty('_bullet')
+    weapons_locked = BooleanProperty(False)
+    total_health = NumericProperty(1., allownone=True)
 
     def __init__(self, **kwargs):
         super(PlayerCharacter, self).__init__(**kwargs)
         self.setup_ship_dicts()
+
+    def on_weapons_locked(self, instance, value):
+        print 'weapons_lock:', value
+        if value == True:
+            gameworld = self.gameworld
+            character = gameworld.entities[self.current_character_id]
+            projectile_system = gameworld.systems['projectile_system']
+            system_data = character[self.system_id]
+            currnet_projectile_dict = projectile_system.projectiles_dict[
+                system_data['projectile_type']+self.current_projectile_type]
+            cooldown = currnet_projectile_dict['cooldown']
+            Clock.schedule_once(self.reset_weapon_lock, cooldown)
+
+    def reset_weapon_lock(self, dt):
+        self.weapons_locked = False
 
     def spawn_player_character(self, character_to_spawn):
         self.spawn_player_character_with_dict(self.ship_dicts[character_to_spawn])
@@ -34,7 +52,7 @@ class PlayerCharacter(GameSystem):
         'engine_effect': 'assets/pexfiles/engine_burn_effect3.pex', 'engine_offset': 65,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
         'hard_points': [(46, 59), (-46, 59)]}
-        ship_dicts['ship_2'] = {'name': 'Falcon','health': 150, 'mass': 175,'max_speed': 200, 
+        ship_dicts['ship_2'] = {'name': 'Falcon','health': 150, 'mass': 175,'max_speed': 190, 
         'max_turn_speed': 80, 'accel': 20000,'angular_accel': 150, 'caliber': '6px', 
         'num_weapons': 4, 'texture': 'assets/ships/ship3.png', 'price': 1000,
         'width': 130, 'height': 70, 'offset_distance': 50, 'color': 'orange',
@@ -48,13 +66,29 @@ class PlayerCharacter(GameSystem):
         'engine_effect': 'assets/pexfiles/engine_burn_effect2.pex', 'engine_offset': 50,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
         'hard_points': [(28, 51), (-28, 51)]}
-        ship_dicts['ship_4'] = {'name': 'Skirmisher','health': 130, 'mass': 140,'max_speed': 220, 
+        ship_dicts['ship_4'] = {'name': 'Archon','health': 130, 'mass': 140,'max_speed': 200, 
         'max_turn_speed': 85, 'accel': 18000,'angular_accel': 100, 'caliber': '14px', 
         'num_weapons': 1, 'texture': 'assets/ships/ship5.png', 'price': 1000,
         'width': 62, 'height': 100, 'offset_distance': 50, 'color': 'orange',
         'engine_effect': 'assets/pexfiles/engine_burn_effect6.pex', 'engine_offset': 27,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
         'hard_points': [(-18, 63)]}
+        ship_dicts['ship_5'] = {'name': 'Cavalier','health': 110, 'mass': 120,'max_speed': 220, 
+        'max_turn_speed': 125, 'accel': 22000,'angular_accel': 90, 'caliber': '8px', 
+        'num_weapons': 1, 'texture': 'assets/ships/ship6.png', 'price': 1000,
+        'width': 66, 'height': 80, 'offset_distance': 50, 'color': 'green',
+        'engine_effect': 'assets/pexfiles/engine_burn_effect8.pex', 'engine_offset': 47,
+        'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
+        'hard_points': [(0, 47)]}
+        ship_dicts['ship_6'] = {'name': 'Shield','health': 150, 'mass': 160,'max_speed': 180, 
+        'max_turn_speed': 150, 'accel': 25000,'angular_accel': 235, 'caliber': '6px', 
+        'num_weapons': 2, 'texture': 'assets/ships/ship7.png', 'price': 1000,
+        'width': 76, 'height': 80, 'offset_distance': 50, 'color': 'blue',
+        'engine_effect': 'assets/pexfiles/engine_burn_effect9.pex', 'engine_offset': 45,
+        'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
+        'hard_points': [(-6, 47), (6, 47)]}
+        
+
 
     def get_ship_values(self, ship_name):
         if ship_name in self.ship_dicts:
@@ -75,6 +109,8 @@ class PlayerCharacter(GameSystem):
         'offset_distance': ship_dict['offset_distance'], 'color': ship_dict['color'],
         'ang_accel': math.radians(ship_dict['angular_accel']), 'hard_points': ship_dict['hard_points'], 
         'projectile_type': ship_dict['caliber']}
+        self.total_health = ship_dict['health']
+        self.current_health = ship_dict['health']
         particle_system1 = {'particle_file': ship_dict['engine_effect'], 
         'offset': ship_dict['engine_offset']}
         particle_system2 = {'particle_file': ship_dict['explosion_effect'], 'offset': 0}
@@ -129,24 +165,26 @@ class PlayerCharacter(GameSystem):
 
     def fire_projectiles(self, dt):
         if not self.current_character_id == None:
-            character = self.gameworld.entities[self.current_character_id]
-            projectile_system = self.gameworld.systems['projectile_system']
-            system_data = character[self.system_id]
-            projectiles_dict = projectile_system.projectiles_dict
-            projectile_type = system_data['projectile_type']+self.current_projectile_type
-            projectile_width = projectiles_dict[projectile_type]['width']
-            projectile_height = projectiles_dict[projectile_type]['height']
-            character_physics = character['cymunk-physics']
-            character_position = character_physics['position']
-            for hard_point in system_data['hard_points']:
+            if not self.weapons_locked:
+                character = self.gameworld.entities[self.current_character_id]
+                projectile_system = self.gameworld.systems['projectile_system']
+                system_data = character[self.system_id]
+                projectiles_dict = projectile_system.projectiles_dict
+                projectile_type = system_data['projectile_type']+self.current_projectile_type
+                projectile_width = projectiles_dict[projectile_type]['width']
+                projectile_height = projectiles_dict[projectile_type]['height']
+                character_physics = character['cymunk-physics']
+                character_position = character_physics['position']
+                for hard_point in system_data['hard_points']:
+                    
+                    position_offset = hard_point[0], hard_point[1] + projectile_height*.5
+                    position_offset_rotated = Vector(position_offset).rotate(character_physics['angle'])
+                    location = (character_position[0] + position_offset_rotated[0],
+                        character_position[1] + position_offset_rotated[1])
+                    angle = character_physics['body'].angle
+                    projectile_system.spawn_projectile(projectile_type, location, angle, system_data['color'])
+                self.weapons_locked = True
                 
-                position_offset = hard_point[0], hard_point[1] + projectile_height*.5
-                position_offset_rotated = Vector(position_offset).rotate(character_physics['angle'])
-                location = (character_position[0] + position_offset_rotated[0],
-                    character_position[1] + position_offset_rotated[1])
-                angle = character_physics['body'].angle
-                projectile_system.spawn_projectile(projectile_type, location, angle, system_data['color'])
-
     def spawn_projectile(self, state):
         if state == 'down':
             Clock.schedule_once(self.fire_projectiles)
@@ -177,6 +215,11 @@ class PlayerCharacter(GameSystem):
                 self.do_death()
                 self.character_dying = True
 
+    def on_current_projectile_type(self, instance, value):
+        self.weapons_locked = True
+       
+
+
     def update_death_animation(self, dt):
         entity = self.gameworld.entities[self.current_character_id]
         entity['physics_renderer']['render'] = False
@@ -203,6 +246,7 @@ class PlayerCharacter(GameSystem):
         entity = entities[entity_id]
         system_data = entity[system_id]
         system_data['health'] -= damage
+        self.current_health = system_data['health']
 
 
     def collision_solve_ship_asteroid(self, arbiter, space):

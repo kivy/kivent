@@ -12,7 +12,6 @@ class MusicController(Widget):
         self.track_names = ['track1', 'track2', 'track3', 'track4', 'track5']
         Clock.schedule_once(self.load_music)
         
-        
     def load_music(self, dt):
         print 'loading music'
         print self.music_dir
@@ -26,6 +25,7 @@ class MusicController(Widget):
         self.play(random.choice(self.track_names))
 
     def schedule_choose_new_song(self, value):
+        value.seek(0)
         start_delay = random.random() * 20.0
         print start_delay, 'start delay'
         Clock.schedule_once(self.play_new_song, start_delay)

@@ -7,9 +7,9 @@
   <maxParticles value="10"/>
   <particleLifeSpan value="0.21"/>
   <particleLifespanVariance value="0"/>
-  <startParticleSize value="70"/>
+  <startParticleSize value="50"/>
   <startParticleSizeVariance value="22"/>
-  <finishParticleSize value="30"/>
+  <finishParticleSize value="20"/>
   <FinishParticleSizeVariance value="10"/>
   <angle value="95.9999998903"/>
   <angleVariance value="0"/>
@@ -28,9 +28,9 @@
   <minRadius value="0"/>
   <rotatePerSecond value="0"/>
   <rotatePerSecondVariance value="0"/>
-  <startColor alpha="1" blue="0" green="0.300000011921" red="0.800000011921"/>
+  <startColor alpha="1" blue="0.100000023842" green="1" red="0.550000011921"/>
   <startColorVariance alpha="0" blue="0" green="0" red="0.143067304156"/>
-  <finishColor alpha="0.342528829379" blue="0.399999976158" green="0.625" red="1"/>
+  <finishColor alpha="0.635174404049" blue="0" green="0.10000000149" red="0.0125000001863"/>
   <finishColorVariance alpha="0" blue="0" green="0" red="0"/>
   <blendFuncSource value="770"/>
   <blendFuncDestination value="1"/>

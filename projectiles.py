@@ -14,12 +14,12 @@ class ProjectileSystem(GameSystem):
         entities = gameworld.entities
         entity = entities[entity_id]
         entity['physics_point_renderer']['render'] = False
-        entity['projectile_system']['armed'] = False
         entity['cymunk-physics']['body'].velocity = (0, 0)
+        entity['cymunk-physics']['body'].reset_forces()
         entity['point_particle_manager']['engine_effect']['particle_system_on'] = False
         entity['point_particle_manager']['explosion_effect']['particle_system_on'] = True
+        entity['projectile_system']['armed'] = False
         Clock.schedule_once(partial(gameworld.timed_remove_entity, entity_id), 2.0)
-
 
     def spawn_projectile(self, projectile_type, location, angle, color):
         bullet_ent_id = self.spawn_projectile_with_dict(location, angle, color, 
@@ -29,24 +29,23 @@ class ProjectileSystem(GameSystem):
     def setup_projectiles_dicts(self):
         self.projectiles_dict = projectiles_dict = {}
         projectiles_dict['14px_bullet'] = {'width': 14, 'height': 14, 'mass': 50, 
-        'vel_limit': 260, 'ang_vel_limit': 60, 'damage': 10, 
-        'accel': 50000, 'texture': 'assets/projectiles/bullet-14px.png', 'type': 'bullet'}
+        'vel_limit': 260, 'ang_vel_limit': 60, 'damage': 10, 'cooldown': .25,
+        'accel': 25000, 'texture': 'assets/projectiles/bullet-14px.png', 'type': 'bullet'}
         projectiles_dict['8px_bullet'] = {'width': 8, 'height': 8, 'mass': 45, 
-        'vel_limit': 275, 'ang_vel_limit': 60, 'damage': 9, 
-        'accel': 50000, 'texture': 'assets/projectiles/bullet-8px.png', 'type': 'bullet'}
+        'vel_limit': 275, 'ang_vel_limit': 60, 'damage': 9, 'cooldown': .20,
+        'accel': 25000, 'texture': 'assets/projectiles/bullet-8px.png', 'type': 'bullet'}
         projectiles_dict['6px_bullet'] = {'width': 6, 'height': 6, 'mass': 35, 
-        'vel_limit': 300, 'ang_vel_limit': 60, 'damage': 7, 
-        'accel': 50000, 'texture': 'assets/projectiles/bullet-6px.png', 'type': 'bullet'}
+        'vel_limit': 300, 'ang_vel_limit': 60, 'damage': 7, 'cooldown': .15,
+        'accel': 25000, 'texture': 'assets/projectiles/bullet-6px.png', 'type': 'bullet'}
         projectiles_dict['14px_rocket'] = {'width': 14, 'height': 28, 'mass': 75, 
-        'vel_limit': 260, 'ang_vel_limit': 60, 'damage': 25, 
-        'accel': 80000, 'texture': 'assets/projectiles/rocket-14px.png', 'type': 'rocket'}
+        'vel_limit': 260, 'ang_vel_limit': 60, 'damage': 25, 'cooldown': 1.0,
+        'accel': 40000, 'texture': 'assets/projectiles/rocket-14px.png', 'type': 'rocket'}
         projectiles_dict['8px_rocket'] = {'width': 8, 'height': 20, 'mass': 60, 
-        'vel_limit': 260, 'ang_vel_limit': 60, 'damage': 18, 
-        'accel': 50000, 'texture': 'assets/projectiles/rocket-8px.png', 'type': 'rocket'}
+        'vel_limit': 260, 'ang_vel_limit': 60, 'damage': 18, 'cooldown': .9,
+        'accel': 25000, 'texture': 'assets/projectiles/rocket-8px.png', 'type': 'rocket'}
         projectiles_dict['6px_rocket'] = {'width': 6, 'height': 14, 'mass': 50, 
-        'vel_limit': 260, 'ang_vel_limit': 60, 'damage': 11, 
-        'accel': 50000, 'texture': 'assets/projectiles/rocket-6px.png', 'type': 'rocket'}
-
+        'vel_limit': 260, 'ang_vel_limit': 60, 'damage': 11, 'cooldown': .8,
+        'accel': 25000, 'texture': 'assets/projectiles/rocket-6px.png', 'type': 'rocket'}
 
     def spawn_projectile_with_dict(self, location, angle, color, projectile_dict):
         projectile_box_dict = {'width': projectile_dict['width'], 
@@ -104,8 +103,9 @@ class ProjectileSystem(GameSystem):
         force_offset = {'x': -unit_vector['x'], 'y': -unit_vector['y']}
         bullet['cymunk-physics']['body'].apply_impulse(force, force_offset)
         if 'point_particle_manager' in bullet:
-
+            bullet['cymunk-physics']['body'].apply_force(force, force_offset)
             bullet['point_particle_manager']['engine_effect']['particle_system_on'] = True
+
 
     def clear_projectiles(self):
         for entity_id in self.entity_ids:
@@ -124,6 +124,7 @@ class ProjectileSystem(GameSystem):
             if 'point_particle_manager' in bullet:
                 self.create_rocket_explosion(bullet_id)
             else:
+                bullet['projectile_system']['armed'] = False
                 Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id))
             return True
         else:
@@ -140,10 +141,12 @@ class ProjectileSystem(GameSystem):
             if 'point_particle_manager' in bullet1:
                 self.create_rocket_explosion(bullet_id1)
             else:
+                bullet1['projectile_system']['armed'] = False
                 Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id1))
             if 'point_particle_manager' in bullet2:
                 self.create_rocket_explosion(bullet_id2)
             else:
+                bullet2['projectile_system']['armed'] = False
                 Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id2))
 
     def collision_begin_ship_bullet(self, arbiter, space):
@@ -193,6 +196,7 @@ class ProjectileSystem(GameSystem):
             if 'point_particle_manager' in bullet:
                 self.create_rocket_explosion(bullet_id)
             else:
+                bullet['projectile_system']['armed'] = False
                 Clock.schedule_once(partial(gameworld.timed_remove_entity, bullet_id))
             return True
         else:

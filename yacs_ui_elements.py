@@ -1,18 +1,24 @@
-from kivy.properties import (StringProperty, ObjectProperty, ListProperty, DictProperty)
+from kivy.properties import (StringProperty, ObjectProperty, ListProperty, 
+    DictProperty, NumericProperty)
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.togglebutton import ToggleButton
 from kivent_cython import (GameScreenManager, GameScreen)
-from kivyparticle import ParticleSystem
+from particlesystem import ParticleSystem
 from kivy.clock import Clock
 
 class YACSLabel(Label):
     pass
 
-class YACSButtonCircle(Button):
-    pass
+class YACSButtonCircle(ToggleButton):
+    
+    def on_touch_down(self, touch):
+        if self.weapons_locked:
+            pass
+        else:
+            super(YACSButtonCircle, self).on_touch_down(touch)
 
 class YACSButton(Button):
     pass
@@ -95,14 +101,14 @@ class MainGameScreen(GameScreen):
             character_system.current_projectile_type = '_rocket'
         if state == 'normal':
             character_system.current_projectile_type = '_bullet'
-        print character_system.current_projectile_type
+
 
 class GameOverScreen(GameScreen):
     name = StringProperty('game_over')
 
 class ChooseCharacterWidget(Widget):
     current_ship = StringProperty('default')
-    list_of_ships = ListProperty(['ship_1', 'ship_2', 'ship_3', 'ship_4'])
+    list_of_ships = ListProperty(['ship_1', 'ship_2', 'ship_3', 'ship_4', 'ship_5', 'ship_6'])
     gameworld = ObjectProperty(None)
     ship_dict = DictProperty(None)
 
@@ -138,6 +144,15 @@ class ChooseCharacterScreen(GameScreen):
 class StatBox(BoxLayout):
     stat_value = StringProperty('Default Value')
     stat_name = StringProperty('Default Name')
+
+class HealthBar(BoxLayout):
+    current_health = NumericProperty(1.0, allownone=True)
+    total_health = NumericProperty(1.0, allownone=True)
+    health_percentage = NumericProperty(1.0)
+
+    def on_current_health(self, instance, value):
+        if not value == None and not self.total_health == None:
+            self.health_percentage = float(value)/float(self.total_health)
 
 class YACSLabelNoBox(Label):
     pass

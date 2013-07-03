@@ -28,9 +28,9 @@
   <minRadius value="0"/>
   <rotatePerSecond value="0"/>
   <rotatePerSecondVariance value="0"/>
-  <startColor alpha="1" blue="0" green="0.300000011921" red="0.800000011921"/>
+  <startColor alpha="1" blue="0.600000023842" green="0" red="0.0750000029802"/>
   <startColorVariance alpha="0" blue="0" green="0" red="0.143067304156"/>
-  <finishColor alpha="0.342528829379" blue="0.399999976158" green="0.625" red="1"/>
+  <finishColor alpha="1" blue="0.300000011921" green="0.0750000029802" red="0"/>
   <finishColorVariance alpha="0" blue="0" green="0" red="0"/>
   <blendFuncSource value="770"/>
   <blendFuncDestination value="1"/>

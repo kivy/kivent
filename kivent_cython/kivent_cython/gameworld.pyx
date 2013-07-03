@@ -58,6 +58,7 @@ class GameWorld(Widget):
         self.remove_widget(gamescreenmanager)
         self.add_widget(gamescreenmanager)
 
+
     def create_entity(self):
         entity = {'id': self.number_entities}
         self.entities.append(entity)

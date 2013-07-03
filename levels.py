@@ -44,6 +44,33 @@ class AsteroidsLevel(GameSystem):
             if first_color_choice == star_choice_purple:
                 bg_choice = random.choice(dust_choices_purple)
             self.generate_prerendered_background(bg_choice, (512, 512))
+        self.choose_damping()
+        self.choose_gravity()
+
+    def choose_gravity(self):
+        choice = random.choice(['none', 'x', 'y', 'xy', 'none', 'none', 'none'])
+        systems = self.gameworld.systems
+        physics_system = systems['cymunk-physics']
+        print choice
+        if choice == 'none':
+            physics_system.gravity = (0, 0)
+        if choice == 'x':
+            x_grav = random.randrange(-100, 100)
+            physics_system.gravity = (x_grav, 0)
+        if choice == 'y':
+            y_grav = random.randrange(-100, 100)
+            physics_system.gravity = (0, y_grav)
+        if choice == 'xy':
+            y_grav = random.randrange(-100, 100)
+            x_grav = random.randrange(-100, 100)
+            physics_system.gravity = (x_grav, y_grav)
+        print physics_system.gravity
+
+    def choose_damping(self):
+        systems = self.gameworld.systems
+        physics_system = systems['cymunk-physics']
+        damping_factor = .75 + .25*random.random()
+        physics_system.damping = damping_factor
 
     def clear_level(self):
         for entity_id in self.entity_ids:
@@ -111,7 +138,6 @@ class AsteroidSystem(GameSystem):
         if current_level_id > 4:
             num_big_asteroids = (current_level_id - 1) * 5
             num_small_asteroids = (current_level_id + 1) * 5
-
         #small asteroids
         for x in range(num_small_asteroids):
             rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
@@ -140,7 +166,9 @@ class AsteroidSystem(GameSystem):
         col_shapes = [col_shape]
         physics_component = {'main_shape': 'circle', 'velocity': (x_vel, y_vel), 
         'position': (pos[0], pos[1]), 'angle': angle, 
-        'angular_velocity': angular_velocity, 
+        'angular_velocity': angular_velocity,
+        'vel_limit': 200, 
+        'ang_vel_limit': math.radians(150), 
         'mass': 100, 'col_shapes': col_shapes}
         asteroid_component = {'health': 30, 'damage': 15, 
         'asteroid_size': 2, 'pending_destruction': False}
@@ -163,6 +191,8 @@ class AsteroidSystem(GameSystem):
         col_shapes = [col_shape]
         physics_component = {'main_shape': 'circle', 'velocity': (x_vel, y_vel), 
         'position': (x, y), 'angle': angle, 'angular_velocity': angular_velocity, 
+        'vel_limit': 250, 
+        'ang_vel_limit': math.radians(200), 
         'mass': 50, 'col_shapes': col_shapes}
         asteroid_component = {'health': 15, 'damage': 5, 
         'asteroid_size': 1, 'pending_destruction': False}
@@ -196,7 +226,6 @@ class AsteroidSystem(GameSystem):
                         self.create_asteroid_1(position)
                 Clock.schedule_once(partial(self.gameworld.timed_remove_entity, entity_id))
                 
-
     def damage(self, entity_id, damage):
         system_id = self.system_id
         entities = self.gameworld.entities

@@ -1,5 +1,5 @@
 #:kivy 1.6.0
-#:import FadeTransition kivy.uix.screenmanager.FadeTransition 
+#:import SlideTransition kivy.uix.screenmanager.SlideTransition 
 #:import radians math.radians
 #:set COLOR_HIGHLIGHT (0.788235294, 0.643137255, 1)
 #:set COLOR_BACKGROUND (0.349019608, 0.082352941, 0.658823529)
@@ -10,7 +10,6 @@
 #:set COLOR_HIGHLIGHT_A100 (0.788235294, 0.643137255, 1, 1.0)
 #:set COLOR_BACKGROUND_A100 (0.349019608, 0.082352941, 0.658823529, 1.0)
 #:set COLOR_BORDER_A100 (0.643137255, 0.160784314, 1, 1.0)
-
 
 TestGame:
 
@@ -23,9 +22,13 @@ TestGame:
 	player_character: player_character
 	GameWorld:
 		id: gameworld
+		player_character: player_character
 		music_controller: music_controller
 		asteroid_system: asteroid_system
+		current_character_weapons_locked: player_character.weapons_locked
 		number_of_asteroids: self.asteroid_system.number_of_asteroids
+		current_health: self.player_character.current_health
+		total_health: self.player_character.total_health
 		gamescreenmanager: gamescreenmanager
 		MusicController:
 			id: music_controller
@@ -78,12 +81,13 @@ TestGame:
 		GameScreenManager:
 			id: gamescreenmanager
 			gameworld: root.gameworld
-			transition: FadeTransition()
+			transition: SlideTransition()
 			number_of_asteroids: self.gameworld.number_of_asteroids
+			weapons_locked: self.gameworld.current_character_weapons_locked
+			current_health: self.gameworld.current_health
+			total_health: self.gameworld.total_health
 			pos: root.pos
 			size: root.size
-
-
 
 <DebugPanel>:
     Label:
@@ -99,11 +103,17 @@ TestGame:
 	current: 'main_menu'
 	number_of_asteroids: root.number_of_asteroids
 	gameworld: root.gameworld
+	weapons_locked: self.weapons_locked
+	current_health: self.current_health
+	total_health: self.total_health
 	MainMenuScreen:
 		gameworld: root.gameworld
 	MainGameScreen:
 		gameworld: root.gameworld
 		number_of_asteroids: root.number_of_asteroids
+		weapons_locked: root.weapons_locked
+		current_health: root.current_health
+		total_health: root.total_health
 	ChooseCharacterScreen:
 		gameworld: root.gameworld
 	GameOverScreen:
@@ -236,11 +246,13 @@ TestGame:
 			rectangle: (self.pos[0], self.pos[1], self.size[0], self.size[1])
 			joint: 'bevel'
 
-
 <MainGameScreen>:
 	gameworld: self.gameworld
 	number_of_asteroids: self.number_of_asteroids
 	fire_button: fire_button
+	weapons_locked: self.weapons_locked
+	current_health: self.current_health
+	total_health: self.total_health
 	FloatLayout:
 		size: root.size
 		pos: root.pos
@@ -251,6 +263,8 @@ TestGame:
 			font_size: self.size[1]*.5
 		YACSButtonCircle:
 			id: fire_button
+			weapons_locked: root.weapons_locked
+			state: 'down' if self.weapons_locked else 'normal'
 			pos_hint: {'x': .05, 'y': .05}
 			size_hint: (None, None)
 			size: (.15*root.width, .15*root.width)
@@ -269,6 +283,12 @@ TestGame:
 		DebugPanel:
 			pos: root.size[0] * .5, 0
 			size: (25, 25)
+			size_hint: (None, None)
+		HealthBar:
+			current_health: root.current_health
+			total_health: root.total_health
+			pos: 10, root.size[1] * .9
+			size: root.size[0] * .2, root.size[1] * .10
 			size_hint: (None, None)
 
 <ChooseCharacterScreen>:
@@ -308,10 +328,36 @@ TestGame:
 		size_hint: (.5, 1.0)
 		color: COLOR_BORDER_A100
 
+<HealthBar>:
+	current_health: root.current_health
+	total_health: root.total_health
+	health_percentage: self.health_percentage
+	orientation: 'vertical'
+	YACSLabelNoBox:
+		text: 'Current Health: '
+		size_hint: (1.0, .3)
+	Widget:
+		size_hint: (1.0, .5)
+		canvas:
+			Color:
+				rgba: COLOR_BACKGROUND_A50
+			Rectangle: 
+				pos: self.pos
+				size: self.size
+			Color:
+				rgba: COLOR_HIGHLIGHT_A50
+			Rectangle:
+				pos: self.pos
+				size: ((root.health_percentage)*self.size[0], self.size[1])
+			Color:
+				rgba: COLOR_BORDER_A50
+			Line:
+				width: 2.
+				rectangle: (self.pos[0], self.pos[1], self.size[0], self.size[1])
+				joint: 'bevel'
 
 
 <ChooseCharacterWidget>:
-	
 	pos: root.pos
 	size: root.size
 	canvas:
@@ -335,7 +381,7 @@ TestGame:
 			pos_hint: {'x': .1, 'y': .8}
 		Image:
 			size_hint: (None, None)
-			pos_hint: {'x': .4}
+			pos_hint: {'x': .5 - self.size[0]/2./root.size[0]}
 			source: root.ship_dict['texture'] if root.ship_dict else None
 		BoxLayout:
 			orientation: 'horizontal'

@@ -87,6 +87,27 @@ class ShipSystem(GameSystem):
         for entity_id in self.entity_ids:
             Clock.schedule_once(partial(self.gameworld.timed_remove_entity, entity_id))
 
+    def fire_projectiles(self, entity_id):
+        gameworld = self.gameworld
+        character = gameworld.entities[entity_id]
+        projectile_system = gameworld.systems['projectile_system']
+        ship_system_data = character['ship_system']
+        projectiles_dict = projectile_system.projectiles_dict
+        projectile_type = ship_system_data['projectile_type']+ship_system_data['current_projectile_type']
+        projectile_width = projectiles_dict[projectile_type]['width']
+        projectile_height = projectiles_dict[projectile_type]['height']
+        character_physics = character['cymunk-physics']
+        character_position = character_physics['position']
+        for hard_point in ship_system_data['hard_points']:
+            
+            position_offset = hard_point[0], hard_point[1] + projectile_height*.5
+            position_offset_rotated = Vector(position_offset).rotate(character_physics['angle'])
+            location = (character_position[0] + position_offset_rotated[0],
+                character_position[1] + position_offset_rotated[1])
+            angle = character_physics['body'].angle
+            projectile_system.spawn_projectile(projectile_type, location, 
+                angle, ship_system_data['color'])
+
     def update(self, dt):
         for entity_id in self.entity_ids:
             character = self.gameworld.entities[entity_id]
@@ -143,7 +164,8 @@ class ShipSystem(GameSystem):
         'offset_distance': ship_dict['offset_distance'], 'color': ship_dict['color'],
         'ang_accel': math.radians(ship_dict['angular_accel']), 'hard_points': ship_dict['hard_points'], 
         'projectile_type': ship_dict['caliber'], 'is_turning': 'zero', 'fire_engines': False, 
-        'turn_speed_multiplier': 0, 'engine_speed_multiplier': 0, 'character_dying': False}
+        'turn_speed_multiplier': 0, 'engine_speed_multiplier': 0, 'character_dying': False,
+        'current_projectile_type': '_bullet'}
         particle_system1 = {'particle_file': ship_dict['engine_effect'], 
         'offset': ship_dict['engine_offset']}
         particle_system2 = {'particle_file': ship_dict['explosion_effect'], 'offset': 0}
@@ -160,7 +182,6 @@ class PlayerCharacter(GameSystem):
     current_character_id = NumericProperty(None, allownone=True)
     touch_values = ListProperty([])
     current_health = NumericProperty(1., allownone=True)
-    character_dying = BooleanProperty(False)
     current_projectile_type = StringProperty('_bullet')
     weapons_locked = BooleanProperty(False)
     total_health = NumericProperty(1., allownone=True)
@@ -229,35 +250,18 @@ class PlayerCharacter(GameSystem):
     def fire_projectiles(self, dt):
         if not self.current_character_id == None:
             if not self.weapons_locked:
-                character = self.gameworld.entities[self.current_character_id]
-                projectile_system = self.gameworld.systems['projectile_system']
-                ship_system_data = character['ship_system']
-                projectiles_dict = projectile_system.projectiles_dict
-                projectile_type = ship_system_data['projectile_type']+self.current_projectile_type
-                projectile_width = projectiles_dict[projectile_type]['width']
-                projectile_height = projectiles_dict[projectile_type]['height']
-                character_physics = character['cymunk-physics']
-                character_position = character_physics['position']
-                for hard_point in ship_system_data['hard_points']:
-                    
-                    position_offset = hard_point[0], hard_point[1] + projectile_height*.5
-                    position_offset_rotated = Vector(position_offset).rotate(character_physics['angle'])
-                    location = (character_position[0] + position_offset_rotated[0],
-                        character_position[1] + position_offset_rotated[1])
-                    angle = character_physics['body'].angle
-                    projectile_system.spawn_projectile(projectile_type, location, 
-                        angle, ship_system_data['color'])
+                ship_system = self.gameworld.systems['ship_system']
+                ship_system.fire_projectiles(self.current_character_id)
                 self.weapons_locked = True
                 
     def spawn_projectile(self, state):
         if state == 'down':
             Clock.schedule_once(self.fire_projectiles)
-            Clock.schedule_interval(self.fire_projectiles, .5)
-        if state == 'normal':
-            Clock.unschedule(self.fire_projectiles)
         
     def on_current_projectile_type(self, instance, value):
         self.weapons_locked = True
+        character = self.gameworld.entities[self.current_character_id]
+        character['ship_system']['current_projectile_type'] = value
        
 
 

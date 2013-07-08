@@ -131,6 +131,7 @@ class TestGame(Widget):
         if self.cleared:
             character_system = self.gameworld.systems['ship_system']
             character_system.spawn_player_character(character_to_spawn)
+            character_system.spawn_ship_with_dict(character_system.ship_dicts['ship_1'], False, (150, 150))
             Clock.schedule_once(self.gameworld.systems['asteroid_system'].generate_asteroids)
             self.gameworld.state = 'main_game'
 

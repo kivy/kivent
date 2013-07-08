@@ -6,6 +6,54 @@ from functools import partial
 from kivy.vector import Vector
 import math
 
+class ShipAISystem(GameSystem):
+    updateable = BooleanProperty(True)
+
+    def calculate_target_position(self, offset_distance):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        character_system = gameworld.systems['player_character']
+        current_player_character_id = character_system.current_character_id
+        current_player_character = entities[current_player_character_id]
+        physics_data = current_player_character['cymunk-physics']
+        unit_vector = physics_data['unit_vector']
+        position = physics_data['position']
+        return (offset_distance * -unit_vector['x'] + position[0], offset_distance * -unit_vector['y'] + position[1])
+
+    def update(self, dt):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        for entity_id in self.entity_ids:
+            entity = entities[entity_id]
+            system_data = entity[self.system_id]
+            physics_data = entity['cymunk-physics']
+            ship_data = entity['ship_system']
+            physics_body = physics_data['body']
+            offset_distance = system_data['follow_distance']
+            target_point = self.calculate_target_position(offset_distance)
+            current_position = physics_data['position']
+            current_angle = physics_data['angle']
+            desired_angle = Vector(current_position).angle(target_point)
+            if desired_angle < 0:
+                desired_angle = 360 + desired_angle
+            print desired_angle, current_angle
+            if desired_angle > current_angle:
+                print 'left'
+                ship_data['is_turning'] = 'left'
+                ship_data['turn_speed_multiplier'] = 1
+            if desired_angle < current_angle:
+                print 'right'
+                ship_data['is_turning'] = 'right'
+                ship_data['turn_speed_multiplier'] = 1
+            if desired_angle == current_angle:
+                print 'zero'
+                ship_data['is_turning'] = 'zero'
+                physics_body.angular_velocity = 0
+
+
+            
+
+
 class ShipSystem(GameSystem):
     ship_dicts = DictProperty(None)
     updateable = BooleanProperty(True)
@@ -30,7 +78,7 @@ class ShipSystem(GameSystem):
 
 
     def spawn_player_character(self, character_to_spawn):
-        self.spawn_ship_with_dict(self.ship_dicts[character_to_spawn])
+        self.spawn_ship_with_dict(self.ship_dicts[character_to_spawn], True, (500, 500))
 
     def setup_ship_dicts(self):
         ship_dicts = self.ship_dicts
@@ -151,13 +199,13 @@ class ShipSystem(GameSystem):
         self.damage(ship_id, asteroid_damage)
         return True
 
-    def spawn_ship_with_dict(self, ship_dict):
+    def spawn_ship_with_dict(self, ship_dict, is_player_character, position):
         box_dict = {'width': ship_dict['width'], 'height': ship_dict['height'],
          'mass': ship_dict['mass']}
         col_shape_dict = {'shape_type': 'box', 'elasticity': .5, 
         'collision_type': 2, 'shape_info': box_dict, 'friction': 1.0}
         physics_component_dict = { 'main_shape': 'box', 
-        'velocity': (0, 0), 'position': (500, 500), 'angle': 0, 
+        'velocity': (0, 0), 'position': position, 'angle': 0, 
         'angular_velocity': 0, 'mass': ship_dict['mass'], 'vel_limit': ship_dict['max_speed'], 
         'ang_vel_limit': math.radians(ship_dict['max_turn_speed']), 'col_shapes': [col_shape_dict]}
         ship_system_dict = {'health': ship_dict['health'], 'accel': ship_dict['accel'], 
@@ -173,9 +221,15 @@ class ShipSystem(GameSystem):
         create_component_dict = {'cymunk-physics': physics_component_dict, 
         'physics_renderer': {'texture': ship_dict['texture']}, 
         'ship_system': ship_system_dict,
-        'particle_manager': particle_systems, 'player_character': {}}
+        'particle_manager': particle_systems}
         component_order = ['cymunk-physics', 'physics_renderer', 'ship_system',
-         'player_character', 'particle_manager']
+         'particle_manager']
+        if is_player_character:
+            create_component_dict['player_character'] = {}
+            component_order.append('player_character')
+        else:
+            create_component_dict['ship_ai_system'] = {'follow_distance': 100}
+            component_order.append('ship_ai_system')
         self.gameworld.init_entity(create_component_dict, component_order)
 
 class PlayerCharacter(GameSystem):

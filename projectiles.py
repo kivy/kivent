@@ -192,7 +192,7 @@ class ProjectileSystem(GameSystem):
         bullet = entities[bullet_id]
         if bullet['projectile_system']['armed']:
             bullet_damage = bullet['projectile_system']['damage']
-            systems['player_character'].damage(ship_id, bullet_damage)
+            systems['ship_system'].damage(ship_id, bullet_damage)
             if 'point_particle_manager' in bullet:
                 self.create_rocket_explosion(bullet_id)
             else:

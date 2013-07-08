@@ -85,7 +85,7 @@ class TestGame(Widget):
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'physics_point_renderer',
             'particle_manager', 'point_particle_manager', 'asteroid_system', 
-            'player_character'], systems_unpaused=[],
+            'ship_system'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='choose_character', systems_added=[
             'background_renderer', 'quadtree_renderer',  'default_map'], 
@@ -94,7 +94,7 @@ class TestGame(Widget):
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'physics_point_renderer', 'quadtree_renderer',
             'particle_manager', 'point_particle_manager', 'asteroid_system', 
-            'player_character'], systems_unpaused=[],
+            'ship_system'], systems_unpaused=[],
             screenmanager_screen='choose_character')
         self.gameworld.add_state(state_name='main_game', systems_added=[ 'background_renderer', 
             'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
@@ -102,18 +102,18 @@ class TestGame(Widget):
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'particle_manager', 'point_particle_manager', 'quadtree_renderer',
-            'asteroid_system', 'player_character', 'physics_point_renderer'], screenmanager_screen='main_game')
+            'asteroid_system', 'ship_system', 'physics_point_renderer'], screenmanager_screen='main_game')
         self.gameworld.add_state(state_name='game_over', systems_added=[ 'background_renderer', 
             'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
             'default_map', 'particle_manager', 'point_particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'particle_manager', 'point_particle_manager',
-            'asteroid_system', 'player_character', 'physics_point_renderer'], screenmanager_screen='game_over')
+            'asteroid_system', 'ship_system', 'physics_point_renderer'], screenmanager_screen='game_over')
 
     def clear_gameworld_objects(self):
         systems = self.gameworld.systems
-        systems['player_character'].clear_character()
+        systems['ship_system'].clear_ships()
         systems['asteroid_system'].clear_asteroids()
         systems['projectile_system'].clear_projectiles()
 
@@ -129,7 +129,7 @@ class TestGame(Widget):
     def start_round(self, character_to_spawn):
         print self.cleared
         if self.cleared:
-            character_system = self.gameworld.systems['player_character']
+            character_system = self.gameworld.systems['ship_system']
             character_system.spawn_player_character(character_to_spawn)
             Clock.schedule_once(self.gameworld.systems['asteroid_system'].generate_asteroids)
             self.gameworld.state = 'main_game'
@@ -152,7 +152,7 @@ class TestGame(Widget):
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems
         physics = systems['cymunk-physics']
-        character_system = systems['player_character']
+        character_system = systems['ship_system']
         projectile_system = systems['projectile_system']
         physics.add_collision_handler(1,3, begin_func=projectile_system.collision_begin_asteroid_bullet,
             separate_func=projectile_system.begin_collision_solve_asteroid_bullet)

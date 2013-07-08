@@ -116,7 +116,7 @@ class ChooseCharacterWidget(Widget):
         print 'ship_dict', value
 
     def on_current_ship(self, instance, value):
-        self.ship_dict = self.gameworld.systems['player_character'].get_ship_values(value)
+        self.ship_dict = self.gameworld.systems['ship_system'].get_ship_values(value)
 
     def get_next_ship(self):
         list_of_ships = self.list_of_ships

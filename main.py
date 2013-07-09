@@ -22,6 +22,7 @@ class TestGame(Widget):
     number_of_asteroids = NumericProperty(0, allownone=True)
     loading_new_level = BooleanProperty(False)
     cleared = BooleanProperty(True)
+    current_level = NumericProperty(1)
 
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
@@ -166,10 +167,14 @@ class TestGame(Widget):
     def test_remove_entity(self, dt):
         self.gameworld.remove_entity(0)
 
+    def set_choose_character_state(self, dt):
+        self.gameworld.state = 'choose_character'
+
     def on_number_of_asteroids(self, instance, value):
         if value == 0 and self.state == 'main_game':
             self.gameworld.systems['asteroids_level'].current_level_id += 1
-            self.gameworld.state = 'choose_character'
+            self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
+            Clock.schedule_once(self.set_choose_character_state, 2.0)
 
     def player_lose(self, dt):
         self.gameworld.state = 'game_over'

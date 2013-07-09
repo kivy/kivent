@@ -14,11 +14,12 @@ class ShipAISystem(GameSystem):
         entities = gameworld.entities
         character_system = gameworld.systems['player_character']
         current_player_character_id = character_system.current_character_id
-        current_player_character = entities[current_player_character_id]
-        physics_data = current_player_character['cymunk-physics']
-        unit_vector = physics_data['unit_vector']
-        position = physics_data['position']
-        return (offset_distance * -unit_vector['x'] + position[0], offset_distance * -unit_vector['y'] + position[1])
+        if current_player_character_id:
+            current_player_character = entities[current_player_character_id]
+            physics_data = current_player_character['cymunk-physics']
+            unit_vector = physics_data['unit_vector']
+            position = physics_data['position']
+            return (offset_distance * -unit_vector['x'] + position[0], offset_distance * -unit_vector['y'] + position[1])
 
     def update(self, dt):
         gameworld = self.gameworld
@@ -70,7 +71,8 @@ class ShipSystem(GameSystem):
         Clock.schedule_once(partial(self.update_death_animation, entity_id), .5)
         Clock.schedule_once(partial(self.gameworld.timed_remove_entity, 
             entity_id), 2.0)
-        Clock.schedule_once(self.gameworld.parent.player_lose, 4.0)
+        if 'player_character' in entity:
+            Clock.schedule_once(self.gameworld.parent.player_lose, 4.0)
 
 
     def spawn_player_character(self, character_to_spawn):

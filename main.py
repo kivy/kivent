@@ -180,7 +180,7 @@ class TestGame(Widget):
     def player_lose(self, dt):
         self.gameworld.state = 'game_over'
         self.current_lives -= 1
-        if self.current_lives <= 0:
+        if self.current_lives < 0:
             self.gameworld.systems['asteroids_level'].current_level_id = 0
             self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
             self.current_lives = 3

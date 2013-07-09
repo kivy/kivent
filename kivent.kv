@@ -6,6 +6,7 @@
 #:set COLOR_BACKGROUND_A50 (0.349019608, 0.082352941, 0.658823529, .5)
 #:set COLOR_BORDER (0.643137255, 0.160784314, 1)
 #:set COLOR_BORDER_A50 (0.643137255, 0.160784314, 1, .5)
+#:set COLOR_BORDER_A75 (0.643137255, 0.160784314, 1, .75)
 #:set COLOR_HIGHLIGHT_A50 (0.788235294, 0.643137255, 1, .5)
 #:set COLOR_HIGHLIGHT_A100 (0.788235294, 0.643137255, 1, 1.0)
 #:set COLOR_BACKGROUND_A100 (0.349019608, 0.082352941, 0.658823529, 1.0)
@@ -222,18 +223,16 @@ TestGame:
 	font_name: 'assets/fonts/Aldrich-Regular.ttf'
 	color: COLOR_BORDER if self.state == 'normal' else COLOR_HIGHLIGHT
 	canvas.before:
-		Color:
-			rgba: COLOR_BACKGROUND_A50 if self.state == 'normal' else COLOR_HIGHLIGHT_A50
+		Color: 
+			rgba: COLOR_BORDER_A75
 		Ellipse:
 			size: root.size
 			pos: root.pos
-		Color: 
-			rgb: COLOR_BORDER
-		Line:
-			width: 2.
-			ellipse: (self.pos[0], self.pos[1], self.size[0], self.size[1])
-			joint: 'bevel'
-			close: True
+		Color:
+			rgba: COLOR_BACKGROUND_A50 if self.state == 'normal' else COLOR_HIGHLIGHT_A50
+		Ellipse:
+			size: root.size[0]*.9, root.size[1]*.9
+			pos: root.pos[0]*1.05, root.pos[1]*1.05
 
 <YACSButton>:
 	background_normal: 'assets/empty_pixel.png'

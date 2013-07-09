@@ -85,6 +85,7 @@ class GameView(GameSystem):
     entity_to_focus = NumericProperty(None, allownone=True)
     focus_position_info_from = StringProperty('cymunk-physics')
     updateable = BooleanProperty(True)
+    camera_speed_multiplier = NumericProperty(1)
     paused = BooleanProperty(True)
     has_camera_updated = BooleanProperty(False)
     force_camera_update = BooleanProperty(False)
@@ -100,18 +101,20 @@ class GameView(GameSystem):
         cdef float dist_x
         cdef float dist_y
         cdef dict entity
+        cdef float camera_speed_multiplier 
         if self.focus_entity:
             entity_to_focus = self.entity_to_focus
             entity = self.gameworld.entities[entity_to_focus]
             position_data = entity[self.focus_position_info_from]['position']
             camera_pos = self.camera_pos
+            camera_speed_multiplier = self.camera_speed_multiplier
             size = self.size
             dist_x = -camera_pos[0] - position_data[0] + size[0]*.5
             dist_y = -camera_pos[1] - position_data[1] + size[1]*.5
             if self.lock_scroll:
                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
-            self.camera_pos[0] += dist_x*dt
-            self.camera_pos[1] += dist_y*dt
+            self.camera_pos[0] += dist_x*camera_speed_multiplier*dt
+            self.camera_pos[1] += dist_y*camera_speed_multiplier*dt
 
 
     def on_size(self, instance, value):
@@ -124,7 +127,7 @@ class GameView(GameSystem):
         systems = self.gameworld.systems
         for system in systems:
             if systems[system].renderable and systems[system].active:
-                systems[system].update(None)
+                systems[system].update(1)
 
 
     def on_camera_pos(self, instance, value):

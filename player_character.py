@@ -50,10 +50,6 @@ class ShipAISystem(GameSystem):
                 ship_data['is_turning'] = 'zero'
                 physics_body.angular_velocity = 0
 
-
-            
-
-
 class ShipSystem(GameSystem):
     ship_dicts = DictProperty(None)
     updateable = BooleanProperty(True)
@@ -186,7 +182,9 @@ class ShipSystem(GameSystem):
         entity = entities[entity_id]
         system_data = entity[system_id]
         system_data['health'] -= damage
-        self.gameworld.systems['player_character'].current_health = system_data['health']
+        player_character_system = self.gameworld.systems['player_character']
+        if entity_id == player_character_system.current_character_id:
+            player_character_system.current_health = system_data['health']
 
     def collision_solve_ship_asteroid(self, arbiter, space):
         gameworld = self.gameworld

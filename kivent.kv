@@ -18,6 +18,7 @@ TestGame:
 	gameworld: gameworld
 	pos: root.pos
 	current_level: self.current_level
+	current_lives: self.current_lives
 	size: root.size
 	state: gameworld.state
 	number_of_asteroids: gameworld.number_of_asteroids
@@ -92,6 +93,7 @@ TestGame:
 			gameworld: root.gameworld
 			transition: SlideTransition()
 			current_level: root.current_level
+			current_lives: root.current_lives
 			number_of_asteroids: self.gameworld.number_of_asteroids
 			weapons_locked: self.gameworld.current_character_weapons_locked
 			current_health: self.gameworld.current_health
@@ -114,6 +116,7 @@ TestGame:
 	number_of_asteroids: root.number_of_asteroids
 	gameworld: root.gameworld
 	current_level: self.current_level
+	current_lives: self.current_lives
 	weapons_locked: self.weapons_locked
 	current_health: self.current_health
 	total_health: self.total_health
@@ -128,6 +131,7 @@ TestGame:
 	ChooseCharacterScreen:
 		gameworld: root.gameworld
 		current_level: root.current_level
+		current_lives: root.current_lives
 	GameOverScreen:
 		gameworld: root.gameworld
 
@@ -306,6 +310,7 @@ TestGame:
 	choose_character: choose_character
 	current_ship: choose_character.current_ship
 	current_level: root.current_level
+	current_lives: root.current_lives
 	FloatLayout:
 		pos: root.pos
 		size: root.size
@@ -315,8 +320,12 @@ TestGame:
 			text: 'Choose Your Ship:'
 		YACSLabelNoBox:
 			text: 'Current Level: ' + str(root.current_level)
-			pos_hint: {'x': .3, 'y':.75}
-			size_hint: (.4, .1)
+			pos_hint: {'x': .3, 'y':.80}
+			size_hint: (.4, .03)
+		YACSLabelNoBox:
+			text: 'Current Lives: ' + str(root.current_lives)
+			pos_hint: {'x': .3, 'y':.76}
+			size_hint: (.4, .03)
 		ChooseCharacterWidget:
 			id: choose_character
 			gameworld: root.gameworld

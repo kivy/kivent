@@ -23,6 +23,7 @@ class TestGame(Widget):
     loading_new_level = BooleanProperty(False)
     cleared = BooleanProperty(True)
     current_level = NumericProperty(1)
+    current_lives = NumericProperty(3)
 
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
@@ -178,6 +179,11 @@ class TestGame(Widget):
 
     def player_lose(self, dt):
         self.gameworld.state = 'game_over'
+        self.current_lives -= 1
+        if self.current_lives <= 0:
+            self.gameworld.systems['asteroids_level'].current_level_id = 0
+            self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
+            self.current_lives = 3
             
 
 class KivEntApp(App):

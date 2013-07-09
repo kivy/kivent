@@ -16,9 +16,9 @@ class CymunkPhysics(GameSystem):
     damping = NumericProperty(1.0)
 
     def __init__(self, **kwargs):
-        cdef list current_on_screen 
+        cdef list bb_query_result
         super(CymunkPhysics, self).__init__(**kwargs)
-        self.current_on_screen = list()
+        self.bb_query_result = list()
         self.init_physics()
         
 
@@ -43,27 +43,23 @@ class CymunkPhysics(GameSystem):
         space.collision_slop = self.collision_slop
         space.register_bb_query_func(self.bb_query_func)
 
-    def test_bb_query(self, dt):
-        cdef object viewport = self.gameworld.systems[self.viewport]
-        camera_pos = viewport.camera_pos
-        size = viewport.size
-        cdef list bb_list = [camera_pos[0], camera_pos[1], size[0], size[1]]
-        cdef object bb = cymunk.BB(bb_list[0], bb_list[1], bb_list[2], bb_list[3])
-        self.space.space_bb_query_func(bb)
-
     def bb_query_func(self, object shape):
-        self.current_on_screen.append(shape.body.data)
+        self.bb_query_result.append(shape.body.data)
 
     def query_on_screen(self):
         cdef object viewport = self.gameworld.systems[self.viewport]
         camera_pos = viewport.camera_pos
         size = viewport.size
         cdef list bb_list = [-camera_pos[0], -camera_pos[1], -camera_pos[0] + size[0], -camera_pos[1] + size[1]]
-        bb = cymunk.BB(bb_list[0], bb_list[1], bb_list[2], bb_list[3])
-        self.current_on_screen = []
+        current_on_screen = self.query_bb(bb_list)
+        return current_on_screen
+
+    def query_bb(self, list box_to_query):
+        bb = cymunk.BB(box_to_query[0], box_to_query[1], box_to_query[2], box_to_query[3])
+        self.bb_query_result = []
         self.space.space_bb_query_func(bb)
-        return self.current_on_screen
-        
+        return self.bb_query_result
+
 
     def generate_component_data(self, dict entity_component_dict):
         '''entity_component_dict of the form {'entity_id': id, 'main_shape': string_shape_name, 

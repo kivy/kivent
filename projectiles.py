@@ -13,11 +13,15 @@ class ProjectileSystem(GameSystem):
         gameworld = self.gameworld
         entities = gameworld.entities
         entity = entities[entity_id]
+        
         entity['physics_point_renderer']['render'] = False
         entity['cymunk-physics']['body'].velocity = (0, 0)
         entity['cymunk-physics']['body'].reset_forces()
         entity['point_particle_manager']['engine_effect']['particle_system_on'] = False
         entity['point_particle_manager']['explosion_effect']['particle_system_on'] = True
+        if entity['physics_point_renderer']['on_screen']:
+            sound_system = gameworld.systems['sound_system']
+            sound_system.play('rocketexplosion')
         entity['projectile_system']['armed'] = False
         Clock.schedule_once(partial(gameworld.timed_remove_entity, entity_id), 2.0)
 
@@ -152,10 +156,12 @@ class ProjectileSystem(GameSystem):
     def collision_begin_ship_bullet(self, arbiter, space):
         gameworld = self.gameworld
         entities = gameworld.entities
+        sound_system = gameworld.systems['sound_system']
         bullet_id = arbiter.shapes[1].body.data
         ship_id = arbiter.shapes[0].body.data
         bullet = entities[bullet_id]
         if bullet['projectile_system']['armed']:
+            sound_system.play('shiphitbybullet')
             return True
         else:
             return False
@@ -168,6 +174,9 @@ class ProjectileSystem(GameSystem):
         bullet1 = entities[bullet_id1]
         bullet2 = entities[bullet_id2]
         if bullet1['projectile_system']['armed'] and bullet2['projectile_system']['armed']:
+            if bullet1['physics_point_renderer']['on_screen'] or bullet2['physics_point_renderer']['on_screen']:
+                sound_system = gameworld.systems['sound_system']
+                sound_system.play('bullethitbullet')
             return True
         else:
             return False
@@ -179,6 +188,9 @@ class ProjectileSystem(GameSystem):
         asteroid_id = arbiter.shapes[0].body.data
         bullet = entities[bullet_id]
         if bullet['projectile_system']['armed']:
+            if bullet['physics_point_renderer']['on_screen']:
+                sound_system = gameworld.systems['sound_system']
+                sound_system.play('bullethitasteroid')
             return True
         else:
             return False

@@ -16,6 +16,7 @@ import musiccontroller
 import os
 import sys
 
+
 class TestGame(Widget):
     gameworld = ObjectProperty(None)
     state = StringProperty(None)
@@ -28,7 +29,6 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         Clock.schedule_once(self.init_game)
-        print kwargs
 
 
     def init_game(self, dt):
@@ -54,7 +54,6 @@ class TestGame(Widget):
             self.cleared = True
         else:
             Clock.schedule_once(self.check_quadtree_created)
-
             
     def check_clear(self, dt):
         systems = self.gameworld.systems
@@ -133,10 +132,9 @@ class TestGame(Widget):
         if self.cleared:
             character_system = self.gameworld.systems['ship_system']
             character_system.spawn_player_character(character_to_spawn)
-            character_system.spawn_ship_with_dict(character_system.ship_dicts['ship_1'], False, (150, 150))
+            #character_system.spawn_ship_with_dict(character_system.ship_dicts['ship_1'], False, (150, 150))
             Clock.schedule_once(self.gameworld.systems['asteroid_system'].generate_asteroids)
             self.gameworld.state = 'main_game'
-
 
     def setup_gameobjects(self):
         Clock.schedule_once(self.gameworld.systems['asteroids_level'].generate_new_level)
@@ -157,13 +155,22 @@ class TestGame(Widget):
         physics = systems['cymunk-physics']
         character_system = systems['ship_system']
         projectile_system = systems['projectile_system']
-        physics.add_collision_handler(1,3, begin_func=projectile_system.collision_begin_asteroid_bullet,
+        asteroid_system = systems['asteroid_system']
+        physics.add_collision_handler(1, 1, 
+            begin_func=asteroid_system.collision_begin_asteroid_asteroid)
+        physics.add_collision_handler(1, 3, 
+            begin_func=projectile_system.collision_begin_asteroid_bullet,
             separate_func=projectile_system.begin_collision_solve_asteroid_bullet)
-        physics.add_collision_handler(2,3, begin_func=projectile_system.collision_begin_ship_bullet,
+        physics.add_collision_handler(2, 3, 
+            begin_func=projectile_system.collision_begin_ship_bullet,
             separate_func=projectile_system.collision_solve_ship_bullet)
-        physics.add_collision_handler(2,1, separate_func=character_system.collision_solve_ship_asteroid)
-        physics.add_collision_handler(3,3, begin_func=projectile_system.collision_begin_bullet_bullet, 
+        physics.add_collision_handler(2, 1, 
+            begin_func=character_system.collision_begin_ship_asteroid, 
+            separate_func=character_system.collision_solve_ship_asteroid)
+        physics.add_collision_handler(3,3, 
+            begin_func=projectile_system.collision_begin_bullet_bullet, 
             separate_func=projectile_system.collision_solve_bullet_bullet)
+
     
     def test_remove_entity(self, dt):
         self.gameworld.remove_entity(0)

@@ -3,6 +3,47 @@ from kivy.properties import StringProperty
 import random
 from kivy.core.audio import SoundLoader
 from kivy.uix.widget import Widget
+from kivent_cython import (GameSystem)
+
+
+class SoundSystem(GameSystem):
+    sound_dir = StringProperty('assets/soundfx/')
+
+    def __init__(self, **kwargs):
+        super(SoundSystem, self).__init__(**kwargs)
+        self.sound_dict = {}
+        self.sound_names = ['bulletfire', 'enemyshipenterarea', 'rocketexplosion', 
+        'rocketfire', 'shipexplosion', 'shiphitbybullet', 'asteroidhitasteroid', 
+        'asteroidhitship', 'bullethitasteroid', 'bullethitbullet']
+        Clock.schedule_once(self.load_music)
+        
+    def load_music(self, dt):
+        sound_names = self.sound_names
+        sound_dict = self.sound_dict
+        sound_dir = self.sound_dir
+        reset_sound_position = self.reset_sound_position
+        for sound_name in sound_names:
+            sound_dict[sound_name] = SoundLoader.load(sound_dir + sound_name + '.wav')
+            sound_dict[sound_name].seek(0)
+            sound_dict[sound_name].bind(on_stop=reset_sound_position)
+
+    def reset_sound_position(self, value):
+        value.seek(0)
+
+    def play(self, sound_name):
+        sound_dict = self.sound_dict
+        if sound_name in sound_dict:
+            if sound_dict[sound_name].get_pos() == 0:
+                sound_dict[sound_name].play()
+        else:
+            print "file",sound_name,"not found in", self.sound_dir
+
+    def stop(self, sound_name):
+        sound_dict = self.sound_dict
+        if sound_name in sound_dict:
+            sound_dict[sound_name].stop()
+        else:
+            print "file", sound_name, "not found in", self.sound_dir
 
 class MusicController(Widget):
     music_dir = StringProperty('assets/music/final/')
@@ -13,8 +54,6 @@ class MusicController(Widget):
         Clock.schedule_once(self.load_music)
         
     def load_music(self, dt):
-        print 'loading music'
-        print self.music_dir
         track_names = self.track_names
         music_dict = self.music_dict
         for track_name in track_names:

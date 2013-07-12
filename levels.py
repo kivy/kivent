@@ -95,6 +95,7 @@ class AsteroidsLevel(GameSystem):
         'asteroids_level': {'level_id': self.current_level_id}}
         component_order = ['position', 'quadtree_renderer', 'asteroids_level']
         self.gameworld.init_entity(create_component_dict, component_order)
+
     
     def generate_prerendered_background(self, atlas_address, atlas_size):
         stardust_atlas = Atlas(atlas_address)
@@ -232,3 +233,15 @@ class AsteroidSystem(GameSystem):
         entity = entities[entity_id]
         system_data = entity[system_id]
         system_data['health'] -= damage
+
+    def collision_begin_asteroid_asteroid(self, arbiter, space):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        asteroid1_id = arbiter.shapes[0].body.data
+        asteroid2_id = arbiter.shapes[1].body.data
+        asteroid1 = entities[asteroid1_id]
+        asteroid2 = entities[asteroid2_id]
+        if asteroid1['physics_renderer']['on_screen'] or asteroid2['physics_renderer']['on_screen']:
+            sound_system = gameworld.systems['sound_system']
+            sound_system.play('asteroidhitasteroid')
+        return True

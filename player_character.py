@@ -19,7 +19,8 @@ class ShipAISystem(GameSystem):
             physics_data = current_player_character['cymunk-physics']
             unit_vector = physics_data['unit_vector']
             position = physics_data['position']
-            return (offset_distance * -unit_vector['x'] + position[0], offset_distance * -unit_vector['y'] + position[1])
+            return (offset_distance * -unit_vector['x'] + position[0], 
+                offset_distance * -unit_vector['y'] + position[1])
 
     def update(self, dt):
         gameworld = self.gameworld
@@ -37,17 +38,13 @@ class ShipAISystem(GameSystem):
             desired_angle = Vector(current_position).angle(target_point)
             if desired_angle < 0:
                 desired_angle = 360 + desired_angle
-            print desired_angle, current_angle
             if desired_angle > current_angle:
-                print 'left'
                 ship_data['is_turning'] = 'left'
                 ship_data['turn_speed_multiplier'] = 1
             if desired_angle < current_angle:
-                print 'right'
                 ship_data['is_turning'] = 'right'
                 ship_data['turn_speed_multiplier'] = 1
             if desired_angle == current_angle:
-                print 'zero'
                 ship_data['is_turning'] = 'zero'
                 physics_body.angular_velocity = 0
 
@@ -65,9 +62,12 @@ class ShipSystem(GameSystem):
         entity['particle_manager']['explosion_effect']['particle_system'].emitter_type = 0
 
     def do_death(self, entity_id):
-        entity = self.gameworld.entities[entity_id]
+        gameworld = self.gameworld
+        sound_system = gameworld.systems['sound_system']
+        entity = gameworld.entities[entity_id]
         entity['particle_manager']['engine_effect']['particle_system_on'] = False
         entity['particle_manager']['explosion_effect']['particle_system_on'] = True
+        sound_system.play('shipexplosion')
         Clock.schedule_once(partial(self.update_death_animation, entity_id), .5)
         Clock.schedule_once(partial(self.gameworld.timed_remove_entity, 
             entity_id), 2.0)
@@ -137,9 +137,11 @@ class ShipSystem(GameSystem):
         gameworld = self.gameworld
         character = gameworld.entities[entity_id]
         projectile_system = gameworld.systems['projectile_system']
+        sound_system = gameworld.systems['sound_system']
         ship_system_data = character['ship_system']
+        current_projectile_type = ship_system_data['current_projectile_type']
         projectiles_dict = projectile_system.projectiles_dict
-        projectile_type = ship_system_data['projectile_type']+ship_system_data['current_projectile_type']
+        projectile_type = ship_system_data['projectile_type']+current_projectile_type
         projectile_width = projectiles_dict[projectile_type]['width']
         projectile_height = projectiles_dict[projectile_type]['height']
         character_physics = character['cymunk-physics']
@@ -153,6 +155,10 @@ class ShipSystem(GameSystem):
             angle = character_physics['body'].angle
             projectile_system.spawn_projectile(projectile_type, location, 
                 angle, ship_system_data['color'])
+        if current_projectile_type == '_bullet':
+            sound_system.play('bulletfire')
+        if current_projectile_type == '_rocket':
+            sound_system.play('rocketfire')
 
     def update(self, dt):
         for entity_id in self.entity_ids:
@@ -187,6 +193,13 @@ class ShipSystem(GameSystem):
         player_character_system = self.gameworld.systems['player_character']
         if entity_id == player_character_system.current_character_id:
             player_character_system.current_health = system_data['health']
+
+    def collision_begin_ship_asteroid(self, arbiter, space):
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        sound_system = systems['sound_system']
+        sound_system.play('asteroidhitship')
+        return True 
 
     def collision_solve_ship_asteroid(self, arbiter, space):
         gameworld = self.gameworld

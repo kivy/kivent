@@ -260,6 +260,37 @@ TestGame:
 			rectangle: (self.pos[0], self.pos[1], self.size[0], self.size[1])
 			joint: 'bevel'
 
+<ToggleWeaponPanel>:
+	bullet_button: bullet_button
+	rocket_button: rocket_button
+	BoxLayout:
+		orientation: 'horizontal'
+		spacing: 10
+		padding: 10
+		size: root.size
+		pos: root.pos
+		size_hint: (None, None)
+		WeaponToggleButton:
+			id: bullet_button
+			on_press: root.toggle_weapon(self.state, self.weapon_type)
+			background_normal: 'assets/ui_elements/bulleticon-normal.png'
+			background_down: 'assets/ui_elements/bulleticon-down.png'
+			state: 'down'
+		WeaponToggleButton:
+			id: rocket_button
+			on_press: root.toggle_weapon(self.state, self.weapon_type)
+			weapon_type: '_rocket'
+			background_normal: 'assets/ui_elements/rocketicon-normal.png'
+			background_down: 'assets/ui_elements/rocketicon-down.png'
+			
+<WeaponToggleButton>:
+	group: 'weapons'
+	size_hint: (None, None)
+	size: (64, 32)
+
+
+
+
 <MainGameScreen>:
 	gameworld: self.gameworld
 	number_of_asteroids: self.number_of_asteroids
@@ -285,11 +316,11 @@ TestGame:
 			text: 'FIRE'
 			font_size: 16
 			on_state: root.gameworld.systems['player_character'].spawn_projectile(self.state)
-		ToggleButton:
+		ToggleWeaponPanel:
 			pos_hint: {'x': .05, 'y': .075 + root.fire_button.size[1]/root.height}
-			size_hint: (.15, .05)
-			text: 'Toggle Weapon'
-			on_press: root.toggle_weapons(self.state)
+			size_hint: (None, None)
+			size: (158, 52)
+			on_weapon_type: root.toggle_weapons(self.weapon_type)
 		CharacterInputPanel:
 			gameworld: root.gameworld
 			size_hint: (.20, .3)
@@ -302,7 +333,7 @@ TestGame:
 			current_health: root.current_health
 			total_health: root.total_health
 			pos: 10, root.size[1] * .9
-			size: root.size[0] * .2, root.size[1] * .10
+			size: root.size[0] * .25, root.size[1] * .10
 			size_hint: (None, None)
 
 <ChooseCharacterScreen>:
@@ -357,11 +388,9 @@ TestGame:
 	total_health: root.total_health
 	health_percentage: self.health_percentage
 	orientation: 'vertical'
-	YACSLabelNoBox:
-		text: 'Current Health: '
-		size_hint: (1.0, .3)
+	padding: 10
 	Widget:
-		size_hint: (1.0, .5)
+		size_hint: (1.0, 1.0)
 		canvas:
 			Color:
 				rgba: COLOR_BACKGROUND_A50

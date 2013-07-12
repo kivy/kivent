@@ -190,6 +190,8 @@ class ShipSystem(GameSystem):
         entity = entities[entity_id]
         system_data = entity[system_id]
         system_data['health'] -= damage
+        if system_data['health'] < 0:
+            system_data['health'] = 0
         player_character_system = self.gameworld.systems['player_character']
         if entity_id == player_character_system.current_character_id:
             player_character_system.current_health = system_data['health']

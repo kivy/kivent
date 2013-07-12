@@ -89,18 +89,35 @@ class DebugPanel(Widget):
         self.fps = str(int(Clock.get_fps()))
         Clock.schedule_once(self.update_fps, .05)
 
+class ToggleWeaponPanel(Widget):
+    bullet_button = ObjectProperty(None)
+    rocket_button = ObjectProperty(None)
+    weapon_type = StringProperty('_bullet')
+
+    def toggle_weapon(self, state, weapon_type):
+        if state == 'normal':
+            if weapon_type == '_rocket':
+                self.bullet_button.state = 'down'
+                self.weapon_type = '_bullet'
+            if weapon_type == '_bullet':
+                self.rocket_button.state = 'down'
+                self.weapon_type = '_rocket'
+        if state == 'down':
+            self.weapon_type = weapon_type
+
+class WeaponToggleButton(ToggleButton):
+    weapon_type = StringProperty('_bullet')
+
 class MainMenuScreen(GameScreen):
     name = StringProperty('main_menu')
 
 class MainGameScreen(GameScreen):
     name = StringProperty('main_game')
 
-    def toggle_weapons(self, state):
+    def toggle_weapons(self, weapon_type):
         character_system = self.gameworld.systems['player_character']
-        if state == 'down':
-            character_system.current_projectile_type = '_rocket'
-        if state == 'normal':
-            character_system.current_projectile_type = '_bullet'
+        character_system.current_projectile_type = weapon_type
+
 
 
 class GameOverScreen(GameScreen):

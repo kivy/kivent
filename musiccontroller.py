@@ -23,7 +23,7 @@ class SoundSystem(GameSystem):
         sound_dir = self.sound_dir
         reset_sound_position = self.reset_sound_position
         for sound_name in sound_names:
-            sound_dict[sound_name] = SoundLoader.load(sound_dir + sound_name + '.wav')
+            sound_dict[sound_name] = SoundLoader.load(sound_dir + sound_name + '.ogg')
             sound_dict[sound_name].seek(0)
             sound_dict[sound_name].bind(on_stop=reset_sound_position)
 

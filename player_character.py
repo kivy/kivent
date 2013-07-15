@@ -170,8 +170,8 @@ class ShipSystem(GameSystem):
                 unit_vector = physics_data['unit_vector']
                 offset = {'x': system_data['offset_distance'] * -unit_vector['x'], 
                 'y': system_data['offset_distance'] * -unit_vector['y']}
-                force = {'x': system_data['engine_speed_multiplier'] * system_data['accel']*dt * -unit_vector['x'], 
-                'y': system_data['engine_speed_multiplier'] * system_data['accel']*dt * -unit_vector['y']}
+                force = {'x': system_data['engine_speed_multiplier'] * system_data['accel']*dt * unit_vector['x'], 
+                'y': system_data['engine_speed_multiplier'] * system_data['accel']*dt * unit_vector['y']}
                 physics_body.apply_impulse(force, offset)
             if physics_body.is_sleeping:
                 physics_body.activate()

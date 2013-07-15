@@ -191,6 +191,6 @@ class CymunkPhysics(GameSystem):
             self.check_bounds(system_data)
             body = system_data['body']
             system_data['position'] = body.position
-            system_data['angle'] = math.degrees(system_data['body'].angle)+90
+            system_data['angle'] = math.degrees(system_data['body'].angle)-90
             system_data['unit_vector'] = body.rotation_vector
 

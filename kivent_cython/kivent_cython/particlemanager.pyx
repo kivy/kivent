@@ -160,6 +160,7 @@ class ParticleManager(GameSystem):
         
     def generate_component_data(self, dict entity_component_dict):
         for particle_effect in entity_component_dict:
+            physics_system = self.gameworld.systems['cymunk-physics']
             config = entity_component_dict[particle_effect]['particle_file']
             if not config in self.particle_configs:
                 self.load_particle_config(config)
@@ -215,7 +216,7 @@ class ParticleManager(GameSystem):
                     if particle_systems[particle_effect]['particle_system_on']:
                         particle_system.current_scroll = camera_pos
                         particle_system.pos = self.calculate_particle_offset(entity_id, particle_effect)
-                        particle_system.emit_angle = radians(entity[position_data_from]['angle']-90)
+                        particle_system.emit_angle = radians(entity[position_data_from]['angle']+90)
                         if particle_system._is_paused:
                             particle_system.resume()
                         if particle_system.emission_time <= 0:
@@ -236,5 +237,5 @@ class ParticleManager(GameSystem):
         cdef int offset = system_data[particle_effect]['offset']
         pos = position_data['position']
         cdef dict unit_vector = position_data['unit_vector']
-        cdef tuple effect_pos = (pos[0] - offset * -unit_vector['x'], pos[1] - offset * -unit_vector['y'])
+        cdef tuple effect_pos = (pos[0] - offset * unit_vector['x'], pos[1] - offset * unit_vector['y'])
         return effect_pos

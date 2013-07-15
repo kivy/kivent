@@ -82,41 +82,45 @@ class TestGame(Widget):
         self.gameworld.add_state(state_name='main_menu', systems_added=['background_renderer', 
             'quadtree_renderer', 'default_map'], 
             systems_removed=['physics_renderer', 'particle_manager', 'point_particle_manager',
-            'physics_point_renderer'], 
+            'physics_point_renderer', 'lighting_renderer', 'probe_system'], 
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'physics_point_renderer',
             'particle_manager', 'point_particle_manager', 'asteroid_system', 
-            'ship_system'], systems_unpaused=[],
+            'ship_system', 'lighting_renderer', 'probe_system'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='choose_character', systems_added=[
             'background_renderer', 'quadtree_renderer',  'default_map'], 
             systems_removed=['physics_renderer', 'particle_manager', 'point_particle_manager',
-             'physics_point_renderer'], 
+             'physics_point_renderer', 'lighting_renderer','probe_system'], 
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'physics_point_renderer', 'quadtree_renderer',
             'particle_manager', 'point_particle_manager', 'asteroid_system', 
-            'ship_system'], systems_unpaused=[],
+            'ship_system', 'lighting_renderer', 'probe_system'], systems_unpaused=[],
             screenmanager_screen='choose_character')
         self.gameworld.add_state(state_name='main_game', systems_added=[ 'background_renderer', 
             'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
-            'default_map', 'particle_manager', 'point_particle_manager'], 
+            'default_map', 'probe_system', 'lighting_renderer', 'particle_manager', 'point_particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'particle_manager', 'point_particle_manager', 'quadtree_renderer',
-            'asteroid_system', 'ship_system', 'physics_point_renderer'], screenmanager_screen='main_game')
+            'asteroid_system', 'ship_system', 'physics_point_renderer', 'lighting_renderer', 
+            'projectile_system', 'probe_system'], 
+            screenmanager_screen='main_game')
         self.gameworld.add_state(state_name='game_over', systems_added=[ 'background_renderer', 
             'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
-            'default_map', 'particle_manager', 'point_particle_manager'], 
+            'default_map', 'probe_system', 'lighting_renderer', 'particle_manager', 'point_particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'particle_manager', 'point_particle_manager',
-            'asteroid_system', 'ship_system', 'physics_point_renderer'], screenmanager_screen='game_over')
+            'asteroid_system', 'ship_system', 'physics_point_renderer', 'lighting_renderer', 
+            'probe_system'], screenmanager_screen='game_over')
 
     def clear_gameworld_objects(self):
         systems = self.gameworld.systems
         systems['ship_system'].clear_ships()
         systems['asteroid_system'].clear_asteroids()
         systems['projectile_system'].clear_projectiles()
+        systems['probe_system'].clear_probes()
 
     def set_main_menu_state(self):
         self.gameworld.state = 'main_menu'

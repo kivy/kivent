@@ -331,7 +331,70 @@ class PlayerCharacter(GameSystem):
         self.weapons_locked = True
         character = self.gameworld.entities[self.current_character_id]
         character['ship_system']['current_projectile_type'] = value
-       
 
 
+class ProbeSystem(GameSystem):
+    updateable = BooleanProperty(True)
+
+    def __init__(self, **kwargs):
+        super(ProbeSystem, self).__init__(**kwargs)
+        self.probe_dict = {}
+        self.setup_probe_dict()
+
+    def clear_probes(self):
+        for entity_id in self.entity_ids:
+            Clock.schedule_once(partial(self.gameworld.timed_remove_entity, entity_id))
+
+    def update(self, dt):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        for entity_id in self.entity_ids:
+            entity = entities[entity_id]
+            system_data = entity['probe_system']
+            physics_data = entity['cymunk-physics']
+            unit_vector = physics_data['unit_vector']
+            system_data['position'] = (physics_data['position'][0] - unit_vector['x']*system_data['offset'],
+                physics_data['position'][1] - unit_vector['y']*system_data['offset'])
+
+            color = system_data['color']
+            if color[3] >= 1.0:
+                system_data['color_change'] = 'descending'
+            if color[3] <= 0.:
+                system_data['color_change'] = 'ascending'
+            color_change = system_data['color_change']
+            if color_change == 'ascending':
+                new_alpha = color[3] + system_data['color_change_speed']*dt
+                system_data['color'] = (color[0], color[1], color[2], new_alpha)
+            if color_change == 'descending':
+                new_alpha = color[3] - system_data['color_change_speed']*dt
+                system_data['color'] = (color[0], color[1], color[2], new_alpha)
+
+
+
+
+    def setup_probe_dict(self):
+        self.probe_dict['probe1'] = {'inner_radius': 0, 'outer_radius': 16, 'mass': 100,
+        'max_speed': 280, 'max_turn_speed': 180, 'texture': 'assets/ships/probe.png', 'offset': 5,
+        'color': (0., 1., 0., 1.), 'color_change_speed': 1., 'lighting_texture': 'assets/ships/probelight.png'}
+
+    def spawn_probe_with_dict(self, probe_dict, position):
+        circle_dict = {'inner_radius': probe_dict['inner_radius'], 
+        'outer_radius': probe_dict['outer_radius'], 'mass': probe_dict['mass'], 
+        'offset': (0, 0)}
+        col_shape_dict = {'shape_type': 'circle', 'elasticity': .5, 
+        'collision_type': 4, 'shape_info': circle_dict, 'friction': 1.0}
+        physics_component_dict = { 'main_shape': 'box', 
+        'velocity': (0, 0), 'position': position, 'angle': 0, 
+        'angular_velocity': 0, 'mass': probe_dict['mass'], 'vel_limit': probe_dict['max_speed'], 
+        'ang_vel_limit': math.radians(probe_dict['max_turn_speed']), 'col_shapes': [col_shape_dict]}
+        probe_system_dict = {'color': probe_dict['color'], 'offset': probe_dict['offset'], 
+        'color_change_speed': probe_dict['color_change_speed'], 'color_change': 'ascending',
+        'position': position}
+        create_component_dict = {'cymunk-physics': physics_component_dict, 
+        'physics_renderer': {'texture': probe_dict['texture']}, 
+        'lighting_renderer': {'texture': probe_dict['lighting_texture'], 
+        'size': (probe_dict['outer_radius']*2, probe_dict['outer_radius']*2)}, 
+        'probe_system': probe_system_dict}
+        component_order = ['cymunk-physics', 'physics_renderer', 'probe_system', 'lighting_renderer']
+        self.gameworld.init_entity(create_component_dict, component_order)
     

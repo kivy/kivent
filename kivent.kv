@@ -63,6 +63,9 @@ TestGame:
 		ShipSystem:
 			system_id: 'ship_system'
 			gameworld: root.gameworld
+		ProbeSystem:
+			system_id: 'probe_system'
+			gameworld: root.gameworld
 		PlayerCharacter:
 			id: player_character
 			system_id: 'player_character'
@@ -77,6 +80,12 @@ TestGame:
 			gameworld: root.gameworld
 		PhysicsPointRenderer:
 			gameworld: root.gameworld
+		QuadRenderer:
+			gameworld: root.gameworld
+			system_id: 'lighting_renderer'
+			render_information_from: 'probe_system'
+	    	context_information_from: 'probe_system'
+	    	do_color: True
 		ParticleManager:
 			gameworld: root.gameworld
 		ParticleManager:

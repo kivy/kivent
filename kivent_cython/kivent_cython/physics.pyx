@@ -19,6 +19,7 @@ class CymunkPhysics(GameSystem):
         cdef list bb_query_result
         super(CymunkPhysics, self).__init__(**kwargs)
         self.bb_query_result = list()
+        self.segment_query_result = list()
         self.init_physics()
         
 
@@ -42,9 +43,13 @@ class CymunkPhysics(GameSystem):
         
         space.collision_slop = self.collision_slop
         space.register_bb_query_func(self.bb_query_func)
+        space.register_segment_query_func(self.segment_query_func)
 
     def bb_query_func(self, object shape):
         self.bb_query_result.append(shape.body.data)
+
+    def segment_query_func(self, object shape, float t, dict n):
+        self.segment_query_result.append((shape.body.data, t, n))
 
     def query_on_screen(self):
         cdef object viewport = self.gameworld.systems[self.viewport]
@@ -54,10 +59,15 @@ class CymunkPhysics(GameSystem):
         current_on_screen = self.query_bb(bb_list)
         return current_on_screen
 
+    def query_segment(self, vect_start, vect_end):
+        self.segment_query_result = []
+        self.space.space_segment_query(vect_start, vect_end)
+        return self.segment_query_result
+
     def query_bb(self, list box_to_query):
         bb = cymunk.BB(box_to_query[0], box_to_query[1], box_to_query[2], box_to_query[3])
         self.bb_query_result = []
-        self.space.space_bb_query_func(bb)
+        self.space.space_bb_query(bb)
         return self.bb_query_result
 
 

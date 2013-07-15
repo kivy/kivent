@@ -120,7 +120,8 @@ class TestGame(Widget):
 
     def set_main_menu_state(self):
         self.gameworld.state = 'main_menu'
-        self.gameworld.music_controller.play('track5')
+        if not self.gameworld.music_controller.check_if_songs_are_playing():
+            self.gameworld.music_controller.play('track5')
         choose_character = self.gameworld.gamescreenmanager.get_screen('choose_character').choose_character
         choose_character.current_ship = choose_character.list_of_ships[0]
 

@@ -16,17 +16,7 @@ class ShipAISystem(GameSystem):
         return desired_angle_delta
 
     def calculate_target_position(self, offset_distance):
-        gameworld = self.gameworld
-        entities = gameworld.entities
-        character_system = gameworld.systems['player_character']
-        current_player_character_id = character_system.current_character_id
-        if current_player_character_id:
-            current_player_character = entities[current_player_character_id]
-            physics_data = current_player_character['cymunk-physics']
-            unit_vector = physics_data['unit_vector']
-            position = physics_data['position']
-            return (offset_distance * -unit_vector['x'] + position[0], 
-                offset_distance * -unit_vector['y'] + position[1])
+        pass
 
     def do_turning(self, position, unit_vector, turn_speed, ship_data, physics_body):
         gameworld = self.gameworld
@@ -48,8 +38,10 @@ class ShipAISystem(GameSystem):
             if -1 <= desired_angle_change <= 1:
                 ship_data['is_turning'] = 'zero'
                 physics_body.angular_velocity = 0
+            return desired_angle_change
+        else: return None
 
-    def do_thrusting(self, position, ship_data, entity, follow_distance, dt):
+    def do_thrusting(self, position, ship_data, entity_engine_effect, follow_distance, desired_angle, dt):
         gameworld = self.gameworld
         entities = gameworld.entities
         character_system = gameworld.systems['player_character']
@@ -60,16 +52,19 @@ class ShipAISystem(GameSystem):
             target_position = target_physics_data['position']
             distance_to_target = Vector(position).distance(target_position)
             thrust_speed = ship_data['accel']
-            desired_multiplier = distance_to_target/(thrust_speed*dt)
-            print desired_multiplier
+            desired_multiplier = (distance_to_target-follow_distance)/(thrust_speed*dt)
             ship_data['engine_speed_multiplier'] = min(1.0, desired_multiplier)
-            print distance_to_target
-            if distance_to_target > follow_distance:
-                ship_data['fire_engines'] = True
-                entity['particle_manager']['engine_effect']['particle_system_on'] = True
+            if -25 <= desired_angle <= 25 and not None:
+                if distance_to_target > follow_distance:
+                    ship_data['fire_engines'] = True
+                    entity_engine_effect['particle_system_on'] = True
+                else: 
+                    ship_data['fire_engines'] = False
+                    entity_engine_effect['particle_system_on'] = False
+
             else: 
                 ship_data['fire_engines'] = False
-                entity['particle_manager']['engine_effect']['particle_system_on'] = False
+                entity_engine_effect['particle_system_on'] = False
 
     def update(self, dt):
         gameworld = self.gameworld
@@ -85,15 +80,10 @@ class ShipAISystem(GameSystem):
             turn_speed = ship_data['ang_accel']
             unit_vector = physics_data['unit_vector']
             current_angle = physics_data['angle']
-            self.do_turning(position, unit_vector, turn_speed, ship_data, physics_body)
-            self.do_thrusting(position, ship_data, entity, follow_distance, dt)
+            entity_engine_effect = entity['particle_manager']['engine_effect']
+            desired_angle = self.do_turning(position, unit_vector, turn_speed, ship_data, physics_body)
+            self.do_thrusting(position, ship_data, entity_engine_effect, follow_distance, desired_angle, dt)
             
-            
-            
-
-            
-            
-
 class ShipSystem(GameSystem):
     ship_dicts = DictProperty(None)
     updateable = BooleanProperty(True)

@@ -86,7 +86,7 @@ class TestGame(Widget):
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'physics_point_renderer',
             'particle_manager', 'point_particle_manager', 'asteroid_system', 
-            'ship_system', 'lighting_renderer', 'probe_system'], systems_unpaused=[],
+            'ship_system', 'lighting_renderer', 'probe_system', 'ship_ai_system'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='choose_character', systems_added=[
             'background_renderer', 'quadtree_renderer',  'default_map'], 
@@ -95,7 +95,7 @@ class TestGame(Widget):
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'physics_point_renderer', 'quadtree_renderer',
             'particle_manager', 'point_particle_manager', 'asteroid_system', 
-            'ship_system', 'lighting_renderer', 'probe_system'], systems_unpaused=[],
+            'ship_system', 'lighting_renderer', 'probe_system', 'ship_ai_system'], systems_unpaused=[],
             screenmanager_screen='choose_character')
         self.gameworld.add_state(state_name='main_game', systems_added=[ 'background_renderer', 
             'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
@@ -104,7 +104,7 @@ class TestGame(Widget):
             systems_unpaused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'particle_manager', 'point_particle_manager', 'quadtree_renderer',
             'asteroid_system', 'ship_system', 'physics_point_renderer', 'lighting_renderer', 
-            'projectile_system', 'probe_system'], 
+            'projectile_system', 'probe_system', 'ship_ai_system'], 
             screenmanager_screen='main_game')
         self.gameworld.add_state(state_name='game_over', systems_added=[ 'background_renderer', 
             'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
@@ -113,7 +113,7 @@ class TestGame(Widget):
             systems_unpaused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'particle_manager', 'point_particle_manager',
             'asteroid_system', 'ship_system', 'physics_point_renderer', 'lighting_renderer', 
-            'probe_system'], screenmanager_screen='game_over')
+            'probe_system', 'ship_ai_system'], screenmanager_screen='game_over')
 
     def clear_gameworld_objects(self):
         systems = self.gameworld.systems
@@ -137,7 +137,7 @@ class TestGame(Widget):
         if self.cleared:
             character_system = self.gameworld.systems['ship_system']
             character_system.spawn_player_character(character_to_spawn)
-            #character_system.spawn_ship_with_dict(character_system.ship_dicts['ship_1'], False, (150, 150))
+            character_system.spawn_ship_with_dict(character_system.ship_dicts['ship_1'], False, (250, 250))
             Clock.schedule_once(self.gameworld.systems['asteroid_system'].generate_asteroids)
             self.gameworld.state = 'main_game'
 
@@ -158,7 +158,7 @@ class TestGame(Widget):
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems
         physics = systems['cymunk-physics']
-        character_system = systems['ship_system']
+        ship_system = systems['ship_system']
         projectile_system = systems['projectile_system']
         asteroid_system = systems['asteroid_system']
         physics.add_collision_handler(1, 1, 
@@ -170,11 +170,12 @@ class TestGame(Widget):
             begin_func=projectile_system.collision_begin_ship_bullet,
             separate_func=projectile_system.collision_solve_ship_bullet)
         physics.add_collision_handler(2, 1, 
-            begin_func=character_system.collision_begin_ship_asteroid, 
-            separate_func=character_system.collision_solve_ship_asteroid)
+            begin_func=ship_system.collision_begin_ship_asteroid)
         physics.add_collision_handler(3,3, 
             begin_func=projectile_system.collision_begin_bullet_bullet, 
             separate_func=projectile_system.collision_solve_bullet_bullet)
+        physics.add_collision_handler(2, 4, 
+            begin_func=ship_system.collision_begin_ship_probe)
 
     
     def test_remove_entity(self, dt):

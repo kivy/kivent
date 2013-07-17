@@ -51,13 +51,14 @@ class AsteroidsLevel(GameSystem):
     def spawn_probes(self):
         systems = self.gameworld.systems
         probe_system = systems['probe_system']
-        for x in range(50):
+        for x in range(10):
             rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
             rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
             probe_system.spawn_probe_with_dict(probe_system.probe_dict['probe1'], (rand_x, rand_y))
 
     def choose_gravity(self):
-        choice = random.choice(['none', 'x', 'y', 'xy', 'none', 'none', 'none'])
+        #'x', 'y', 'xy', '
+        choice = random.choice(['none', 'none', 'none', 'none'])
         systems = self.gameworld.systems
         physics_system = systems['cymunk-physics']
         print choice

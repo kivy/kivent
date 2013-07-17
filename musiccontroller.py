@@ -69,19 +69,15 @@ class MusicController(Widget):
         else: 
             return False
 
-
-
     def play_new_song(self, dt):
         if not self.check_if_songs_are_playing():
             self.play(random.choice(self.track_names))
-
 
     def schedule_choose_new_song(self, value):
         start_delay = random.random() * 20.0
         value.seek(0)
         Clock.schedule_once(self.play_new_song, start_delay)
         
-
     def play(self, sound_name):
         if sound_name in self.music_dict:
             self.music_dict[sound_name].play()

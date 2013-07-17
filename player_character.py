@@ -9,6 +9,12 @@ import math
 class ShipAISystem(GameSystem):
     updateable = BooleanProperty(True)
 
+    def calculate_desired_angle_delta(self, target_position, current_position, unit_vector):
+        vector_between_ships = Vector(target_position) - Vector(current_position)
+        unit_vector = (unit_vector['x'], unit_vector['y'])
+        desired_angle_delta = Vector(unit_vector).angle((vector_between_ships[0], vector_between_ships[1]))
+        return desired_angle_delta
+
     def calculate_target_position(self, offset_distance):
         gameworld = self.gameworld
         entities = gameworld.entities
@@ -22,6 +28,49 @@ class ShipAISystem(GameSystem):
             return (offset_distance * -unit_vector['x'] + position[0], 
                 offset_distance * -unit_vector['y'] + position[1])
 
+    def do_turning(self, position, unit_vector, turn_speed, ship_data, physics_body):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        character_system = gameworld.systems['player_character']
+        current_player_character_id = character_system.current_character_id
+        if current_player_character_id:
+            current_player_character = entities[current_player_character_id]
+            target_physics_data = current_player_character['cymunk-physics']
+            target_position = target_physics_data['position']
+            desired_angle_change = self.calculate_desired_angle_delta(target_position, 
+            position, unit_vector)
+            desired_multiplier = math.fabs(desired_angle_change / math.degrees(turn_speed))
+            ship_data['turn_speed_multiplier'] = min(1.0, desired_multiplier)
+            if desired_angle_change < -1:
+                ship_data['is_turning'] = 'left'
+            if desired_angle_change > 1:
+                ship_data['is_turning'] = 'right'
+            if -1 <= desired_angle_change <= 1:
+                ship_data['is_turning'] = 'zero'
+                physics_body.angular_velocity = 0
+
+    def do_thrusting(self, position, ship_data, entity, follow_distance, dt):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        character_system = gameworld.systems['player_character']
+        current_player_character_id = character_system.current_character_id
+        if current_player_character_id:
+            current_player_character = entities[current_player_character_id]
+            target_physics_data = current_player_character['cymunk-physics']
+            target_position = target_physics_data['position']
+            distance_to_target = Vector(position).distance(target_position)
+            thrust_speed = ship_data['accel']
+            desired_multiplier = distance_to_target/(thrust_speed*dt)
+            print desired_multiplier
+            ship_data['engine_speed_multiplier'] = min(1.0, desired_multiplier)
+            print distance_to_target
+            if distance_to_target > follow_distance:
+                ship_data['fire_engines'] = True
+                entity['particle_manager']['engine_effect']['particle_system_on'] = True
+            else: 
+                ship_data['fire_engines'] = False
+                entity['particle_manager']['engine_effect']['particle_system_on'] = False
+
     def update(self, dt):
         gameworld = self.gameworld
         entities = gameworld.entities
@@ -31,22 +80,19 @@ class ShipAISystem(GameSystem):
             physics_data = entity['cymunk-physics']
             ship_data = entity['ship_system']
             physics_body = physics_data['body']
-            offset_distance = system_data['follow_distance']
-            target_point = self.calculate_target_position(offset_distance)
-            current_position = physics_data['position']
+            follow_distance = system_data['follow_distance']
+            position = physics_data['position']
+            turn_speed = ship_data['ang_accel']
+            unit_vector = physics_data['unit_vector']
             current_angle = physics_data['angle']
-            desired_angle = Vector(current_position).angle(target_point)
-            if desired_angle < 0:
-                desired_angle = 360 + desired_angle
-            if desired_angle > current_angle:
-                ship_data['is_turning'] = 'left'
-                ship_data['turn_speed_multiplier'] = 1
-            if desired_angle < current_angle:
-                ship_data['is_turning'] = 'right'
-                ship_data['turn_speed_multiplier'] = 1
-            if desired_angle == current_angle:
-                ship_data['is_turning'] = 'zero'
-                physics_body.angular_velocity = 0
+            self.do_turning(position, unit_vector, turn_speed, ship_data, physics_body)
+            self.do_thrusting(position, ship_data, entity, follow_distance, dt)
+            
+            
+            
+
+            
+            
 
 class ShipSystem(GameSystem):
     ship_dicts = DictProperty(None)
@@ -196,14 +242,21 @@ class ShipSystem(GameSystem):
         if entity_id == player_character_system.current_character_id:
             player_character_system.current_health = system_data['health']
 
-    def collision_begin_ship_asteroid(self, arbiter, space):
+    def collision_begin_ship_probe(self, arbiter, space):
         gameworld = self.gameworld
         systems = gameworld.systems
+        entities = gameworld.entities
+        probe_id = arbiter.shapes[1].body.data
+        ship_id = arbiter.shapes[0].body.data
+        probe = entities[probe_id]
+        ship = entities[ship_id]
+        ship['ship_system']['current_probes'] += 1
         sound_system = systems['sound_system']
         sound_system.play('asteroidhitship')
-        return True 
+        Clock.schedule_once(partial(gameworld.timed_remove_entity, probe_id))
+        return False
 
-    def collision_solve_ship_asteroid(self, arbiter, space):
+    def collision_begin_ship_asteroid(self, arbiter, space):
         gameworld = self.gameworld
         systems = gameworld.systems
         entities = gameworld.entities
@@ -212,7 +265,9 @@ class ShipSystem(GameSystem):
         asteroid = entities[asteroid_id]
         asteroid_damage = asteroid['asteroid_system']['damage']
         self.damage(ship_id, asteroid_damage)
-        return True
+        sound_system = systems['sound_system']
+        sound_system.play('asteroidhitship')
+        return True 
 
     def spawn_ship_with_dict(self, ship_dict, is_player_character, position):
         box_dict = {'width': ship_dict['width'], 'height': ship_dict['height'],
@@ -228,7 +283,7 @@ class ShipSystem(GameSystem):
         'ang_accel': math.radians(ship_dict['angular_accel']), 'hard_points': ship_dict['hard_points'], 
         'projectile_type': ship_dict['caliber'], 'is_turning': 'zero', 'fire_engines': False, 
         'turn_speed_multiplier': 0, 'engine_speed_multiplier': 0, 'character_dying': False,
-        'current_projectile_type': '_bullet'}
+        'current_projectile_type': '_bullet', 'current_probes': 0}
         particle_system1 = {'particle_file': ship_dict['engine_effect'], 
         'offset': ship_dict['engine_offset']}
         particle_system2 = {'particle_file': ship_dict['explosion_effect'], 'offset': 0}
@@ -243,7 +298,7 @@ class ShipSystem(GameSystem):
             create_component_dict['player_character'] = {}
             component_order.append('player_character')
         else:
-            create_component_dict['ship_ai_system'] = {'follow_distance': 100}
+            create_component_dict['ship_ai_system'] = {'follow_distance': 250}
             component_order.append('ship_ai_system')
         self.gameworld.init_entity(create_component_dict, component_order)
 
@@ -369,13 +424,11 @@ class ProbeSystem(GameSystem):
                 new_alpha = color[3] - system_data['color_change_speed']*dt
                 system_data['color'] = (color[0], color[1], color[2], new_alpha)
 
-
-
-
     def setup_probe_dict(self):
         self.probe_dict['probe1'] = {'inner_radius': 0, 'outer_radius': 16, 'mass': 100,
         'max_speed': 280, 'max_turn_speed': 180, 'texture': 'assets/ships/probe.png', 'offset': 5,
-        'color': (0., 1., 0., 1.), 'color_change_speed': 1., 'lighting_texture': 'assets/ships/probelight.png'}
+        'color': (0.788235294, 0.643137255, 1., 1.), 'color_change_speed': 1., 
+        'lighting_texture': 'assets/ships/probelight.png'}
 
     def spawn_probe_with_dict(self, probe_dict, position):
         circle_dict = {'inner_radius': probe_dict['inner_radius'], 

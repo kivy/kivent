@@ -46,7 +46,7 @@ class AsteroidsLevel(GameSystem):
             self.generate_prerendered_background(bg_choice, (512, 512))
         self.choose_damping()
         self.choose_gravity()
-        self.spawn_probes()
+        #self.spawn_probes()
 
     def spawn_probes(self):
         systems = self.gameworld.systems
@@ -61,7 +61,6 @@ class AsteroidsLevel(GameSystem):
         choice = random.choice(['none', 'none', 'none', 'none'])
         systems = self.gameworld.systems
         physics_system = systems['cymunk-physics']
-        print choice
         if choice == 'none':
             physics_system.gravity = (0, 0)
         if choice == 'x':
@@ -74,7 +73,6 @@ class AsteroidsLevel(GameSystem):
             y_grav = random.randrange(-100, 100)
             x_grav = random.randrange(-100, 100)
             physics_system.gravity = (x_grav, y_grav)
-        print physics_system.gravity
 
     def choose_damping(self):
         systems = self.gameworld.systems

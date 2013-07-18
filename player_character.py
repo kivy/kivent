@@ -13,10 +13,17 @@ class ShipAISystem(GameSystem):
 
     def create_component(self, entity_id, entity_component_dict):
         entity_component_dict['distance_to_target'] = 0.
+        entity_component_dict['angle_tolerance'] = 10.
         entity_component_dict['follow_distance'] = 300
         entity_component_dict['site_distance'] = 650
         entity_component_dict['ai_state'] = 'follow'
         entity_component_dict['ready_to_fire'] = True
+        entity_component_dict['rockets_ready'] = True
+        entity_component_dict['attack_delay'] = .25
+        entity_component_dict['rocket_delay'] = 6.5
+        entity_component_dict['burst_number'] = 5
+        entity_component_dict['burst_delay'] = 5.
+        entity_component_dict['shot_count'] = 0
         super(ShipAISystem, self).create_component(entity_id, entity_component_dict)
 
     def query_physics_bb(self, position, radius):
@@ -51,18 +58,19 @@ class ShipAISystem(GameSystem):
             target_vector[1]))
         return desired_angle_delta
 
-    def do_turning(self, target_vector, unit_vector, ship_data, physics_body):
+    def do_turning(self, target_vector, unit_vector, ship_data, ship_ai_data, physics_body):
         desired_angle_change = self.calculate_desired_angle_delta(
             target_vector, unit_vector)
         turn_speed = ship_data['ang_accel']
         desired_multiplier = math.fabs(
             desired_angle_change / math.degrees(turn_speed))
         ship_data['turn_speed_multiplier'] = min(1.0, desired_multiplier)
-        if desired_angle_change < -5:
+        angle_tolerance = ship_ai_data['angle_tolerance']
+        if desired_angle_change < -angle_tolerance:
             ship_data['is_turning'] = 'left'
-        if desired_angle_change > 5:
+        if desired_angle_change > angle_tolerance:
             ship_data['is_turning'] = 'right'
-        if -5 <= desired_angle_change <= 5:
+        if -angle_tolerance <= desired_angle_change <= angle_tolerance:
             ship_data['is_turning'] = 'zero'
             physics_body.angular_velocity = 0
         return desired_angle_change
@@ -124,10 +132,43 @@ class ShipAISystem(GameSystem):
         entity = entities[entity_id]
         entity['ship_ai_system']['ready_to_fire'] = True
 
+    def reset_rockets_ready(self, entity_id, dt):
+        entities = self.gameworld.entities
+        entity = entities[entity_id]
+        entity['ship_ai_system']['rockets_ready'] = True
+
     def fire_weapons(self, entity_id):
         systems = self.gameworld.systems
         ship_system = systems['ship_system']
         ship_system.fire_projectiles(entity_id)
+
+    def determine_fire_weapons(self, position, unit_vector, ship_ai_data, ship_data, entity_id):
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        in_view = self.query_view(position, unit_vector, ship_ai_data['site_distance'])
+        if in_view != [] and ship_ai_data['ready_to_fire']:
+            entities_in_view = zip(*in_view)[0]
+            current_player_character_id = systems['player_character'].current_character_id
+            if current_player_character_id in entities_in_view:
+                projectile_system = systems['projectile_system']
+                weapon_type = ship_data['projectile_type'] + ship_data['current_projectile_type']
+                delay = projectile_system.projectiles_dict[weapon_type]['cooldown'] + ship_ai_data['attack_delay']
+                fired_rocket = False
+                if ship_ai_data['rockets_ready']:
+                    ship_ai_data['rockets_ready'] = False
+                    fired_rocket = True
+                    ship_data['current_projectile_type'] = '_rocket'
+                    Clock.schedule_once(partial(self.reset_rockets_ready, entity_id), ship_ai_data['rocket_delay'])
+                self.fire_weapons(entity_id)
+                if fired_rocket:
+                    ship_data['current_projectile_type'] = '_bullet'
+                ship_ai_data['ready_to_fire'] = False
+                if ship_ai_data['shot_count'] < ship_ai_data['burst_number']:
+                    ship_ai_data['shot_count'] += 1
+                    Clock.schedule_once(partial(self.reset_ship_fire_status, entity_id), delay)
+                else:
+                    ship_ai_data['shot_count'] = 0
+                    Clock.schedule_once(partial(self.reset_ship_fire_status, entity_id), ship_ai_data['burst_delay'])
 
     def update(self, dt):
         if self.cycle_count < self.cycles_to_skip:
@@ -147,14 +188,8 @@ class ShipAISystem(GameSystem):
                 follow_distance = ship_ai_data['follow_distance']
                 unit_vector = physics_data['unit_vector']
                 target_position = self.target_player(dt)
-                in_view = self.query_view(position, unit_vector, ship_ai_data['site_distance'])
-                if in_view != [] and ship_ai_data['ready_to_fire']:
-                    entities_in_view = zip(*in_view)[0]
-                    current_player_character_id = gameworld.systems['player_character'].current_character_id
-                    if current_player_character_id in entities_in_view:
-                        self.fire_weapons(entity_id)
-                        ship_ai_data['ready_to_fire'] = False
-                        Clock.schedule_once(partial(self.reset_ship_fire_status, entity_id), 1.5)
+                self.determine_fire_weapons(position, unit_vector, 
+                    ship_ai_data, ship_data, entity_id)
                 if target_position == None:
                     target_position = position
                 dist = Vector(target_position).distance(position)
@@ -179,7 +214,7 @@ class ShipAISystem(GameSystem):
         entity_engine_effect = entity['particle_manager']['engine_effect']
         ship_ai_data = entity['ship_ai_system']
         desired_angle = self.do_turning(target_vector, unit_vector, 
-            ship_data, physics_data['body'])
+            ship_data, ship_ai_data, physics_data['body'])
         self.do_thrusting(ship_data, entity_engine_effect, 
             desired_angle, ship_ai_data)
 

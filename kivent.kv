@@ -237,9 +237,7 @@ TestGame:
 			rectangle: (self.pos[0], self.pos[1], self.size[0], self.size[1])
 			joint: 'bevel'
 
-<YACSButtonCircle>:
-	background_normal: 'assets/empty_pixel.png'
-	background_down: 'assets/empty_pixel.png'
+<-YACSButtonCircle>:
 	font_name: 'assets/fonts/Aldrich-Regular.ttf'
 	color: COLOR_BORDER if self.state == 'normal' else COLOR_HIGHLIGHT
 	canvas.before:
@@ -253,10 +251,14 @@ TestGame:
 		Ellipse:
 			size: root.size[0]*.9, root.size[1]*.9
 			pos: root.pos[0]*1.05, root.pos[1]*1.05
+	Label:
+		text: root.text
+		font_name: root.font_name
+		font_size: root.font_size
+		pos: root.pos
+		size: root.size
 
-<YACSButton>:
-	background_normal: 'assets/empty_pixel.png'
-	background_down: 'assets/empty_pixel.png'
+<-YACSButton>:
 	font_name: 'assets/fonts/Aldrich-Regular.ttf'
 	color: COLOR_BORDER if self.state == 'normal' else COLOR_HIGHLIGHT
 	canvas.before:
@@ -271,6 +273,12 @@ TestGame:
 			width: 2.
 			rectangle: (self.pos[0], self.pos[1], self.size[0], self.size[1])
 			joint: 'bevel'
+	Label:
+		text: root.text
+		font_name: root.font_name
+		font_size: root.font_size
+		pos: root.pos
+		size: root.size
 
 <ToggleWeaponPanel>:
 	bullet_button: bullet_button
@@ -287,6 +295,7 @@ TestGame:
 			on_press: root.toggle_weapon(self.state, self.weapon_type)
 			background_normal: 'assets/ui_elements/bulleticon-normal.png'
 			background_down: 'assets/ui_elements/bulleticon-down.png'
+			weapon_type: '_bullet'
 			state: 'down'
 		WeaponToggleButton:
 			id: rocket_button
@@ -299,9 +308,6 @@ TestGame:
 	group: 'weapons'
 	size_hint: (None, None)
 	size: (64, 32)
-
-
-
 
 <MainGameScreen>:
 	gameworld: self.gameworld

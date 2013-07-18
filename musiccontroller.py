@@ -31,11 +31,7 @@ class SoundSystem(GameSystem):
         value.seek(0)
 
     def schedule_play(self, sound_name, dt):
-        sound_dict = self.sound_dict
-        if sound_name in sound_dict:
-            sound_dict[sound_name].play()
-        else:
-            print "file",sound_name,"not found in", self.sound_dir
+        self.play(sound_name)
 
     def play(self, sound_name):
         sound_dict = self.sound_dict

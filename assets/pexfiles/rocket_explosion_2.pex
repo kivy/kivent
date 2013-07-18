@@ -4,7 +4,7 @@
   <sourcePositionVariance x="0" y="0"/>
   <gravity x="0" y="0"/>
   <emitterType value="1"/>
-  <maxParticles value="25"/>
+  <maxParticles value="10"/>
   <particleLifeSpan value="1"/>
   <particleLifespanVariance value="0.7"/>
   <startParticleSize value="30"/>

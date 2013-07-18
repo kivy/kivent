@@ -144,13 +144,30 @@ class TestGame(Widget):
     def setup_gameobjects(self):
         Clock.schedule_once(self.gameworld.systems['asteroids_level'].generate_new_level)
 
+    def setup_particle_effects(self):
+        particle_effects = [
+        'assets/pexfiles/rocket_burn_effect1.pex',
+        'assets/pexfiles/rocket_explosion_1.pex',
+        'assets/pexfiles/rocket_burn_effect2.pex',
+        'assets/pexfiles/rocket_explosion_2.pex',
+        'assets/pexfiles/rocket_burn_effect3.pex',
+        'assets/pexfiles/rocket_explosion_3.pex',
+        'assets/pexfiles/rocket_burn_effect4.pex',
+        'assets/pexfiles/rocket_explosion_4.pex',
+        ]
+        particle_manager = self.gameworld.systems['point_particle_manager']
+        for effect in particle_effects:
+            particle_manager.load_particle_config(effect)
+
+
     def _init_game(self, dt):
         self.setup_states()
         self.setup_map()
         self.set_main_menu_state()
         self.setup_collision_callbacks()
         self.setup_gameobjects()
-        Clock.schedule_interval(self.update, 1./30.)
+        self.setup_particle_effects()
+        Clock.schedule_interval(self.update, 1./60.)
 
     def update(self, dt):
         self.gameworld.update(dt)     

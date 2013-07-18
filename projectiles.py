@@ -21,7 +21,7 @@ class ProjectileSystem(GameSystem):
         entity['point_particle_manager']['explosion_effect']['particle_system_on'] = True
         if entity['physics_point_renderer']['on_screen']:
             sound_system = gameworld.systems['sound_system']
-            sound_system.play('rocketexplosion')
+            Clock.schedule_once(partial(sound_system.schedule_play, 'rocketexplosion'))
         entity['projectile_system']['armed'] = False
         Clock.schedule_once(partial(gameworld.timed_remove_entity, entity_id), 2.0)
 
@@ -81,7 +81,7 @@ class ProjectileSystem(GameSystem):
                 explosion_string = 'assets/pexfiles/rocket_explosion_3.pex'
             elif color == 'purple':
                 effect_string = 'assets/pexfiles/rocket_burn_effect4.pex'
-                explosion_string = 'assets/pexfiles/rocket_explosion_3.pex'
+                explosion_string = 'assets/pexfiles/rocket_explosion_4.pex'
             particle_system1 = {'particle_file': effect_string, 'offset': 0}
             particle_system2 = {'particle_file': explosion_string, 'offset': 0}
             particle_systems = {'engine_effect': particle_system1, 

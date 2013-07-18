@@ -130,12 +130,14 @@ class ShipAISystem(GameSystem):
     def reset_ship_fire_status(self, entity_id, dt):
         entities = self.gameworld.entities
         entity = entities[entity_id]
-        entity['ship_ai_system']['ready_to_fire'] = True
+        if 'ship_ai_system' in entity:
+            entity['ship_ai_system']['ready_to_fire'] = True
 
     def reset_rockets_ready(self, entity_id, dt):
         entities = self.gameworld.entities
         entity = entities[entity_id]
-        entity['ship_ai_system']['rockets_ready'] = True
+        if 'ship_ai_system' in entity:
+            entity['ship_ai_system']['rockets_ready'] = True
 
     def fire_weapons(self, entity_id):
         systems = self.gameworld.systems
@@ -343,9 +345,9 @@ class ShipSystem(GameSystem):
             projectile_system.spawn_projectile(projectile_type, location, 
                 angle, ship_system_data['color'])
         if current_projectile_type == '_bullet':
-            sound_system.play('bulletfire')
+            Clock.schedule_once(partial(sound_system.schedule_play, 'bulletfire'))
         if current_projectile_type == '_rocket':
-            sound_system.play('rocketfire')
+            Clock.schedule_once(partial(sound_system.schedule_play, 'rocketfire'))
 
     def update(self, dt):
         for entity_id in self.entity_ids:

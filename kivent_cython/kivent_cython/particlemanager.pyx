@@ -12,6 +12,7 @@ class ParticleManager(GameSystem):
     position_data_from = StringProperty('cymunk-physics')
     render_information_from = StringProperty('physics_renderer')
     updateable = BooleanProperty(True)
+    particle_update_time = NumericProperty(1./20.)
 
     def __init__(self, **kwargs):
         super(ParticleManager, self).__init__(**kwargs)
@@ -156,6 +157,7 @@ class ParticleManager(GameSystem):
             blend_factor_source =config_dict['blend_factor_source'],
             blend_factor_dest = config_dict['blend_factor_dest'],
             emitter_type = config_dict['emitter_type'],
+            update_interval = self.particle_update_time,
             )
         
     def generate_component_data(self, dict entity_component_dict):

@@ -14,7 +14,7 @@ class SoundSystem(GameSystem):
         self.sound_dict = {}
         self.sound_names = ['bulletfire', 'enemyshipenterarea', 'rocketexplosion', 
         'rocketfire', 'shipexplosion', 'shiphitbybullet', 'asteroidhitasteroid', 
-        'asteroidhitship', 'bullethitasteroid', 'bullethitbullet']
+        'asteroidhitship', 'bullethitasteroid', 'bullethitbullet', 'probepickup']
         Clock.schedule_once(self.load_music)
         
     def load_music(self, dt):

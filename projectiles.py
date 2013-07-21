@@ -155,13 +155,16 @@ class ProjectileSystem(GameSystem):
 
     def collision_begin_ship_bullet(self, arbiter, space):
         gameworld = self.gameworld
+        systems = gameworld.systems
         entities = gameworld.entities
-        sound_system = gameworld.systems['sound_system']
+        sound_system = systems['sound_system']
         bullet_id = arbiter.shapes[1].body.data
+        character_id = systems['player_character'].current_character_id
         ship_id = arbiter.shapes[0].body.data
         bullet = entities[bullet_id]
         if bullet['projectile_system']['armed']:
-            sound_system.play('shiphitbybullet')
+            if character_id == ship_id:
+                Clock.schedule_once(partial(sound_system.schedule_play, 'shiphitbybullet'))
             return True
         else:
             return False
@@ -176,7 +179,7 @@ class ProjectileSystem(GameSystem):
         if bullet1['projectile_system']['armed'] and bullet2['projectile_system']['armed']:
             if bullet1['physics_point_renderer']['on_screen'] or bullet2['physics_point_renderer']['on_screen']:
                 sound_system = gameworld.systems['sound_system']
-                sound_system.play('bullethitbullet')
+                Clock.schedule_once(partial(sound_system.schedule_play, 'bullethitbullet'))
             return True
         else:
             return False
@@ -190,7 +193,7 @@ class ProjectileSystem(GameSystem):
         if bullet['projectile_system']['armed']:
             if bullet['physics_point_renderer']['on_screen']:
                 sound_system = gameworld.systems['sound_system']
-                sound_system.play('bullethitasteroid')
+                Clock.schedule_once(partial(sound_system.schedule_play, 'bullethitasteroid'))
             return True
         else:
             return False

@@ -22,14 +22,29 @@ TestGame:
 	size: root.size
 	state: gameworld.state
 	number_of_asteroids: gameworld.number_of_asteroids
+	number_of_probes: gameworld.number_of_probes
+	number_of_enemies: gameworld.number_of_enemies
+	number_of_enemies_to_spawn: gameworld.number_of_enemies_to_spawn
+	do_asteroids: gameworld.do_asteroids
+	do_probes: gameworld.do_probes
+	do_enemies: gameworld.do_enemies
 	player_character: player_character
 	GameWorld:
 		id: gameworld
 		player_character: player_character
 		music_controller: music_controller
 		asteroid_system: asteroid_system
+		probe_system: probe_system
+		ship_ai_system: ship_ai_system
+		asteroid_level: asteroid_level
 		current_character_weapons_locked: player_character.weapons_locked
 		number_of_asteroids: self.asteroid_system.number_of_asteroids
+		number_of_probes: self.probe_system.number_of_probes
+		number_of_enemies: self.ship_ai_system.number_of_enemies
+		number_of_enemies_to_spawn: self.asteroid_level.number_of_enemies_to_spawn
+		do_asteroids: self.asteroid_level.do_asteroids
+		do_probes: self.asteroid_level.do_probes
+		do_enemies: self.asteroid_level.do_enemies
 		current_health: self.player_character.current_health
 		total_health: self.player_character.total_health
 		gamescreenmanager: gamescreenmanager
@@ -64,9 +79,11 @@ TestGame:
 			system_id: 'ship_system'
 			gameworld: root.gameworld
 		ShipAISystem:
+			id: ship_ai_system
 			system_id: 'ship_ai_system'
 			gameworld: root.gameworld
 		ProbeSystem:
+			id: probe_system
 			system_id: 'probe_system'
 			gameworld: root.gameworld
 		PlayerCharacter:
@@ -96,6 +113,7 @@ TestGame:
 			gameworld: root.gameworld
 			render_information_from: 'physics_point_renderer'
 		AsteroidsLevel:
+			id: asteroid_level
 			gameworld: root.gameworld
 		SoundSystem:
 			system_id: 'sound_system'
@@ -107,6 +125,8 @@ TestGame:
 			current_level: root.current_level
 			current_lives: root.current_lives
 			number_of_asteroids: self.gameworld.number_of_asteroids
+			number_of_probes: self.gameworld.number_of_probes
+			number_of_enemies: max(self.gameworld.number_of_enemies, self.gameworld.number_of_enemies_to_spawn)
 			weapons_locked: self.gameworld.current_character_weapons_locked
 			current_health: self.gameworld.current_health
 			total_health: self.gameworld.total_health
@@ -125,7 +145,9 @@ TestGame:
 
 <GameScreenManager>:
 	current: 'main_menu'
-	number_of_asteroids: root.number_of_asteroids
+	number_of_asteroids: self.number_of_asteroids
+	number_of_probes: self.number_of_probes
+	number_of_enemies: self.number_of_enemies
 	gameworld: root.gameworld
 	current_level: self.current_level
 	current_lives: self.current_lives
@@ -137,6 +159,8 @@ TestGame:
 	MainGameScreen:
 		gameworld: root.gameworld
 		number_of_asteroids: root.number_of_asteroids
+		number_of_enemies: root.number_of_enemies
+		number_of_probes: root.number_of_probes
 		weapons_locked: root.weapons_locked
 		current_health: root.current_health
 		total_health: root.total_health
@@ -312,6 +336,8 @@ TestGame:
 <MainGameScreen>:
 	gameworld: self.gameworld
 	number_of_asteroids: self.number_of_asteroids
+	number_of_enemies: self.number_of_enemies
+	number_of_probes: self.number_of_probes
 	fire_button: fire_button
 	weapons_locked: self.weapons_locked
 	current_health: self.current_health
@@ -321,7 +347,19 @@ TestGame:
 		pos: root.pos
 		YACSLabel:
 			pos_hint: {'x': .4, 'y': .05}
-			text: 'ASTEROIDS: ' + str(root.number_of_asteroids) if not root.gameworld == None else '0'
+			text: 'ASTEROIDS: ' + str(root.number_of_asteroids) if (not root.gameworld == None and root.gameworld.do_asteroids) else 'None'
+			size_hint: (.2, .05)
+			font_size: self.size[1]*.5
+			size: (0, 0)
+		YACSLabel:
+			pos_hint: {'x': .4, 'y': .1}
+			text: 'ENEMIES: ' + str(root.number_of_enemies) if (not root.gameworld == None and root.gameworld.do_enemies) else 'None'
+			size_hint: (.2, .05)
+			size: (0, 0)
+			font_size: self.size[1]*.5
+		YACSLabel:
+			pos_hint: {'x': .4, 'y': .15}
+			text: 'PROBES: ' + str(root.number_of_probes) if (not root.gameworld == None and root.gameworld.do_probes) else 'None'
 			size_hint: (.2, .05)
 			font_size: self.size[1]*.5
 		YACSButtonCircle:

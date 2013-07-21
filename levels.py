@@ -9,8 +9,24 @@ from functools import partial
 class AsteroidsLevel(GameSystem):
     system_id = StringProperty('asteroids_level')
     current_level_id = NumericProperty(0)
+    do_asteroids = BooleanProperty(False)
+    do_probes = BooleanProperty(False)
+    do_enemies = BooleanProperty(False)
+    number_of_enemies_to_spawn = NumericProperty(0)
+
+    def on_current_level_id(self, instance, value):
+        if value >= 5:
+            self.current_level_id = 0
 
     def generate_new_level(self, dt):
+        level_win_conditions = [(True, False, False), (False, True, False), (False, False, True), 
+            (False, True, True), (False, False, True)]
+        level_number_of_enemies = [0, 0, 1, 2, 3]
+        self.number_of_enemies_to_spawn = level_number_of_enemies[self.current_level_id]
+        current_level_win_conditions = level_win_conditions[self.current_level_id]
+        self.do_asteroids = current_level_win_conditions[0]
+        self.do_probes = current_level_win_conditions[1]
+        self.do_enemies = current_level_win_conditions[2]
         dust_choices_gold = ['assets/prerendered_backgrounds/stardust_backgrounds/stardust1.atlas', 
         'assets/prerendered_backgrounds/stardust_backgrounds/stardust4.atlas',
         'assets/prerendered_backgrounds/stardust_backgrounds/stardust7.atlas'] 
@@ -46,12 +62,29 @@ class AsteroidsLevel(GameSystem):
             self.generate_prerendered_background(bg_choice, (512, 512))
         self.choose_damping()
         self.choose_gravity()
-        #self.spawn_probes()
+        self.spawn_probes()
+        if self.number_of_enemies_to_spawn > 0:
+            if self.gameworld.state != 'main_menu':
+                time_to_ship_spawn = random.random()*10.0
+                Clock.schedule_once(self.spawn_ai_ship, time_to_ship_spawn)
+
+
+    def spawn_ai_ship(self, dt):
+        self.number_of_enemies_to_spawn -= 1
+        character_system = self.gameworld.systems['ship_system']
+        ship_choice = random.choice(['ship_1', 'ship_2', 'ship_3', 'ship_4', 'ship_5', 'ship_6'])
+        rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
+        rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
+        character_system.spawn_ship_with_dict(character_system.ship_dicts[ship_choice], False, (rand_x, rand_y))
+        if self.number_of_enemies_to_spawn > 0:
+            time_to_ship_spawn = random.random()*10.0
+            Clock.schedule_once(self.spawn_ai_ship, time_to_ship_spawn)
 
     def spawn_probes(self):
         systems = self.gameworld.systems
         probe_system = systems['probe_system']
-        for x in range(10):
+        number_of_probes_to_spawn = [0, 5, 0, 10, 0]
+        for x in range(number_of_probes_to_spawn[self.current_level_id]):
             rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
             rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
             probe_system.spawn_probe_with_dict(probe_system.probe_dict['probe1'], (rand_x, rand_y))
@@ -76,9 +109,10 @@ class AsteroidsLevel(GameSystem):
 
     def choose_damping(self):
         systems = self.gameworld.systems
+        level_damping = [.75, .75, .80, .9, 1.0]
         physics_system = systems['cymunk-physics']
-        damping_factor = .75 + .25*random.random()
-        physics_system.damping = damping_factor
+        #damping_factor = .75 + .25*random.random()
+        physics_system.damping = level_damping[self.current_level_id]
 
     def clear_level(self):
         for entity_id in self.entity_ids:
@@ -140,7 +174,7 @@ class AsteroidSystem(GameSystem):
 
     def generate_asteroids(self, dt):
         current_level_id = self.gameworld.systems['asteroids_level'].current_level_id
-        level_asteroids = [(0, 5), (1, 9), (5, 15), (10, 20), (15,25)]
+        level_asteroids = [(0, 5), (5, 15), (5, 20), (10, 0), (5,20)]
         if current_level_id <= 4:
             num_small_asteroids = level_asteroids[current_level_id][1]
             num_big_asteroids = level_asteroids[current_level_id][0]

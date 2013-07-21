@@ -21,6 +21,8 @@ class TestGame(Widget):
     gameworld = ObjectProperty(None)
     state = StringProperty(None)
     number_of_asteroids = NumericProperty(0, allownone=True)
+    number_of_probes = NumericProperty(0, allownone=True)
+    number_of_enemies = NumericProperty(0, allownone=True)
     loading_new_level = BooleanProperty(False)
     cleared = BooleanProperty(True)
     current_level = NumericProperty(1)
@@ -137,7 +139,6 @@ class TestGame(Widget):
         if self.cleared:
             character_system = self.gameworld.systems['ship_system']
             character_system.spawn_player_character(character_to_spawn)
-            character_system.spawn_ship_with_dict(character_system.ship_dicts['ship_1'], False, (250, 250))
             Clock.schedule_once(self.gameworld.systems['asteroid_system'].generate_asteroids)
             self.gameworld.state = 'main_game'
 
@@ -201,11 +202,48 @@ class TestGame(Widget):
     def set_choose_character_state(self, dt):
         self.gameworld.state = 'choose_character'
 
+    def check_win_conditions(self):
+        if self.gameworld.state == 'main_game':
+            number_of_asteroids = self.number_of_asteroids
+            number_of_probes = self.number_of_probes
+            number_of_enemies = self.number_of_enemies
+            number_of_enemies_to_spawn = self.number_of_enemies_to_spawn
+            winning = True
+            if self.do_enemies:
+                if number_of_enemies > 0 or number_of_enemies_to_spawn > 0:
+                    winning = False
+            if self.do_probes:
+                print number_of_probes
+                if number_of_probes > 0:
+                    winning = False
+            if self.do_asteroids:
+                if number_of_asteroids > 0:
+                    winning = False
+            return winning
+        else:
+            return False
+
+    def on_number_of_enemies(self, instance, value):
+        if 'asteroids_level' in self.gameworld.systems:
+            if self.check_win_conditions():
+                self.gameworld.systems['asteroids_level'].current_level_id += 1
+                self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
+                Clock.schedule_once(self.set_choose_character_state, 2.0)
+
+    def on_number_of_probes(self, instance, value):
+        if 'asteroids_level' in self.gameworld.systems:
+            if self.check_win_conditions():
+                print 'win'
+                self.gameworld.systems['asteroids_level'].current_level_id += 1
+                self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
+                Clock.schedule_once(self.set_choose_character_state, 2.0)
+
     def on_number_of_asteroids(self, instance, value):
-        if value == 0 and self.state == 'main_game':
-            self.gameworld.systems['asteroids_level'].current_level_id += 1
-            self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
-            Clock.schedule_once(self.set_choose_character_state, 2.0)
+        if 'asteroids_level' in self.gameworld.systems:
+            if self.check_win_conditions():
+                self.gameworld.systems['asteroids_level'].current_level_id += 1
+                self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
+                Clock.schedule_once(self.set_choose_character_state, 2.0)
 
     def player_lose(self, dt):
         self.gameworld.state = 'game_over'

@@ -10,8 +10,14 @@ class ShipAISystem(GameSystem):
     updateable = BooleanProperty(True)
     cycles_to_skip = NumericProperty(5)
     cycle_count = NumericProperty(0)
+    number_of_enemies = NumericProperty(0)
+
+    def remove_entity(self, entity_id):
+        super(ShipAISystem, self).remove_entity(entity_id)
+        self.number_of_enemies -= 1
 
     def create_component(self, entity_id, entity_component_dict):
+        self.number_of_enemies += 1
         entity_component_dict['distance_to_target'] = 0.
         entity_component_dict['angle_tolerance'] = 10.
         entity_component_dict['follow_distance'] = 300
@@ -25,6 +31,7 @@ class ShipAISystem(GameSystem):
         entity_component_dict['burst_delay'] = 5.
         entity_component_dict['shot_count'] = 0
         super(ShipAISystem, self).create_component(entity_id, entity_component_dict)
+
 
     def query_physics_bb(self, position, radius):
         physics_system = self.gameworld.systems['cymunk-physics']
@@ -389,28 +396,36 @@ class ShipSystem(GameSystem):
         gameworld = self.gameworld
         systems = gameworld.systems
         entities = gameworld.entities
+        character_id = systems['player_character'].current_character_id
         probe_id = arbiter.shapes[1].body.data
         ship_id = arbiter.shapes[0].body.data
-        probe = entities[probe_id]
-        ship = entities[ship_id]
-        ship['ship_system']['current_probes'] += 1
-        sound_system = systems['sound_system']
-        sound_system.play('asteroidhitship')
-        Clock.schedule_once(partial(gameworld.timed_remove_entity, probe_id))
-        return False
+        if ship_id == character_id:
+            probe = entities[probe_id]
+            ship = entities[ship_id]
+            ship['ship_system']['current_probes'] += 1
+            sound_system = systems['sound_system']
+            Clock.schedule_once(partial(sound_system.schedule_play, 'probepickup'))
+            Clock.schedule_once(partial(gameworld.timed_remove_entity, probe_id))
+            return False
+        else:
+            return True
 
     def collision_begin_ship_asteroid(self, arbiter, space):
         gameworld = self.gameworld
         systems = gameworld.systems
         entities = gameworld.entities
+        character_id = systems['player_character'].current_character_id
         asteroid_id = arbiter.shapes[1].body.data
         ship_id = arbiter.shapes[0].body.data
         asteroid = entities[asteroid_id]
         asteroid_damage = asteroid['asteroid_system']['damage']
         self.damage(ship_id, asteroid_damage)
-        sound_system = systems['sound_system']
-        sound_system.play('asteroidhitship')
-        return True 
+        if ship_id == character_id:
+            sound_system = systems['sound_system']
+            Clock.schedule_once(partial(sound_system.schedule_play, 'asteroidhitship'))
+        return True
+
+
 
     def spawn_ship_with_dict(self, ship_dict, is_player_character, position):
         box_dict = {'width': ship_dict['width'], 'height': ship_dict['height'],
@@ -444,6 +459,7 @@ class ShipSystem(GameSystem):
         else:
             create_component_dict['ship_ai_system'] = {}
             component_order.append('ship_ai_system')
+            Clock.schedule_once(partial(self.gameworld.systems['sound_system'].schedule_play, 'enemyshipenterarea'))
         self.gameworld.init_entity(create_component_dict, component_order)
 
 class PlayerCharacter(GameSystem):
@@ -534,6 +550,7 @@ class PlayerCharacter(GameSystem):
 
 class ProbeSystem(GameSystem):
     updateable = BooleanProperty(True)
+    number_of_probes = NumericProperty(0)
 
     def __init__(self, **kwargs):
         super(ProbeSystem, self).__init__(**kwargs)
@@ -594,4 +611,9 @@ class ProbeSystem(GameSystem):
         'probe_system': probe_system_dict}
         component_order = ['cymunk-physics', 'physics_renderer', 'probe_system', 'lighting_renderer']
         self.gameworld.init_entity(create_component_dict, component_order)
+        self.number_of_probes += 1
+
+    def remove_entity(self, entity_id):
+        super(ProbeSystem, self).remove_entity(entity_id)
+        self.number_of_probes -= 1
     

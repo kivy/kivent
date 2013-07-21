@@ -119,7 +119,7 @@ class ParticleManager(GameSystem):
     def load_particle_system_from_dict(self, config):
         config_dict = self.particle_configs[config]
         return particlesystem.ParticleSystem(
-            None, 
+            config=None, 
             max_num_particles = config_dict['max_num_particles'],
             life_span = config_dict['life_span'],
             texture = self.particle_textures[config_dict['texture']],

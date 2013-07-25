@@ -118,6 +118,7 @@ class ParticleManager(GameSystem):
 
     def load_particle_system_from_dict(self, config):
         config_dict = self.particle_configs[config]
+        physics_system = self.gameworld.systems['cymunk-physics']
         return particlesystem.ParticleSystem(
             config=None, 
             max_num_particles = config_dict['max_num_particles'],
@@ -158,6 +159,7 @@ class ParticleManager(GameSystem):
             blend_factor_dest = config_dict['blend_factor_dest'],
             emitter_type = config_dict['emitter_type'],
             update_interval = self.particle_update_time,
+            friction = (1.0 - physics_system.damping)
             )
         
     def generate_component_data(self, dict entity_component_dict):

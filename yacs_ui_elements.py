@@ -1,5 +1,5 @@
 from kivy.properties import (StringProperty, ObjectProperty, ListProperty, 
-    DictProperty, NumericProperty)
+    DictProperty, NumericProperty, BooleanProperty)
 from kivy.uix.widget import Widget
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
@@ -107,6 +107,40 @@ class ToggleWeaponPanel(Widget):
 
 class WeaponToggleButton(ToggleButton):
     weapon_type = StringProperty('_bullet')
+    ammo_amount = NumericProperty(0)
+
+class ObjectivesPanel(Widget):
+
+    def __init__(self, **kwargs):
+        super(ObjectivesPanel, self).__init__(**kwargs)
+        
+
+    def reset_objectives(self):
+        self.clear_panel()
+        self.determine_panel_layouts()
+
+    def clear_panel(self):
+        children_to_remove = [x for x in self.layout.children]
+        for child in children_to_remove:
+            self.layout.remove_widget(child)
+
+
+    def determine_panel_layouts(self):
+        do_enemies = self.gameworld.do_enemies
+        do_asteroids = self.gameworld.do_asteroids
+        do_probes = self.gameworld.do_probes
+        if do_enemies:
+            self.layout.add_widget(self.enemies_label)
+        if do_asteroids:
+            self.layout.add_widget(self.asteroids_label)
+        if do_probes:
+            self.layout.add_widget(self.probes_label)
+
+
+
+class ObjectiveLabel(Widget):
+    objective_amount = NumericProperty(0, allownone=True)
+    objective_image = StringProperty(None)
 
 class MainMenuScreen(GameScreen):
     name = StringProperty('main_menu')

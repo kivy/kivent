@@ -136,11 +136,14 @@ class TestGame(Widget):
 
     def start_round(self, character_to_spawn):
         if self.cleared:
-            character_system = self.gameworld.systems['ship_system']
+            gameworld = self.gameworld
+            character_system = gameworld.systems['ship_system']
             character_system.spawn_player_character(character_to_spawn)
-            Clock.schedule_once(self.gameworld.systems['asteroid_system'].generate_asteroids)
-            self.gameworld.state = 'main_game'
-            self.gameworld.systems['asteroids_level'].begin_spawning_of_ai()
+            Clock.schedule_once(gameworld.systems['asteroid_system'].generate_asteroids)
+            gameworld.state = 'main_game'
+            gameworld.systems['asteroids_level'].begin_spawning_of_ai()
+            game_screen = gameworld.gamescreenmanager.get_screen('main_game')
+            game_screen.objective_panel.reset_objectives()
 
     def setup_gameobjects(self):
         Clock.schedule_once(self.gameworld.systems['asteroids_level'].generate_new_level)

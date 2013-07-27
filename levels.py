@@ -21,7 +21,7 @@ class AsteroidsLevel(GameSystem):
     def generate_new_level(self, dt):
         level_win_conditions = [(True, False, False), (False, True, False), (False, False, True), 
             (False, True, True), (False, False, True)]
-        level_number_of_enemies = [1, 0, 1, 2, 3]
+        level_number_of_enemies = [0, 0, 1, 2, 3]
         self.number_of_enemies_to_spawn = level_number_of_enemies[self.current_level_id]
         current_level_win_conditions = level_win_conditions[self.current_level_id]
         self.do_asteroids = current_level_win_conditions[0]

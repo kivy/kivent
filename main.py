@@ -64,7 +64,6 @@ class TestGame(Widget):
         self.check_clear_counter = 0
         for system in systems_to_check:
             num_entities += len(systems[system].entity_ids)
-        print num_entities
         if num_entities > 0:
             self.check_clear_counter += 1
             if self.check_clear_counter > 10:
@@ -236,7 +235,6 @@ class TestGame(Widget):
     def on_number_of_probes(self, instance, value):
         if 'asteroids_level' in self.gameworld.systems:
             if self.check_win_conditions():
-                print 'win'
                 self.gameworld.systems['asteroids_level'].current_level_id += 1
                 self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
                 Clock.schedule_once(self.set_choose_character_state, 2.0)

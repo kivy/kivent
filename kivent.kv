@@ -92,7 +92,6 @@ TestGame:
 			gameworld: root.gameworld
 			current_character_id: self.current_character_id
 			current_bullet_ammo: self.current_bullet_ammo
-			on_current_bullet_ammo: print self.current_bullet_ammo
 			current_rocket_ammo: self.current_rocket_ammo
 		AsteroidSystem:
 			id: asteroid_system
@@ -332,6 +331,7 @@ TestGame:
 	rocket_button: rocket_button
 	current_bullet_ammo: self.current_bullet_ammo
 	current_rocket_ammo: self.current_rocket_ammo
+	size_of_label: max(bullet_button.label_texture_size[0], rocket_button.label_texture_size[0])
 	BoxLayout:
 		orientation: 'vertical'
 		spacing: 10
@@ -341,6 +341,7 @@ TestGame:
 		size_hint: (None, None)
 		WeaponToggleButton:
 			id: bullet_button
+			label_texture_size: self.label_texture_size
 			on_press: root.toggle_weapon(self.state, self.weapon_type)
 			background_normal: 'assets/ui_elements/bulleticon-normal.png'
 			background_down: 'assets/ui_elements/bulleticon-down.png'
@@ -350,6 +351,7 @@ TestGame:
 		WeaponToggleButton:
 			id: rocket_button
 			on_press: root.toggle_weapon(self.state, self.weapon_type)
+			label_texture_size: self.label_texture_size
 			weapon_type: '_rocket'
 			background_normal: 'assets/ui_elements/rocketicon-normal.png'
 			background_down: 'assets/ui_elements/rocketicon-down.png'
@@ -357,6 +359,7 @@ TestGame:
 			
 <-WeaponToggleButton>:
 	group: 'weapons'
+	label_texture_size: w_label.texture_size
 	canvas:
 		Color:
 			rgba: COLOR_HIGHLIGHT_A50 if root.state == 'down' else COLOR_BACKGROUND_A50
@@ -370,6 +373,7 @@ TestGame:
 		size: self.texture_size
 		pos: int(root.pos[0] + (root.size[0]*(2./3.) - self.size[0])/2.), int(root.pos[1] + (root.size[1]-self.size[1])/2.)
 	YACSLabelNoBox:
+		id: w_label
 		text: str(root.ammo_amount)
 		color: COLOR_HIGHLIGHT_A50 if root.state == 'down' else COLOR_BACKGROUND_A50
 		pos: root.pos[0] + root.size[0]/2., root.pos[1]
@@ -383,6 +387,7 @@ TestGame:
 	number_of_asteroids: self.number_of_asteroids
 	number_of_probes: self.number_of_probes
 	number_of_enemies: self.number_of_enemies
+	size_of_label: max(asteroids.label_texture_size[0], probes.label_texture_size[0], enemies.label_texture_size[0])
 	StackLayout:
 		id: layout
 		pos: root.pos
@@ -391,26 +396,31 @@ TestGame:
 		ObjectiveLabel:
 			size_hint: (1., .3)
 			id: asteroids
+			label_texture_size: self.label_texture_size
 			objective_image: 'assets/ui_elements/asteroid-icon.png'
 			objective_amount: root.number_of_asteroids
 		ObjectiveLabel:
 			id: probes
 			size_hint: (1., .3)
+			label_texture_size: self.label_texture_size
 			objective_image: 'assets/ui_elements/probe-icon.png'
 			objective_amount: root.number_of_probes
 		ObjectiveLabel:
 			id: enemies
 			size_hint: (1., .3)
+			label_texture_size: self.label_texture_size
 			objective_image: 'assets/ui_elements/ship-icon.png'
 			objective_amount: root.number_of_enemies
 	
 <ObjectiveLabel>
+	label_texture_size: o_label.texture_size
 	Image:
 		size_hint: None, None
 		source: root.objective_image
 		size: self.texture_size
 		pos: int(root.pos[0] + (root.size[0]/2. - self.size[0])/2.), int(root.pos[1] + (root.size[1]-self.size[1])/2.)
 	YACSLabelNoBox:
+		id: o_label
 		text: str(root.objective_amount) if root.objective_amount != None else 'None'
 		color: COLOR_HIGHLIGHT_A50
 		pos: root.pos[0] + root.size[0]/2., root.pos[1]
@@ -437,28 +447,33 @@ TestGame:
 			number_of_asteroids: root.number_of_asteroids
 			number_of_enemies: root.number_of_enemies
 			number_of_probes: root.number_of_probes
-			size_hint: (.1, .2)
-			pos_hint: {'x': .875, 'y': .775}
+			size_of_label: self.size_of_label
+			size_hint_x_calc: (self.size_of_label + 32. + root.size[0]*.05)/root.size[0]
+			size_hint: (self.size_hint_x_calc, min(.2, 120./root.size[1]))
+			pos_hint: {'x': 1.0 - self.size_hint[0], 'y': .99 - self.size_hint[1]}
 		YACSButtonCircle:
 			id: fire_button
 			weapons_locked: root.weapons_locked
 			state: 'down' if self.weapons_locked else 'normal'
-			pos_hint: {'x': .05, 'y': .05}
-			size_hint: (None, None)
-			size: (.15*root.width, .15*root.width)
+			pos_hint: {'x': .025, 'y': .025}
+			size_hint_x: min(.20, 200./root.size[0])
+			size_hint_y: (self.size_hint_x*root.size[0])/root.size[1]
 			text: 'FIRE'
 			font_size: 16
 			on_state: root.gameworld.systems['player_character'].spawn_projectile(self.state)
 		ToggleWeaponPanel:
 			current_bullet_ammo: root.current_bullet_ammo
 			current_rocket_ammo: root.current_rocket_ammo
-			size_hint: (.16, .20)
-			pos_hint: {'x': .025, 'y': .075 + root.fire_button.size[1]/root.height}
+			size_of_label: self.size_of_label
+			size_hint_x_calc: (self.size_of_label + 128. )/root.size[0]
+			size_hint: (self.size_hint_x_calc, min(.20, 150./root.size[1]))
+			pos_hint: {'x': .025, 'y': .05 + root.fire_button.size[1]/root.height}
 			on_weapon_type: root.toggle_weapons(self.weapon_type)
 		CharacterInputPanel:
 			gameworld: root.gameworld
-			size_hint: (.20, .3)
-			pos_hint: {'x': .775, 'y': .025}
+			size_hint_x: min(.20, 250./root.size[0])
+			size_hint_y: (self.size_hint_x*root.size[0])/root.size[1]
+			pos_hint: {'x': .985-self.size_hint_x, 'y': .025}
 		DebugPanel:
 			pos: root.size[0] * .5, 0
 			size: (25, 25)
@@ -466,9 +481,8 @@ TestGame:
 		HealthBar:
 			current_health: root.current_health
 			total_health: root.total_health
-			pos: 10, root.size[1] * .9
-			size: root.size[0] * .25, root.size[1] * .10
-			size_hint: (None, None)
+			size_hint: (min(.25, 300./root.size[0]), min(.1, 75./root.size[1]))
+			pos_hint: {'x': 0., 'y': 1.0 - self.size_hint[1]}
 
 <ChooseCharacterScreen>:
 	gameworld: self.gameworld

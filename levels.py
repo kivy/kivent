@@ -19,7 +19,7 @@ class AsteroidsLevel(GameSystem):
             self.current_level_id = 0
 
     def generate_new_level(self, dt):
-        level_win_conditions = [(True, False, False), (False, True, False), (False, False, True), 
+        level_win_conditions = [(True, True, True), (False, True, False), (False, False, True), 
             (False, True, True), (False, False, True)]
         level_number_of_enemies = [0, 0, 1, 2, 3]
         self.number_of_enemies_to_spawn = level_number_of_enemies[self.current_level_id]
@@ -111,7 +111,7 @@ class AsteroidsLevel(GameSystem):
 
     def choose_damping(self):
         systems = self.gameworld.systems
-        level_damping = [.65, .75, .80, .9, 1.0]
+        level_damping = [.75, .75, .80, .9, 1.0]
         physics_system = systems['cymunk-physics']
         #damping_factor = .75 + .25*random.random()
         physics_system.damping = level_damping[self.current_level_id]

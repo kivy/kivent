@@ -107,7 +107,7 @@ class ToggleWeaponPanel(Widget):
 
 class WeaponToggleButton(ToggleButton):
     weapon_type = StringProperty('_bullet')
-    ammo_amount = NumericProperty(0)
+    ammo_amount = NumericProperty(0, allownone=True)
 
 class ObjectivesPanel(Widget):
 

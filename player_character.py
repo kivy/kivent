@@ -282,42 +282,45 @@ class ShipSystem(GameSystem):
         'width': 108, 'height': 96, 'offset_distance': 50, 'color': 'green',
         'engine_effect': 'assets/pexfiles/engine_burn_effect3.pex', 'engine_offset': 65,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
-        'hard_points': [(46, 59), (-46, 59)]}
+        'hard_points': [(46, 59), (-46, 59)], 
+        'total_rocket_ammo': 40, 'total_bullet_ammo': 200}
         ship_dicts['ship_2'] = {'name': 'Falcon','health': 150, 'mass': 175,'max_speed': 190, 
         'max_turn_speed': 100, 'accel': 20000,'angular_accel': 75, 'caliber': '6px', 
         'num_weapons': 4, 'texture': 'assets/ships/ship3.png', 'price': 1000,
         'width': 130, 'height': 70, 'offset_distance': 50, 'color': 'orange',
         'engine_effect': 'assets/pexfiles/engine_burn_effect4.pex', 'engine_offset': 30,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
-        'hard_points': [(38, 30), (-38, 30), (52, 30), (-52, 30)]}
+        'hard_points': [(38, 30), (-38, 30), (52, 30), (-52, 30)], 
+        'total_rocket_ammo': 60, 'total_bullet_ammo': 400}
         ship_dicts['ship_3'] = {'name': 'Monarch','health': 165, 'mass': 220,'max_speed': 180, 
         'max_turn_speed': 130, 'accel': 25000,'angular_accel': 100, 'caliber': '8px', 
         'num_weapons': 2, 'texture': 'assets/ships/ship2-1.png', 'price': 1000,
         'width': 90, 'height': 104, 'offset_distance': 50, 'color': 'blue',
         'engine_effect': 'assets/pexfiles/engine_burn_effect2.pex', 'engine_offset': 50,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
-        'hard_points': [(28, 51), (-28, 51)]}
+        'hard_points': [(28, 51), (-28, 51)],
+        'total_rocket_ammo': 30, 'total_bullet_ammo': 240}
         ship_dicts['ship_4'] = {'name': 'Archon','health': 130, 'mass': 140,'max_speed': 200, 
         'max_turn_speed': 110, 'accel': 18000,'angular_accel': 50, 'caliber': '14px', 
         'num_weapons': 1, 'texture': 'assets/ships/ship5.png', 'price': 1000,
         'width': 62, 'height': 100, 'offset_distance': 50, 'color': 'orange',
         'engine_effect': 'assets/pexfiles/engine_burn_effect6.pex', 'engine_offset': 27,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
-        'hard_points': [(-18, 63)]}
+        'hard_points': [(-18, 63)], 'total_rocket_ammo': 15, 'total_bullet_ammo': 150}
         ship_dicts['ship_5'] = {'name': 'Cavalier','health': 110, 'mass': 120,'max_speed': 220, 
         'max_turn_speed': 125, 'accel': 22000,'angular_accel': 45, 'caliber': '8px', 
         'num_weapons': 1, 'texture': 'assets/ships/ship6.png', 'price': 1000,
         'width': 66, 'height': 80, 'offset_distance': 50, 'color': 'green',
         'engine_effect': 'assets/pexfiles/engine_burn_effect8.pex', 'engine_offset': 47,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
-        'hard_points': [(0, 47)]}
+        'hard_points': [(0, 47)], 'total_rocket_ammo': 12, 'total_bullet_ammo': 200}
         ship_dicts['ship_6'] = {'name': 'Shield','health': 150, 'mass': 160,'max_speed': 180, 
         'max_turn_speed': 150, 'accel': 25000,'angular_accel': 115, 'caliber': '6px', 
         'num_weapons': 2, 'texture': 'assets/ships/ship7.png', 'price': 1000,
         'width': 76, 'height': 80, 'offset_distance': 50, 'color': 'blue',
         'engine_effect': 'assets/pexfiles/engine_burn_effect9.pex', 'engine_offset': 45,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
-        'hard_points': [(-6, 47), (6, 47)]}
+        'hard_points': [(-6, 47), (6, 47)], 'total_rocket_ammo': 30, 'total_bullet_ammo': 200}
         
     def get_ship_values(self, ship_name):
         if ship_name in self.ship_dicts:
@@ -331,30 +334,45 @@ class ShipSystem(GameSystem):
 
     def fire_projectiles(self, entity_id):
         gameworld = self.gameworld
+        is_character = False
+        player_character_system = gameworld.systems['player_character']
+        if entity_id == player_character_system.current_character_id:
+            is_character = True
         character = gameworld.entities[entity_id]
         projectile_system = gameworld.systems['projectile_system']
         sound_system = gameworld.systems['sound_system']
         ship_system_data = character['ship_system']
         current_projectile_type = ship_system_data['current_projectile_type']
+        current_bullet_ammo = ship_system_data['current_bullet_ammo']
+        current_rocket_ammo = ship_system_data['current_rocket_ammo']
         projectiles_dict = projectile_system.projectiles_dict
         projectile_type = ship_system_data['projectile_type']+current_projectile_type
         projectile_width = projectiles_dict[projectile_type]['width']
         projectile_height = projectiles_dict[projectile_type]['height']
         character_physics = character['cymunk-physics']
         character_position = character_physics['position']
-        for hard_point in ship_system_data['hard_points']:
-            
-            position_offset = hard_point[0], hard_point[1] + projectile_height*.5
-            position_offset_rotated = Vector(position_offset).rotate(character_physics['angle'])
-            location = (character_position[0] + position_offset_rotated[0],
-                character_position[1] + position_offset_rotated[1])
-            angle = character_physics['body'].angle
-            projectile_system.spawn_projectile(projectile_type, location, 
-                angle, ship_system_data['color'])
-        if current_projectile_type == '_bullet':
-            Clock.schedule_once(partial(sound_system.schedule_play, 'bulletfire'))
-        if current_projectile_type == '_rocket':
-            Clock.schedule_once(partial(sound_system.schedule_play, 'rocketfire'))
+        number_of_shots = len(ship_system_data['hard_points'])
+        if ((current_projectile_type == '_bullet' and current_bullet_ammo - number_of_shots >= 0) or 
+            (current_projectile_type == '_rocket' and current_rocket_ammo - number_of_shots >= 0)):
+            for hard_point in ship_system_data['hard_points']:
+                position_offset = hard_point[0], hard_point[1] + projectile_height*.5
+                position_offset_rotated = Vector(position_offset).rotate(character_physics['angle'])
+                location = (character_position[0] + position_offset_rotated[0],
+                    character_position[1] + position_offset_rotated[1])
+                angle = character_physics['body'].angle
+                projectile_system.spawn_projectile(projectile_type, location, 
+                    angle, ship_system_data['color'])
+            if current_projectile_type == '_bullet':
+                ship_system_data['current_bullet_ammo'] -= number_of_shots
+                if is_character:
+                    Clock.schedule_once(partial(sound_system.schedule_play, 'bulletfire'))
+                    player_character_system.current_bullet_ammo = ship_system_data['current_bullet_ammo']
+            if current_projectile_type == '_rocket':
+                ship_system_data['current_rocket_ammo'] -= number_of_shots
+                if is_character:
+                    Clock.schedule_once(partial(sound_system.schedule_play, 'rocketfire'))
+                    player_character_system.current_rocket_ammo = ship_system_data['current_rocket_ammo']
+                    
 
     def update(self, dt):
         for entity_id in self.entity_ids:
@@ -442,7 +460,11 @@ class ShipSystem(GameSystem):
         'ang_accel': math.radians(ship_dict['angular_accel']), 'hard_points': ship_dict['hard_points'], 
         'projectile_type': ship_dict['caliber'], 'is_turning': 'zero', 'fire_engines': False, 
         'turn_speed_multiplier': 0, 'engine_speed_multiplier': 0, 'character_dying': False,
-        'current_projectile_type': '_bullet', 'current_probes': 0}
+        'current_projectile_type': '_bullet', 'current_probes': 0, 
+        'total_rocket_ammo': ship_dict['total_rocket_ammo'], 
+        'current_rocket_ammo': ship_dict['total_rocket_ammo'],
+        'total_bullet_ammo': ship_dict['total_bullet_ammo'],
+        'current_bullet_ammo': ship_dict['total_bullet_ammo']}
         particle_system1 = {'particle_file': ship_dict['engine_effect'], 
         'offset': ship_dict['engine_offset']}
         particle_system2 = {'particle_file': ship_dict['explosion_effect'], 'offset': 0}
@@ -454,8 +476,11 @@ class ShipSystem(GameSystem):
         component_order = ['cymunk-physics', 'physics_renderer', 'ship_system',
          'particle_manager']
         if is_player_character:
+            player_character_system = self.gameworld.systems['player_character']
             create_component_dict['player_character'] = {}
             component_order.append('player_character')
+            player_character_system.current_bullet_ammo = ship_system_dict['current_bullet_ammo']
+            player_character_system.current_rocket_ammo = ship_system_dict['current_rocket_ammo']
         else:
             create_component_dict['ship_ai_system'] = {}
             component_order.append('ship_ai_system')
@@ -469,6 +494,8 @@ class PlayerCharacter(GameSystem):
     current_projectile_type = StringProperty('_bullet')
     weapons_locked = BooleanProperty(False)
     total_health = NumericProperty(1., allownone=True)
+    current_bullet_ammo = NumericProperty(0)
+    current_rocket_ammo = NumericProperty(0)
 
     def __init__(self, **kwargs):
         super(PlayerCharacter, self).__init__(**kwargs) 

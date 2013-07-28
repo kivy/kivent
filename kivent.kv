@@ -91,6 +91,9 @@ TestGame:
 			system_id: 'player_character'
 			gameworld: root.gameworld
 			current_character_id: self.current_character_id
+			current_bullet_ammo: self.current_bullet_ammo
+			on_current_bullet_ammo: print self.current_bullet_ammo
+			current_rocket_ammo: self.current_rocket_ammo
 		AsteroidSystem:
 			id: asteroid_system
 			gameworld: root.gameworld
@@ -130,6 +133,8 @@ TestGame:
 			weapons_locked: self.gameworld.current_character_weapons_locked
 			current_health: self.gameworld.current_health
 			total_health: self.gameworld.total_health
+			current_rocket_ammo: player_character.current_rocket_ammo
+			current_bullet_ammo: player_character.current_bullet_ammo
 			pos: root.pos
 			size: root.size
 
@@ -153,11 +158,15 @@ TestGame:
 	current_lives: self.current_lives
 	weapons_locked: self.weapons_locked
 	current_health: self.current_health
+	current_rocket_ammo: self.current_rocket_ammo
+	current_bullet_ammo: self.current_bullet_ammo
 	total_health: self.total_health
 	MainMenuScreen:
 		gameworld: root.gameworld
 	MainGameScreen:
 		gameworld: root.gameworld
+		current_rocket_ammo: root.current_rocket_ammo
+		current_bullet_ammo: root.current_bullet_ammo
 		number_of_asteroids: root.number_of_asteroids
 		number_of_enemies: root.number_of_enemies
 		number_of_probes: root.number_of_probes
@@ -321,6 +330,8 @@ TestGame:
 <ToggleWeaponPanel>:
 	bullet_button: bullet_button
 	rocket_button: rocket_button
+	current_bullet_ammo: self.current_bullet_ammo
+	current_rocket_ammo: self.current_rocket_ammo
 	BoxLayout:
 		orientation: 'vertical'
 		spacing: 10
@@ -334,6 +345,7 @@ TestGame:
 			background_normal: 'assets/ui_elements/bulleticon-normal.png'
 			background_down: 'assets/ui_elements/bulleticon-down.png'
 			weapon_type: '_bullet'
+			ammo_amount: root.current_bullet_ammo
 			state: 'down'
 		WeaponToggleButton:
 			id: rocket_button
@@ -341,6 +353,7 @@ TestGame:
 			weapon_type: '_rocket'
 			background_normal: 'assets/ui_elements/rocketicon-normal.png'
 			background_down: 'assets/ui_elements/rocketicon-down.png'
+			ammo_amount: root.current_rocket_ammo
 			
 <-WeaponToggleButton>:
 	group: 'weapons'
@@ -355,7 +368,7 @@ TestGame:
 		size_hint: None, None
 		source: root.background_normal if root.state == 'normal' else root.background_down
 		size: self.texture_size
-		pos: int(root.pos[0] + (root.size[0]/2. - self.size[0])/2.), int(root.pos[1] + (root.size[1]-self.size[1])/2.)
+		pos: int(root.pos[0] + (root.size[0]*(2./3.) - self.size[0])/2.), int(root.pos[1] + (root.size[1]-self.size[1])/2.)
 	YACSLabelNoBox:
 		text: str(root.ammo_amount)
 		color: COLOR_HIGHLIGHT_A50 if root.state == 'down' else COLOR_BACKGROUND_A50
@@ -411,6 +424,8 @@ TestGame:
 	fire_button: fire_button
 	weapons_locked: self.weapons_locked
 	current_health: self.current_health
+	current_bullet_ammo: self.current_bullet_ammo
+	current_rocket_ammo: self.current_rocket_ammo
 	total_health: self.total_health
 	objective_panel: objective_panel
 	FloatLayout:
@@ -435,7 +450,9 @@ TestGame:
 			font_size: 16
 			on_state: root.gameworld.systems['player_character'].spawn_projectile(self.state)
 		ToggleWeaponPanel:
-			size_hint: (.20, .20)
+			current_bullet_ammo: root.current_bullet_ammo
+			current_rocket_ammo: root.current_rocket_ammo
+			size_hint: (.16, .20)
 			pos_hint: {'x': .025, 'y': .075 + root.fire_button.size[1]/root.height}
 			on_weapon_type: root.toggle_weapons(self.weapon_type)
 		CharacterInputPanel:

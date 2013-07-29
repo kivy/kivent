@@ -115,7 +115,7 @@ class ProjectileSystem(GameSystem):
         for entity_id in self.entity_ids:
             Clock.schedule_once(partial(self.gameworld.timed_remove_entity, entity_id))
 
-    def begin_collision_solve_asteroid_bullet(self, arbiter, space):
+    def collision_solve_asteroid_bullet(self, arbiter, space):
         gameworld = self.gameworld
         systems = gameworld.systems
         entities = gameworld.entities

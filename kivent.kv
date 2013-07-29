@@ -380,14 +380,11 @@ TestGame:
 		size: root.size[0]/2., root.size[1]
 
 <ObjectivesPanel>:
-	asteroids_label: asteroids
-	enemies_label: enemies
-	probes_label: probes
 	layout: layout
 	number_of_asteroids: self.number_of_asteroids
 	number_of_probes: self.number_of_probes
 	number_of_enemies: self.number_of_enemies
-	size_of_label: max(asteroids.label_texture_size[0], probes.label_texture_size[0], enemies.label_texture_size[0])
+	size_of_label: max([label.label_texture_size for label in self.layout.children])
 	StackLayout:
 		id: layout
 		pos: root.pos
@@ -395,25 +392,26 @@ TestGame:
 		spacing: 8.0
 		ObjectiveLabel:
 			size_hint: (1., .3)
-			id: asteroids
+			name: 'asteroids'
 			label_texture_size: self.label_texture_size
 			objective_image: 'assets/ui_elements/asteroid-icon.png'
 			objective_amount: root.number_of_asteroids
 		ObjectiveLabel:
-			id: probes
+			name: 'probes'
 			size_hint: (1., .3)
 			label_texture_size: self.label_texture_size
 			objective_image: 'assets/ui_elements/probe-icon.png'
 			objective_amount: root.number_of_probes
 		ObjectiveLabel:
-			id: enemies
+			name: 'enemies'
 			size_hint: (1., .3)
 			label_texture_size: self.label_texture_size
 			objective_image: 'assets/ui_elements/ship-icon.png'
 			objective_amount: root.number_of_enemies
 	
 <ObjectiveLabel>
-	label_texture_size: o_label.texture_size
+	label_texture_size: o_label.texture_size[0]
+	name: self.name
 	Image:
 		size_hint: None, None
 		source: root.objective_image

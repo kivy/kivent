@@ -113,6 +113,7 @@ class ObjectivesPanel(Widget):
 
     def __init__(self, **kwargs):
         super(ObjectivesPanel, self).__init__(**kwargs)
+        self.label_dict = {}
         
 
     def reset_objectives(self):
@@ -122,6 +123,7 @@ class ObjectivesPanel(Widget):
     def clear_panel(self):
         children_to_remove = [x for x in self.layout.children]
         for child in children_to_remove:
+            self.label_dict[child.name] = child
             self.layout.remove_widget(child)
 
 
@@ -130,11 +132,11 @@ class ObjectivesPanel(Widget):
         do_asteroids = self.gameworld.do_asteroids
         do_probes = self.gameworld.do_probes
         if do_enemies:
-            self.layout.add_widget(self.enemies_label)
+            self.layout.add_widget(self.label_dict['enemies'])
         if do_asteroids:
-            self.layout.add_widget(self.asteroids_label)
+            self.layout.add_widget(self.label_dict['asteroids'])
         if do_probes:
-            self.layout.add_widget(self.probes_label)
+            self.layout.add_widget(self.label_dict['probes'])
 
 
 

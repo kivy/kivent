@@ -4,8 +4,9 @@ from kivy.uix.widget import Widget
 from kivy.properties import (StringProperty, ObjectProperty, NumericProperty, 
     BooleanProperty)
 from kivy.clock import Clock
-from kivent_cython import (GameWorld, GameSystem, GameMap, GameView, ParticleManager, 
-    QuadRenderer, PhysicsRenderer, CymunkPhysics, PhysicsPointRenderer, QuadTreePointRenderer)
+from kivent_cython import (GameWorld, GameSystem, GameMap, GameView, 
+    ParticleManager, QuadRenderer, PhysicsRenderer, CymunkPhysics, 
+    PhysicsPointRenderer, QuadTreePointRenderer)
 from kivy.core.window import Window
 import yacs_ui_elements
 import player_character
@@ -37,7 +38,7 @@ class TestGame(Widget):
         try: 
             self._init_game(0)
         except:
-            print 'failed: rescheduling init **this is not guaranteed to be ok**'
+            print 'failed: rescheduling init'
             Clock.schedule_once(self.init_game)
 
     def on_state(self, instance, value):
@@ -59,7 +60,8 @@ class TestGame(Widget):
             
     def check_clear(self, dt):
         systems = self.gameworld.systems
-        systems_to_check = ['asteroids_level', 'asteroid_system', 'projectile_system', 'quadtree_renderer']
+        systems_to_check = ['asteroids_level', 'asteroid_system', 
+        'projectile_system', 'quadtree_renderer']
         num_entities = 0
         self.check_clear_counter = 0
         for system in systems_to_check:
@@ -74,47 +76,60 @@ class TestGame(Widget):
             Clock.schedule_once(self.check_quadtree_created)
                 
     def setup_new_quadtree(self, dt):
-        Clock.schedule_once(self.gameworld.systems['quadtree_renderer'].setup_quadtree)
+        Clock.schedule_once(
+            self.gameworld.systems['quadtree_renderer'].setup_quadtree)
 
     def setup_new_level(self, dt):
-        Clock.schedule_once(self.gameworld.systems['asteroids_level'].generate_new_level)
+        Clock.schedule_once(
+            self.gameworld.systems['asteroids_level'].generate_new_level)
         
     def setup_states(self):
-        self.gameworld.add_state(state_name='main_menu', systems_added=['background_renderer', 
+        self.gameworld.add_state(state_name='main_menu', systems_added=[
+            'background_renderer', 
             'quadtree_renderer', 'default_map'], 
-            systems_removed=['physics_renderer', 'particle_manager', 'point_particle_manager',
+            systems_removed=['physics_renderer', 'particle_manager', 
+            'point_particle_manager',
             'physics_point_renderer', 'lighting_renderer', 'probe_system'], 
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'physics_point_renderer',
             'particle_manager', 'point_particle_manager', 'asteroid_system', 
-            'ship_system', 'lighting_renderer', 'probe_system', 'ship_ai_system'], systems_unpaused=[],
+            'ship_system', 'lighting_renderer', 'probe_system', 
+            'ship_ai_system'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='choose_character', systems_added=[
             'background_renderer', 'quadtree_renderer',  'default_map'], 
-            systems_removed=['physics_renderer', 'particle_manager', 'point_particle_manager',
+            systems_removed=['physics_renderer', 'particle_manager', 
+            'point_particle_manager',
              'physics_point_renderer', 'lighting_renderer','probe_system'], 
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'physics_point_renderer', 'quadtree_renderer',
             'particle_manager', 'point_particle_manager', 'asteroid_system', 
-            'ship_system', 'lighting_renderer', 'probe_system', 'ship_ai_system'], systems_unpaused=[],
+            'ship_system', 'lighting_renderer', 'probe_system', 
+            'ship_ai_system'], systems_unpaused=[],
             screenmanager_screen='choose_character')
-        self.gameworld.add_state(state_name='main_game', systems_added=[ 'background_renderer', 
-            'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
-            'default_map', 'probe_system', 'lighting_renderer', 'particle_manager', 'point_particle_manager'], 
+        self.gameworld.add_state(state_name='main_game', systems_added=[ 
+            'background_renderer', 'physics_renderer', 'quadtree_renderer', 
+            'physics_point_renderer', 'cymunk-physics', 
+            'default_map', 'probe_system', 'lighting_renderer', 
+            'particle_manager', 'point_particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'particle_manager', 'point_particle_manager', 'quadtree_renderer',
-            'asteroid_system', 'ship_system', 'physics_point_renderer', 'lighting_renderer', 
+            'physics_renderer', 'particle_manager', 'point_particle_manager', 
+            'quadtree_renderer','asteroid_system', 'ship_system', 
+            'physics_point_renderer', 'lighting_renderer', 
             'projectile_system', 'probe_system', 'ship_ai_system'], 
             screenmanager_screen='main_game')
-        self.gameworld.add_state(state_name='game_over', systems_added=[ 'background_renderer', 
-            'physics_renderer', 'quadtree_renderer', 'physics_point_renderer', 'cymunk-physics', 
-            'default_map', 'probe_system', 'lighting_renderer', 'particle_manager', 'point_particle_manager'], 
+        self.gameworld.add_state(state_name='game_over', systems_added=[ 
+            'background_renderer', 'physics_renderer', 'quadtree_renderer', 
+            'physics_point_renderer', 'cymunk-physics', 
+            'default_map', 'probe_system', 'lighting_renderer', 
+            'particle_manager', 'point_particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'particle_manager', 'point_particle_manager',
-            'asteroid_system', 'ship_system', 'physics_point_renderer', 'lighting_renderer', 
-            'probe_system', 'ship_ai_system'], screenmanager_screen='game_over')
+            'asteroid_system', 'ship_system', 'physics_point_renderer', 
+            'lighting_renderer', 'probe_system', 'ship_ai_system'], 
+            screenmanager_screen='game_over')
 
     def clear_gameworld_objects(self):
         systems = self.gameworld.systems
@@ -127,7 +142,8 @@ class TestGame(Widget):
         self.gameworld.state = 'main_menu'
         if not self.gameworld.music_controller.check_if_songs_are_playing():
             self.gameworld.music_controller.play('track5')
-        choose_character = self.gameworld.gamescreenmanager.get_screen('choose_character').choose_character
+        choose_character = self.gameworld.gamescreenmanager.get_screen(
+            'choose_character').choose_character
         choose_character.current_ship = choose_character.list_of_ships[0]
 
     def setup_map(self):
@@ -138,14 +154,16 @@ class TestGame(Widget):
             gameworld = self.gameworld
             character_system = gameworld.systems['ship_system']
             character_system.spawn_player_character(character_to_spawn)
-            Clock.schedule_once(gameworld.systems['asteroid_system'].generate_asteroids)
+            Clock.schedule_once(
+                gameworld.systems['asteroid_system'].generate_asteroids)
             gameworld.state = 'main_game'
             gameworld.systems['asteroids_level'].begin_spawning_of_ai()
             game_screen = gameworld.gamescreenmanager.get_screen('main_game')
             game_screen.objective_panel.reset_objectives()
 
     def setup_gameobjects(self):
-        Clock.schedule_once(self.gameworld.systems['asteroids_level'].generate_new_level)
+        Clock.schedule_once(
+            self.gameworld.systems['asteroids_level'].generate_new_level)
 
     def setup_particle_effects(self):
         particle_effects = [
@@ -185,7 +203,7 @@ class TestGame(Widget):
             begin_func=asteroid_system.collision_begin_asteroid_asteroid)
         physics.add_collision_handler(1, 3, 
             begin_func=projectile_system.collision_begin_asteroid_bullet,
-            separate_func=projectile_system.begin_collision_solve_asteroid_bullet)
+            separate_func=projectile_system.collision_solve_asteroid_bullet)
         physics.add_collision_handler(2, 3, 
             begin_func=projectile_system.collision_begin_ship_bullet,
             separate_func=projectile_system.collision_solve_ship_bullet)
@@ -229,21 +247,24 @@ class TestGame(Widget):
         if 'asteroids_level' in self.gameworld.systems:
             if self.check_win_conditions():
                 self.gameworld.systems['asteroids_level'].current_level_id += 1
-                self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
+                self.current_level = self.gameworld.systems[
+                    'asteroids_level'].current_level_id + 1
                 Clock.schedule_once(self.set_choose_character_state, 2.0)
 
     def on_number_of_probes(self, instance, value):
         if 'asteroids_level' in self.gameworld.systems:
             if self.check_win_conditions():
                 self.gameworld.systems['asteroids_level'].current_level_id += 1
-                self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
+                self.current_level = self.gameworld.systems[
+                    'asteroids_level'].current_level_id + 1
                 Clock.schedule_once(self.set_choose_character_state, 2.0)
 
     def on_number_of_asteroids(self, instance, value):
         if 'asteroids_level' in self.gameworld.systems:
             if self.check_win_conditions():
                 self.gameworld.systems['asteroids_level'].current_level_id += 1
-                self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
+                self.current_level = self.gameworld.systems[
+                    'asteroids_level'].current_level_id + 1
                 Clock.schedule_once(self.set_choose_character_state, 2.0)
 
     def player_lose(self, dt):
@@ -251,7 +272,8 @@ class TestGame(Widget):
         self.current_lives -= 1
         if self.current_lives < 0:
             self.gameworld.systems['asteroids_level'].current_level_id = 0
-            self.current_level = self.gameworld.systems['asteroids_level'].current_level_id + 1
+            self.current_level = self.gameworld.systems[
+                'asteroids_level'].current_level_id + 1
             self.current_lives = 3
             
 

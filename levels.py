@@ -66,6 +66,7 @@ class AsteroidsLevel(GameSystem):
             num_star_1, num_star_2, num_star_3, num_star_4)
         #generate background
         chance_of_dust = random.random()
+        chance_of_dust = 1.0
         if chance_of_dust >= .4:
             if first_color_choice == star_choice_gold:
                 bg_choice = random.choice(dust_choices_gold)
@@ -75,6 +76,7 @@ class AsteroidsLevel(GameSystem):
                 bg_choice = random.choice(dust_choices_blue)
             if first_color_choice == star_choice_purple:
                 bg_choice = random.choice(dust_choices_purple)
+            bg_choice = 'assets/prerendered_backgrounds/stardust_backgrounds/stardust4.atlas'
             self.generate_prerendered_background(bg_choice, (512, 512))
         self.choose_damping()
         self.choose_gravity()

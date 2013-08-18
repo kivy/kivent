@@ -1,23 +1,87 @@
-import particlesystem
 from kivy.properties import StringProperty, BooleanProperty
 from math import radians
 from xml.dom.minidom import parse as parse_xml
 from kivy.core.image import Image as CoreImage
+from kivy.graphics import Fbo, Rectangle, Color
+from kivy.graphics.opengl import (glBlendFunc, GL_SRC_ALPHA, GL_ONE, 
+GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
+GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR)
 
+
+BLEND_FUNC = {
+            0: GL_ZERO,
+            1: GL_ONE,
+            0x300: GL_SRC_COLOR,
+            0x301: GL_ONE_MINUS_SRC_COLOR,
+            0x302: GL_SRC_ALPHA,
+            0x303: GL_ONE_MINUS_SRC_ALPHA,
+            0x304: GL_DST_ALPHA,
+            0x305: GL_ONE_MINUS_DST_ALPHA,
+            0x306: GL_DST_COLOR,
+            0x307: GL_ONE_MINUS_DST_COLOR,
+            }
 
 class ParticleManager(GameSystem):
-    ##This widget is currently only designed to work with chipmunk based 
-    ##objects
     system_id = StringProperty('particle_manager')
+    current_number_of_particles = NumericProperty(0)
+    max_number_particles = NumericProperty(100)
     position_data_from = StringProperty('cymunk-physics')
     render_information_from = StringProperty('physics_renderer')
     updateable = BooleanProperty(True)
+    fbo = ObjectProperty(None)
     particle_update_time = NumericProperty(1./20.)
+    blend_factor_source = NumericProperty(GL_SRC_ALPHA)
+    blend_factor_dest = NumericProperty(GL_ONE)
+    reset_blend_factor_source = NumericProperty(GL_SRC_ALPHA)
+    reset_blend_factor_dest = NumericProperty(GL_ONE_MINUS_SRC_ALPHA)
 
     def __init__(self, **kwargs):
         super(ParticleManager, self).__init__(**kwargs)
+        # with self.canvas:
+        #     self.fbo = Fbo(size=self.size)
+        #     Color(1., 1., 1., 1.)
+        #     self.fbo_rectangle = Rectangle(texture=self.fbo.texture, size=self.size)
+        with self.canvas.before:
+            Callback(self._set_blend_func)
+        with self.canvas.after:
+            Callback(self._reset_blend_func)
         self.particle_configs = {}
         self.particle_textures = {}
+        self.particles = []
+        Clock.schedule_once(self.init_particles)
+
+    def _set_blend_func(self, instruction):
+        glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
+
+    def _reset_blend_func(self, instruction):
+        glBlendFunc(self.reset_blend_factor_source, 
+            self.reset_blend_factor_dest)
+
+    def init_particles(self, dt):
+        particles = self.particles
+        entities = self.gameworld.entities
+        for x in xrange(self.max_number_particles):
+            entity_id = self.gameworld.init_entity({}, [])
+            entities[entity_id]['particle_manager'] = {'particle': Particle()}
+            self.particles.append(entity_id)
+
+    def free_particle(self, entity_id):
+        self.particles.append(entity_id)
+
+    def on_max_number_particles(self, instance, value):
+        if len(self.particles) > value:
+            for x in xrange(len(self.particles) - value):
+                particle = self.particles.pop()
+                del particle
+        elif len(self.particles) < value:
+            for x in xrange(value - len(self.particles)):
+                self.particles.append(Particle())
+
+    def on_current_number_of_particles(self, instance, value):
+        print value
+        if value > self.max_number_particles:
+            print 'recalculating particle limits'
+
 
     def load_particle_config(self, config):
         config_str = config
@@ -114,14 +178,21 @@ class ParticleManager(GameSystem):
 
     def parse_blend(self, config, name):
         value = int(self.parse_data(config, name))
-        return particlesystem.BLEND_FUNC[value]
+        return BLEND_FUNC[value]
 
     def load_particle_system_from_dict(self, config):
         config_dict = self.particle_configs[config]
-        physics_system = self.gameworld.systems['cymunk-physics']
-        return particlesystem.ParticleSystem(
-            config=None, 
+        if 'cymunk-physics' in self.gameworld.systems:
+            physics_system_friction = self.gameworld.systems['cymunk-physics'].damping
+        else:
+            physics_system_friction = 1.0
+        self.current_number_of_particles += config_dict['max_num_particles']
+        return ParticleEmitter(self.fbo,
+            config=None,
+            gameworld=self.gameworld,
+            particle_manager=self,
             max_num_particles = config_dict['max_num_particles'],
+            adjusted_num_particles = config_dict['max_num_particles'],
             life_span = config_dict['life_span'],
             texture = self.particle_textures[config_dict['texture']],
             texture_path = config_dict['texture'],
@@ -159,18 +230,16 @@ class ParticleManager(GameSystem):
             blend_factor_dest = config_dict['blend_factor_dest'],
             emitter_type = config_dict['emitter_type'],
             update_interval = self.particle_update_time,
-            friction = (1.0 - physics_system.damping)
+            friction = (1.0 - physics_system_friction)
             )
         
     def generate_component_data(self, dict entity_component_dict):
         for particle_effect in entity_component_dict:
-            physics_system = self.gameworld.systems['cymunk-physics']
             config = entity_component_dict[particle_effect]['particle_file']
             if not config in self.particle_configs:
                 self.load_particle_config(config)
             entity_component_dict[particle_effect]['particle_system'] = (
                 particle_system) = self.load_particle_system_from_dict(config)
-            particle_system.stop()
             entity_component_dict[particle_effect]['particle_system_on'] = False
         return entity_component_dict
 
@@ -183,7 +252,7 @@ class ParticleManager(GameSystem):
         particle_systems = entity[self.system_id]
         for particle_effect in particle_systems:
             particle_system = particle_systems[particle_effect]['particle_system']
-            particle_system.stop(clear=True)
+            self.current_number_of_particles -= particle_system.max_num_particles
             del particle_system
         super(ParticleManager, self).remove_entity(entity_id)
 
@@ -221,25 +290,26 @@ class ParticleManager(GameSystem):
                         particle_system.current_scroll = camera_pos
                         particle_system.pos = self.calculate_particle_offset(entity_id, particle_effect)
                         particle_system.emit_angle = radians(entity[position_data_from]['angle']+270)
-                        if particle_system._is_paused:
-                            particle_system.resume()
-                        if particle_system.emission_time <= 0:
-                            particle_system.start()
-                        if not particle_system in self.children:
-                            self.add_widget(particle_system) 
-                    elif particle_system.emission_time > 0:
-                        particle_system.stop()
-                elif not particle_system._is_paused:
-                    particle_system.pause(with_clear = True)
-                    if particle_system in self.children:
-                        self.remove_widget(particle_system)
+                        time_between_particles = 1.0 / particle_system.emission_rate
+                        particle_system.frame_time += dt
+                        particle_system.update(dt)
+                        while particle_system.frame_time > 0:
+                            if self.particles != []:
+                                particle_system.receive_particle(self.particles.pop())
+                            particle_system.frame_time -= time_between_particles
+                        
 
     def calculate_particle_offset(self, entity_id, particle_effect):
         cdef dict entity = self.gameworld.entities[entity_id]
         cdef dict position_data = entity[self.position_data_from]
         cdef dict system_data = entity[self.system_id]
         cdef int offset = system_data[particle_effect]['offset']
+        cdef dict unit_vector
+        cdef tuple effect_pos
         pos = position_data['position']
-        cdef dict unit_vector = position_data['unit_vector']
-        cdef tuple effect_pos = (pos[0] - offset * unit_vector['x'], pos[1] - offset * unit_vector['y'])
+        if offset != 0.:
+            unit_vector = position_data['unit_vector']
+            effect_pos = (pos[0] - offset * unit_vector['x'], pos[1] - offset * unit_vector['y'])
+        else:
+            effect_pos = (pos[0], pos[1])
         return effect_pos

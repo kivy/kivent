@@ -1,0 +1,69 @@
+#:kivy 1.6.0
+#:import SlideTransition kivy.uix.screenmanager.SlideTransition 
+#:set COLOR_HIGHLIGHT (0.788235294, 0.643137255, 1)
+#:set COLOR_BACKGROUND (0.349019608, 0.082352941, 0.658823529)
+#:set COLOR_BACKGROUND_A50 (0.349019608, 0.082352941, 0.658823529, .5)
+#:set COLOR_BORDER (0.643137255, 0.160784314, 1)
+#:set COLOR_BORDER_A50 (0.643137255, 0.160784314, 1, .5)
+#:set COLOR_BORDER_A75 (0.643137255, 0.160784314, 1, .75)
+#:set COLOR_HIGHLIGHT_A50 (0.788235294, 0.643137255, 1, .5)
+#:set COLOR_HIGHLIGHT_A100 (0.788235294, 0.643137255, 1, 1.0)
+#:set COLOR_BACKGROUND_A100 (0.349019608, 0.082352941, 0.658823529, 1.0)
+#:set COLOR_BORDER_A100 (0.643137255, 0.160784314, 1, 1.0)
+
+ParticleEditor:
+
+<ParticleEditor>:
+	gameworld: gameworld
+	pos: root.pos
+	size: root.size
+	GameWorld:
+		id: gameworld
+		gamescreenmanager: gamescreenmanager
+		GameView:
+			gameworld: root.gameworld
+			pos: root.pos
+			size: root.size
+		GameMap:
+			system_id: 'gamemap'
+			gameworld: root.gameworld
+			map_size: root.size
+			on_map_size: print args[1]
+		Effects:
+			gameworld: root.gameworld
+		ParticleManager:
+			gameworld: root.gameworld
+			size: root.size
+			pos: root.pos
+			position_data_from: 'effects'
+    		render_information_from: 'effects'
+		GameScreenManager:
+			id: gamescreenmanager
+			size: root.size
+			pos: root.pos
+			gameworld: root.gameworld
+			transition: SlideTransition()
+
+<GameScreenManager>:
+	EditorScreen:
+		
+
+<EditorScreen@Screen>:
+	name: 'main'
+	FloatLayout:
+		BoxLayout:
+			size_hint: (.2, .2)
+			orientation: 'vertical'
+			Label:
+				text: 'edit screen'
+			DebugPanel:
+
+
+<DebugPanel>:
+    Label:
+        pos: root.pos
+        size: root.size
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1)
+        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'

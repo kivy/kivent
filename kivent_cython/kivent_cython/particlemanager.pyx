@@ -40,7 +40,7 @@ class ParticleManager(GameSystem):
         
         
         with self.canvas:
-            self.fbo = Fbo(size=self.size)
+            self.fbo = Fbo(size=self.size, clear_color=(0., 0., 0., 1.))
             self.fbo_rectangle = Rectangle(size=self.size, texture=self.fbo.texture)
         with self.canvas.before:
             Callback(self._set_blend_func)
@@ -255,6 +255,7 @@ class ParticleManager(GameSystem):
         particle_systems = entity[self.system_id]
         for particle_effect in particle_systems:
             particle_system = particle_systems[particle_effect]['particle_system']
+            particle_system.free_all_particles()
             self.current_number_of_particles -= particle_system.max_num_particles
             del particle_system
         super(ParticleManager, self).remove_entity(entity_id)
@@ -304,6 +305,9 @@ class ParticleManager(GameSystem):
                                 particle = self.particles.pop()
                                 particle_system.receive_particle(particle)
                             particle_system.frame_time -= time_between_particles
+                    else:
+                        if particle_system.particles != []:
+                            particle_system.free_all_particles()
                 else:
                     if particle_system.particles != []:
                         particle_system.free_all_particles()

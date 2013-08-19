@@ -109,10 +109,14 @@ TestGame:
 	    	do_color: True
 		ParticleManager:
 			gameworld: root.gameworld
+			size: root.size
+			pos: root.pos
 		ParticleManager:
 			system_id: 'point_particle_manager'
 			gameworld: root.gameworld
 			render_information_from: 'physics_point_renderer'
+			size: root.size
+			pos: root.pos
 		AsteroidsLevel:
 			id: asteroid_level
 			gameworld: root.gameworld

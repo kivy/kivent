@@ -37,10 +37,11 @@ class ParticleManager(GameSystem):
 
     def __init__(self, **kwargs):
         super(ParticleManager, self).__init__(**kwargs)
-        # with self.canvas:
-        #     self.fbo = Fbo(size=self.size)
-        #     Color(1., 1., 1., 1.)
-        #     self.fbo_rectangle = Rectangle(texture=self.fbo.texture, size=self.size)
+        
+        
+        with self.canvas:
+            self.fbo = Fbo(size=self.size)
+            self.fbo_rectangle = Rectangle(size=self.size, texture=self.fbo.texture)
         with self.canvas.before:
             Callback(self._set_blend_func)
         with self.canvas.after:
@@ -49,6 +50,14 @@ class ParticleManager(GameSystem):
         self.particle_textures = {}
         self.particles = []
         Clock.schedule_once(self.init_particles)
+
+    def update_fbo_texture(self):
+        self.fbo_rectangle.texture = self.fbo.texture
+
+    def on_size(self, instance, value):
+        self.fbo.size = value
+        self.fbo_rectangle.size = value
+        self.update_fbo_texture()
 
     def _set_blend_func(self, instruction):
         glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
@@ -60,6 +69,7 @@ class ParticleManager(GameSystem):
     def init_particles(self, dt):
         particles = self.particles
         entities = self.gameworld.entities
+        print self.max_number_particles, 'max number particles'
         for x in xrange(self.max_number_particles):
             entity_id = self.gameworld.init_entity({}, [])
             entities[entity_id]['particle_manager'] = {'particle': Particle()}
@@ -69,16 +79,9 @@ class ParticleManager(GameSystem):
         self.particles.append(entity_id)
 
     def on_max_number_particles(self, instance, value):
-        if len(self.particles) > value:
-            for x in xrange(len(self.particles) - value):
-                particle = self.particles.pop()
-                del particle
-        elif len(self.particles) < value:
-            for x in xrange(value - len(self.particles)):
-                self.particles.append(Particle())
+        pass
 
     def on_current_number_of_particles(self, instance, value):
-        print value
         if value > self.max_number_particles:
             print 'recalculating particle limits'
 
@@ -280,6 +283,9 @@ class ParticleManager(GameSystem):
         cdef dict entity
         cdef dict particle_systems
         cdef object particle_system
+        self.fbo.bind()
+        self.fbo.clear_buffer()
+        self.fbo.release() 
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
             particle_systems = entity[system_data_from]
@@ -295,9 +301,13 @@ class ParticleManager(GameSystem):
                         particle_system.update(dt)
                         while particle_system.frame_time > 0:
                             if self.particles != []:
-                                particle_system.receive_particle(self.particles.pop())
+                                particle = self.particles.pop()
+                                particle_system.receive_particle(particle)
                             particle_system.frame_time -= time_between_particles
-                        
+                else:
+                    if particle_system.particles != []:
+                        particle_system.free_all_particles()
+
 
     def calculate_particle_offset(self, entity_id, particle_effect):
         cdef dict entity = self.gameworld.entities[entity_id]

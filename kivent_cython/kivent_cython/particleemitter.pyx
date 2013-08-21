@@ -97,8 +97,8 @@ class ParticleEmitter(Widget):
         group_id = str(entity['id'])
         current_scroll = self.current_scroll
         color = particle.color[:]
-        #with self.particle_manager.canvas:
-        with self.fbo:
+        with self.particle_manager.canvas:
+        #with self.fbo:
             PushMatrix(group=group_id)
             particle_manager['color'] = Color(color[0], color[1], 
                 color[2], color[3], group=group_id)
@@ -134,7 +134,7 @@ class ParticleEmitter(Widget):
 
     def free_particle(self, entity_id):
         particles = self.particles
-        self.fbo.remove_group(str(entity_id))
+        self.particle_manager.canvas.remove_group(str(entity_id))
         self.particle_manager.free_particle(particles.pop(particles.index(entity_id)))
 
     def on_life_span(self,instance,value):

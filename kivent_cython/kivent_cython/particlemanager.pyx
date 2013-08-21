@@ -6,6 +6,7 @@ from kivy.graphics import Fbo, Rectangle, Color
 from kivy.graphics.opengl import (glBlendFunc, GL_SRC_ALPHA, GL_ONE, 
 GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
 GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR)
+from libc.math cimport trunc
 
 
 BLEND_FUNC = {
@@ -39,9 +40,9 @@ class ParticleManager(GameSystem):
         super(ParticleManager, self).__init__(**kwargs)
         
         
-        with self.canvas:
-            self.fbo = Fbo(size=self.size, clear_color=(0., 0., 0., 1.))
-            self.fbo_rectangle = Rectangle(size=self.size, texture=self.fbo.texture)
+        #with self.canvas:
+        #    self.fbo = Fbo(size=self.size, clear_color=(0., 0., 0., 1.))
+        #    self.fbo_rectangle = Rectangle(size=self.size, texture=self.fbo.texture)
         with self.canvas.before:
             Callback(self._set_blend_func)
         with self.canvas.after:
@@ -51,13 +52,13 @@ class ParticleManager(GameSystem):
         self.particles = []
         Clock.schedule_once(self.init_particles)
 
-    def update_fbo_texture(self):
-        self.fbo_rectangle.texture = self.fbo.texture
+    # def update_fbo_texture(self):
+    #     self.fbo_rectangle.texture = self.fbo.texture
 
-    def on_size(self, instance, value):
-        self.fbo.size = value
-        self.fbo_rectangle.size = value
-        self.update_fbo_texture()
+    # def on_size(self, instance, value):
+    #     self.fbo.size = value
+    #     self.fbo_rectangle.size = value
+    #     self.update_fbo_texture()
 
     def _set_blend_func(self, instruction):
         glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
@@ -69,7 +70,6 @@ class ParticleManager(GameSystem):
     def init_particles(self, dt):
         particles = self.particles
         entities = self.gameworld.entities
-        print self.max_number_particles, 'max number particles'
         for x in xrange(self.max_number_particles):
             entity_id = self.gameworld.init_entity({}, [])
             entities[entity_id]['particle_manager'] = {'particle': Particle()}
@@ -82,8 +82,7 @@ class ParticleManager(GameSystem):
         pass
 
     def on_current_number_of_particles(self, instance, value):
-        if value > self.max_number_particles:
-            print 'recalculating particle limits'
+        pass
 
 
     def load_particle_config(self, config):
@@ -260,19 +259,6 @@ class ParticleManager(GameSystem):
             del particle_system
         super(ParticleManager, self).remove_entity(entity_id)
 
-    def on_paused(self, instance, value):
-        cdef list entities = self.gameworld.entities
-        cdef str system_data_from = self.system_id
-        cdef dict entity
-        cdef dict particle_systems
-        cdef object particle_system
-        if value == True:
-            for entity_id in self.entity_ids:
-                entity = entities[entity_id]
-                particle_systems = entity[system_data_from]
-                for particle_effect in particle_systems:
-                    particle_system = particle_systems[particle_effect]['particle_system']
-                    particle_system.pause(with_clear = True)
 
     def update(self, dt):
         cdef dict systems = self.gameworld.systems
@@ -284,9 +270,9 @@ class ParticleManager(GameSystem):
         cdef dict entity
         cdef dict particle_systems
         cdef object particle_system
-        self.fbo.bind()
-        self.fbo.clear_buffer()
-        self.fbo.release() 
+        # self.fbo.bind()
+        # self.fbo.clear_buffer()
+        # self.fbo.release() 
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
             particle_systems = entity[system_data_from]
@@ -294,17 +280,19 @@ class ParticleManager(GameSystem):
                 particle_system = particle_systems[particle_effect]['particle_system']
                 if entity[render_information_from]['on_screen']:
                     if particle_systems[particle_effect]['particle_system_on']:
-                        particle_system.current_scroll = camera_pos
+                        if 'ignore_camera' not in particle_systems[particle_effect]:
+                            particle_system.current_scroll = camera_pos
                         particle_system.pos = self.calculate_particle_offset(entity_id, particle_effect)
                         particle_system.emit_angle = radians(entity[position_data_from]['angle']+270)
                         time_between_particles = 1.0 / particle_system.emission_rate
                         particle_system.frame_time += dt
                         particle_system.update(dt)
-                        while particle_system.frame_time > 0:
+                        number_of_updates = trunc(particle_system.frame_time / time_between_particles)
+                        particle_system.frame_time -= time_between_particles * number_of_updates
+                        for x in xrange(int(number_of_updates)):
                             if self.particles != []:
                                 particle = self.particles.pop()
                                 particle_system.receive_particle(particle)
-                            particle_system.frame_time -= time_between_particles
                     else:
                         if particle_system.particles != []:
                             particle_system.free_all_particles()

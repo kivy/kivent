@@ -50,6 +50,7 @@ class ParticleManager(GameSystem):
         self.particle_configs = {}
         self.particle_textures = {}
         self.particles = []
+        self.unused_particle_effects = []
         Clock.schedule_once(self.init_particles)
 
     # def update_fbo_texture(self):
@@ -182,6 +183,15 @@ class ParticleManager(GameSystem):
         value = int(self.parse_data(config, name))
         return BLEND_FUNC[value]
 
+    def get_particle_system(self):
+        if self.unused_particle_effects:
+            return self.unused_particle_effects.pop()
+        else:
+            return ParticleEmitter(self.fbo,
+            config=None,
+            gameworld=self.gameworld,
+            particle_manager=self)
+
     def load_particle_system_from_dict(self, config):
         config_dict = self.particle_configs[config]
         if 'cymunk-physics' in self.gameworld.systems:
@@ -189,51 +199,48 @@ class ParticleManager(GameSystem):
         else:
             physics_system_friction = 1.0
         self.current_number_of_particles += config_dict['max_num_particles']
-        return ParticleEmitter(self.fbo,
-            config=None,
-            gameworld=self.gameworld,
-            particle_manager=self,
-            max_num_particles = config_dict['max_num_particles'],
-            adjusted_num_particles = config_dict['max_num_particles'],
-            life_span = config_dict['life_span'],
-            texture = self.particle_textures[config_dict['texture']],
-            texture_path = config_dict['texture'],
-            life_span_variance = config_dict['life_span_variance'],
-            start_size = config_dict['start_size'],
-            start_size_variance = config_dict['start_size_variance'],
-            end_size = config_dict['end_size'],
-            end_size_variance = config_dict['end_size_variance'],
-            emit_angle = config_dict['emit_angle'],
-            emit_angle_variance = config_dict['emit_angle_variance'],
-            start_rotation = config_dict['start_rotation'],
-            start_rotation_variance = config_dict['start_rotation_variance'],
-            end_rotation = config_dict['end_rotation'],
-            end_rotation_variance = config_dict['end_rotation_variance'],
-            emitter_x_variance = config_dict['emitter_x_variance'],
-            emitter_y_variance = config_dict['emitter_y_variance'],
-            gravity_x = config_dict['gravity_x'],
-            gravity_y = config_dict['gravity_y'],
-            speed = config_dict['speed'],
-            speed_variance = config_dict['speed_variance'],
-            radial_acceleration = config_dict['radial_acceleration'],
-            radial_acceleration_variance = config_dict['radial_acceleration_variance'],
-            tangential_acceleration = config_dict['tangential_acceleration'],
-            tangential_acceleration_variance = config_dict['tangential_acceleration_variance'],
-            max_radius = config_dict['max_radius'],
-            max_radius_variance = config_dict['max_radius_variance'],
-            min_radius = config_dict['min_radius'],
-            rotate_per_second = config_dict['rotate_per_second'],
-            rotate_per_second_variance = config_dict['rotate_per_second_variance'],
-            start_color = config_dict['start_color'],
-            start_color_variance = config_dict['start_color_variance'],
-            end_color = config_dict['end_color'],
-            end_color_variance = config_dict['end_color_variance'],
-            blend_factor_source =config_dict['blend_factor_source'],
-            blend_factor_dest = config_dict['blend_factor_dest'],
-            emitter_type = config_dict['emitter_type'],
-            update_interval = self.particle_update_time,
-            friction = (1.0 - physics_system_friction)
-            )
+        particle_system = self.get_particle_system()
+        particle_system.max_num_particles = config_dict['max_num_particles']
+        particle_system.adjusted_num_particles = config_dict['max_num_particles']
+        particle_system.life_span = config_dict['life_span']
+        particle_system.texture = self.particle_textures[config_dict['texture']]
+        particle_system.texture_path = config_dict['texture']
+        particle_system.life_span_variance = config_dict['life_span_variance']
+        particle_system.start_size = config_dict['start_size']
+        particle_system.start_size_variance = config_dict['start_size_variance']
+        particle_system.end_size = config_dict['end_size']
+        particle_system.end_size_variance = config_dict['end_size_variance']
+        particle_system.emit_angle = config_dict['emit_angle']
+        particle_system.emit_angle_variance = config_dict['emit_angle_variance']
+        particle_system.start_rotation = config_dict['start_rotation']
+        particle_system.start_rotation_variance = config_dict['start_rotation_variance']
+        particle_system.end_rotation = config_dict['end_rotation']
+        particle_system.end_rotation_variance = config_dict['end_rotation_variance']
+        particle_system.emitter_x_variance = config_dict['emitter_x_variance']
+        particle_system.emitter_y_variance = config_dict['emitter_y_variance']
+        particle_system.gravity_x = config_dict['gravity_x']
+        particle_system.gravity_y = config_dict['gravity_y']
+        particle_system.speed = config_dict['speed']
+        particle_system.speed_variance = config_dict['speed_variance']
+        particle_system.radial_acceleration = config_dict['radial_acceleration']
+        particle_system.radial_acceleration_variance = config_dict['radial_acceleration_variance']
+        particle_system.tangential_acceleration = config_dict['tangential_acceleration']
+        particle_system.tangential_acceleration_variance = config_dict['tangential_acceleration_variance']
+        particle_system.max_radius = config_dict['max_radius']
+        particle_system.max_radius_variance = config_dict['max_radius_variance']
+        particle_system.min_radius = config_dict['min_radius']
+        particle_system.rotate_per_second = config_dict['rotate_per_second']
+        particle_system.rotate_per_second_variance = config_dict['rotate_per_second_variance']
+        particle_system.start_color = config_dict['start_color']
+        particle_system.start_color_variance = config_dict['start_color_variance']
+        particle_system.end_color = config_dict['end_color']
+        particle_system.end_color_variance = config_dict['end_color_variance']
+        particle_system.blend_factor_source =config_dict['blend_factor_source']
+        particle_system.blend_factor_dest = config_dict['blend_factor_dest']
+        particle_system.emitter_type = config_dict['emitter_type']
+        particle_system.update_interval = self.particle_update_time
+        particle_system.friction = (1.0 - physics_system_friction)
+        return particle_system
         
     def generate_component_data(self, dict entity_component_dict):
         for particle_effect in entity_component_dict:
@@ -256,7 +263,7 @@ class ParticleManager(GameSystem):
             particle_system = particle_systems[particle_effect]['particle_system']
             particle_system.free_all_particles()
             self.current_number_of_particles -= particle_system.max_num_particles
-            del particle_system
+            self.unused_particle_effects.append(particle_system)
         super(ParticleManager, self).remove_entity(entity_id)
 
 

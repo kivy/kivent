@@ -78,11 +78,12 @@ class ParticleEmitter(Widget):
     def on_max_number_particles(self, instance, value):
         self.emission_rate = value / self.life_span
 
-    def receive_particle(self, entity_id):
-        entity = self.gameworld.entities[entity_id]
-        self.particles.append(entity_id)
-        particle_manager = entity['particle_manager']
-        particle = particle_manager['particle']
+    def receive_particle(self, int entity_id):
+        cdef dict entity = self.gameworld.entities[entity_id]
+        cdef list particles = self.particles
+        particles.append(entity_id)
+        cdef dict particle_manager = entity['particle_manager']
+        cdef Particle particle = particle_manager['particle']
         particle_manager['color'] = None
         particle_manager['translate'] = None
         particle_manager['scale'] = None
@@ -91,12 +92,12 @@ class ParticleEmitter(Widget):
         self.init_particle(particle)
         self.draw_particle(entity)
 
-    def draw_particle(self, entity):
-        particle_manager = entity['particle_manager']
-        particle = particle_manager['particle']
+    def draw_particle(self, dict entity):
+        cdef dict particle_manager = entity['particle_manager']
+        cdef Particle particle = particle_manager['particle']
         group_id = str(entity['id'])
         current_scroll = self.current_scroll
-        color = particle.color[:]
+        cdef list color = particle.color[:]
         with self.particle_manager.canvas:
         #with self.fbo:
             PushMatrix(group=group_id)
@@ -114,9 +115,9 @@ class ParticleEmitter(Widget):
                 particle.y + current_scroll[1])
             PopMatrix(group=group_id)
 
-    def render_particle(self, entity):
-        particle_manager = entity['particle_manager']
-        particle = particle_manager['particle']
+    def render_particle(self, dict entity):
+        cdef dict particle_manager = entity['particle_manager']
+        cdef Particle particle = particle_manager['particle']
         current_scroll = self.current_scroll
         particle_manager['rotate'].angle = particle.rotation
         particle_manager['scale'].x = particle.scale
@@ -127,13 +128,14 @@ class ParticleEmitter(Widget):
         particle_manager['color'].rgba = particle.color
 
     def free_all_particles(self):
-        particles_to_free = [particle for particle in self.particles]
+        cdef list particles_to_free = [particle for particle in self.particles]
+        cdef int entity_id
         for entity_id in particles_to_free:
             self.free_particle(entity_id)
 
 
-    def free_particle(self, entity_id):
-        particles = self.particles
+    def free_particle(self, int entity_id):
+        cdef list particles = self.particles
         self.particle_manager.canvas.remove_group(str(entity_id))
         self.particle_manager.free_particle(particles.pop(particles.index(entity_id)))
 
@@ -275,8 +277,11 @@ class ParticleEmitter(Widget):
             advance_particle
         '''
         gameworld = self.gameworld
-        entities = gameworld.entities
-        for entity_id in self.particles:
+        cdef list entities = gameworld.entities
+        cdef Particle particle
+        cdef dict entity
+        cdef list particles = self.particles
+        for entity_id in particles:
             entity = entities[entity_id]
             particle = entity['particle_manager']['particle']
             if particle.total_time <= particle.current_time:

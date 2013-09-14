@@ -8,4 +8,7 @@ get the master branch from here:https://github.com/tito/cymunk
 
 You will need to compile both the cymunk module as well as the kivent_cython folders code.
 
-Testing on Asus Transformer TF101 the cythonized library's update loop takes half the time of the regular.
+I develop using Kivy 1.8 (so current indevelopment branch, this is because there are some great performance enhancements
+in the most recent branch)
+
+Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 13.04 

@@ -16,14 +16,24 @@ class GameSystem(Widget):
     active = BooleanProperty(True)
     gameworld = ObjectProperty(None)
     viewport = StringProperty('default_gameview')
+    update_time = NumericProperty(1./60.)
 
     def __init__(self, **kwargs):
         cdef list entity_ids
+        cdef float frame_time
         super(GameSystem, self).__init__(**kwargs)
         self.entity_ids = list()
+        self.frame_time = 0.0
 
     def update(self, dt):
         pass
+
+    def _update(self, dt):
+        self.frame_time += dt
+        update_time = self.update_time
+        if self.frame_time >= update_time:
+            self.update(update_time)
+            self.frame_time -= update_time
 
     def draw_entity(self, int entity_id):
         pass

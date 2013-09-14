@@ -8,7 +8,6 @@ GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA,
 GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR)
 from libc.math cimport trunc
 
-
 BLEND_FUNC = {
             0: GL_ZERO,
             1: GL_ONE,
@@ -313,12 +312,11 @@ class ParticleManager(GameSystem):
         cdef dict position_data = entity[self.position_data_from]
         cdef dict system_data = entity[self.system_id]
         cdef int offset = system_data[particle_effect]['offset']
-        cdef dict unit_vector
         cdef tuple effect_pos
         pos = position_data['position']
         if offset != 0.:
             unit_vector = position_data['unit_vector']
-            effect_pos = (pos[0] - offset * unit_vector['x'], pos[1] - offset * unit_vector['y'])
+            effect_pos = (pos[0] - offset * unit_vector[0], pos[1] - offset * unit_vector[1])
         else:
             effect_pos = (pos[0], pos[1])
         return effect_pos

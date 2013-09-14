@@ -131,9 +131,9 @@ class TestGame(Widget):
             'lighting_renderer', 'probe_system', 'ship_ai_system'], 
             screenmanager_screen='game_over')
         self.gameworld.l_update_group_1 = ['physics_renderer', 'physics_point_renderer', 
-            'quadtree_renderer', 'lighting_renderer']
+            'quadtree_renderer', 'lighting_renderer',  'default_gameview', 'cymunk-physics']
         self.gameworld.l_update_group_2 = ['asteroid_system', 'ship_system', 'ship_ai_system', 
-            'probe_system', 'cymunk-physics', 'projectile_system', 'default_gameview']
+            'probe_system', 'projectile_system',]
         self.gameworld.l_update_group_3 = ['point_particle_manager', 'particle_manager']
 
     def clear_gameworld_objects(self):
@@ -291,7 +291,7 @@ class TestGame(Widget):
 class KivEntApp(App):
     def build(self):
         Window.clearcolor = (0, 0, 0, 1.)
-        
+
 if __name__ == '__main__':
    KivEntApp().run()
     # sd_card_path = os.path.dirname('/sdcard/profiles/')

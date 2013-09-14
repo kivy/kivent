@@ -6,7 +6,6 @@ Rotate, Color, Scale, Point, Callback)
 from kivy.core.image import Image as CoreImage
 import math
 from kivy.atlas import Atlas
-from quadtree import QuadTree
 from kivy.clock import Clock
 
 

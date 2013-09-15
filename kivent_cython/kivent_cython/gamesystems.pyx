@@ -89,7 +89,6 @@ class GameView(GameSystem):
     system_id = StringProperty('default_gameview')
     lock_scroll = BooleanProperty(True)
     camera_pos = ListProperty((0, 0))
-    do_scroll = BooleanProperty(False)
     focus_entity = BooleanProperty(False)
     entity_to_focus = NumericProperty(None, allownone=True)
     focus_position_info_from = StringProperty('cymunk-physics')
@@ -149,8 +148,7 @@ class GameView(GameSystem):
                 self.has_camera_updated = False
 
     def on_touch_move(self, touch):
-        if self.do_scroll:
-            print 'doing scroll'
+        if not self.focus_entity:
             dist_x = touch.dx
             dist_y = touch.dy
             if math.fabs(dist_x) + math.fabs(dist_y) > 2:

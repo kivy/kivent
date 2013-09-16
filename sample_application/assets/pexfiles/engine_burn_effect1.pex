@@ -4,13 +4,13 @@
   <sourcePositionVariance x="0" y="0"/>
   <gravity x="0" y="0"/>
   <emitterType value="0"/>
-  <maxParticles value="10"/>
+  <maxParticles value="20"/>
   <particleLifeSpan value="2"/>
   <particleLifespanVariance value="0"/>
-  <startParticleSize value="50"/>
-  <startParticleSizeVariance value="20"/>
-  <finishParticleSize value="20"/>
-  <FinishParticleSizeVariance value="15"/>
+  <startParticleSize value="25"/>
+  <startParticleSizeVariance value="10"/>
+  <finishParticleSize value="10"/>
+  <FinishParticleSizeVariance value="7"/>
   <angle value="97.999999888"/>
   <angleVariance value="15.0"/>
   <rotationStart value="0"/>

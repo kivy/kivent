@@ -73,9 +73,6 @@ class GameWorld(Widget):
         return entity_id
 
     def timed_remove_entity(self, int entity_id, dt):
-        self.remove_entity(entity_id)
-
-    def timed_remove_entity(self, int entity_id, dt):
         self.entities_to_remove.append(entity_id)
 
     def remove_entity(self, int entity_id):

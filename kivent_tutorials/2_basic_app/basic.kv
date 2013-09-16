@@ -1,0 +1,39 @@
+#:kivy 1.8.0
+
+TestGame:
+
+<TestGame>:
+	gameworld: gameworld
+	pos: root.pos
+	size: root.size
+	GameWorld:
+		id: gameworld
+		gamescreenmanager: gamescreenmanager
+		GameScreenManager:
+			id: gamescreenmanager
+			size: root.size
+			pos: root.pos
+			gameworld: root.gameworld
+
+<GameScreenManager>:
+	MainScreen:
+		id: main_screen
+	
+<MainScreen@GameScreen>:
+	name: 'main'
+	FloatLayout:
+		BoxLayout:
+			size_hint: (.2, .1)
+			pos_hint: {'x': .4, 'y': .1}
+			orientation: 'vertical'
+			DebugPanel:
+
+<DebugPanel>:
+    Label:
+        pos: root.pos
+        size: root.size
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1)
+        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'
+

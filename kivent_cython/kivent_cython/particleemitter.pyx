@@ -5,6 +5,7 @@ from kivy.graphics import (Color, Callback, Rotate, PushMatrix,
 from libc.math cimport pow as power
 from libc.math cimport sqrt, sin, cos, fmax, fmin
 from random import random
+from kivy.event import EventDispatcher
 
 EMITTER_TYPE_GRAVITY = 0
 EMITTER_TYPE_RADIAL = 1
@@ -21,7 +22,7 @@ cdef inline list random_color_variance(list base, list variance):
     return [fmin(fmax(0.0, (random_variance(base[i], variance[i]))), 1.0) 
             for i in range(4)]
 
-class ParticleEmitter(Widget):
+class ParticleEmitter(EventDispatcher):
     max_num_particles = NumericProperty(200)
     adjusted_num_particles = NumericProperty(200)
     life_span = NumericProperty(2)

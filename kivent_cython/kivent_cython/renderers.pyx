@@ -495,6 +495,7 @@ class QuadTreePointRenderer(PointRenderer):
 
     def remove_entity(self, int entity_id):
         print 'removing entity,', entity_id
+        self.quadtree.remove_item(entity_id)
         super(QuadTreePointRenderer, self).remove_entity(entity_id)
 
     def create_component(self, entity_id, entity_component_dict):

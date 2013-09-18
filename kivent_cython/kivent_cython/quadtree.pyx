@@ -173,7 +173,6 @@ cdef class QuadTree(object):
         items_to_add = self.check_items()
         self.add_items(items_to_add, self.depth)
 
-
     def check_items(self):
         cdef QuadTree sw = self.sw
         cdef QuadTree nw = self.nw
@@ -218,7 +217,6 @@ cdef class QuadTree(object):
         cdef object position_system = self.position_system
         cdef object size_system = self.size_system
         cdef list entities = self.gameworld.entities
-
 
         def overlaps(int entity_id):
             cdef dict entity = entities[entity_id]

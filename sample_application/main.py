@@ -43,25 +43,10 @@ class TestGame(Widget):
 
     def on_state(self, instance, value):
         if value == 'choose_character':
-            #self.gameworld.systems['quadtree_renderer'].enter_delete_mode()
             self.gameworld.systems['asteroids_level'].clear_level()
             self.clear_gameworld_objects()
             self.cleared = False
             Clock.schedule_once(self.check_clear)
-
-    def print_quadtree(self, dt):
-        systems = self.gameworld.systems
-        quadtree_renderer = systems['quadtree_renderer']
-        #quadtree_renderer.quadtree.print_trees()
-
-    def check_quadtree_created(self, dt):
-        systems = self.gameworld.systems
-        quadtree_renderer = systems['quadtree_renderer']
-        if quadtree_renderer.quadtree:
-            Clock.schedule_once(self.setup_new_level)
-            self.cleared = True
-        else:
-            Clock.schedule_once(self.check_quadtree_created)
             
     def check_clear(self, dt):
         systems = self.gameworld.systems
@@ -77,17 +62,13 @@ class TestGame(Widget):
                 self.clear_gameworld_objects()
             Clock.schedule_once(self.check_clear, .01)
         else:
-            #Clock.schedule_once(self.setup_new_quadtree)
-            Clock.schedule_once(self.check_quadtree_created)
+            self.cleared = True
+            self.setup_new_level()
                 
-    def setup_new_quadtree(self, dt):
-        Clock.schedule_once(
-            self.gameworld.systems['quadtree_renderer'].setup_quadtree)
 
-    def setup_new_level(self, dt):
+    def setup_new_level(self):
         Clock.schedule_once(
             self.gameworld.systems['asteroids_level'].generate_new_level)
-        Clock.schedule_once(self.print_quadtree)
         
     def setup_states(self):
         self.gameworld.add_state(state_name='main_menu', systems_added=[

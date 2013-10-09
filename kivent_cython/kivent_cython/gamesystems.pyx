@@ -4,7 +4,7 @@ from kivy.properties import (StringProperty, ListProperty, NumericProperty, Dict
 BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 import math
-
+from kivy.core.window import Window
 
 
 
@@ -73,6 +73,31 @@ class GameSystem(Widget):
 class GameMap(GameSystem):
     system_id = StringProperty('default_map')
     map_size = ListProperty((2000., 2000.))
+    camera_pos = ListProperty((0., 0.))
+    window_size = ListProperty((0., 0.))
+    margins = ListProperty((0., 0.))
+    map_color = ListProperty((1., 1., 1., 1.))
+
+    def on_map_size(self, instance, value):
+        self.check_margins()
+
+    def on_size(self, instance, value):
+        self.check_margins()
+
+    def check_margins(self):
+        map_size = self.map_size
+        window_size = Window.size
+        margins = self.margins
+        if window_size[0] > map_size[0]:
+            margin_x = (window_size[0] - map_size[0])/2.
+            if margin_x > margins[0]:
+                margins[0] = margin_x
+        if window_size[1] > map_size[1]:
+            margin_y = (window_size[1] - map_size[1])/2.
+            if margin_y > margins[1]:
+                margins[1] = margin_y
+        self.margins = margins
+        print 'margins ', self.margins
 
     def on_add_system(self):
         super(GameMap, self).on_add_system()
@@ -140,7 +165,6 @@ class GameView(GameSystem):
 
     def on_camera_pos(self, instance, value):
         if self.force_camera_update:
-            print 'here in camera', self.force_camera_update
             if not self.has_camera_updated:
                 self.forced_camera_update()
                 self.has_camera_updated = True
@@ -159,18 +183,20 @@ class GameView(GameSystem):
 
     def lock_scroll(self, float distance_x, float distance_y):
         camera_pos = self.camera_pos
-        map_size = self.gameworld.currentmap.map_size
+        currentmap = self.gameworld.currentmap
+        map_size = currentmap.map_size
+        margins = currentmap.margins
         size = self.size
         pos = self.pos
-        if camera_pos[0] + distance_x > pos[0]:
-            distance_x = pos[0] - camera_pos[0]
-        elif camera_pos[0] + map_size[0] + distance_x <= pos[0] + size[0]:
-            distance_x = pos[0] + size[0] - camera_pos[0] - map_size[0]
+        if camera_pos[0] + distance_x > pos[0] + margins[0]:
+            distance_x = pos[0] - camera_pos[0] + margins[0]
+        elif camera_pos[0] + map_size[0] + distance_x <= pos[0] + size[0] - margins[0]:
+            distance_x = pos[0] + size[0] - margins[0] - camera_pos[0] - map_size[0]
 
-        if camera_pos[1] + distance_y > pos[1]:
-            distance_y = pos[1] - camera_pos[1]
-        elif camera_pos[1] + map_size[1] + distance_y <= pos[1] + size[1]:
-            distance_y = pos[1] + size[1] - camera_pos[1] - map_size[1]
+        if camera_pos[1] + distance_y > pos[1] + margins[1]:
+            distance_y = pos[1] - camera_pos[1] + margins[1] 
+        elif camera_pos[1] + map_size[1] + distance_y <= pos[1] + size[1] - margins[1]:
+            distance_y = pos[1] + size[1] - camera_pos[1] - map_size[1]  - margins[1]
 
         return distance_x, distance_y
 

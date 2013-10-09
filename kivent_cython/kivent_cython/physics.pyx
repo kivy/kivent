@@ -3,8 +3,6 @@ BooleanProperty, NumericProperty)
 import cymunk
 import math
 
-
-
 class CymunkPhysics(GameSystem):
     system_id = StringProperty('cymunk-physics')
     space = ObjectProperty(None)
@@ -105,19 +103,21 @@ class CymunkPhysics(GameSystem):
                 shape['shape_info']['width'])
         else:
             print 'error: shape ', shape['shape_type'], 'not supported'
-
-        body = cymunk.Body(entity_component_dict['mass'], moment)
-        body.position = entity_component_dict['position']
+        if entity_component_dict['mass'] == 0:
+            body = cymunk.Body(None, None)
+        else:
+            body = cymunk.Body(entity_component_dict['mass'], moment)
+            body.velocity = entity_component_dict['velocity']
+            body.angular_velocity = entity_component_dict['angular_velocity']
+            if 'vel_limit' in entity_component_dict:
+                body.velocity_limit = entity_component_dict['vel_limit']
+            if 'ang_vel_limit' in entity_component_dict:
+                body.angular_velocity_limit = entity_component_dict['ang_vel_limit']
         body.data = entity_component_dict['entity_id']
-        body.velocity = entity_component_dict['velocity']
         body.angle = entity_component_dict['angle']
-
-        body.angular_velocity = entity_component_dict['angular_velocity']
-        if 'vel_limit' in entity_component_dict:
-            body.velocity_limit = entity_component_dict['vel_limit']
-        if 'ang_vel_limit' in entity_component_dict:
-            body.angular_velocity_limit = entity_component_dict['ang_vel_limit']
-        space.add(body)
+        body.position = entity_component_dict['position']
+        if entity_component_dict['mass'] != 0:
+            space.add(body)
         shapes = []
         for shape in entity_component_dict['col_shapes']:
             shape_info = shape['shape_info']
@@ -152,7 +152,8 @@ class CymunkPhysics(GameSystem):
         for shape in system_data['shapes']:
             space.remove(shape)
         system_data['shapes'] = None
-        space.remove(system_data['body'])
+        if not system_data['body'].is_static:
+            space.remove(system_data['body'])
         system_data['body'] = None
 
         super(CymunkPhysics, self).remove_entity(entity_id)

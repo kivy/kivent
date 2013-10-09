@@ -21,7 +21,7 @@ class AsteroidsLevel(GameSystem):
     def generate_new_level(self, dt):
         level_win_conditions = [(True, False, False), (False, True, False), 
         (False, False, True), (False, True, True), (False, False, True)]
-        level_number_of_enemies = [0, 0, 1, 2, 3]
+        level_number_of_enemies = [1, 0, 1, 2, 3]
         self.number_of_enemies_to_spawn = level_number_of_enemies[
             self.current_level_id]
         current_level_win_conditions = level_win_conditions[
@@ -66,8 +66,7 @@ class AsteroidsLevel(GameSystem):
             num_star_1, num_star_2, num_star_3, num_star_4)
         #generate background
         chance_of_dust = random.random()
-        chance_of_dust = 1.0
-        if chance_of_dust >= .4:
+        if chance_of_dust >= .5:
             if first_color_choice == star_choice_gold:
                 bg_choice = random.choice(dust_choices_gold)
             if first_color_choice == star_choice_green:
@@ -76,7 +75,6 @@ class AsteroidsLevel(GameSystem):
                 bg_choice = random.choice(dust_choices_blue)
             if first_color_choice == star_choice_purple:
                 bg_choice = random.choice(dust_choices_purple)
-            bg_choice = 'assets/prerendered_backgrounds/stardust_backgrounds/stardust4.atlas'
             self.generate_prerendered_background(bg_choice, (512, 512))
         self.choose_damping()
         self.choose_gravity()

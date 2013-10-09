@@ -167,7 +167,6 @@ class TestGame(Widget):
         for effect in particle_effects:
             particle_manager.load_particle_config(effect)
 
-
     def _init_game(self, dt):
         self.setup_states()
         self.setup_map()
@@ -176,7 +175,6 @@ class TestGame(Widget):
         self.setup_gameobjects()
         self.setup_particle_effects()
         Clock.schedule_interval(self.update, 1./60.)
-
 
     def update(self, dt):
         self.gameworld.update(dt)     

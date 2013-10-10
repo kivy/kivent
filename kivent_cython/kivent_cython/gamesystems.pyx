@@ -77,6 +77,7 @@ class GameMap(GameSystem):
     window_size = ListProperty((0., 0.))
     margins = ListProperty((0., 0.))
     map_color = ListProperty((1., 1., 1., 1.))
+    default_margins = ListProperty((0., 0.))
 
     def on_map_size(self, instance, value):
         self.check_margins()
@@ -87,16 +88,20 @@ class GameMap(GameSystem):
     def check_margins(self):
         map_size = self.map_size
         window_size = Window.size
-        margins = self.margins
+        window_larger_x = False
+        window_larger_y = False
         if window_size[0] > map_size[0]:
             margin_x = (window_size[0] - map_size[0])/2.
-            if margin_x > margins[0]:
-                margins[0] = margin_x
+            window_larger_x = True
         if window_size[1] > map_size[1]:
             margin_y = (window_size[1] - map_size[1])/2.
-            if margin_y > margins[1]:
-                margins[1] = margin_y
-        self.margins = margins
+            window_larger_y = True
+        if window_larger_x:
+            self.margins[0] = margin_x
+        if window_larger_y:
+            self.margins[1] = margin_y
+        if not window_larger_x and not window_larger_y:
+            self.margins = self.default_margins
         print 'margins ', self.margins
 
     def on_add_system(self):
@@ -115,6 +120,7 @@ class GameView(GameSystem):
     lock_scroll = BooleanProperty(True)
     camera_pos = ListProperty((0, 0))
     focus_entity = BooleanProperty(False)
+    do_scroll = BooleanProperty(True)
     entity_to_focus = NumericProperty(None, allownone=True)
     focus_position_info_from = StringProperty('cymunk-physics')
     updateable = BooleanProperty(True)
@@ -124,9 +130,7 @@ class GameView(GameSystem):
     force_camera_update = BooleanProperty(False)
 
     def on_entity_to_focus(self, instance, value):
-        if not value ==  None:
-            self.focus_entity = True
-        else:
+        if value ==  None:
             self.focus_entity = False
 
     def update(self, dt):
@@ -172,7 +176,7 @@ class GameView(GameSystem):
                 self.has_camera_updated = False
 
     def on_touch_move(self, touch):
-        if not self.focus_entity:
+        if not self.focus_entity and self.do_scroll:
             dist_x = touch.dx
             dist_y = touch.dy
             if math.fabs(dist_x) + math.fabs(dist_y) > 2:

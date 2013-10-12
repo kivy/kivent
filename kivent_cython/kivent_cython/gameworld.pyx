@@ -8,7 +8,7 @@ from functools import partial
 
 class GameWorld(Widget):
     state = StringProperty('initial')
-    number_entities = NumericProperty(0)
+    number_entities = NumericProperty(1)
     gamescreenmanager = ObjectProperty(None)
     currentmap = ObjectProperty(None, allownone = True)
     
@@ -21,6 +21,7 @@ class GameWorld(Widget):
         cdef dict systems
         super(GameWorld, self).__init__(**kwargs)
         self.entities = []
+        self.entities.append(0)
         self.states = {}
         self.deactivated_entities = []
         self.entities_to_remove = []

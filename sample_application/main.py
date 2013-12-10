@@ -174,10 +174,10 @@ class TestGame(Widget):
         self.setup_collision_callbacks()
         self.setup_gameobjects()
         self.setup_particle_effects()
-        Clock.schedule_interval(self.update, 1./60.)
+        Clock.schedule_interval(self.update, 0.)
 
     def update(self, dt):
-        self.gameworld.update(dt)     
+        self.gameworld.update(dt)
 
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems

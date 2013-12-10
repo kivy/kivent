@@ -31,7 +31,7 @@ class GameSystem(Widget):
     def _update(self, dt):
         self.frame_time += dt
         update_time = self.update_time
-        if self.frame_time >= update_time:
+        while self.frame_time >= update_time:
             self.update(update_time)
             self.frame_time -= update_time
 

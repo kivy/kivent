@@ -103,7 +103,7 @@ class AsteroidsLevel(GameSystem):
     def spawn_probes(self):
         systems = self.gameworld.systems
         probe_system = systems['probe_system']
-        number_of_probes_to_spawn = [0, 5, 0, 10, 0]
+        number_of_probes_to_spawn = [10, 5, 0, 10, 0]
         for x in range(number_of_probes_to_spawn[self.current_level_id]):
             rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
             rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])

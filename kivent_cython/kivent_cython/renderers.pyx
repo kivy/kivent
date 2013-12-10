@@ -9,7 +9,6 @@ from kivy.atlas import Atlas
 from kivy.clock import Clock
 
 
-
 class PointRenderer(GameSystem):
     system_id = StringProperty('point_sprite_renderer')
     render_information_from = StringProperty('position')

@@ -2,7 +2,7 @@
 
 VERSION_kivent_cython=1.0
 URL_kivent_cython=
-DEPS_kivent_cython=(kivyparticle quadtree cymunk kivy)
+DEPS_kivent_cython=(cymunk kivy)
 MD5_kivent_cython=
 BUILD_kivent_cython=$BUILD_PATH/kivent_cython/
 RECIPE_kivent_cython=$RECIPES_PATH/kivent_cython

@@ -55,9 +55,9 @@ class MusicController(Widget):
         super(MusicController, self).__init__(**kwargs)
         self.music_dict = {}
         self.track_names = ['track1', 'track2', 'track3', 'track4', 'track5']
-        Clock.schedule_once(self.load_music)
+        self.load_music()
         
-    def load_music(self, dt):
+    def load_music(self):
         track_names = self.track_names
         music_dict = self.music_dict
         for track_name in track_names:

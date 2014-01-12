@@ -45,14 +45,10 @@ class AsteroidsLevel(GameSystem):
         'assets/prerendered_backgrounds/stardust_backgrounds/stardust6.atlas', 
         'assets/prerendered_backgrounds/stardust_backgrounds/stardust8.atlas',
             ]
-        star_choice_gold = ['assets/background_objects/star3.png', 
-            'assets/background_objects/star7.png']
-        star_choice_green = ['assets/background_objects/star5.png', 
-            'assets/background_objects/star8.png']
-        star_choice_blue = ['assets/background_objects/star1.png', 
-            'assets/background_objects/star2.png']
-        star_choice_purple = ['assets/background_objects/star4.png', 
-            'assets/background_objects/star6.png']
+        star_choice_gold = ['star3', 'star7']
+        star_choice_green = ['star5', 'star8']
+        star_choice_blue = ['star1', 'star2']
+        star_choice_purple = ['star4', 'star6']
         color_choice = [star_choice_gold, star_choice_green, 
             star_choice_purple, star_choice_blue]
         first_color_choice = random.choice(color_choice)
@@ -75,7 +71,7 @@ class AsteroidsLevel(GameSystem):
                 bg_choice = random.choice(dust_choices_blue)
             if first_color_choice == star_choice_purple:
                 bg_choice = random.choice(dust_choices_purple)
-            self.generate_prerendered_background(bg_choice, (512, 512))
+            #self.generate_prerendered_background(bg_choice, (512, 512))
         self.choose_damping()
         self.choose_gravity()
         self.spawn_probes()
@@ -156,9 +152,10 @@ class AsteroidsLevel(GameSystem):
         rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
         rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
         create_component_dict = {'position': {'position': (rand_x, rand_y)}, 
-        'quadtree_renderer': {'texture': star_graphic, 'size': star_size}, 
+        'static_renderer': {'texture': star_graphic, 
+            'position_from': 'position'}, 
         'asteroids_level': {'level_id': self.current_level_id}}
-        component_order = ['position', 'quadtree_renderer', 'asteroids_level']
+        component_order = ['position', 'static_renderer', 'asteroids_level']
         self.gameworld.init_entity(create_component_dict, component_order)
 
     
@@ -245,7 +242,8 @@ class AsteroidSystem(GameSystem):
         'asteroid_size': 2, 'pending_destruction': False}
         create_component_dict = {'cymunk-physics': physics_component, 
         'physics_renderer': {'texture': 
-            'assets/background_objects/asteroid2.png'}, 
+            'asteroid2',
+            'position_from': 'cymunk-physics', 'rotate_from': 'cymunk-physics'}, 
         'asteroid_system': asteroid_component}
         component_order = ['cymunk-physics', 'physics_renderer', 
             'asteroid_system']
@@ -274,7 +272,9 @@ class AsteroidSystem(GameSystem):
         'asteroid_size': 1, 'pending_destruction': False}
         create_component_dict = {'cymunk-physics': physics_component, 
         'physics_renderer': {'texture': 
-            'assets/background_objects/asteroid1.png'}, 
+            'asteroid1',
+            'position_from': 'cymunk-physics', 
+            'rotate_from': 'cymunk-physics'}, 
         'asteroid_system': asteroid_component}
         component_order = ['cymunk-physics', 'physics_renderer', 
             'asteroid_system']

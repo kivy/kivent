@@ -19,7 +19,8 @@ cdef class Particle:
     cdef double rotation_delta
     cdef double scale_delta
     cdef list color
-    cdef list color_delta 
+    cdef list color_delta
+    cdef char* texture
 
     def __cinit__(self):
         x, y, rotation, current_time = -256, -256, 0, 0
@@ -152,3 +153,9 @@ cdef class Particle:
             return self.scale_delta
         def __set__(self, value):
             self.scale_delta = value
+
+    property texture:
+        def __get__(self):
+            return self.texture
+        def __set__(self, value):
+            self.texture = value

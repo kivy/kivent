@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
   <particleEmitterConfig>
-  <texture name="./assets/particles/VFX-0-Circle.png"/>
+  <texture name="VFX-0-Circle"/>
   <sourcePositionVariance x="0" y="0"/>
   <gravity x="0" y="0"/>
   <emitterType value="0"/>

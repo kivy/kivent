@@ -1,12 +1,14 @@
-from kivy.properties import StringProperty, BooleanProperty
+from kivy.properties import StringProperty, BooleanProperty, ObjectProperty
 from math import radians
 from xml.dom.minidom import parse as parse_xml
 from kivy.core.image import Image as CoreImage
-from kivy.graphics import Fbo, Rectangle, Color
-from kivy.graphics.opengl import (glBlendFunc, GL_SRC_ALPHA, GL_ONE, 
-GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
-GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR)
 from libc.math cimport trunc
+from kivy.graphics import Fbo, Rectangle, Color, RenderContext, Mesh
+from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE, 
+GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
+GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
+glDisable)
+
 
 BLEND_FUNC = {
             0: GL_ZERO,
@@ -27,21 +29,23 @@ class ParticleManager(GameSystem):
     max_number_particles = NumericProperty(100)
     position_data_from = StringProperty('cymunk-physics')
     render_information_from = StringProperty('physics_renderer')
+    shader_source = StringProperty('pointshader.glsl')
     updateable = BooleanProperty(True)
-    fbo = ObjectProperty(None)
+    number_of_effects = NumericProperty(0)
     particle_update_time = NumericProperty(1./20.)
     blend_factor_source = NumericProperty(GL_SRC_ALPHA)
     blend_factor_dest = NumericProperty(GL_ONE)
+    atlas_dir = StringProperty(None)
+    atlas = StringProperty(None)
     reset_blend_factor_source = NumericProperty(GL_SRC_ALPHA)
     reset_blend_factor_dest = NumericProperty(GL_ONE_MINUS_SRC_ALPHA)
+    mesh = ObjectProperty(None, allownone=True)
 
     def __init__(self, **kwargs):
+        self.canvas = RenderContext(use_parent_projection=True)
+        if 'shader_source' in kwargs:
+            self.canvas.shader.source = kwargs.get('shader_source')
         super(ParticleManager, self).__init__(**kwargs)
-        
-        
-        #with self.canvas:
-        #    self.fbo = Fbo(size=self.size, clear_color=(0., 0., 0., 1.))
-        #    self.fbo_rectangle = Rectangle(size=self.size, texture=self.fbo.texture)
         with self.canvas.before:
             Callback(self._set_blend_func)
         with self.canvas.after:
@@ -52,13 +56,36 @@ class ParticleManager(GameSystem):
         self.unused_particle_effects = []
         Clock.schedule_once(self.init_particles)
 
-    # def update_fbo_texture(self):
-    #     self.fbo_rectangle.texture = self.fbo.texture
+    def on_shader_source(self, instance, value):
+        self.canvas.shader.source = value
 
-    # def on_size(self, instance, value):
-    #     self.fbo.size = value
-    #     self.fbo_rectangle.size = value
-    #     self.update_fbo_texture()
+    def on_atlas(self, instance, value):
+        if value and self.atlas_dir:
+            self.uv_dict = self.return_uv_coordinates(
+                value + '.atlas', value + '-0.png', self.atlas_dir)
+
+    def on_atlas_dir(self, instance, value):
+        if value and self.atlas:
+            self.uv_dict = self.return_uv_coordinates(
+                self.atlas + '.atlas', self.atlas + '-0.png', value)
+
+    def return_uv_coordinates(self, atlas_name, atlas_page, atlas_dir):
+        uv_dict = {}
+        uv_dict['main_texture'] = atlas = CoreImage(
+            atlas_dir + atlas_page).texture
+        size = atlas.size
+        uv_dict['atlas_size'] = atlas_size = (float(size[0]), float(size[1]))
+        w, h = atlas_size
+        with open(atlas_dir + atlas_name, 'r') as fd:
+            atlas_data = json.load(fd)
+        atlas_content = atlas_data[atlas_page]
+        for texture_name in atlas_content:
+            data = atlas_content[texture_name]
+            x1, y1 = data[0], data[1]
+            x2, y2 = x1 + data[2], y1 + data[3]
+            uv_dict[
+                texture_name] = x1/w, 1.-y1/h, x2/w, 1.-y2/h, data[2], data[3]
+        return uv_dict
 
     def _set_blend_func(self, instruction):
         glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
@@ -84,7 +111,6 @@ class ParticleManager(GameSystem):
     def on_current_number_of_particles(self, instance, value):
         pass
 
-
     def load_particle_config(self, config):
         config_str = config
         config = parse_xml(config)
@@ -93,8 +119,6 @@ class ParticleManager(GameSystem):
         particle_configs[config_str] = particle_config = {}
         texture_str = self.parse_data(config, 'texture', 'name')
         particle_config['texture'] = texture_str
-        if not texture_str in particle_textures:
-            particle_textures[texture_str] = CoreImage(texture_str).texture
         particle_config['emitter_x_variance'] = float(self.parse_data(
             config, 'sourcePositionVariance', 'x'))
         particle_config['emitter_y_variance'] = float(self.parse_data(
@@ -186,7 +210,9 @@ class ParticleManager(GameSystem):
         if self.unused_particle_effects:
             return self.unused_particle_effects.pop()
         else:
-            return ParticleEmitter(self.fbo,
+            self.number_of_effects += 1
+            return ParticleEmitter(
+            group_id=self.number_of_effects,
             config=None,
             gameworld=self.gameworld,
             particle_manager=self)
@@ -202,7 +228,7 @@ class ParticleManager(GameSystem):
         particle_system.max_num_particles = config_dict['max_num_particles']
         particle_system.adjusted_num_particles = config_dict['max_num_particles']
         particle_system.life_span = config_dict['life_span']
-        particle_system.texture = self.particle_textures[config_dict['texture']]
+        particle_system.texture = config_dict['texture']
         particle_system.texture_path = config_dict['texture']
         particle_system.life_span_variance = config_dict['life_span_variance']
         particle_system.start_size = config_dict['start_size']
@@ -265,20 +291,70 @@ class ParticleManager(GameSystem):
             self.unused_particle_effects.append(particle_system)
         super(ParticleManager, self).remove_entity(entity_id)
 
+    def draw_mesh(self, list particles):
+        vertex_format = [
+            ('vPosition', 2, 'float'),
+            ('vTexCoords0', 2, 'float'),
+            ('vCenter', 2, 'float'),
+            ('vRotation', 1, 'float'),
+            ('vColor', 4, 'float'),
+            ('vScale', 1, 'float')
+            ]
+        cdef list indices = []
+        cdef dict uv_dict = self.uv_dict
+        ie = indices.extend
+        cdef list vertices = []
+        e = vertices.extend
+        for entity_n in range(len(particles)):
+            offset = 4 * entity_n
+            ie([0 + offset, 1 + offset, 
+                2 + offset, 2 + offset,
+                3 + offset, 0 + offset])
+        for particle in particles:
+            tex_choice = particle.texture
+            x, y = particle.x, particle.y
+            rotate = particle.rotation
+
+            uv = uv_dict[tex_choice]
+            color = particle.color
+            w, h = uv[4], uv[5]
+            scale = particle.scale/w
+            x0, y0 = uv[0], uv[1]
+            x1, y1 = uv[2], uv[3]
+            vertex1 = [-w, -h, x0, y0, x, y, rotate,
+                color[0], color[1], color[2], color[3], scale]
+            vertex2 = [w, -h, x1, y0, x, y, rotate,
+                color[0], color[1], color[2], color[3], scale]
+            vertex3 = [w, h, x1, y1, x, y, rotate,
+                color[0], color[1], color[2], color[3], scale]
+            vertex4 = [-w, h, x0, y1, x, y, rotate,
+                color[0], color[1], color[2], color[3], scale]
+            verts = [vertex1, vertex2, vertex3, vertex4]
+            for vert in verts:
+                e(vert)
+        if self.mesh == None:
+            with self.canvas:
+                self.mesh = Mesh(
+                    indices=indices,
+                    vertices=vertices,
+                    fmt=vertex_format,
+                    mode='triangles',
+                    texture=uv_dict['main_texture'])
+        else:
+            self.mesh.vertices = vertices
+            self.mesh.indices = indices
 
     def update(self, dt):
         cdef dict systems = self.gameworld.systems
         cdef list entities = self.gameworld.entities
         cdef str render_information_from = self.render_information_from
-        camera_pos = self.gameworld.systems[self.viewport].camera_pos
         cdef str position_data_from = self.position_data_from
         cdef str system_data_from = self.system_id
         cdef dict entity
         cdef dict particle_systems
         cdef object particle_system
-        # self.fbo.bind()
-        # self.fbo.clear_buffer()
-        # self.fbo.release() 
+        cdef list particles_to_render = []
+        eparticles = particles_to_render.extend
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
             particle_systems = entity[system_data_from]
@@ -286,13 +362,11 @@ class ParticleManager(GameSystem):
                 particle_system = particle_systems[particle_effect]['particle_system']
                 if entity[render_information_from]['on_screen']:
                     if particle_systems[particle_effect]['particle_system_on']:
-                        if 'ignore_camera' not in particle_systems[particle_effect]:
-                            particle_system.current_scroll = camera_pos
                         particle_system.pos = self.calculate_particle_offset(entity_id, particle_effect)
                         particle_system.emit_angle = radians(entity[position_data_from]['angle']+270)
                         time_between_particles = 1.0 / particle_system.emission_rate
                         particle_system.frame_time += dt
-                        particle_system.update(dt)
+                        eparticles(particle_system.update(dt))
                         number_of_updates = trunc(particle_system.frame_time / time_between_particles)
                         particle_system.frame_time -= time_between_particles * number_of_updates
                         for x in xrange(int(number_of_updates)):
@@ -305,7 +379,7 @@ class ParticleManager(GameSystem):
                 else:
                     if particle_system.particles != []:
                         particle_system.free_all_particles()
-
+        self.draw_mesh(particles_to_render)
 
     def calculate_particle_offset(self, entity_id, particle_effect):
         cdef dict entity = self.gameworld.entities[entity_id]

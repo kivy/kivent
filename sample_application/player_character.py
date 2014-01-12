@@ -277,7 +277,7 @@ class ShipSystem(GameSystem):
         ship_dicts = self.ship_dicts
         ship_dicts['ship_1'] = {'name': 'Bulldog','health': 180, 'mass': 250, 'max_speed': 150, 
         'max_turn_speed': 90, 'accel': 15000,'angular_accel': 45, 'caliber': '14px', 
-        'num_weapons': 2, 'texture': 'assets/ships/ship1-1.png', 'price': 1000,
+        'num_weapons': 2, 'texture': 'ship1-1', 'price': 1000,
         'width': 108, 'height': 96, 'offset_distance': 50, 'color': 'green',
         'engine_effect': 'assets/pexfiles/engine_burn_effect3.pex', 'engine_offset': 65,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
@@ -285,7 +285,7 @@ class ShipSystem(GameSystem):
         'total_rocket_ammo': 40, 'total_bullet_ammo': 200}
         ship_dicts['ship_2'] = {'name': 'Falcon','health': 150, 'mass': 175,'max_speed': 190, 
         'max_turn_speed': 100, 'accel': 20000,'angular_accel': 75, 'caliber': '6px', 
-        'num_weapons': 4, 'texture': 'assets/ships/ship3.png', 'price': 1000,
+        'num_weapons': 4, 'texture': 'ship3', 'price': 1000,
         'width': 130, 'height': 70, 'offset_distance': 50, 'color': 'orange',
         'engine_effect': 'assets/pexfiles/engine_burn_effect4.pex', 'engine_offset': 30,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
@@ -293,7 +293,7 @@ class ShipSystem(GameSystem):
         'total_rocket_ammo': 60, 'total_bullet_ammo': 400}
         ship_dicts['ship_3'] = {'name': 'Monarch','health': 165, 'mass': 220,'max_speed': 180, 
         'max_turn_speed': 130, 'accel': 25000,'angular_accel': 100, 'caliber': '8px', 
-        'num_weapons': 2, 'texture': 'assets/ships/ship2-1.png', 'price': 1000,
+        'num_weapons': 2, 'texture': 'ship2-1', 'price': 1000,
         'width': 90, 'height': 104, 'offset_distance': 50, 'color': 'blue',
         'engine_effect': 'assets/pexfiles/engine_burn_effect2.pex', 'engine_offset': 50,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
@@ -301,21 +301,21 @@ class ShipSystem(GameSystem):
         'total_rocket_ammo': 30, 'total_bullet_ammo': 240}
         ship_dicts['ship_4'] = {'name': 'Archon','health': 130, 'mass': 140,'max_speed': 200, 
         'max_turn_speed': 110, 'accel': 18000,'angular_accel': 50, 'caliber': '14px', 
-        'num_weapons': 1, 'texture': 'assets/ships/ship5.png', 'price': 1000,
+        'num_weapons': 1, 'texture': 'ship5', 'price': 1000,
         'width': 62, 'height': 100, 'offset_distance': 50, 'color': 'orange',
         'engine_effect': 'assets/pexfiles/engine_burn_effect6.pex', 'engine_offset': 27,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
         'hard_points': [(-18, 63)], 'total_rocket_ammo': 15, 'total_bullet_ammo': 150}
         ship_dicts['ship_5'] = {'name': 'Cavalier','health': 110, 'mass': 120,'max_speed': 220, 
         'max_turn_speed': 125, 'accel': 22000,'angular_accel': 45, 'caliber': '8px', 
-        'num_weapons': 1, 'texture': 'assets/ships/ship6.png', 'price': 1000,
+        'num_weapons': 1, 'texture': 'ship6', 'price': 1000,
         'width': 66, 'height': 80, 'offset_distance': 50, 'color': 'green',
         'engine_effect': 'assets/pexfiles/engine_burn_effect8.pex', 'engine_offset': 47,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
         'hard_points': [(0, 47)], 'total_rocket_ammo': 12, 'total_bullet_ammo': 200}
         ship_dicts['ship_6'] = {'name': 'Shield','health': 150, 'mass': 160,'max_speed': 180, 
         'max_turn_speed': 150, 'accel': 25000,'angular_accel': 115, 'caliber': '6px', 
-        'num_weapons': 2, 'texture': 'assets/ships/ship7.png', 'price': 1000,
+        'num_weapons': 2, 'texture': 'ship7', 'price': 1000,
         'width': 76, 'height': 80, 'offset_distance': 50, 'color': 'blue',
         'engine_effect': 'assets/pexfiles/engine_burn_effect9.pex', 'engine_offset': 45,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
@@ -469,7 +469,9 @@ class ShipSystem(GameSystem):
         particle_system2 = {'particle_file': ship_dict['explosion_effect'], 'offset': 0}
         particle_systems = {'engine_effect': particle_system1, 'explosion_effect': particle_system2}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
-        'physics_renderer': {'texture': ship_dict['texture']}, 
+        'physics_renderer': {'texture': ship_dict['texture'], 
+            'position_from': 'cymunk-physics', 
+            'rotate_from': 'cymunk-physics'}, 
         'ship_system': ship_system_dict,
         'particle_manager': particle_systems}
         component_order = ['cymunk-physics', 'physics_renderer', 'ship_system',
@@ -585,7 +587,8 @@ class ProbeSystem(GameSystem):
 
     def clear_probes(self):
         for entity_id in self.entity_ids:
-            Clock.schedule_once(partial(self.gameworld.timed_remove_entity, entity_id))
+            Clock.schedule_once(partial(
+                self.gameworld.timed_remove_entity, entity_id))
 
     def update(self, dt):
         gameworld = self.gameworld
@@ -595,8 +598,11 @@ class ProbeSystem(GameSystem):
             system_data = entity['probe_system']
             physics_data = entity['cymunk-physics']
             unit_vector = physics_data['unit_vector']
-            system_data['position'] = (physics_data['position'][0] - unit_vector[0]*system_data['offset'],
-                physics_data['position'][1] - unit_vector[1]*system_data['offset'])
+            system_data['position'] = (
+                physics_data[
+                    'position'][0] - unit_vector[0]*system_data['offset'],
+                physics_data[
+                    'position'][1] - unit_vector[1]*system_data['offset'])
 
             color = system_data['color']
             if color[3] >= 1.0:
@@ -606,16 +612,21 @@ class ProbeSystem(GameSystem):
             color_change = system_data['color_change']
             if color_change == 'ascending':
                 new_alpha = color[3] + system_data['color_change_speed']*dt
-                system_data['color'] = (color[0], color[1], color[2], new_alpha)
+                system_data['color'] = (
+                    color[0], color[1], color[2], new_alpha)
             if color_change == 'descending':
                 new_alpha = color[3] - system_data['color_change_speed']*dt
-                system_data['color'] = (color[0], color[1], color[2], new_alpha)
+                system_data['color'] = (
+                    color[0], color[1], color[2], new_alpha)
 
     def setup_probe_dict(self):
-        self.probe_dict['probe1'] = {'inner_radius': 0, 'outer_radius': 16, 'mass': 100,
-        'max_speed': 280, 'max_turn_speed': 180, 'texture': 'assets/ships/probe.png', 'offset': 5,
-        'color': (0.788235294, 0.643137255, 1., 1.), 'color_change_speed': 1., 
-        'lighting_texture': 'assets/ships/probelight.png'}
+        self.probe_dict['probe1'] = {'inner_radius': 0, 
+        'outer_radius': 16, 'mass': 100,
+        'max_speed': 280, 'max_turn_speed': 180, 
+        'texture': 'probe', 'offset': 5,
+        'color': (0.788235294, 0.643137255, 1., 1.), 
+        'color_change_speed': 1., 
+        'lighting_texture': 'probelight'}
 
     def spawn_probe_with_dict(self, probe_dict, position):
         circle_dict = {'inner_radius': probe_dict['inner_radius'], 
@@ -625,17 +636,26 @@ class ProbeSystem(GameSystem):
         'collision_type': 4, 'shape_info': circle_dict, 'friction': 1.0}
         physics_component_dict = { 'main_shape': 'box', 
         'velocity': (0, 0), 'position': position, 'angle': 0, 
-        'angular_velocity': 0, 'mass': probe_dict['mass'], 'vel_limit': probe_dict['max_speed'], 
-        'ang_vel_limit': math.radians(probe_dict['max_turn_speed']), 'col_shapes': [col_shape_dict]}
-        probe_system_dict = {'color': probe_dict['color'], 'offset': probe_dict['offset'], 
-        'color_change_speed': probe_dict['color_change_speed'], 'color_change': 'ascending',
+        'angular_velocity': 0, 'mass': probe_dict['mass'], 
+        'vel_limit': probe_dict['max_speed'], 
+        'ang_vel_limit': math.radians(probe_dict['max_turn_speed']), 
+        'col_shapes': [col_shape_dict]}
+        probe_system_dict = {'color': probe_dict['color'], 
+        'offset': probe_dict['offset'], 
+        'color_change_speed': probe_dict['color_change_speed'], 
+        'color_change': 'ascending',
         'position': position}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
-        'physics_renderer': {'texture': probe_dict['texture']}, 
+        'physics_renderer': {'texture': probe_dict['texture'],
+            'position_from': 'cymunk-physics', 
+            'rotate_from': 'cymunk-physics'}, 
         'lighting_renderer': {'texture': probe_dict['lighting_texture'], 
+            'position_from': 'cymunk-physics', 'rotate_from': 'cymunk-physics',
+            'color_from': 'probe_system',
         'size': (probe_dict['outer_radius']*2, probe_dict['outer_radius']*2)}, 
         'probe_system': probe_system_dict}
-        component_order = ['cymunk-physics', 'physics_renderer', 'probe_system', 'lighting_renderer']
+        component_order = ['cymunk-physics', 'physics_renderer', 
+            'probe_system', 'lighting_renderer']
         self.gameworld.init_entity(create_component_dict, component_order)
         self.number_of_probes += 1
 

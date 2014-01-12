@@ -20,10 +20,10 @@ class CymunkPhysics(GameSystem):
         self.segment_query_result = list()
         self.init_physics()
         
-
     def add_collision_handler(self, int type_a, int type_b, begin_func=None, 
         pre_solve_func=None, post_solve_func=None, separate_func=None):
-        self.space.add_collision_handler(type_a, type_b, begin_func, pre_solve_func, 
+        self.space.add_collision_handler(type_a, type_b, 
+            begin_func, pre_solve_func, 
             post_solve_func, separate_func)
 
     def on_gravity(self, instance, value):
@@ -53,7 +53,8 @@ class CymunkPhysics(GameSystem):
         cdef object viewport = self.gameworld.systems[self.viewport]
         camera_pos = viewport.camera_pos
         size = viewport.size
-        cdef list bb_list = [-camera_pos[0], -camera_pos[1], -camera_pos[0] + size[0], -camera_pos[1] + size[1]]
+        cdef list bb_list = [-camera_pos[0], -camera_pos[1], 
+            -camera_pos[0] + size[0], -camera_pos[1] + size[1]]
         current_on_screen = self.query_bb(bb_list)
         return current_on_screen
 

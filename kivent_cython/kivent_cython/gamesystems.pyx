@@ -132,6 +132,8 @@ class GameView(GameSystem):
     def on_entity_to_focus(self, instance, value):
         if value ==  None:
             self.focus_entity = False
+        else:
+            self.focus_entity = True
 
     def update(self, dt):
         cdef int entity_to_focus

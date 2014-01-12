@@ -6,7 +6,7 @@ from kivy.properties import (StringProperty, ObjectProperty, NumericProperty,
 from kivy.clock import Clock
 from kivent_cython import (GameWorld, GameSystem, GameMap, GameView, 
     ParticleManager, QuadRenderer, PhysicsRenderer, CymunkPhysics, 
-    PhysicsPointRenderer, QuadTreePointRenderer)
+    PhysicsPointRenderer, QuadTreePointRenderer, StaticQuadRenderer, DynamicRenderer)
 from kivy.core.window import Window
 import yacs_ui_elements
 import player_character
@@ -16,6 +16,8 @@ import musiccontroller
 #import cProfile
 import os
 import sys
+from kivy.graphics.opengl_utils import gl_get_version
+from kivy.graphics.opengl import glEnable
 
 
 class TestGame(Widget):
@@ -32,7 +34,10 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         Clock.schedule_once(self.init_game)
+        self.bind(state=self.test)
 
+    def test(self, instance, value):
+        print value, 'state'
 
     def init_game(self, dt):
         try: 
@@ -51,7 +56,7 @@ class TestGame(Widget):
     def check_clear(self, dt):
         systems = self.gameworld.systems
         systems_to_check = ['asteroids_level', 'asteroid_system', 
-        'projectile_system', 'quadtree_renderer']
+        'projectile_system', 'static_renderer']
         num_entities = 0
         self.check_clear_counter = 0
         for system in systems_to_check:
@@ -72,49 +77,46 @@ class TestGame(Widget):
         
     def setup_states(self):
         self.gameworld.add_state(state_name='main_menu', systems_added=[
-            'background_renderer', 
-            'quadtree_renderer', 'default_map'], 
+            'static_renderer', 'default_map'], 
             systems_removed=['physics_renderer', 'particle_manager', 
-            'point_particle_manager',
-            'physics_point_renderer', 'lighting_renderer', 'probe_system'], 
+            'lighting_renderer', 'probe_system'], 
             systems_paused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'physics_point_renderer',
-            'particle_manager', 'point_particle_manager', 'asteroid_system', 
+            'physics_renderer',
+            'particle_manager', 'asteroid_system', 
             'ship_system', 'lighting_renderer', 'probe_system', 
             'ship_ai_system'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='choose_character', systems_added=[
-            'background_renderer', 'quadtree_renderer',  'default_map'], 
+            'static_renderer',  'default_map'], 
             systems_removed=['physics_renderer', 'particle_manager', 
-            'point_particle_manager',
-             'physics_point_renderer', 'lighting_renderer','probe_system'], 
+             'lighting_renderer','probe_system'], 
             systems_paused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'physics_point_renderer', 'quadtree_renderer',
-            'particle_manager', 'point_particle_manager', 'asteroid_system', 
+            'physics_renderer', 'static_renderer',
+            'particle_manager', 'asteroid_system', 
             'ship_system', 'lighting_renderer', 'probe_system', 
             'ship_ai_system'], systems_unpaused=[],
             screenmanager_screen='choose_character')
         self.gameworld.add_state(state_name='main_game', systems_added=[ 
-            'background_renderer', 'physics_renderer', 'quadtree_renderer', 
-            'physics_point_renderer', 'cymunk-physics', 
+            'physics_renderer', 'static_renderer', 
+            'cymunk-physics', 
             'default_map', 'probe_system', 'lighting_renderer', 
-            'particle_manager', 'point_particle_manager'], 
+            'particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'particle_manager', 'point_particle_manager', 
-            'quadtree_renderer','asteroid_system', 'ship_system', 
-            'physics_point_renderer', 'lighting_renderer', 
+            'physics_renderer', 'particle_manager', 
+            'static_renderer','asteroid_system', 'ship_system', 
+            'lighting_renderer', 
             'projectile_system', 'probe_system', 'ship_ai_system'], 
             screenmanager_screen='main_game')
         self.gameworld.add_state(state_name='game_over', systems_added=[ 
-            'background_renderer', 'physics_renderer', 'quadtree_renderer', 
-            'physics_point_renderer', 'cymunk-physics', 
+            'physics_renderer', 'static_renderer', 
+            'cymunk-physics', 
             'default_map', 'probe_system', 'lighting_renderer', 
-            'particle_manager', 'point_particle_manager'], 
+            'particle_manager'], 
             systems_removed=[], systems_paused=[], 
             systems_unpaused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'particle_manager', 'point_particle_manager',
-            'asteroid_system', 'ship_system', 'physics_point_renderer', 
+            'physics_renderer', 'particle_manager',
+            'asteroid_system', 'ship_system', 
             'lighting_renderer', 'probe_system', 'ship_ai_system'], 
             screenmanager_screen='game_over')
 
@@ -127,6 +129,7 @@ class TestGame(Widget):
 
     def set_main_menu_state(self):
         self.gameworld.state = 'main_menu'
+        musiccontroller = self.gameworld.music_controller
         if not self.gameworld.music_controller.check_if_songs_are_playing():
             self.gameworld.music_controller.play('track5')
         choose_character = self.gameworld.gamescreenmanager.get_screen(
@@ -163,7 +166,7 @@ class TestGame(Widget):
         'assets/pexfiles/rocket_burn_effect4.pex',
         'assets/pexfiles/rocket_explosion_4.pex',
         ]
-        particle_manager = self.gameworld.systems['point_particle_manager']
+        particle_manager = self.gameworld.systems['particle_manager']
         for effect in particle_effects:
             particle_manager.load_particle_config(effect)
 
@@ -215,7 +218,6 @@ class TestGame(Widget):
                 if number_of_enemies > 0 or number_of_enemies_to_spawn > 0:
                     winning = False
             if self.do_probes:
-                print number_of_probes
                 if number_of_probes > 0:
                     winning = False
             if self.do_asteroids:
@@ -260,8 +262,15 @@ class TestGame(Widget):
             
 
 class KivEntApp(App):
+    shader_path = StringProperty('assets/shaders/ES2/')
     def build(self):
         Window.clearcolor = (0, 0, 0, 1.)
+        gl_major, gl_minor = gl_get_version()
+        glEnable(0x8642) #GL_VERTEX_PROGRAM_POINT_SIZE
+        glEnable(0x8861) #GL_POINT_SPRITE
+        if gl_major > 2 or (gl_major == 2 and gl_minor >= 1):
+            self.shader_path = 'assets/shaders/GL/'
+
 
 if __name__ == '__main__':
    KivEntApp().run()

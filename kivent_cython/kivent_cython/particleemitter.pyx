@@ -1,7 +1,7 @@
 from kivy.properties import (NumericProperty, BooleanProperty, ListProperty, 
     StringProperty, ObjectProperty, BoundedNumericProperty)
 from kivy.graphics import (Color, Callback, Rotate, PushMatrix, 
-    PopMatrix, Translate, Quad, Scale, Point)
+    PopMatrix, Translate, Quad, Scale, Point, Mesh)
 from libc.math cimport pow as power
 from libc.math cimport sqrt, sin, cos, fmax, fmin
 from random import random
@@ -23,10 +23,11 @@ cdef inline list random_color_variance(list base, list variance):
             for i in range(4)]
 
 class ParticleEmitter(EventDispatcher):
+    group_id = NumericProperty(0)
     max_num_particles = NumericProperty(200)
     adjusted_num_particles = NumericProperty(200)
     life_span = NumericProperty(2)
-    texture = ObjectProperty(None)
+    texture = StringProperty(None)
     texture_path = StringProperty(None)
     life_span_variance = NumericProperty(0)
     start_size = NumericProperty(16)
@@ -43,7 +44,6 @@ class ParticleEmitter(EventDispatcher):
     emitter_y_variance = NumericProperty(100)
     gameworld = ObjectProperty(None)
     particle_manager = ObjectProperty(None)
-    fbo = ObjectProperty(None)
     gravity_x = NumericProperty(0)
     gravity_y = NumericProperty(0)
     speed = NumericProperty(0)
@@ -66,10 +66,8 @@ class ParticleEmitter(EventDispatcher):
     friction = NumericProperty(0.0)
     _is_paused = BooleanProperty(False)
 
-
-    def __init__(self, fbo, **kwargs):
+    def __init__(self, **kwargs):
         self.particles = list()
-        self.fbo = fbo
         self.frame_time = 0
         super(ParticleEmitter, self).__init__(**kwargs)
 
@@ -85,48 +83,8 @@ class ParticleEmitter(EventDispatcher):
         particles.append(entity_id)
         cdef dict particle_manager = entity['particle_manager']
         cdef Particle particle = particle_manager['particle']
-        particle_manager['color'] = None
-        particle_manager['translate'] = None
-        particle_manager['scale'] = None
-        particle_manager['rotate'] = None
-        particle_manager['point'] = None
         self.init_particle(particle)
-        self.draw_particle(entity)
-
-    def draw_particle(self, dict entity):
-        cdef dict particle_manager = entity['particle_manager']
-        cdef Particle particle = particle_manager['particle']
-        group_id = str(entity['id'])
-        current_scroll = self.current_scroll
-        cdef list color = particle.color[:]
-        with self.particle_manager.canvas:
-        #with self.fbo:
-            PushMatrix(group=group_id)
-            particle_manager['color'] = Color(color[0], color[1], 
-                color[2], color[3], group=group_id)
-            particle_manager['translate'] = Translate(group=group_id)
-            particle_manager['scale'] = Scale(x=particle.scale, 
-                y=particle.scale, group=group_id)
-            particle_manager['rotate'] = Rotate(group=group_id)
-            particle_manager['rotate'].set(particle.rotation, 0, 0, 1)
-            particle_manager['rect'] = Point(texture=self.texture, 
-                points=(0,0), group=group_id)   
-            particle_manager['translate'].xy = (particle.x + 
-                current_scroll[0], 
-                particle.y + current_scroll[1])
-            PopMatrix(group=group_id)
-
-    def render_particle(self, dict entity):
-        cdef dict particle_manager = entity['particle_manager']
-        cdef Particle particle = particle_manager['particle']
-        current_scroll = self.current_scroll
-        particle_manager['rotate'].angle = particle.rotation
-        particle_manager['scale'].x = particle.scale
-        particle_manager['scale'].y = particle.scale
-        particle_manager['translate'].xy = (particle.x + 
-            current_scroll[0], 
-            particle.y + current_scroll[1])
-        particle_manager['color'].rgba = particle.color
+        #self.draw_particle(entity)
 
     def free_all_particles(self):
         cdef list particles_to_free = [particle for particle in self.particles]
@@ -134,10 +92,8 @@ class ParticleEmitter(EventDispatcher):
         for entity_id in particles_to_free:
             self.free_particle(entity_id)
 
-
     def free_particle(self, int entity_id):
         cdef list particles = self.particles
-        self.particle_manager.canvas.remove_group(str(entity_id))
         self.particle_manager.free_particle(particles.pop(particles.index(entity_id)))
 
     def on_life_span(self,instance,value):
@@ -149,14 +105,13 @@ class ParticleEmitter(EventDispatcher):
         if life_span <= 0.0:
             return
         pos = self.pos
-
         particle.current_time = 0.0
         particle.total_time = life_span
         particle.x = random_variance(pos[0], self.emitter_x_variance)
         particle.y = random_variance(pos[1], self.emitter_y_variance)
         particle.start_x = pos[0]
         particle.start_y = pos[1]
-
+        particle.texture = self.texture
         cdef double angle = random_variance(self.emit_angle, 
             self.emit_angle_variance)
         cdef double speed = random_variance(self.speed, self.speed_variance)
@@ -282,6 +237,8 @@ class ParticleEmitter(EventDispatcher):
         cdef Particle particle
         cdef dict entity
         cdef list particles = self.particles
+        cdef list particles_to_render = []
+        append_particle = particles_to_render.append
         for entity_id in particles:
             entity = entities[entity_id]
             particle = entity['particle_manager']['particle']
@@ -289,5 +246,7 @@ class ParticleEmitter(EventDispatcher):
                 self.free_particle(entity_id)
             else:
                 self.advance_particle(particle, dt)
-                self.render_particle(entity)
+                append_particle(particle)
+        return particles_to_render
+
 

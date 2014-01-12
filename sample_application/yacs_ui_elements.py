@@ -35,19 +35,20 @@ class CharacterInputPanel(Widget):
         Clock.schedule_once(self.create_touch_event_effect)
 
     def create_touch_event_effect(self, dt):
-        if self.gameworld.systems == {}:
-            Clock.schedule_once(self.create_touch_event_effect)
-        else:
-            particle_system = {'particle_file': self.touch_effect, 'offset': 0, 'ignore_camera': True}
-            particle_systems = {'effect1': particle_system}
-            create_dict = {'particle_manager': particle_systems}
-            component_order = ['particle_manager']
-            entity_id = self.gameworld.init_entity(create_dict, component_order)
-            self.particle_system = entity_id
-            self.gameworld.entities[entity_id]['cymunk-physics'] = {
-                'position': (self.size[0]/2. - 100, self.size[1]/2.), 
-                'angle': 0.}
-            self.gameworld.entities[entity_id]['physics_renderer'] = {'on_screen': True}
+        # if self.gameworld.systems == {}:
+        #     Clock.schedule_once(self.create_touch_event_effect)
+        # else:
+        #     particle_system = {'particle_file': self.touch_effect, 'offset': 0, 'ignore_camera': True}
+        #     particle_systems = {'effect1': particle_system}
+        #     create_dict = {'particle_manager': particle_systems}
+        #     component_order = ['particle_manager']
+        #     entity_id = self.gameworld.init_entity(create_dict, component_order)
+        #     self.particle_system = entity_id
+        #     self.gameworld.entities[entity_id]['cymunk-physics'] = {
+        #         'position': (self.size[0]/2. - 100, self.size[1]/2.), 
+        #         'angle': 0.}
+        #     self.gameworld.entities[entity_id]['physics_renderer'] = {'on_screen': True}
+        pass
 
  
 
@@ -61,12 +62,12 @@ class CharacterInputPanel(Widget):
         player_character = gameworld.systems['player_character']
         if not value == []: 
             touch_values = self.determine_touch_values(value[0], value[1])
-            particle_system_id = self.particle_system
-            particle_system_entity = gameworld.entities[particle_system_id]
-            particle_system = particle_system_entity['particle_manager']['effect1']['particle_system']
-            particle_system_entity['cymunk-physics']['position'] = value
-            particle_system.start_color = [touch_values[1], .3, .0, 1.]
-            particle_system.end_color = [touch_values[1], .0, .5, 1.]
+            # particle_system_id = self.particle_system
+            # particle_system_entity = gameworld.entities[particle_system_id]
+            # particle_system = particle_system_entity['particle_manager']['effect1']['particle_system']
+            # particle_system_entity['cymunk-physics']['position'] = value
+            # particle_system.start_color = [touch_values[1], .3, .0, 1.]
+            # particle_system.end_color = [touch_values[1], .0, .5, 1.]
             player_character.touch_values = touch_values
         else:
             player_character.touch_values = value
@@ -75,9 +76,9 @@ class CharacterInputPanel(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(touch.x, touch.y):
             self.current_touch = (touch.x, touch.y)
-            particle_system_id = self.particle_system
-            particle_system_entity = self.gameworld.entities[particle_system_id]
-            particle_system_entity['particle_manager']['effect1']['particle_system_on'] = True
+            # particle_system_id = self.particle_system
+            # particle_system_entity = self.gameworld.entities[particle_system_id]
+            # particle_system_entity['particle_manager']['effect1']['particle_system_on'] = True
     
     def on_touch_move(self, touch):
         if self.collide_point(touch.x, touch.y):
@@ -87,9 +88,10 @@ class CharacterInputPanel(Widget):
     def on_touch_up(self, touch):
         if self.collide_point(touch.x, touch.y):
             self.current_touch = []
-            particle_system_id = self.particle_system
-            particle_system_entity = self.gameworld.entities[particle_system_id]
-            particle_system_entity['particle_manager']['effect1']['particle_system_on'] = False
+            #particle_system_id = self.particle_system
+            #particle_system_entity = self.gameworld.entities[particle_system_id]
+            #particle_system_entity['particle_manager']['effect1']['particle_system_on'] = False
+
 
 
 class DebugPanel(Widget):

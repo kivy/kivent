@@ -69,7 +69,7 @@ class ShipAISystem(GameSystem):
             target_vector, unit_vector)
         turn_speed = ship_data['ang_accel']
         desired_multiplier = math.fabs(
-            desired_angle_change / math.degrees(turn_speed))
+            desired_angle_change / turn_speed)
         ship_data['turn_speed_multiplier'] = min(1.0, desired_multiplier)
         angle_tolerance = ship_ai_data['angle_tolerance']
         if desired_angle_change < -angle_tolerance:

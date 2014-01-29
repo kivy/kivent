@@ -2,12 +2,13 @@ from kivy.properties import StringProperty, BooleanProperty, ObjectProperty
 from math import radians
 from xml.dom.minidom import parse as parse_xml
 from kivy.core.image import Image as CoreImage
-from libc.math cimport trunc
+from libc.math cimport trunc, M_PI_2
 from kivy.graphics import Fbo, Rectangle, Color, RenderContext, Mesh
 from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE, 
 GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
 GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
 glDisable)
+
 
 
 BLEND_FUNC = {
@@ -223,44 +224,59 @@ class ParticleManager(GameSystem):
             physics_system_friction = self.gameworld.systems['cymunk-physics'].damping
         else:
             physics_system_friction = 1.0
-        self.current_number_of_particles += config_dict['max_num_particles']
+        self.current_number_of_particles += config_dict[
+            'max_num_particles']
         particle_system = self.get_particle_system()
-        particle_system.max_num_particles = config_dict['max_num_particles']
-        particle_system.adjusted_num_particles = config_dict['max_num_particles']
+        particle_system.max_num_particles = config_dict[
+            'max_num_particles']
+        particle_system.adjusted_num_particles = config_dict[
+            'max_num_particles']
         particle_system.life_span = config_dict['life_span']
         particle_system.texture = config_dict['texture']
         particle_system.texture_path = config_dict['texture']
         particle_system.life_span_variance = config_dict['life_span_variance']
         particle_system.start_size = config_dict['start_size']
-        particle_system.start_size_variance = config_dict['start_size_variance']
+        particle_system.start_size_variance = config_dict[
+            'start_size_variance']
         particle_system.end_size = config_dict['end_size']
         particle_system.end_size_variance = config_dict['end_size_variance']
         particle_system.emit_angle = config_dict['emit_angle']
-        particle_system.emit_angle_variance = config_dict['emit_angle_variance']
+        particle_system.emit_angle_variance = config_dict[
+            'emit_angle_variance']
         particle_system.start_rotation = config_dict['start_rotation']
-        particle_system.start_rotation_variance = config_dict['start_rotation_variance']
+        particle_system.start_rotation_variance = config_dict[
+            'start_rotation_variance']
         particle_system.end_rotation = config_dict['end_rotation']
-        particle_system.end_rotation_variance = config_dict['end_rotation_variance']
+        particle_system.end_rotation_variance = config_dict[
+            'end_rotation_variance']
         particle_system.emitter_x_variance = config_dict['emitter_x_variance']
         particle_system.emitter_y_variance = config_dict['emitter_y_variance']
         particle_system.gravity_x = config_dict['gravity_x']
         particle_system.gravity_y = config_dict['gravity_y']
         particle_system.speed = config_dict['speed']
         particle_system.speed_variance = config_dict['speed_variance']
-        particle_system.radial_acceleration = config_dict['radial_acceleration']
-        particle_system.radial_acceleration_variance = config_dict['radial_acceleration_variance']
-        particle_system.tangential_acceleration = config_dict['tangential_acceleration']
-        particle_system.tangential_acceleration_variance = config_dict['tangential_acceleration_variance']
+        particle_system.radial_acceleration = config_dict[
+            'radial_acceleration']
+        particle_system.radial_acceleration_variance = config_dict[
+            'radial_acceleration_variance']
+        particle_system.tangential_acceleration = config_dict[
+            'tangential_acceleration']
+        particle_system.tangential_acceleration_variance = config_dict[
+            'tangential_acceleration_variance']
         particle_system.max_radius = config_dict['max_radius']
-        particle_system.max_radius_variance = config_dict['max_radius_variance']
+        particle_system.max_radius_variance = config_dict[
+            'max_radius_variance']
         particle_system.min_radius = config_dict['min_radius']
         particle_system.rotate_per_second = config_dict['rotate_per_second']
-        particle_system.rotate_per_second_variance = config_dict['rotate_per_second_variance']
+        particle_system.rotate_per_second_variance = config_dict[
+            'rotate_per_second_variance']
         particle_system.start_color = config_dict['start_color']
-        particle_system.start_color_variance = config_dict['start_color_variance']
+        particle_system.start_color_variance = config_dict[
+            'start_color_variance']
         particle_system.end_color = config_dict['end_color']
         particle_system.end_color_variance = config_dict['end_color_variance']
-        particle_system.blend_factor_source =config_dict['blend_factor_source']
+        particle_system.blend_factor_source =config_dict[
+            'blend_factor_source']
         particle_system.blend_factor_dest = config_dict['blend_factor_dest']
         particle_system.emitter_type = config_dict['emitter_type']
         particle_system.update_interval = self.particle_update_time
@@ -284,11 +300,12 @@ class ParticleManager(GameSystem):
         cdef object particle_system 
         cdef dict particle_systems
         particle_systems = entity[self.system_id]
+        unused_effects_append = self.unused_particle_effects.append
         for particle_effect in particle_systems:
             particle_system = particle_systems[particle_effect]['particle_system']
             particle_system.free_all_particles()
             self.current_number_of_particles -= particle_system.max_num_particles
-            self.unused_particle_effects.append(particle_system)
+            unused_effects_append(particle_system)
         super(ParticleManager, self).remove_entity(entity_id)
 
     def draw_mesh(self, list particles):
@@ -314,7 +331,6 @@ class ParticleManager(GameSystem):
             tex_choice = particle.texture
             x, y = particle.x, particle.y
             rotate = particle.rotation
-
             uv = uv_dict[tex_choice]
             color = particle.color
             w, h = uv[4], uv[5]
@@ -332,7 +348,8 @@ class ParticleManager(GameSystem):
             verts = [vertex1, vertex2, vertex3, vertex4]
             for vert in verts:
                 e(vert)
-        if self.mesh == None:
+        mesh = self.mesh
+        if mesh == None:
             with self.canvas:
                 self.mesh = Mesh(
                     indices=indices,
@@ -341,8 +358,8 @@ class ParticleManager(GameSystem):
                     mode='triangles',
                     texture=uv_dict['main_texture'])
         else:
-            self.mesh.vertices = vertices
-            self.mesh.indices = indices
+            mesh.vertices = vertices
+            mesh.indices = indices
 
     def update(self, dt):
         cdef dict systems = self.gameworld.systems
@@ -355,23 +372,31 @@ class ParticleManager(GameSystem):
         cdef object particle_system
         cdef list particles_to_render = []
         eparticles = particles_to_render.extend
+        cdef list particles = self.particles
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
             particle_systems = entity[system_data_from]
+            calculate_particle_offset = self.calculate_particle_offset
             for particle_effect in particle_systems:
-                particle_system = particle_systems[particle_effect]['particle_system']
+                particle_system = particle_systems[
+                    particle_effect]['particle_system']
                 if entity[render_information_from]['on_screen']:
                     if particle_systems[particle_effect]['particle_system_on']:
-                        particle_system.pos = self.calculate_particle_offset(entity_id, particle_effect)
-                        particle_system.emit_angle = radians(entity[position_data_from]['angle']+270)
-                        time_between_particles = 1.0 / particle_system.emission_rate
+                        particle_system.pos = calculate_particle_offset(
+                            entity_id, particle_effect)
+                        particle_system.emit_angle = entity[
+                            position_data_from]['angle'] + 3. * M_PI_2
+                        time_between_particles = (
+                            1.0 / particle_system.emission_rate)
                         particle_system.frame_time += dt
                         eparticles(particle_system.update(dt))
-                        number_of_updates = trunc(particle_system.frame_time / time_between_particles)
-                        particle_system.frame_time -= time_between_particles * number_of_updates
+                        number_of_updates = trunc(
+                            particle_system.frame_time / time_between_particles)
+                        particle_system.frame_time -= (
+                            time_between_particles * number_of_updates)
                         for x in xrange(int(number_of_updates)):
-                            if self.particles != []:
-                                particle = self.particles.pop()
+                            if particles != []:
+                                particle = particles.pop()
                                 particle_system.receive_particle(particle)
                     else:
                         if particle_system.particles != []:
@@ -390,7 +415,8 @@ class ParticleManager(GameSystem):
         pos = position_data['position']
         if offset != 0.:
             unit_vector = position_data['unit_vector']
-            effect_pos = (pos[0] - offset * unit_vector[0], pos[1] - offset * unit_vector[1])
+            effect_pos = (pos[0] - offset * unit_vector[0], 
+                pos[1] - offset * unit_vector[1])
         else:
             effect_pos = (pos[0], pos[1])
         return effect_pos

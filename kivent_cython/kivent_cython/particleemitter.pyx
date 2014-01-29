@@ -239,13 +239,15 @@ class ParticleEmitter(EventDispatcher):
         cdef list particles = self.particles
         cdef list particles_to_render = []
         append_particle = particles_to_render.append
+        free_particle = self.free_particle
+        advance_particle = self.advance_particle
         for entity_id in particles:
             entity = entities[entity_id]
             particle = entity['particle_manager']['particle']
             if particle.total_time <= particle.current_time:
-                self.free_particle(entity_id)
+                free_particle(entity_id)
             else:
-                self.advance_particle(particle, dt)
+                advance_particle(particle, dt)
                 append_particle(particle)
         return particles_to_render
 

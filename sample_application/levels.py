@@ -19,9 +19,9 @@ class AsteroidsLevel(GameSystem):
             self.current_level_id = 0
 
     def generate_new_level(self, dt):
-        level_win_conditions = [(True, False, False), (False, True, False), 
+        level_win_conditions = [(False, True, False), (False, False, True), 
         (False, False, True), (False, True, True), (False, False, True)]
-        level_number_of_enemies = [1, 0, 1, 2, 3]
+        level_number_of_enemies = [0, 0, 1, 2, 3]
         self.number_of_enemies_to_spawn = level_number_of_enemies[
             self.current_level_id]
         current_level_win_conditions = level_win_conditions[
@@ -79,7 +79,7 @@ class AsteroidsLevel(GameSystem):
 
     def begin_spawning_of_ai(self):
         if self.number_of_enemies_to_spawn > 0:
-            time_to_ship_spawn = random.random()*10.0
+            time_to_ship_spawn = random.random()*15.0
             Clock.schedule_once(self.spawn_ai_ship, time_to_ship_spawn)
 
 
@@ -99,7 +99,7 @@ class AsteroidsLevel(GameSystem):
     def spawn_probes(self):
         systems = self.gameworld.systems
         probe_system = systems['probe_system']
-        number_of_probes_to_spawn = [10, 5, 0, 10, 0]
+        number_of_probes_to_spawn = [10, 0, 0, 10, 0]
         for x in range(number_of_probes_to_spawn[self.current_level_id]):
             rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
             rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
@@ -197,7 +197,7 @@ class AsteroidSystem(GameSystem):
     def generate_asteroids(self, dt):
         current_level_id = self.gameworld.systems[
             'asteroids_level'].current_level_id
-        level_asteroids = [(0, 5), (5, 15), (5, 20), (10, 0), (5,20)]
+        level_asteroids = [(5, 15), (0, 5), (5, 20), (10, 0), (5,20)]
         if current_level_id <= 4:
             num_small_asteroids = level_asteroids[current_level_id][1]
             num_big_asteroids = level_asteroids[current_level_id][0]

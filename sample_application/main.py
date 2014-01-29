@@ -5,8 +5,8 @@ from kivy.properties import (StringProperty, ObjectProperty, NumericProperty,
     BooleanProperty)
 from kivy.clock import Clock
 from kivent_cython import (GameWorld, GameSystem, GameMap, GameView, 
-    ParticleManager, QuadRenderer, PhysicsRenderer, CymunkPhysics, 
-    PhysicsPointRenderer, QuadTreePointRenderer, StaticQuadRenderer, DynamicRenderer)
+    ParticleManager, CymunkPhysics, 
+    StaticQuadRenderer, DynamicRenderer)
 from kivy.core.window import Window
 import yacs_ui_elements
 import player_character
@@ -70,7 +70,6 @@ class TestGame(Widget):
             self.cleared = True
             self.setup_new_level()
                 
-
     def setup_new_level(self):
         Clock.schedule_once(
             self.gameworld.systems['asteroids_level'].generate_new_level)

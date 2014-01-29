@@ -24,9 +24,8 @@ uniform float      opacity;
 void main (void) {
   frag_color = vColor * color * vec4(1.0, 1.0, 1.0, opacity);
   tex_coord0 = vTexCoords0;
-  float rot = radians(vRotation);
-  float a_sin = sin(rot);
-  float a_cos = cos(rot);
+  float a_sin = sin(vRotation);
+  float a_cos = cos(vRotation);
   mat4 rot_mat = mat4(a_cos, -a_sin, 0.0, 0.0,
                     a_sin, a_cos, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0,

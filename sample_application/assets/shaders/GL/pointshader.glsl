@@ -1,5 +1,5 @@
 ---VERTEX SHADER---
-#version 120
+#version 100
 #ifdef GL_ES
     precision highp float;
 #endif
@@ -7,7 +7,8 @@
 
 /* Outputs to the fragment shader */
 varying vec4 frag_color;
-varying mat2 rot_mat;
+varying float a_sin;
+varying float a_cos;
 
 /* vertex attributes */
 attribute vec2     vPosition;
@@ -25,11 +26,8 @@ uniform float      opacity;
 void main (void) {
   frag_color = color * vColor * vec4(1.0, 1.0, 1.0, opacity);
   float rot = radians(vRotation);
-  float a_sin = sin(rot);
-  float a_cos = cos(rot);
-  mat2 rotMat = mat2(a_cos, -a_sin,
-                     a_sin, a_cos);
-  rot_mat = rotMat;
+  a_sin = sin(rot);
+  a_cos = cos(rot);
   vec4 pos = vec4(vPosition.xy, 0.0, 1.0);
   gl_Position = projection_mat * modelview_mat * pos;
   gl_PointSize = vSize*2.;
@@ -38,7 +36,7 @@ void main (void) {
 
 
 ---FRAGMENT SHADER---
-#version 120
+#version 100
 #ifdef GL_ES
     precision highp float;
 #endif
@@ -46,13 +44,16 @@ void main (void) {
 
 /* Outputs from the vertex shader */
 varying vec4 frag_color;
-varying mat2 rot_mat;
+varying float a_sin;
+varying float a_cos;
 
 /* uniform texture samplers */
 uniform sampler2D texture0;
 
 void main (void){
     vec2 pos = gl_PointCoord;
+    mat2 rot_mat = mat2(a_cos, -a_sin,
+                      a_sin, a_cos);
     vec2 offset = vec2(0.5, 0.5);
     pos -= offset;
     vec2 tex_coord = rot_mat * pos;

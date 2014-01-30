@@ -6,6 +6,59 @@ from kivy.atlas import Atlas
 from kivy.clock import Clock
 from functools import partial
 
+class LevelBoundaries(GameSystem):
+
+    def generate_boundaries(self):
+        gameworld = self.gameworld
+        map_pos = gameworld.pos
+        map_size = gameworld.currentmap.map_size
+        pos = (map_pos[0] + .5*map_size[0], map_pos[1] + .5*map_size[1])
+        shape_dict = {'width': map_size[0], 'height': map_size[1], 'mass': 0}
+        col_shape_dict = {'shape_type': 'box', 
+            'elasticity': 0.0, 'collision_type': 10, 
+            'shape_info': shape_dict, 'friction': 0.0}
+        physics_component_dict = {'main_shape': 'box', 'velocity': (0, 0), 
+            'position': pos, 'angle':0, 'angular_velocity': 0,
+            'mass': 0, 'vel_limit': 0, 'ang_vel_limit': 0, 
+            'col_shapes': [col_shape_dict]}
+        boundary_system = {}
+        create_component_dict = {'cymunk-physics': physics_component_dict, 
+                                 'boundary_system': boundary_system}
+        component_order = ['cymunk-physics', 'boundary_system']
+        self.gameworld.init_entity(create_component_dict, component_order)
+
+    def clear(self):
+        for entity_id in self.entity_ids:
+            Clock.schedule_once(partial(
+                self.gameworld.timed_remove_entity, entity_id))
+
+    def collision_separate_func(self, space, arbiter):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        entity_id = arbiter.shapes[0].body.data
+        entity = entities[entity_id]
+        map_pos = gameworld.pos
+        map_size = gameworld.currentmap.map_size
+        mapw, maph = map_size
+        physics_data = entity['cymunk-physics']
+        body = physics_data['body']
+        x_pos, y_pos = body.position
+        if x_pos < map_pos[0] or x_pos > mapw:
+            new_x = mapw - x_pos
+        else:
+            new_x = x_pos
+        if y_pos < map_pos[1] or y_pos > maph:
+            new_y = maph - y_pos
+        else:
+            new_y = y_pos
+        body.position = (new_x, new_y)
+        return False
+
+    def collision_begin_func(self, space, arbiter):
+        return False
+
+
+
 class AsteroidsLevel(GameSystem):
     system_id = StringProperty('asteroids_level')
     current_level_id = NumericProperty(0)
@@ -21,7 +74,7 @@ class AsteroidsLevel(GameSystem):
     def generate_new_level(self, dt):
         level_win_conditions = [(False, True, False), (False, False, True), 
         (False, False, True), (False, True, True), (False, False, True)]
-        level_number_of_enemies = [0, 0, 1, 2, 3]
+        level_number_of_enemies = [0, 1, 1, 2, 3]
         self.number_of_enemies_to_spawn = level_number_of_enemies[
             self.current_level_id]
         current_level_win_conditions = level_win_conditions[
@@ -99,7 +152,7 @@ class AsteroidsLevel(GameSystem):
     def spawn_probes(self):
         systems = self.gameworld.systems
         probe_system = systems['probe_system']
-        number_of_probes_to_spawn = [10, 0, 0, 10, 0]
+        number_of_probes_to_spawn = [5, 0, 0, 10, 0]
         for x in range(number_of_probes_to_spawn[self.current_level_id]):
             rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
             rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])

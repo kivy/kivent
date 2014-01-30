@@ -123,6 +123,7 @@ class TestGame(Widget):
         systems['asteroid_system'].clear_asteroids()
         systems['projectile_system'].clear_projectiles()
         systems['probe_system'].clear_probes()
+        systems['boundary_system'].clear()
 
     def set_main_menu_state(self):
         self.gameworld.state = 'main_menu'
@@ -143,6 +144,7 @@ class TestGame(Widget):
             character_system.spawn_player_character(character_to_spawn)
             Clock.schedule_once(
                 gameworld.systems['asteroid_system'].generate_asteroids)
+            gameworld.systems['boundary_system'].generate_boundaries()
             gameworld.state = 'main_game'
             gameworld.systems['asteroids_level'].begin_spawning_of_ai()
             game_screen = gameworld.gamescreenmanager.get_screen('main_game')
@@ -174,7 +176,7 @@ class TestGame(Widget):
         self.setup_collision_callbacks()
         self.setup_gameobjects()
         self.setup_particle_effects()
-        Clock.schedule_interval(self.update, 0.)
+        Clock.schedule_interval(self.update, 1./60.)
 
     def update(self, dt):
         self.gameworld.update(dt)
@@ -185,6 +187,7 @@ class TestGame(Widget):
         ship_system = systems['ship_system']
         projectile_system = systems['projectile_system']
         asteroid_system = systems['asteroid_system']
+        boundary_system = systems['boundary_system']
         physics.add_collision_handler(1, 1, 
             begin_func=asteroid_system.collision_begin_asteroid_asteroid)
         physics.add_collision_handler(1, 3, 
@@ -200,6 +203,18 @@ class TestGame(Widget):
             separate_func=projectile_system.collision_solve_bullet_bullet)
         physics.add_collision_handler(2, 4, 
             begin_func=ship_system.collision_begin_ship_probe)
+        physics.add_collision_handler(1, 10,
+            begin_func=boundary_system.collision_begin_func,
+            separate_func=boundary_system.collision_separate_func)
+        physics.add_collision_handler(2, 10,
+            begin_func=boundary_system.collision_begin_func,
+            separate_func=boundary_system.collision_separate_func)
+        physics.add_collision_handler(3, 10,
+            begin_func=boundary_system.collision_begin_func,
+            separate_func=boundary_system.collision_separate_func)
+        physics.add_collision_handler(4, 10,
+            begin_func=boundary_system.collision_begin_func,
+            separate_func=boundary_system.collision_separate_func)
 
     def set_choose_character_state(self, dt):
         self.gameworld.state = 'choose_character'

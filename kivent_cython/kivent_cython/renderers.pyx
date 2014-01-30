@@ -251,4 +251,3 @@ class StaticQuadRenderer(Renderer):
 
     def update(self, dt):
         self.update_render_state()
-

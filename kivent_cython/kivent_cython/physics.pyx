@@ -177,26 +177,6 @@ class CymunkPhysics(GameSystem):
 
         super(CymunkPhysics, self).remove_entity(entity_id)
 
-    def check_bounds(self, dict system_data):
-        cdef object gameworld = self.gameworld
-        map_pos = gameworld.pos
-        map_size = gameworld.currentmap.map_size
-        cdef object body = system_data['body']
-        x_pos, y_pos = body.position
-        if system_data['shape_type'] == 'circle':
-            size_x = size_y = system_data['shapes'][0].radius
-        elif system_data['shape_type'] == 'box':
-            size_x = system_data['shapes'][0].width
-            size_y = system_data['shapes'][0].height
-        if x_pos - size_x > map_size[0]:
-            body.position = map_pos[0] - size_x, y_pos
-        if x_pos + size_x < map_pos[0]:
-            body.position = map_pos[0] + map_size[0] + size_x, y_pos
-        if y_pos - size_y > map_pos[1] + map_size[1]:
-            body.position = x_pos, map_pos[1] - size_y
-        if y_pos + size_y < map_pos[1]:
-            body.position = x_pos, map_pos[1] + map_size[1] + size_y
-
     def update(self, dt):
         cdef list entities = self.gameworld.entities
         self.space.step(dt)
@@ -209,7 +189,6 @@ class CymunkPhysics(GameSystem):
             if system_id not in entity:
                 continue
             system_data = entity[system_id]
-            self.check_bounds(system_data)
             body = system_data['body']
             system_data['position'] = body.position
             system_data['angle'] = body.angle - M_PI_2

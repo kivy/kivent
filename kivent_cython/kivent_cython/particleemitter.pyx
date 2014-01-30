@@ -84,17 +84,21 @@ class ParticleEmitter(EventDispatcher):
         cdef dict particle_manager = entity['particle_manager']
         cdef Particle particle = particle_manager['particle']
         self.init_particle(particle)
-        #self.draw_particle(entity)
 
     def free_all_particles(self):
-        cdef list particles_to_free = [particle for particle in self.particles]
-        cdef int entity_id
-        for entity_id in particles_to_free:
-            self.free_particle(entity_id)
-
-    def free_particle(self, int entity_id):
+        self.free_particles(self.particles)
+ 
+    def free_particles(self, list particles_to_free):
         cdef list particles = self.particles
-        self.particle_manager.free_particle(particles.pop(particles.index(entity_id)))
+        particle_manager = self.particle_manager
+        cdef int entity_id
+        cdef list manager_particles = particle_manager.particles
+        get_by_index = particles.index
+        pop_particle = particles.pop
+        free_particle = manager_particles.append
+        for entity_id in particles_to_free:
+            particle = pop_particle(get_by_index(entity_id))
+            free_particle(particle)
 
     def on_life_span(self,instance,value):
         self.emission_rate = self.max_num_particles/value
@@ -238,8 +242,9 @@ class ParticleEmitter(EventDispatcher):
         cdef dict entity
         cdef list particles = self.particles
         cdef list particles_to_render = []
+        cdef list particles_to_free = []
         append_particle = particles_to_render.append
-        free_particle = self.free_particle
+        free_particle = particles_to_free.append
         advance_particle = self.advance_particle
         for entity_id in particles:
             entity = entities[entity_id]
@@ -249,6 +254,7 @@ class ParticleEmitter(EventDispatcher):
             else:
                 advance_particle(particle, dt)
                 append_particle(particle)
+        self.free_particles(particles_to_free)
         return particles_to_render
 
 

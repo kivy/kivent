@@ -35,7 +35,8 @@ class ShipAISystem(GameSystem):
 
     def query_physics_bb(self, position, radius):
         physics_system = self.gameworld.systems['cymunk-physics']
-        bb_list = [position[0] - radius, position[1] - radius, position[0] + radius, position[1] + radius]
+        bb_list = [position[0] - radius, position[1] - radius, 
+            position[0] + radius, position[1] + radius]
         in_radius = physics_system.query_bb(bb_list)
         return in_radius
     
@@ -355,7 +356,8 @@ class ShipSystem(GameSystem):
             (current_projectile_type == '_rocket' and current_rocket_ammo - number_of_shots >= 0)):
             for hard_point in ship_system_data['hard_points']:
                 position_offset = hard_point[0], hard_point[1] + projectile_height*.5
-                position_offset_rotated = Vector(position_offset).rotate(character_physics['angle'])
+                position_offset_rotated = Vector(position_offset).rotate(
+                    math.degrees(character_physics['angle']))
                 location = (character_position[0] + position_offset_rotated[0],
                     character_position[1] + position_offset_rotated[1])
                 angle = character_physics['body'].angle

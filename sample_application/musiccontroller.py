@@ -12,9 +12,11 @@ class SoundSystem(GameSystem):
     def __init__(self, **kwargs):
         super(SoundSystem, self).__init__(**kwargs)
         self.sound_dict = {}
-        self.sound_names = ['bulletfire', 'enemyshipenterarea', 'rocketexplosion', 
-        'rocketfire', 'shipexplosion', 'shiphitbybullet', 'asteroidhitasteroid', 
-        'asteroidhitship', 'bullethitasteroid', 'bullethitbullet', 'probepickup']
+        self.sound_names = ['bulletfire', 'enemyshipenterarea', 
+        'rocketexplosion', 'rocketfire', 'shipexplosion', 
+        'shiphitbybullet', 'asteroidhitasteroid', 
+        'asteroidhitship', 'bullethitasteroid', 
+        'bullethitbullet', 'probepickup']
         Clock.schedule_once(self.load_music)
         
     def load_music(self, dt):
@@ -23,7 +25,8 @@ class SoundSystem(GameSystem):
         sound_dir = self.sound_dir
         reset_sound_position = self.reset_sound_position
         for sound_name in sound_names:
-            sound_dict[sound_name] = SoundLoader.load(sound_dir + sound_name + '.ogg')
+            sound_dict[sound_name] = SoundLoader.load(
+                sound_dir + sound_name + '.ogg')
             sound_dict[sound_name].seek(0)
             sound_dict[sound_name].bind(on_stop=reset_sound_position)
 
@@ -54,14 +57,16 @@ class MusicController(Widget):
     def __init__(self, **kwargs):
         super(MusicController, self).__init__(**kwargs)
         self.music_dict = {}
-        self.track_names = ['track1', 'track2', 'track3', 'track4', 'track5']
+        self.track_names = ['track1', 'track2', 'track3', 'track4', 'track5',
+            'track6', 'track7', 'track8', 'track9', 'track10']
         self.load_music()
         
     def load_music(self):
         track_names = self.track_names
         music_dict = self.music_dict
         for track_name in track_names:
-            music_dict[track_name] = SoundLoader.load(self.music_dir + track_name + '.ogg')
+            music_dict[track_name] = SoundLoader.load(
+                self.music_dir + track_name + '.ogg')
             music_dict[track_name].seek(0)
 
     def check_if_songs_are_playing(self):
@@ -84,7 +89,8 @@ class MusicController(Widget):
     def play(self, sound_name):
         if sound_name in self.music_dict:
             self.music_dict[sound_name].play()
-            self.music_dict[sound_name].bind(on_stop=self.schedule_choose_new_song)
+            self.music_dict[sound_name].bind(
+                on_stop=self.schedule_choose_new_song)
         else:
             print "file",sound_name,"not found in", self.music_dir
 

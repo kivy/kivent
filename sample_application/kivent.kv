@@ -70,21 +70,17 @@ TestGame:
 		ProjectileSystem:
 			system_id: 'projectile_system'
 			gameworld: root.gameworld
-			update_time: 1./30.
 		ShipSystem:
 			system_id: 'ship_system'
 			gameworld: root.gameworld
-			update_time: 1./30.
 		ShipAISystem:
 			id: ship_ai_system
 			system_id: 'ship_ai_system'
 			gameworld: root.gameworld
-			update_time: 1./30.
 		ProbeSystem:
 			id: probe_system
 			system_id: 'probe_system'
 			gameworld: root.gameworld
-			update_time: 1./30.
 		PlayerCharacter:
 			id: player_character
 			system_id: 'player_character'
@@ -95,7 +91,6 @@ TestGame:
 		AsteroidSystem:
 			id: asteroid_system
 			gameworld: root.gameworld
-			update_time: 1./30.
 		CymunkPhysics:
 			gameworld: root.gameworld
 		DynamicRenderer:
@@ -117,7 +112,6 @@ TestGame:
 			size: root.size
 			max_number_particles: 100
 			pos: root.pos
-			update_time: 1./60.
 			atlas_dir: 'assets/particles/'
 			atlas: 'particles'
 			shader_source: app.shader_path + 'positionrotatecolorscaleshader.glsl'

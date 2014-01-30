@@ -31,9 +31,11 @@ class GameWorld(Widget):
         self.systems = {}
         self.matrix = Matrix()
 
-    def add_state(self, state_name, systems_added, systems_removed, systems_paused, systems_unpaused, screenmanager_screen):
+    def add_state(self, state_name, systems_added, systems_removed, 
+        systems_paused, systems_unpaused, screenmanager_screen):
         self.states[state_name] = {'systems_added': systems_added, 
-        'systems_removed': systems_removed, 'systems_paused': systems_paused, 'systems_unpaused': systems_unpaused}
+        'systems_removed': systems_removed, 'systems_paused': systems_paused, 
+        'systems_unpaused': systems_unpaused}
         self.gamescreenmanager.states[state_name] = screenmanager_screen
 
     def on_state(self, instance, value):
@@ -92,7 +94,8 @@ class GameWorld(Widget):
             components_to_delete.append('entity_load_order')
             for component in components_to_delete:
                 del entity[component]
-            Clock.schedule_once(partial(self.add_entity_to_deactivated, entity_id), 1.0)
+            Clock.schedule_once(partial(
+                self.add_entity_to_deactivated, entity_id), 1.0)
 
     def add_entity_to_deactivated(self, int entity_id, dt):
         self.deactivated_entities.append(entity_id)
@@ -104,20 +107,15 @@ class GameWorld(Widget):
             system = systems[system_name]
             if system.updateable and not system.paused:
                 system._update(dt)
-        self.update_render_state()
         Clock.schedule_once(self.remove_entities)
 
-    def update_render_state(self):
-        cdef dict systems = self.systems
-        cdef object viewport
-        if self.viewport in systems:
-            viewport = systems[self.viewport]
-            camera_pos = viewport.camera_pos
-            camera_size = viewport.size
-            proj = self.matrix.view_clip(
-                -camera_pos[0], camera_size[0] + -camera_pos[0], 
-                -camera_pos[1], camera_size[1] + -camera_pos[1], 0., 100, 0)
-            self.canvas['projection_mat'] = proj
+    def update_render_state(self, object viewport):
+        camera_pos = viewport.camera_pos
+        camera_size = viewport.size
+        proj = self.matrix.view_clip(
+            -camera_pos[0], camera_size[0] + -camera_pos[0], 
+            -camera_pos[1], camera_size[1] + -camera_pos[1], 0., 100, 0)
+        self.canvas['projection_mat'] = proj
 
     def remove_entities(self, dt):
         entities_to_remove = [entity_id for entity_id in self.entities_to_remove]

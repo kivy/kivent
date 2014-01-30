@@ -145,7 +145,6 @@ class Renderer(GameSystem):
                 verts = [vertex1, vertex2, vertex3, vertex4]
                 if do_rotate:
                     rotate = entity[rotate_from]['angle']
-                    print rotate
                     for vert in verts:
                         vert.append(rotate)
                 if do_color:

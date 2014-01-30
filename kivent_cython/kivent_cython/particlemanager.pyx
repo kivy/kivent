@@ -144,40 +144,40 @@ class ParticleManager(GameSystem):
             config, 'finishParticleSize'))
         particle_config['end_size_variance'] = float(self.parse_data(
             config, 'FinishParticleSizeVariance'))
-        particle_config['emit_angle'] = math.radians(float(self.parse_data(
-            config, 'angle')))
-        particle_config['emit_angle_variance'] = math.radians(float(self.parse_data(
-            config, 'angleVariance')))
-        particle_config['start_rotation'] = math.radians(float(self.parse_data(
-            config, 'rotationStart')))
-        particle_config['start_rotation_variance'] = math.radians(float(self.parse_data(
-            config, 'rotationStartVariance')))
-        particle_config['end_rotation'] = math.radians(float(self.parse_data(
-            config, 'rotationEnd')))
-        particle_config['end_rotation_variance'] = math.radians(float(self.parse_data(
-            config, 'rotationEndVariance')))
+        particle_config['emit_angle'] = math.radians(
+            float(self.parse_data(config, 'angle')))
+        particle_config['emit_angle_variance'] = math.radians(
+            float(self.parse_data(config, 'angleVariance')))
+        particle_config['start_rotation'] = math.radians(
+            float(self.parse_data(config, 'rotationStart')))
+        particle_config['start_rotation_variance'] = math.radians(
+            float(self.parse_data(config, 'rotationStartVariance')))
+        particle_config['end_rotation'] = math.radians(
+            float(self.parse_data(config, 'rotationEnd')))
+        particle_config['end_rotation_variance'] = math.radians(
+            float(self.parse_data(config, 'rotationEndVariance')))
         particle_config['speed'] = float(self.parse_data(
             config, 'speed'))
-        particle_config['speed_variance'] = float(self.parse_data(
-            config, 'speedVariance'))
-        particle_config['radial_acceleration'] = float(self.parse_data(
-            config, 'radialAcceleration'))
-        particle_config['radial_acceleration_variance'] = float(self.parse_data(
-            config, 'radialAccelVariance'))
-        particle_config['tangential_acceleration'] = float(self.parse_data(
-            config, 'tangentialAcceleration'))
-        particle_config['tangential_acceleration_variance'] = float(self.parse_data(
-            config, 'tangentialAccelVariance'))
-        particle_config['max_radius'] = float(self.parse_data(
-            config, 'maxRadius'))
-        particle_config['max_radius_variance'] = float(self.parse_data(
-            config, 'maxRadiusVariance'))
+        particle_config['speed_variance'] = float(
+            self.parse_data(config, 'speedVariance'))
+        particle_config['radial_acceleration'] = float(
+            self.parse_data(config, 'radialAcceleration'))
+        particle_config['radial_acceleration_variance'] = float(
+            self.parse_data(config, 'radialAccelVariance'))
+        particle_config['tangential_acceleration'] = float(
+            self.parse_data(config, 'tangentialAcceleration'))
+        particle_config['tangential_acceleration_variance'] = float(
+            self.parse_data(config, 'tangentialAccelVariance'))
+        particle_config['max_radius'] = float(
+            self.parse_data(config, 'maxRadius'))
+        particle_config['max_radius_variance'] = float(
+            self.parse_data(config, 'maxRadiusVariance'))
         particle_config['min_radius'] = float(self.parse_data(
             config, 'minRadius'))
-        particle_config['rotate_per_second'] = math.radians(float(self.parse_data(
-            config, 'rotatePerSecond')))
-        particle_config['rotate_per_second_variance'] = math.radians(float(self.parse_data(
-            config, 'rotatePerSecondVariance')))
+        particle_config['rotate_per_second'] = math.radians(
+            float(self.parse_data(config, 'rotatePerSecond')))
+        particle_config['rotate_per_second_variance'] = math.radians(
+            float(self.parse_data(config, 'rotatePerSecondVariance')))
         particle_config['start_color'] = self.parse_color(
             config, 'startColor')
         particle_config['start_color_variance'] = self.parse_color(
@@ -221,7 +221,8 @@ class ParticleManager(GameSystem):
     def load_particle_system_from_dict(self, config):
         config_dict = self.particle_configs[config]
         if 'cymunk-physics' in self.gameworld.systems:
-            physics_system_friction = self.gameworld.systems['cymunk-physics'].damping
+            physics_system_friction = self.gameworld.systems[
+                'cymunk-physics'].damping
         else:
             physics_system_friction = 1.0
         self.current_number_of_particles += config_dict[
@@ -290,7 +291,8 @@ class ParticleManager(GameSystem):
                 self.load_particle_config(config)
             entity_component_dict[particle_effect]['particle_system'] = (
                 particle_system) = self.load_particle_system_from_dict(config)
-            entity_component_dict[particle_effect]['particle_system_on'] = False
+            entity_component_dict[
+                particle_effect]['particle_system_on'] = False
         return entity_component_dict
 
     def remove_entity(self, entity_id):
@@ -302,7 +304,8 @@ class ParticleManager(GameSystem):
         particle_systems = entity[self.system_id]
         unused_effects_append = self.unused_particle_effects.append
         for particle_effect in particle_systems:
-            particle_system = particle_systems[particle_effect]['particle_system']
+            particle_system = particle_systems[
+                particle_effect]['particle_system']
             particle_system.free_all_particles()
             self.current_number_of_particles -= particle_system.max_num_particles
             unused_effects_append(particle_system)
@@ -373,6 +376,7 @@ class ParticleManager(GameSystem):
         cdef list particles_to_render = []
         eparticles = particles_to_render.extend
         cdef list particles = self.particles
+        pop_particle = particles.pop
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
             particle_systems = entity[system_data_from]
@@ -380,6 +384,7 @@ class ParticleManager(GameSystem):
             for particle_effect in particle_systems:
                 particle_system = particle_systems[
                     particle_effect]['particle_system']
+                system_particles = particle_system.particles
                 if entity[render_information_from]['on_screen']:
                     if particle_systems[particle_effect]['particle_system_on']:
                         particle_system.pos = calculate_particle_offset(
@@ -394,15 +399,16 @@ class ParticleManager(GameSystem):
                             particle_system.frame_time / time_between_particles)
                         particle_system.frame_time -= (
                             time_between_particles * number_of_updates)
+                        receive_particle = particle_system.receive_particle
                         for x in xrange(int(number_of_updates)):
                             if particles != []:
-                                particle = particles.pop()
-                                particle_system.receive_particle(particle)
+                                particle = pop_particle()
+                                receive_particle(particle)
                     else:
-                        if particle_system.particles != []:
+                        if system_particles != []:
                             particle_system.free_all_particles()
                 else:
-                    if particle_system.particles != []:
+                    if system_particles != []:
                         particle_system.free_all_particles()
         self.draw_mesh(particles_to_render)
 

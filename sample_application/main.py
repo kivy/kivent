@@ -16,8 +16,6 @@ import musiccontroller
 #import cProfile
 import os
 import sys
-from kivy.graphics.opengl_utils import gl_get_version
-from kivy.graphics.opengl import glEnable
 
 
 class TestGame(Widget):
@@ -261,14 +259,11 @@ class TestGame(Widget):
             
 
 class KivEntApp(App):
-    shader_path = StringProperty('assets/shaders/ES2/')
+    shader_path = StringProperty('assets/shaders/')
+
     def build(self):
         Window.clearcolor = (0, 0, 0, 1.)
-        gl_major, gl_minor = gl_get_version()
-        glEnable(0x8642) #GL_VERTEX_PROGRAM_POINT_SIZE
-        glEnable(0x8861) #GL_POINT_SPRITE
-        if gl_major > 2 or (gl_major == 2 and gl_minor >= 1):
-            self.shader_path = 'assets/shaders/GL/'
+
 
 
 if __name__ == '__main__':

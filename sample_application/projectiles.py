@@ -110,9 +110,10 @@ class ProjectileSystem(GameSystem):
         bullet_accel = bullet['projectile_system']['accel']
         force = bullet_accel*unit_vector[0], bullet_accel*unit_vector[1]
         force_offset = -unit_vector[0], -unit_vector[1]
-        bullet['cymunk-physics']['body'].apply_impulse(force, force_offset)
+        bullet_body = bullet['cymunk-physics']['body']
+        bullet_body.apply_impulse(force, force_offset)
         if 'particle_manager' in bullet:
-            bullet['cymunk-physics']['body'].apply_force(force, force_offset)
+            bullet_body.apply_force(force, force_offset)
             bullet['particle_manager']['engine_effect']['particle_system_on'] = True
 
 

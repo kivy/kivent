@@ -118,73 +118,78 @@ class ParticleManager(GameSystem):
         particle_configs = self.particle_configs
         particle_textures = self.particle_textures
         particle_configs[config_str] = particle_config = {}
-        texture_str = self.parse_data(config, 'texture', 'name')
+        parse_data = self.parse_data
+        texture_str = parse_data(config, 'texture', 'name')
+        ec = particle_config['emitterconfig'] = EmitterConfig()
+
         particle_config['texture'] = texture_str
-        particle_config['emitter_x_variance'] = float(self.parse_data(
-            config, 'sourcePositionVariance', 'x'))
-        particle_config['emitter_y_variance'] = float(self.parse_data(
-            config, 'sourcePositionVariance', 'y'))
-        particle_config['gravity_x'] = float(self.parse_data(
+
+        ec.emitter_x_variance = particle_config['emitter_x_variance'] = float(
+            parse_data(config, 'sourcePositionVariance', 'x'))
+        ec.emitter_y_variance = particle_config['emitter_y_variance'] = float(
+            parse_data(config, 'sourcePositionVariance', 'y'))
+        ec.gravity_x = particle_config['gravity_x'] = float(parse_data(
             config, 'gravity', 'x'))
-        particle_config['gravity_y'] = float(self.parse_data(
+        ec.gravity_y = particle_config['gravity_y'] = float(parse_data(
             config,'gravity', 'y'))
-        particle_config['emitter_type'] = int(self.parse_data(
+        particle_config['emitter_type'] = int(parse_data(
             config, 'emitterType'))
-        particle_config['max_num_particles'] = int(self.parse_data(
+        particle_config['max_num_particles'] = int(parse_data(
             config, 'maxParticles'))
-        particle_config['life_span'] = max(0.01, float(self.parse_data(
+        particle_config['life_span'] = max(0.01, float(parse_data(
             config, 'particleLifeSpan')))
-        particle_config['life_span_variance'] = float(self.parse_data(
-            config, 'particleLifespanVariance'))
-        particle_config['start_size'] = float(self.parse_data(
+        ec.life_span_variance = particle_config['life_span_variance'] = float(
+            parse_data(config, 'particleLifespanVariance'))
+        ec.start_size = particle_config['start_size'] = float(parse_data(
             config, 'startParticleSize'))
-        particle_config['start_size_variance'] = float(self.parse_data(
-            config, 'startParticleSizeVariance'))
-        particle_config['end_size'] = float(self.parse_data(
+        ec.start_size_variance = particle_config['start_size_variance'] = float(
+            parse_data(config, 'startParticleSizeVariance'))
+        ec.end_size = particle_config['end_size'] = float(parse_data(
             config, 'finishParticleSize'))
-        particle_config['end_size_variance'] = float(self.parse_data(
-            config, 'FinishParticleSizeVariance'))
+        ec.end_size_variance = particle_config['end_size_variance'] = float(
+            parse_data(config, 'FinishParticleSizeVariance'))
         particle_config['emit_angle'] = math.radians(
-            float(self.parse_data(config, 'angle')))
-        particle_config['emit_angle_variance'] = math.radians(
-            float(self.parse_data(config, 'angleVariance')))
-        particle_config['start_rotation'] = math.radians(
-            float(self.parse_data(config, 'rotationStart')))
-        particle_config['start_rotation_variance'] = math.radians(
-            float(self.parse_data(config, 'rotationStartVariance')))
-        particle_config['end_rotation'] = math.radians(
-            float(self.parse_data(config, 'rotationEnd')))
-        particle_config['end_rotation_variance'] = math.radians(
-            float(self.parse_data(config, 'rotationEndVariance')))
-        particle_config['speed'] = float(self.parse_data(
+            float(parse_data(config, 'angle')))
+        ec.emit_angle_variance = particle_config['emit_angle_variance'] = math.radians(
+            float(parse_data(config, 'angleVariance')))
+        ec.start_rotation = particle_config['start_rotation'] = math.radians(
+            float(parse_data(config, 'rotationStart')))
+        ec.start_rotation_variance = particle_config['start_rotation_variance'] = math.radians(
+            float(parse_data(config, 'rotationStartVariance')))
+        ec.end_rotation = particle_config['end_rotation'] = math.radians(
+            float(parse_data(config, 'rotationEnd')))
+        ec.end_rotation_variance = particle_config['end_rotation_variance'] = math.radians(
+            float(parse_data(config, 'rotationEndVariance')))
+        ec.speed = particle_config['speed'] = float(self.parse_data(
             config, 'speed'))
-        particle_config['speed_variance'] = float(
-            self.parse_data(config, 'speedVariance'))
-        particle_config['radial_acceleration'] = float(
-            self.parse_data(config, 'radialAcceleration'))
-        particle_config['radial_acceleration_variance'] = float(
-            self.parse_data(config, 'radialAccelVariance'))
-        particle_config['tangential_acceleration'] = float(
-            self.parse_data(config, 'tangentialAcceleration'))
-        particle_config['tangential_acceleration_variance'] = float(
-            self.parse_data(config, 'tangentialAccelVariance'))
-        particle_config['max_radius'] = float(
-            self.parse_data(config, 'maxRadius'))
-        particle_config['max_radius_variance'] = float(
-            self.parse_data(config, 'maxRadiusVariance'))
-        particle_config['min_radius'] = float(self.parse_data(
+        ec.speed_variance = particle_config['speed_variance'] = float(
+            parse_data(config, 'speedVariance'))
+        ec.radial_acceleration = particle_config['radial_acceleration'] = float(
+            parse_data(config, 'radialAcceleration'))
+        ec.radial_acceleration_variance = particle_config['radial_acceleration_variance'] = float(
+            parse_data(config, 'radialAccelVariance'))
+        ec.tangential_acceleration = particle_config['tangential_acceleration'] = float(
+            parse_data(config, 'tangentialAcceleration'))
+        ec.tangential_acceleration_variance = particle_config['tangential_acceleration_variance'] = float(
+            parse_data(config, 'tangentialAccelVariance'))
+        ec.max_radius = particle_config['max_radius'] = float(
+            parse_data(config, 'maxRadius'))
+        ec.max_radius_variance = particle_config['max_radius_variance'] = float(
+            parse_data(config, 'maxRadiusVariance'))
+        ec.min_radius = particle_config['min_radius'] = float(self.parse_data(
             config, 'minRadius'))
-        particle_config['rotate_per_second'] = math.radians(
-            float(self.parse_data(config, 'rotatePerSecond')))
-        particle_config['rotate_per_second_variance'] = math.radians(
-            float(self.parse_data(config, 'rotatePerSecondVariance')))
-        particle_config['start_color'] = self.parse_color(
+        ec.rotate_per_second = particle_config['rotate_per_second'] = math.radians(
+            float(parse_data(config, 'rotatePerSecond')))
+        ec.rotate_per_second_variance = particle_config['rotate_per_second_variance'] = math.radians(
+            float(parse_data(config, 'rotatePerSecondVariance')))
+        parse_color = self.parse_color
+        ec.start_color = particle_config['start_color'] = parse_color(
             config, 'startColor')
-        particle_config['start_color_variance'] = self.parse_color(
+        ec.start_color_variance = particle_config['start_color_variance'] = parse_color(
             config, 'startColorVariance')
-        particle_config['end_color'] = self.parse_color(
+        ec.end_color = particle_config['end_color'] = parse_color(
             config, 'finishColor')
-        particle_config['end_color_variance'] = self.parse_color(
+        ec.end_color_variance = particle_config['end_color_variance'] = parse_color(
             config, 'finishColorVariance')
         particle_config['blend_factor_source'] = self.parse_blend(
             config, 'blendFuncSource')
@@ -196,11 +201,12 @@ class ParticleManager(GameSystem):
             name)[0].getAttribute(attribute)
 
     def parse_color(self, config, name):
+        parse_data = self.parse_data
         return [
-            float(self.parse_data(config, name, 'red')), 
-            float(self.parse_data(config, name, 'green')), 
-            float(self.parse_data(config, name, 'blue')), 
-            float(self.parse_data(config, name, 'alpha')),
+            float(parse_data(config, name, 'red')), 
+            float(parse_data(config, name, 'green')), 
+            float(parse_data(config, name, 'blue')), 
+            float(parse_data(config, name, 'alpha')),
             ]
 
     def parse_blend(self, config, name):
@@ -228,59 +234,18 @@ class ParticleManager(GameSystem):
         self.current_number_of_particles += config_dict[
             'max_num_particles']
         particle_system = self.get_particle_system()
+        particle_system.texture = config_dict['texture']
         particle_system.max_num_particles = config_dict[
             'max_num_particles']
         particle_system.adjusted_num_particles = config_dict[
             'max_num_particles']
         particle_system.life_span = config_dict['life_span']
-        particle_system.texture = config_dict['texture']
-        particle_system.texture_path = config_dict['texture']
-        particle_system.life_span_variance = config_dict['life_span_variance']
-        particle_system.start_size = config_dict['start_size']
-        particle_system.start_size_variance = config_dict[
-            'start_size_variance']
-        particle_system.end_size = config_dict['end_size']
-        particle_system.end_size_variance = config_dict['end_size_variance']
+        particle_system.emitter_config = config_dict['emitterconfig']
         particle_system.emit_angle = config_dict['emit_angle']
-        particle_system.emit_angle_variance = config_dict[
-            'emit_angle_variance']
-        particle_system.start_rotation = config_dict['start_rotation']
-        particle_system.start_rotation_variance = config_dict[
-            'start_rotation_variance']
-        particle_system.end_rotation = config_dict['end_rotation']
-        particle_system.end_rotation_variance = config_dict[
-            'end_rotation_variance']
-        particle_system.emitter_x_variance = config_dict['emitter_x_variance']
-        particle_system.emitter_y_variance = config_dict['emitter_y_variance']
-        particle_system.gravity_x = config_dict['gravity_x']
-        particle_system.gravity_y = config_dict['gravity_y']
-        particle_system.speed = config_dict['speed']
-        particle_system.speed_variance = config_dict['speed_variance']
-        particle_system.radial_acceleration = config_dict[
-            'radial_acceleration']
-        particle_system.radial_acceleration_variance = config_dict[
-            'radial_acceleration_variance']
-        particle_system.tangential_acceleration = config_dict[
-            'tangential_acceleration']
-        particle_system.tangential_acceleration_variance = config_dict[
-            'tangential_acceleration_variance']
-        particle_system.max_radius = config_dict['max_radius']
-        particle_system.max_radius_variance = config_dict[
-            'max_radius_variance']
-        particle_system.min_radius = config_dict['min_radius']
-        particle_system.rotate_per_second = config_dict['rotate_per_second']
-        particle_system.rotate_per_second_variance = config_dict[
-            'rotate_per_second_variance']
-        particle_system.start_color = config_dict['start_color']
-        particle_system.start_color_variance = config_dict[
-            'start_color_variance']
-        particle_system.end_color = config_dict['end_color']
-        particle_system.end_color_variance = config_dict['end_color_variance']
         particle_system.blend_factor_source =config_dict[
             'blend_factor_source']
         particle_system.blend_factor_dest = config_dict['blend_factor_dest']
         particle_system.emitter_type = config_dict['emitter_type']
-        particle_system.update_interval = self.particle_update_time
         particle_system.friction = (1.0 - physics_system_friction)
         return particle_system
         

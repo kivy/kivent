@@ -227,5 +227,3 @@ class ParticleEmitter(EventDispatcher):
                 append_particle(particle)
         self.free_particles(particles_to_free)
         return particles_to_render
-
-

@@ -10,7 +10,6 @@ GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
 glDisable)
 
 
-
 BLEND_FUNC = {
             0: GL_ZERO,
             1: GL_ONE,
@@ -285,6 +284,11 @@ class ParticleManager(GameSystem):
             ('vColor', 4, 'float'),
             ('vScale', 1, 'float')
             ]
+        cdef float x, y
+        cdef float rotate
+        cdef list color
+        cdef float scale
+        cdef float x0, y0, x1, y1
         cdef list indices = []
         cdef dict uv_dict = self.uv_dict
         ie = indices.extend
@@ -295,6 +299,7 @@ class ParticleManager(GameSystem):
             ie([0 + offset, 1 + offset, 
                 2 + offset, 2 + offset,
                 3 + offset, 0 + offset])
+        cdef int particle_num = 0
         for particle in particles:
             tex_choice = particle.texture
             x, y = particle.x, particle.y
@@ -316,6 +321,7 @@ class ParticleManager(GameSystem):
             verts = [vertex1, vertex2, vertex3, vertex4]
             for vert in verts:
                 e(vert)
+            particle_num += 1
         mesh = self.mesh
         if mesh == None:
             with self.canvas:

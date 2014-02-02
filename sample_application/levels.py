@@ -83,20 +83,20 @@ class AsteroidsLevel(GameSystem):
         self.do_probes = current_level_win_conditions[1]
         self.do_enemies = current_level_win_conditions[2]
         dust_choices_gold = [
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust1.atlas', 
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust4.atlas',
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust7.atlas',
+        'stardust1bg', 
+        'stardust4bg',
+        'stardust7bg',
             ] 
         dust_choices_green = [
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust2.atlas', 
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust5.atlas',
+        'stardust2bg', 
+        'stardust5bg',
             ]
         dust_choices_purple = [
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust3.atlas',
+        'stardust3bg',
             ]
         dust_choices_blue = [
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust6.atlas', 
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust8.atlas',
+        'stardust6bg', 
+        'stardust8bg',
             ]
         star_choice_gold = ['star3', 'star7']
         star_choice_green = ['star5', 'star8']
@@ -115,7 +115,7 @@ class AsteroidsLevel(GameSystem):
             num_star_1, num_star_2, num_star_3, num_star_4)
         #generate background
         chance_of_dust = random.random()
-        if chance_of_dust >= .5:
+        if chance_of_dust >= 0.35:
             if first_color_choice == star_choice_gold:
                 bg_choice = random.choice(dust_choices_gold)
             if first_color_choice == star_choice_green:
@@ -124,7 +124,8 @@ class AsteroidsLevel(GameSystem):
                 bg_choice = random.choice(dust_choices_blue)
             if first_color_choice == star_choice_purple:
                 bg_choice = random.choice(dust_choices_purple)
-            #self.generate_prerendered_background(bg_choice, (512, 512))
+            print bg_choice
+            self.generate_prerendered_background(bg_choice, (512, 512))
         self.choose_damping()
         self.choose_gravity()
         self.spawn_probes()
@@ -213,8 +214,13 @@ class AsteroidsLevel(GameSystem):
 
     
     def generate_prerendered_background(self, atlas_address, atlas_size):
-        stardust_atlas = Atlas(atlas_address)
-        num_tiles = len(stardust_atlas.textures)
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        bg_renderer = systems['background_renderer']
+        bg_renderer.atlas = atlas_address
+        bg_renderer.clear_mesh()
+        uv_dict = bg_renderer.uv_dict
+        num_tiles = len(uv_dict)-2
         map_to_use = self.gameworld.systems['default_map']
         map_size = map_to_use.map_size
         side_length_x = math.sqrt(num_tiles)
@@ -231,12 +237,15 @@ class AsteroidsLevel(GameSystem):
                 position_dict[index] = (x * x_distance + x_distance *.5, 
                     y * y_distance + y_distance*.5)
                 index += 1
+                print index
+        print num_tiles
         for num in range(num_tiles):
+            print num
             create_component_dict = {'position': {
             'position': position_dict[num], 
-            'scale_x': scale_x, 'scale_y': scale_y}, 
-            'background_renderer': {'texture': atlas_address, 
-            'texture_key': str(num+1), 'size': size}, 
+            'scale': scale_x/2.}, 
+            'background_renderer': {'texture': str(num+1), 'size': size,
+            'position_from': 'position', 'scale_from': 'position'}, 
             'asteroids_level': {'level_id': self.current_level_id}}
             component_order = ['position', 'background_renderer', 
                 'asteroids_level']

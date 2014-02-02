@@ -59,6 +59,13 @@ TestGame:
 		GameMap:
 			gameworld: root.gameworld
 		StaticQuadRenderer:
+			system_id: 'background_renderer'
+			gameworld: root.gameworld
+			atlas_dir: 'assets/prerendered_backgrounds/stardust_backgrounds/'
+			atlas: 'stardust1bg'
+			do_scale: True
+			shader_source: app.shader_path + 'positionscaleshader.glsl'
+		StaticQuadRenderer:
 			system_id: 'static_renderer'
 			gameworld: root.gameworld
 			atlas_dir: 'assets/background_objects/'

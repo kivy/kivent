@@ -1,6 +1,83 @@
+cdef class keParticleEmitter:
+    cdef EmitterConfig emitter_config
+    cdef float emit_angle
+    cdef float x
+    cdef float y
+    cdef float life_span
+    cdef bool paused
+    cdef int emitter_type
+    cdef float emission_rate
+    cdef int number_of_particles
+    cdef float frame_time
+
+    def __cinit__(self):
+        self.emit_angle = 0.0
+        self.x = 0.0
+        self.y = 0.0
+        self.life_span = 1.0
+        self.paused = False
+        self.emitter_type = 0
+        self.number_of_particles = 10
+        self.emission_rate = 1.0
+        self.frame_time = 0.0
+
+    def calculate_emission_rate(self):
+        number_of_particles = self.number_of_particles
+        life_span = self.life_span
+        self.emission_rate = <float>number_of_particles / life_span
+
+    property x:
+        def __get__(self):
+            return self.x
+        def __set__(self, float value):
+            self.x = value
+
+    property y:
+        def __get__(self):
+            return self.y
+        def __set__(self, float value):
+            self.y = value
+
+    property emitter_config:
+        def __get__(self):
+            return self.emitter_config
+        def __set__(self, emitter_config):
+            self.emitter_config = emitter_config
+
+    property emit_angle:
+        def __get__(self):
+            return self.emit_angle
+        def __set__(self, float value):
+            self.emit_angle = value
+
+    property life_span:
+        def __get__(self):
+            return self.life_span
+        def __set__(self, float value):
+            self.life_span = value
+            self.calculate_emission_rate()
+
+    property paused:
+        def __get__(self):
+            return self.paused
+        def __set__(self, value):
+            self.paused = value
+
+    property emitter_type:
+        def __get__(self):
+            return self.emitter_type
+        def __set__(self, value):
+            self.emitter_type = value
+
+    property number_of_particles:
+        def __get__(self):
+            return self.number_of_particles
+        def __set__(self, value):
+            self.number_of_particles = value
+            self.calculate_emission_rate()
+
 
 cdef class EmitterConfig:
-    cdef char* texture
     cdef float life_span_variance
     cdef float start_size
     cdef float start_size_variance
@@ -26,12 +103,14 @@ cdef class EmitterConfig:
     cdef float min_radius
     cdef float rotate_per_second
     cdef float rotate_per_second_variance
-    cdef list start_color
-    cdef list start_color_variance
-    cdef list end_color
-    cdef list end_color_variance
+    cdef keColor start_color
+    cdef keColor start_color_variance
+    cdef keColor end_color
+    cdef keColor end_color_variance
+    cdef keTexInfo tex_info
 
     def __cinit__(self):
+        cdef keColor default
         life_span_variance = 0.0
         gravity_x = 0.0
         gravity_y = 0.0
@@ -57,12 +136,15 @@ cdef class EmitterConfig:
         min_radius = 0.0
         rotate_per_second = 0.0
         rotate_per_second_variance = 0.0
-        start_color = [1.0, 1.0, 1.0, 1.0]
-        start_color_variance = [0.0, 0.0, 0.0, 0.0]
-        end_color = [1.0, 1.0, 1.0, 1.0]
-        end_color_variance = [0.0, 0.0, 0.0, 0.0]
+        default.r = 1.0
+        default.g = 1.0
+        default.b = 1.0
+        default.a = 1.0
+        start_color = default
+        start_color_variance = default
+        end_color = default
+        end_color_variance = default
         emitter_type = 0.0
-
 
     property life_span_variance:
         def __get__(self):
@@ -237,165 +319,3 @@ cdef class EmitterConfig:
             return self.end_color_variance
         def __set__(self, value):
             self.end_color_variance = value
-
-
-cdef class Particle:
-    cdef float x
-    cdef float y
-    cdef float rotation
-    cdef float current_time
-    cdef float scale
-    cdef float total_time
-    cdef float start_x
-    cdef float start_y
-    cdef float velocity_x
-    cdef float velocity_y
-    cdef float radial_acceleration
-    cdef float tangent_acceleration
-    cdef float emit_radius
-    cdef float emit_radius_delta
-    cdef float emit_rotation
-    cdef float emit_rotation_delta
-    cdef float rotation_delta
-    cdef float scale_delta
-    cdef list color
-    cdef list color_delta
-    cdef char* texture
-
-    def __cinit__(self):
-        x, y, rotation, current_time = -256, -256, 0, 0
-        scale, total_time = 1.0, 0.
-        start_x, start_y, velocity_x, velocity_y = 0, 0, 0, 0
-        radial_acceleration, tangent_acceleration = 0, 0
-        emit_radius, emit_radius_delta = 0, 0
-        emit_rotation, emit_rotation_delta = 0, 0
-        rotation_delta, scale_delta = 0, 0
-        color = [1.0, 1.0, 1.0, 1.0]
-        color_delta = [0.0, 0.0, 0.0, 0.0]
-        
-
-    property color:
-        def __get__(self):
-            return self.color
-        def __set__(self, value):
-            self.color = value
-
-    property color_delta:
-        def __get__(self):
-            return self.color_delta
-        def __set__(self, value):
-            self.color_delta = value
-
-    property current_time:
-        def __get__(self):
-            return self.current_time
-        def __set__(self, value):
-            self.current_time = value
-
-    property total_time:
-        def __get__(self):
-            return self.total_time
-        def __set__(self, value):
-            self.total_time = value
-
-    property x:
-        def __get__(self):
-            return self.x
-        def __set__(self, value):
-            self.x = value
-
-    property y:
-        def __get__(self):
-            return self.y
-        def __set__(self, value):
-            self.y = value
-
-    property rotation:
-        def __get__(self):
-            return self.rotation
-        def __set__(self, value):
-            self.rotation = value
-
-    property scale:
-        def __get__(self):
-            return self.scale
-        def __set__(self, value):
-            self.scale = value
-
-    property start_x:
-        def __get__(self):
-            return self.start_x
-        def __set__(self, value):
-            self.start_x = value
-
-    property start_y:
-        def __get__(self):
-            return self.start_y
-        def __set__(self, value):
-            self.start_y = value
-
-    property velocity_x:
-        def __get__(self):
-            return self.velocity_x
-        def __set__(self, value):
-            self.velocity_x = value
-
-    property velocity_y:
-        def __get__(self):
-            return self.velocity_y
-        def __set__(self, value):
-            self.velocity_y = value
-
-    property radial_acceleration:
-        def __get__(self):
-            return self.radial_acceleration
-        def __set__(self, value):
-            self.radial_acceleration = value
-
-    property tangent_acceleration:
-        def __get__(self):
-            return self.tangent_acceleration
-        def __set__(self, value):
-            self.tangent_acceleration = value
-
-    property emit_radius:
-        def __get__(self):
-            return self.emit_radius
-        def __set__(self, value):
-            self.emit_radius = value
-
-    property emit_radius_delta:
-        def __get__(self):
-            return self.emit_radius_delta
-        def __set__(self, value):
-            self.emit_radius_delta = value
-
-    property emit_rotation:
-        def __get__(self):
-            return self.emit_rotation
-        def __set__(self, value):
-            self.emit_rotation = value
-
-    property emit_rotation_delta:
-        def __get__(self):
-            return self.emit_rotation_delta
-        def __set__(self, value):
-            self.emit_rotation_delta = value
-            
-    property rotation_delta:
-        def __get__(self):
-            return self.rotation_delta
-        def __set__(self, value):
-            self.rotation_delta = value
-
-    property scale_delta:
-        def __get__(self):
-            return self.scale_delta
-        def __set__(self, value):
-            self.scale_delta = value
-
-    property texture:
-        def __get__(self):
-            return self.texture
-        def __set__(self, value):
-            self.texture = value

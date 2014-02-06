@@ -8,7 +8,6 @@ from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE,
 GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
 GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
 glDisable)
-from kivyparticle import keParticleManager
 
 BLEND_FUNC = {
             0: GL_ZERO,
@@ -127,7 +126,10 @@ class ParticleManager(GameSystem):
             ua(particle_system)
         super(ParticleManager, self).remove_entity(entity_id)
 
-    def draw_mesh(self, list vertices, list indices):
+    def draw_mesh(self):
+        cdef CMesh cmesh
+        cdef keParticleManager particle_manager
+        particle_manager = <keParticleManager>self._particle_manager
         vertex_format = [
             ('vPosition', 2, 'float'),
             ('vTexCoords0', 2, 'float'),
@@ -140,15 +142,17 @@ class ParticleManager(GameSystem):
         mesh = self.mesh
         if mesh == None:
             with self.canvas:
-                self.mesh = Mesh(
-                    indices=indices,
-                    vertices=vertices,
-                    fmt=vertex_format,
+                cmesh = CMesh(fmt=vertex_format,
                     mode='triangles',
                     texture=self.atlas_image.texture)
-        else:
-            mesh.vertices = vertices
-            mesh.indices = indices
+                self.mesh = cmesh
+        cmesh = self.mesh
+        cmesh._vertices = particle_manager.frame_info_ptr
+        cmesh._indices = particle_manager.indice_info_ptr
+        cmesh.vcount = particle_manager.v_count
+        cmesh.icount = particle_manager.i_count
+        cmesh.flag_update()
+
 
     def update(self, dt):
         cdef dict systems = self.gameworld.systems
@@ -185,9 +189,7 @@ class ParticleManager(GameSystem):
                     if not paused:
                         particle_system.paused = True
         pm.update(dt)
-        particles_to_render = pm.pyframe_info
-        indices = pm.pyindice_info
-        self.draw_mesh(particles_to_render, indices)
+        self.draw_mesh()
 
     def calculate_particle_offset(self, entity_id, particle_effect):
         cdef dict entity = self.gameworld.entities[entity_id]

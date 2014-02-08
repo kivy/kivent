@@ -19,6 +19,7 @@ class CymunkPhysics(GameSystem):
         super(CymunkPhysics, self).__init__(**kwargs)
         self.bb_query_result = list()
         self.segment_query_result = list()
+        self.on_screen_result = list()
         self.init_physics()
         
     def add_collision_handler(self, int type_a, int type_b, begin_func=None, 
@@ -193,4 +194,5 @@ class CymunkPhysics(GameSystem):
             system_data['position'] = body.position
             system_data['angle'] = body.angle - M_PI_2
             system_data['unit_vector'] = body.rotation_vector
+        self.on_screen_result = self.query_on_screen()
 

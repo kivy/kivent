@@ -76,9 +76,10 @@ class TestGame(Widget):
         self.gameworld.add_state(state_name='main_menu', systems_added=[
             'static_renderer', 'default_map'], 
             systems_removed=['physics_renderer', 'particle_manager', 
-            'lighting_renderer', 'probe_system', 'background_renderer'], 
+            'lighting_renderer', 'static_renderer', 
+            'probe_system', 'background_renderer'], 
             systems_paused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'background_renderer',
+            'physics_renderer', 'background_renderer', 'static_renderer',
             'particle_manager', 'asteroid_system', 
             'ship_system', 'lighting_renderer', 'probe_system', 
             'ship_ai_system'], systems_unpaused=[],
@@ -86,7 +87,8 @@ class TestGame(Widget):
         self.gameworld.add_state(state_name='choose_character', systems_added=[
             'static_renderer',  'default_map'], 
             systems_removed=['physics_renderer', 'particle_manager', 
-             'lighting_renderer','probe_system', 'background_renderer'], 
+             'lighting_renderer','probe_system', 'background_renderer',
+             'static_renderer'], 
             systems_paused=['cymunk-physics', 'default_gameview', 
             'physics_renderer', 'static_renderer', 'background_renderer',
             'particle_manager', 'asteroid_system', 

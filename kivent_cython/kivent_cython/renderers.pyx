@@ -333,7 +333,7 @@ class DynamicRenderer(Renderer):
         cdef list on_screen
         if self.physics_system in systems:
             physics_system = systems[self.physics_system]
-            on_screen = physics_system.query_on_screen()
+            on_screen = [x for x in physics_system.on_screen_result]
         else:
             on_screen = []
         cdef dict entity
@@ -346,9 +346,10 @@ class DynamicRenderer(Renderer):
             if system_id not in entity:
                 continue
             system_data = entity[system_id]
-            if not system_data['on_screen'] and entity_id in on_screen:
+            on_screen_status = system_data['on_screen']
+            if not on_screen_status and entity_id in on_screen:
                 system_data['on_screen'] = True
-            if system_data['on_screen'] and not entity_id in on_screen:
+            if on_screen_status and not entity_id in on_screen:
                 system_data['on_screen'] = False
             if entity_id in on_screen:
                 tr_a(entity_id)

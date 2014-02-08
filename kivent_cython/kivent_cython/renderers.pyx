@@ -339,6 +339,8 @@ class DynamicRenderer(Renderer):
         cdef dict entity
         cdef dict system_data
         cdef list to_render = []
+        tr_a = to_render.append
+        tr_r = to_render.remove
         for entity_id in entity_ids:
             entity = entities[entity_id]
             if system_id not in entity:
@@ -349,9 +351,9 @@ class DynamicRenderer(Renderer):
             if system_data['on_screen'] and not entity_id in on_screen:
                 system_data['on_screen'] = False
             if entity_id in on_screen:
-                to_render.append(entity_id)
+                tr_a(entity_id)
             if system_data['on_screen'] and not system_data['render']:
-                to_render.remove(entity_id)
+                tr_r(entity_id)
         return to_render
 
 

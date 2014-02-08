@@ -89,6 +89,9 @@ class ParticleManager(GameSystem):
         particle_configs = pm.particle_configs
         unused_particle_effects = self.unused_particle_effects
         up = unused_particle_effects.pop
+        get_emitter = pm.get_emitter
+        add_emitter = pm.add_emitter
+        load_particle_system_with_emitter = pm.load_particle_system_with_emitter
         for particle_effect in entity_component_dict:
             config = entity_component_dict[particle_effect]['particle_file']
             if not config in particle_configs:
@@ -96,10 +99,10 @@ class ParticleManager(GameSystem):
             if len(unused_particle_effects) > 0:
                 emitter = up()
             else:
-                emitter = pm.get_emitter()
-                pm.add_emitter(emitter)
+                emitter = get_emitter()
+                add_emitter(emitter)
             entity_component_dict[particle_effect]['particle_system'] = (
-                particle_system) = pm.load_particle_system_with_emitter(
+                particle_system) = load_particle_system_with_emitter(
                 emitter, config)
             entity_component_dict[
                 particle_effect]['particle_system_on'] = False

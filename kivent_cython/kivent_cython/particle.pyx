@@ -136,7 +136,6 @@ cdef class keParticleManager:
         cdef unsigned short * indice_info
         particles = <keParticle *>self.particles_ptr
         frame_info = <float *>self.frame_info_ptr
-        print '1'
         if frame_info != NULL:
             free(frame_info)
             frame_info = NULL
@@ -147,19 +146,17 @@ cdef class keParticleManager:
         self.frame_info_ptr = frame_ptr = <void *>malloc(sizeof(float) * 
             number_of_particles * 4 * 12)
         self.v_count = <long>number_of_particles * 4 * 12
-        indices_ptr = <void *>malloc(
+        self.indice_info_ptr = indices_ptr = <void *>malloc(
             sizeof(unsigned short) * number_of_particles * 6)
         self.i_count = <long>number_of_particles * 6
         if not frame_ptr or not indices_ptr:
             raise MemoryError()
-        print '2'
         indice_info = <unsigned short *>indices_ptr
         frame_info = <float *>frame_ptr
         self.last_frame_count = number_of_particles
         cdef unsigned short offset
         cdef int indice_offset
         cdef int index
-        print '3'
         for i in range(number_of_particles):
             offset = 4 * i
             indice_offset = i*6
@@ -239,7 +236,6 @@ cdef class keParticleManager:
             scale = render_info.scale/w
             x0, y0 = tex_info.u0, tex_info.v0
             x1, y1 = tex_info.u1, tex_info.v1
-            print '4'
             frame_info[index] = -w
             frame_info[index+1] = -h
             frame_info[index+2] = x0
@@ -289,7 +285,6 @@ cdef class keParticleManager:
             frame_info[index+46] = color.a
             frame_info[index+47] = scale
             particles[i] = particle
-            print '5'
             if particle.current_time >= particle.total_time:
                 self._expire_particle(particle.particle_id)
 

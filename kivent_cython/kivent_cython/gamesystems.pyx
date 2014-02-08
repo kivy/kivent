@@ -1,11 +1,10 @@
 
 from kivy.uix.widget import Widget
-from kivy.properties import (StringProperty, ListProperty, NumericProperty, DictProperty, 
-BooleanProperty, ObjectProperty)
+from kivy.properties import (StringProperty, ListProperty, 
+    NumericProperty, DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 import math
 from kivy.core.window import Window
-
 
 
 class GameSystem(Widget):
@@ -44,7 +43,8 @@ class GameSystem(Widget):
 
     def create_component(self, int entity_id, dict entity_component_dict):
         cdef dict entity = self.gameworld.entities[entity_id]
-        entity[self.system_id] = self.generate_component_data(entity_component_dict)
+        entity[self.system_id] = self.generate_component_data(
+            entity_component_dict)
         self.entity_ids.append(entity_id)
 
     def generate_entity_component_dict(self, int entity_id):
@@ -132,16 +132,19 @@ class GameView(GameSystem):
     def on_entity_to_focus(self, instance, value):
         if value ==  None:
             self.focus_entity = False
+        else:
+            self.focus_entity = True
 
     def update(self, dt):
         cdef int entity_to_focus
         cdef float dist_x
         cdef float dist_y
         cdef dict entity
-        cdef float camera_speed_multiplier 
+        cdef float camera_speed_multiplier
+        gameworld = self.gameworld
         if self.focus_entity:
             entity_to_focus = self.entity_to_focus
-            entity = self.gameworld.entities[entity_to_focus]
+            entity = gameworld.entities[entity_to_focus]
             position_data = entity[self.focus_position_info_from]['position']
             camera_pos = self.camera_pos
             camera_speed_multiplier = self.camera_speed_multiplier
@@ -152,6 +155,7 @@ class GameView(GameSystem):
                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
             self.camera_pos[0] += dist_x*camera_speed_multiplier*dt
             self.camera_pos[1] += dist_y*camera_speed_multiplier*dt
+        gameworld.update_render_state(self)
 
 
     def on_size(self, instance, value):
@@ -165,7 +169,6 @@ class GameView(GameSystem):
         for system in systems:
             if systems[system].renderable and systems[system].active:
                 systems[system].update(1)
-
 
     def on_camera_pos(self, instance, value):
         if self.force_camera_update:

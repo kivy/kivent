@@ -4,6 +4,8 @@ from kivy.properties import (StringProperty, ListProperty, NumericProperty,
 DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 from functools import partial
+from kivy.graphics.transformation import Matrix
+from kivy.graphics import RenderContext
 
 
 class GameWorld(Widget):
@@ -11,14 +13,15 @@ class GameWorld(Widget):
     number_entities = NumericProperty(1)
     gamescreenmanager = ObjectProperty(None)
     currentmap = ObjectProperty(None, allownone = True)
+    viewport = StringProperty('default_gameview')
     
-
     def __init__(self, **kwargs):
         cdef list entities
         cdef dict states
         cdef list deactivated_entities
         cdef list entities_to_remove
         cdef dict systems
+        self.canvas = RenderContext()
         super(GameWorld, self).__init__(**kwargs)
         self.entities = []
         self.entities.append(0)
@@ -26,10 +29,13 @@ class GameWorld(Widget):
         self.deactivated_entities = []
         self.entities_to_remove = []
         self.systems = {}
+        self.matrix = Matrix()
 
-    def add_state(self, state_name, systems_added, systems_removed, systems_paused, systems_unpaused, screenmanager_screen):
+    def add_state(self, state_name, systems_added, systems_removed, 
+        systems_paused, systems_unpaused, screenmanager_screen):
         self.states[state_name] = {'systems_added': systems_added, 
-        'systems_removed': systems_removed, 'systems_paused': systems_paused, 'systems_unpaused': systems_unpaused}
+        'systems_removed': systems_removed, 'systems_paused': systems_paused, 
+        'systems_unpaused': systems_unpaused}
         self.gamescreenmanager.states[state_name] = screenmanager_screen
 
     def on_state(self, instance, value):
@@ -51,9 +57,6 @@ class GameWorld(Widget):
             systems[system].paused = True
         for system in state_dict['systems_unpaused']:
             systems[system].paused = False
-        self.remove_widget(gamescreenmanager)
-        self.add_widget(gamescreenmanager)
-
 
     def create_entity(self):
         entity = {'id': self.number_entities}
@@ -91,7 +94,8 @@ class GameWorld(Widget):
             components_to_delete.append('entity_load_order')
             for component in components_to_delete:
                 del entity[component]
-            Clock.schedule_once(partial(self.add_entity_to_deactivated, entity_id), 1.0)
+            Clock.schedule_once(partial(
+                self.add_entity_to_deactivated, entity_id), 1.0)
 
     def add_entity_to_deactivated(self, int entity_id, dt):
         self.deactivated_entities.append(entity_id)
@@ -104,6 +108,14 @@ class GameWorld(Widget):
             if system.updateable and not system.paused:
                 system._update(dt)
         Clock.schedule_once(self.remove_entities)
+
+    def update_render_state(self, object viewport):
+        camera_pos = viewport.camera_pos
+        camera_size = viewport.size
+        proj = self.matrix.view_clip(
+            -camera_pos[0], camera_size[0] + -camera_pos[0], 
+            -camera_pos[1], camera_size[1] + -camera_pos[1], 0., 100, 0)
+        self.canvas['projection_mat'] = proj
 
     def remove_entities(self, dt):
         entities_to_remove = [entity_id for entity_id in self.entities_to_remove]

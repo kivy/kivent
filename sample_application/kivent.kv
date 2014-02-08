@@ -58,38 +58,36 @@ TestGame:
 			focus_entity: True
 		GameMap:
 			gameworld: root.gameworld
-		QuadRenderer:
+		StaticQuadRenderer:
 			system_id: 'background_renderer'
-	    	render_information_from: 'position'
-	    	context_information_from: 'position'
-	    	image_mode: 'atlas'
-	    	do_scale: True
 			gameworld: root.gameworld
-		QuadTreePointRenderer:
-			system_id: 'quadtree_renderer'
-			render_information_from: 'position'
+			atlas_dir: 'assets/prerendered_backgrounds/stardust_backgrounds/'
+			atlas: 'stardust1bg'
+			do_scale: True
+			shader_source: app.shader_path + 'positionscaleshader.glsl'
+		StaticQuadRenderer:
+			system_id: 'static_renderer'
 			gameworld: root.gameworld
+			atlas_dir: 'assets/background_objects/'
+			atlas: 'background_objects'
+			shader_source: app.shader_path + 'positionshader.glsl'
 		GameSystem:
 			system_id: 'position'
 			gameworld: root.gameworld
 		ProjectileSystem:
 			system_id: 'projectile_system'
 			gameworld: root.gameworld
-			update_time: 1./30.
 		ShipSystem:
 			system_id: 'ship_system'
 			gameworld: root.gameworld
-			update_time: 1./30.
 		ShipAISystem:
 			id: ship_ai_system
 			system_id: 'ship_ai_system'
 			gameworld: root.gameworld
-			update_time: 1./30.
 		ProbeSystem:
 			id: probe_system
 			system_id: 'probe_system'
 			gameworld: root.gameworld
-			update_time: 1./30.
 		PlayerCharacter:
 			id: player_character
 			system_id: 'player_character'
@@ -100,55 +98,55 @@ TestGame:
 		AsteroidSystem:
 			id: asteroid_system
 			gameworld: root.gameworld
-			update_time: 1./30.
 		CymunkPhysics:
 			gameworld: root.gameworld
-		PhysicsRenderer:
+		DynamicRenderer:
 			gameworld: root.gameworld
-		PhysicsPointRenderer:
-			gameworld: root.gameworld
-		QuadRenderer:
+			system_id: 'physics_renderer'
+			atlas_dir: 'assets/atlas1/'
+			atlas: 'foreground_objects'
+			shader_source: app.shader_path + 'positionrotateshader.glsl'
+		DynamicRenderer:
 			gameworld: root.gameworld
 			system_id: 'lighting_renderer'
-			render_information_from: 'probe_system'
-	    	context_information_from: 'probe_system'
+			atlas_dir: 'assets/lighting/'
+			atlas: 'lighting'
+			do_rotate: True
 	    	do_color: True
+	    	shader_source: app.shader_path + 'positionrotatecolorshader.glsl'
 		ParticleManager:
 			gameworld: root.gameworld
 			size: root.size
-			max_number_particles: 30
+			max_number_particles: 100
 			pos: root.pos
-			update_time: 1./24.
-		ParticleManager:
-			system_id: 'point_particle_manager'
-			gameworld: root.gameworld
-			max_number_particles: 20
-			render_information_from: 'physics_point_renderer'
-			update_time: 1./24.
-			size: root.size
-			pos: root.pos
+			atlas_dir: 'assets/particles/'
+			atlas: 'particles'
+			shader_source: app.shader_path + 'positionrotatecolorscaleshader.glsl'
 		AsteroidsLevel:
 			id: asteroid_level
+			gameworld: root.gameworld
+		LevelBoundaries
+			system_id: 'boundary_system'
 			gameworld: root.gameworld
 		SoundSystem:
 			system_id: 'sound_system'
 			gameworld: root.gameworld
-		GameScreenManager:
-			id: gamescreenmanager
-			gameworld: root.gameworld
-			transition: SlideTransition()
-			current_level: root.current_level
-			current_lives: root.current_lives
-			number_of_asteroids: self.gameworld.number_of_asteroids
-			number_of_probes: self.gameworld.number_of_probes
-			number_of_enemies: max(self.gameworld.number_of_enemies, self.gameworld.number_of_enemies_to_spawn)
-			weapons_locked: self.gameworld.current_character_weapons_locked
-			current_health: self.gameworld.current_health
-			total_health: self.gameworld.total_health
-			current_rocket_ammo: player_character.current_rocket_ammo
-			current_bullet_ammo: player_character.current_bullet_ammo
-			pos: root.pos
-			size: root.size
+	GameScreenManager:
+		id: gamescreenmanager
+		gameworld: root.gameworld
+		transition: SlideTransition()
+		current_level: root.current_level
+		current_lives: root.current_lives
+		number_of_asteroids: self.gameworld.number_of_asteroids
+		number_of_probes: self.gameworld.number_of_probes
+		number_of_enemies: max(self.gameworld.number_of_enemies, self.gameworld.number_of_enemies_to_spawn)
+		weapons_locked: self.gameworld.current_character_weapons_locked
+		current_health: self.gameworld.current_health
+		total_health: self.gameworld.total_health
+		current_rocket_ammo: player_character.current_rocket_ammo
+		current_bullet_ammo: player_character.current_bullet_ammo
+		pos: root.pos
+		size: root.size
 
 <DebugPanel>:
     Label:
@@ -594,7 +592,7 @@ TestGame:
 		Image:
 			size_hint: (None, None)
 			pos_hint: {'x': .5 - self.size[0]/2./root.size[0]}
-			source: root.ship_dict['texture'] if root.ship_dict else None
+			source: 'assets/ships/' + root.ship_dict['texture'] + '.png' if root.ship_dict else None
 		BoxLayout:
 			orientation: 'horizontal'
 			size_hint: (.8, .2)

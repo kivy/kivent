@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
   <particleEmitterConfig>
-  <texture name="./media/particles/particle3.png"/>
+  <texture name="particle3"/>
   <sourcePositionVariance x="0" y="0"/>
   <gravity x="0" y="0"/>
   <emitterType value="0"/>

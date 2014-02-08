@@ -6,6 +6,59 @@ from kivy.atlas import Atlas
 from kivy.clock import Clock
 from functools import partial
 
+class LevelBoundaries(GameSystem):
+
+    def generate_boundaries(self):
+        gameworld = self.gameworld
+        map_pos = gameworld.pos
+        map_size = gameworld.currentmap.map_size
+        pos = (map_pos[0] + .5*map_size[0], map_pos[1] + .5*map_size[1])
+        shape_dict = {'width': map_size[0], 'height': map_size[1], 'mass': 0}
+        col_shape_dict = {'shape_type': 'box', 
+            'elasticity': 0.0, 'collision_type': 10, 
+            'shape_info': shape_dict, 'friction': 0.0}
+        physics_component_dict = {'main_shape': 'box', 'velocity': (0, 0), 
+            'position': pos, 'angle':0, 'angular_velocity': 0,
+            'mass': 0, 'vel_limit': 0, 'ang_vel_limit': 0, 
+            'col_shapes': [col_shape_dict]}
+        boundary_system = {}
+        create_component_dict = {'cymunk-physics': physics_component_dict, 
+                                 'boundary_system': boundary_system}
+        component_order = ['cymunk-physics', 'boundary_system']
+        self.gameworld.init_entity(create_component_dict, component_order)
+
+    def clear(self):
+        for entity_id in self.entity_ids:
+            Clock.schedule_once(partial(
+                self.gameworld.timed_remove_entity, entity_id))
+
+    def collision_separate_func(self, space, arbiter):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        entity_id = arbiter.shapes[0].body.data
+        entity = entities[entity_id]
+        map_pos = gameworld.pos
+        map_size = gameworld.currentmap.map_size
+        mapw, maph = map_size
+        physics_data = entity['cymunk-physics']
+        body = physics_data['body']
+        x_pos, y_pos = body.position
+        if x_pos < map_pos[0] or x_pos > mapw:
+            new_x = mapw - x_pos
+        else:
+            new_x = x_pos
+        if y_pos < map_pos[1] or y_pos > maph:
+            new_y = maph - y_pos
+        else:
+            new_y = y_pos
+        body.position = (new_x, new_y)
+        return False
+
+    def collision_begin_func(self, space, arbiter):
+        return False
+
+
+
 class AsteroidsLevel(GameSystem):
     system_id = StringProperty('asteroids_level')
     current_level_id = NumericProperty(0)
@@ -19,9 +72,9 @@ class AsteroidsLevel(GameSystem):
             self.current_level_id = 0
 
     def generate_new_level(self, dt):
-        level_win_conditions = [(True, False, False), (False, True, False), 
+        level_win_conditions = [(False, True, False), (False, False, True), 
         (False, False, True), (False, True, True), (False, False, True)]
-        level_number_of_enemies = [1, 0, 1, 2, 3]
+        level_number_of_enemies = [0, 1, 1, 2, 3]
         self.number_of_enemies_to_spawn = level_number_of_enemies[
             self.current_level_id]
         current_level_win_conditions = level_win_conditions[
@@ -30,29 +83,25 @@ class AsteroidsLevel(GameSystem):
         self.do_probes = current_level_win_conditions[1]
         self.do_enemies = current_level_win_conditions[2]
         dust_choices_gold = [
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust1.atlas', 
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust4.atlas',
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust7.atlas',
+        'stardust1bg', 
+        'stardust4bg',
+        'stardust7bg',
             ] 
         dust_choices_green = [
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust2.atlas', 
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust5.atlas',
+        'stardust2bg', 
+        'stardust5bg',
             ]
         dust_choices_purple = [
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust3.atlas',
+        'stardust3bg',
             ]
         dust_choices_blue = [
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust6.atlas', 
-        'assets/prerendered_backgrounds/stardust_backgrounds/stardust8.atlas',
+        'stardust6bg', 
+        'stardust8bg',
             ]
-        star_choice_gold = ['assets/background_objects/star3.png', 
-            'assets/background_objects/star7.png']
-        star_choice_green = ['assets/background_objects/star5.png', 
-            'assets/background_objects/star8.png']
-        star_choice_blue = ['assets/background_objects/star1.png', 
-            'assets/background_objects/star2.png']
-        star_choice_purple = ['assets/background_objects/star4.png', 
-            'assets/background_objects/star6.png']
+        star_choice_gold = ['star3', 'star7']
+        star_choice_green = ['star5', 'star8']
+        star_choice_blue = ['star1', 'star2']
+        star_choice_purple = ['star4', 'star6']
         color_choice = [star_choice_gold, star_choice_green, 
             star_choice_purple, star_choice_blue]
         first_color_choice = random.choice(color_choice)
@@ -66,7 +115,7 @@ class AsteroidsLevel(GameSystem):
             num_star_1, num_star_2, num_star_3, num_star_4)
         #generate background
         chance_of_dust = random.random()
-        if chance_of_dust >= .5:
+        if chance_of_dust >= 0.35:
             if first_color_choice == star_choice_gold:
                 bg_choice = random.choice(dust_choices_gold)
             if first_color_choice == star_choice_green:
@@ -75,6 +124,7 @@ class AsteroidsLevel(GameSystem):
                 bg_choice = random.choice(dust_choices_blue)
             if first_color_choice == star_choice_purple:
                 bg_choice = random.choice(dust_choices_purple)
+            print bg_choice
             self.generate_prerendered_background(bg_choice, (512, 512))
         self.choose_damping()
         self.choose_gravity()
@@ -83,7 +133,7 @@ class AsteroidsLevel(GameSystem):
 
     def begin_spawning_of_ai(self):
         if self.number_of_enemies_to_spawn > 0:
-            time_to_ship_spawn = random.random()*10.0
+            time_to_ship_spawn = random.random()*15.0
             Clock.schedule_once(self.spawn_ai_ship, time_to_ship_spawn)
 
 
@@ -103,7 +153,7 @@ class AsteroidsLevel(GameSystem):
     def spawn_probes(self):
         systems = self.gameworld.systems
         probe_system = systems['probe_system']
-        number_of_probes_to_spawn = [10, 5, 0, 10, 0]
+        number_of_probes_to_spawn = [5, 0, 0, 10, 0]
         for x in range(number_of_probes_to_spawn[self.current_level_id]):
             rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
             rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
@@ -156,15 +206,21 @@ class AsteroidsLevel(GameSystem):
         rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
         rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
         create_component_dict = {'position': {'position': (rand_x, rand_y)}, 
-        'quadtree_renderer': {'texture': star_graphic, 'size': star_size}, 
+        'static_renderer': {'texture': star_graphic, 
+            'position_from': 'position'}, 
         'asteroids_level': {'level_id': self.current_level_id}}
-        component_order = ['position', 'quadtree_renderer', 'asteroids_level']
+        component_order = ['position', 'static_renderer', 'asteroids_level']
         self.gameworld.init_entity(create_component_dict, component_order)
 
     
     def generate_prerendered_background(self, atlas_address, atlas_size):
-        stardust_atlas = Atlas(atlas_address)
-        num_tiles = len(stardust_atlas.textures)
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        bg_renderer = systems['background_renderer']
+        bg_renderer.atlas = atlas_address
+        bg_renderer.clear_mesh()
+        uv_dict = bg_renderer.uv_dict
+        num_tiles = len(uv_dict)-2
         map_to_use = self.gameworld.systems['default_map']
         map_size = map_to_use.map_size
         side_length_x = math.sqrt(num_tiles)
@@ -181,12 +237,15 @@ class AsteroidsLevel(GameSystem):
                 position_dict[index] = (x * x_distance + x_distance *.5, 
                     y * y_distance + y_distance*.5)
                 index += 1
+                print index
+        print num_tiles
         for num in range(num_tiles):
+            print num
             create_component_dict = {'position': {
             'position': position_dict[num], 
-            'scale_x': scale_x, 'scale_y': scale_y}, 
-            'background_renderer': {'texture': atlas_address, 
-            'texture_key': str(num+1), 'size': size}, 
+            'scale': scale_x/2.}, 
+            'background_renderer': {'texture': str(num+1), 'size': size,
+            'position_from': 'position', 'scale_from': 'position'}, 
             'asteroids_level': {'level_id': self.current_level_id}}
             component_order = ['position', 'background_renderer', 
                 'asteroids_level']
@@ -200,7 +259,7 @@ class AsteroidSystem(GameSystem):
     def generate_asteroids(self, dt):
         current_level_id = self.gameworld.systems[
             'asteroids_level'].current_level_id
-        level_asteroids = [(0, 5), (5, 15), (5, 20), (10, 0), (5,20)]
+        level_asteroids = [(5, 15), (0, 5), (5, 20), (10, 0), (5,20)]
         if current_level_id <= 4:
             num_small_asteroids = level_asteroids[current_level_id][1]
             num_big_asteroids = level_asteroids[current_level_id][0]
@@ -245,7 +304,8 @@ class AsteroidSystem(GameSystem):
         'asteroid_size': 2, 'pending_destruction': False}
         create_component_dict = {'cymunk-physics': physics_component, 
         'physics_renderer': {'texture': 
-            'assets/background_objects/asteroid2.png'}, 
+            'asteroid2',
+            'position_from': 'cymunk-physics', 'rotate_from': 'cymunk-physics'}, 
         'asteroid_system': asteroid_component}
         component_order = ['cymunk-physics', 'physics_renderer', 
             'asteroid_system']
@@ -274,7 +334,9 @@ class AsteroidSystem(GameSystem):
         'asteroid_size': 1, 'pending_destruction': False}
         create_component_dict = {'cymunk-physics': physics_component, 
         'physics_renderer': {'texture': 
-            'assets/background_objects/asteroid1.png'}, 
+            'asteroid1',
+            'position_from': 'cymunk-physics', 
+            'rotate_from': 'cymunk-physics'}, 
         'asteroid_system': asteroid_component}
         component_order = ['cymunk-physics', 'physics_renderer', 
             'asteroid_system']

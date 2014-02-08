@@ -1,293 +1,323 @@
-from kivy.properties import (NumericProperty, BooleanProperty, ListProperty, 
-    StringProperty, ObjectProperty, BoundedNumericProperty)
-from kivy.graphics import (Color, Callback, Rotate, PushMatrix, 
-    PopMatrix, Translate, Quad, Scale, Point)
-from libc.math cimport pow as power
-from libc.math cimport sqrt, sin, cos, fmax, fmin
-from random import random
-from kivy.event import EventDispatcher
+from cpython cimport bool
 
-EMITTER_TYPE_GRAVITY = 0
-EMITTER_TYPE_RADIAL = 1
+cdef class keParticleEmitter:
+    cdef EmitterConfig emitter_config
+    cdef float emit_angle
+    cdef float x
+    cdef float y
+    cdef float life_span
+    cdef bool paused
+    cdef int emitter_type
+    cdef float emission_rate
+    cdef int number_of_particles
+    cdef float frame_time
 
-cdef inline double calc_distance(tuple point_1, tuple point_2):
-    cdef double x_dist2 = power(point_2[0] - point_1[0], 2)
-    cdef double y_dist2 = power(point_2[1] - point_1[1], 2)
-    return sqrt(x_dist2 + y_dist2)
+    def __cinit__(self):
+        self.emit_angle = 0.0
+        self.x = 0.0
+        self.y = 0.0
+        self.life_span = 1.0
+        self.paused = False
+        self.emitter_type = 0
+        self.number_of_particles = 10
+        self.emission_rate = 1.0
+        self.frame_time = 0.0
 
-cdef inline double random_variance(double base, double variance):
-    return base + variance * (random() * 2.0 - 1.0)
+    def calculate_emission_rate(self):
+        number_of_particles = self.number_of_particles
+        life_span = self.life_span
+        self.emission_rate = <float>number_of_particles / life_span
 
-cdef inline list random_color_variance(list base, list variance):
-    return [fmin(fmax(0.0, (random_variance(base[i], variance[i]))), 1.0) 
-            for i in range(4)]
+    property x:
+        def __get__(self):
+            return self.x
+        def __set__(self, float value):
+            self.x = value
 
-class ParticleEmitter(EventDispatcher):
-    max_num_particles = NumericProperty(200)
-    adjusted_num_particles = NumericProperty(200)
-    life_span = NumericProperty(2)
-    texture = ObjectProperty(None)
-    texture_path = StringProperty(None)
-    life_span_variance = NumericProperty(0)
-    start_size = NumericProperty(16)
-    start_size_variance = NumericProperty(0)
-    end_size = NumericProperty(16)
-    end_size_variance = NumericProperty(0)
-    emit_angle = NumericProperty(0)
-    emit_angle_variance = NumericProperty(0)
-    start_rotation = NumericProperty(0)
-    start_rotation_variance = NumericProperty(0)
-    end_rotation = NumericProperty(0)
-    end_rotation_variance = NumericProperty(0)
-    emitter_x_variance = NumericProperty(100)
-    emitter_y_variance = NumericProperty(100)
-    gameworld = ObjectProperty(None)
-    particle_manager = ObjectProperty(None)
-    fbo = ObjectProperty(None)
-    gravity_x = NumericProperty(0)
-    gravity_y = NumericProperty(0)
-    speed = NumericProperty(0)
-    speed_variance = NumericProperty(0)
-    radial_acceleration = NumericProperty(100)
-    radial_acceleration_variance = NumericProperty(0)
-    tangential_acceleration = NumericProperty(0)
-    tangential_acceleration_variance = NumericProperty(0)
-    max_radius = NumericProperty(100)
-    max_radius_variance = NumericProperty(0)
-    min_radius = NumericProperty(50)
-    rotate_per_second = NumericProperty(0)
-    rotate_per_second_variance = NumericProperty(0)
-    start_color = ListProperty([1.,1.,1.,1.])
-    start_color_variance = ListProperty([1.,1.,1.,1.])
-    end_color = ListProperty([1.,1.,1.,1.])
-    end_color_variance = ListProperty([1.,1.,1.,1.])
-    emitter_type = NumericProperty(0)
-    current_scroll = ListProperty((0, 0))
-    friction = NumericProperty(0.0)
-    _is_paused = BooleanProperty(False)
+    property y:
+        def __get__(self):
+            return self.y
+        def __set__(self, float value):
+            self.y = value
 
+    property emitter_config:
+        def __get__(self):
+            return self.emitter_config
+        def __set__(self, emitter_config):
+            self.emitter_config = emitter_config
 
-    def __init__(self, fbo, **kwargs):
-        self.particles = list()
-        self.fbo = fbo
-        self.frame_time = 0
-        super(ParticleEmitter, self).__init__(**kwargs)
+    property emit_angle:
+        def __get__(self):
+            return self.emit_angle
+        def __set__(self, float value):
+            self.emit_angle = value
 
-    def on_adjusted_num_particles(self, instance, value):
-        self.emission_rate = value / self.life_span
+    property life_span:
+        def __get__(self):
+            return self.life_span
+        def __set__(self, float value):
+            self.life_span = value
+            self.calculate_emission_rate()
 
-    def on_max_number_particles(self, instance, value):
-        self.emission_rate = value / self.life_span
+    property paused:
+        def __get__(self):
+            return self.paused
+        def __set__(self, value):
+            self.paused = value
 
-    def receive_particle(self, int entity_id):
-        cdef dict entity = self.gameworld.entities[entity_id]
-        cdef list particles = self.particles
-        particles.append(entity_id)
-        cdef dict particle_manager = entity['particle_manager']
-        cdef Particle particle = particle_manager['particle']
-        particle_manager['color'] = None
-        particle_manager['translate'] = None
-        particle_manager['scale'] = None
-        particle_manager['rotate'] = None
-        particle_manager['point'] = None
-        self.init_particle(particle)
-        self.draw_particle(entity)
+    property emitter_type:
+        def __get__(self):
+            return self.emitter_type
+        def __set__(self, value):
+            self.emitter_type = value
 
-    def draw_particle(self, dict entity):
-        cdef dict particle_manager = entity['particle_manager']
-        cdef Particle particle = particle_manager['particle']
-        group_id = str(entity['id'])
-        current_scroll = self.current_scroll
-        cdef list color = particle.color[:]
-        with self.particle_manager.canvas:
-        #with self.fbo:
-            PushMatrix(group=group_id)
-            particle_manager['color'] = Color(color[0], color[1], 
-                color[2], color[3], group=group_id)
-            particle_manager['translate'] = Translate(group=group_id)
-            particle_manager['scale'] = Scale(x=particle.scale, 
-                y=particle.scale, group=group_id)
-            particle_manager['rotate'] = Rotate(group=group_id)
-            particle_manager['rotate'].set(particle.rotation, 0, 0, 1)
-            particle_manager['rect'] = Point(texture=self.texture, 
-                points=(0,0), group=group_id)   
-            particle_manager['translate'].xy = (particle.x + 
-                current_scroll[0], 
-                particle.y + current_scroll[1])
-            PopMatrix(group=group_id)
-
-    def render_particle(self, dict entity):
-        cdef dict particle_manager = entity['particle_manager']
-        cdef Particle particle = particle_manager['particle']
-        current_scroll = self.current_scroll
-        particle_manager['rotate'].angle = particle.rotation
-        particle_manager['scale'].x = particle.scale
-        particle_manager['scale'].y = particle.scale
-        particle_manager['translate'].xy = (particle.x + 
-            current_scroll[0], 
-            particle.y + current_scroll[1])
-        particle_manager['color'].rgba = particle.color
-
-    def free_all_particles(self):
-        cdef list particles_to_free = [particle for particle in self.particles]
-        cdef int entity_id
-        for entity_id in particles_to_free:
-            self.free_particle(entity_id)
+    property number_of_particles:
+        def __get__(self):
+            return self.number_of_particles
+        def __set__(self, value):
+            self.number_of_particles = value
+            self.calculate_emission_rate()
 
 
-    def free_particle(self, int entity_id):
-        cdef list particles = self.particles
-        self.particle_manager.canvas.remove_group(str(entity_id))
-        self.particle_manager.free_particle(particles.pop(particles.index(entity_id)))
+cdef class EmitterConfig:
+    cdef float life_span_variance
+    cdef float start_size
+    cdef float start_size_variance
+    cdef float end_size
+    cdef float end_size_variance
+    cdef float emit_angle_variance
+    cdef float start_rotation
+    cdef float start_rotation_variance
+    cdef float end_rotation
+    cdef float end_rotation_variance
+    cdef float emitter_x_variance
+    cdef float emitter_y_variance
+    cdef float gravity_x
+    cdef float gravity_y
+    cdef float speed
+    cdef float speed_variance
+    cdef float radial_acceleration
+    cdef float radial_acceleration_variance
+    cdef float tangential_acceleration
+    cdef float tangential_acceleration_variance
+    cdef float max_radius
+    cdef float max_radius_variance
+    cdef float min_radius
+    cdef float rotate_per_second
+    cdef float rotate_per_second_variance
+    cdef keColor start_color
+    cdef keColor start_color_variance
+    cdef keColor end_color
+    cdef keColor end_color_variance
+    cdef keTexInfo tex_info
 
-    def on_life_span(self,instance,value):
-        self.emission_rate = self.max_num_particles/value
+    def __cinit__(self):
+        cdef keColor default
+        life_span_variance = 0.0
+        gravity_x = 0.0
+        gravity_y = 0.0
+        start_size = 10.0
+        start_size_variance = 0.0
+        end_size = 1.0
+        end_size_variance = 0.0
+        emit_angle_variance = 0.0
+        start_rotation = 0.0
+        start_rotation_variance = 0.0
+        end_rotation = 0.0
+        end_rotation_variance = 0.0
+        emitter_x_variance = 0.0
+        emitter_y_variance = 0.0
+        speed = 10.0
+        speed_variance = 0.0
+        radial_acceleration = 0.0
+        radial_acceleration_variance = 0.0
+        tangential_acceleration = 0.0
+        tangential_acceleration_variance = 0.0
+        max_radius = 25.0
+        max_radius_variance = 0.0
+        min_radius = 0.0
+        rotate_per_second = 0.0
+        rotate_per_second_variance = 0.0
+        default.r = 1.0
+        default.g = 1.0
+        default.b = 1.0
+        default.a = 1.0
+        start_color = default
+        start_color_variance = default
+        end_color = default
+        end_color_variance = default
+        emitter_type = 0.0
 
-    def init_particle(self, Particle particle):
-        cdef double life_span = random_variance(self.life_span, 
-            self.life_span_variance)
-        if life_span <= 0.0:
-            return
-        pos = self.pos
+    property life_span_variance:
+        def __get__(self):
+            return self.life_span_variance
+        def __set__(self, value):
+            self.life_span_variance = value
 
-        particle.current_time = 0.0
-        particle.total_time = life_span
-        particle.x = random_variance(pos[0], self.emitter_x_variance)
-        particle.y = random_variance(pos[1], self.emitter_y_variance)
-        particle.start_x = pos[0]
-        particle.start_y = pos[1]
+    property gravity_x:
+        def __get__(self):
+            return self.gravity_x
+        def __set__(self, value):
+            self.gravity_x = value
 
-        cdef double angle = random_variance(self.emit_angle, 
-            self.emit_angle_variance)
-        cdef double speed = random_variance(self.speed, self.speed_variance)
-        particle.velocity_x = speed * cos(angle)
-        particle.velocity_y = speed * sin(angle)
+    property gravity_y:
+        def __get__(self):
+            return self.gravity_y
+        def __set__(self, value):
+            self.gravity_y = value
 
-        particle.emit_radius = random_variance(self.max_radius, 
-            self.max_radius_variance)
-        particle.emit_radius_delta = (self.max_radius - 
-            self.min_radius) / life_span
+    property start_size:
+        def __get__(self):
+            return self.start_size
+        def __set__(self, value):
+            self.start_size = value
 
-        particle.emit_rotation = random_variance(self.emit_angle, 
-            self.emit_angle_variance)
-        particle.emit_rotation_delta = random_variance(self.rotate_per_second, 
-            self.rotate_per_second_variance)
+    property start_size_variance:
+        def __get__(self):
+            return self.start_size_variance
+        def __set__(self, value):
+            self.start_size_variance = value
 
-        particle.radial_acceleration = random_variance(
-            self.radial_acceleration, 
-            self.radial_acceleration_variance)
-        particle.tangent_acceleration = random_variance(
-            self.tangential_acceleration, 
-            self.tangential_acceleration_variance)
+    property end_size:
+        def __get__(self):
+            return self.end_size
+        def __set__(self, value):
+            self.end_size = value
 
-        cdef double start_size = random_variance(self.start_size, 
-            self.start_size_variance)
-        cdef double end_size = random_variance(self.end_size, 
-            self.end_size_variance)
+    property end_size_variance:
+        def __get__(self):
+            return self.end_size_variance
+        def __set__(self, value):
+            self.end_size_variance = value
 
-        start_size = max(0.1, start_size)
-        end_size = max(0.1, end_size)
+    property emit_angle_variance:
+        def __get__(self):
+            return self.emit_angle_variance
+        def __set__(self, value):
+            self.emit_angle_variance = value
 
-        particle.scale = start_size / 2.
-        particle.scale_delta = ((end_size - start_size) / life_span) / 2.
+    property start_rotation:
+        def __get__(self):
+            return self.start_rotation
+        def __set__(self, value):
+            self.start_rotation = value
 
-        # colors
-        cdef list start_color = random_color_variance(self.start_color[:], 
-            self.start_color_variance[:])
-        cdef list end_color = random_color_variance(self.end_color[:], 
-            self.end_color_variance[:])
+    property start_rotation_variance:
+        def __get__(self):
+            return self.start_rotation_variance
+        def __set__(self, value):
+            self.start_rotation_variance = value
 
-        particle.color_delta = [(end_color[i] - 
-            start_color[i]) / life_span for i in range(4)]
-        particle.color = start_color
+    property end_rotation:
+        def __get__(self):
+            return self.end_rotation
+        def __set__(self, value):
+            self.end_rotation = value
 
-        # rotation
-        cdef double start_rotation = random_variance(self.start_rotation, 
-            self.start_rotation_variance)
-        cdef double end_rotation = random_variance(self.end_rotation, 
-            self.end_rotation_variance)
-        particle.rotation = start_rotation
-        particle.rotation_delta = (end_rotation - start_rotation) / life_span
+    property end_rotation_variance:
+        def __get__(self):
+            return self.end_rotation_variance
+        def __set__(self, value):
+            self.end_rotation_variance = value
 
-    def advance_particle_gravity(self, Particle particle, float passed_time):
-        cdef double distance_x = particle.x - particle.start_x
-        cdef double distance_y = particle.y - particle.start_y
-        cdef tuple start_pos = (particle.start_x, particle.start_y)
-        cdef tuple current_pos = (particle.x, particle.y)
-        cdef double distance_scalar = calc_distance(start_pos, current_pos)
-        if distance_scalar < 0.01:
-            distance_scalar = 0.01
+    property emitter_x_variance:
+        def __get__(self):
+            return self.emitter_x_variance
+        def __set__(self, value):
+            self.emitter_x_variance = value
 
-        cdef double radial_x = distance_x / distance_scalar
-        cdef double radial_y = distance_y / distance_scalar
-        cdef double tangential_x = radial_x
-        cdef double tangential_y = radial_y
+    property emitter_y_variance:
+        def __get__(self):
+            return self.emitter_y_variance
+        def __set__(self, value):
+            self.emitter_y_variance = value
 
-        radial_x *= particle.radial_acceleration
-        radial_y *= particle.radial_acceleration
+    property speed:
+        def __get__(self):
+            return self.speed
+        def __set__(self, value):
+            self.speed = value
 
-        cdef double new_y = tangential_x
-        tangential_x = -tangential_y * particle.tangent_acceleration
-        tangential_y = new_y * particle.tangent_acceleration
+    property speed_variance:
+        def __get__(self):
+            return self.speed_variance
+        def __set__(self, value):
+            self.speed_variance = value
 
-        particle.velocity_x += passed_time * (self.gravity_x + 
-            radial_x + tangential_x)
-        particle.velocity_y += passed_time * (self.gravity_y + 
-            radial_y + tangential_y)
+    property radial_acceleration:
+        def __get__(self):
+            return self.radial_acceleration
+        def __set__(self, value):
+            self.radial_acceleration = value
 
-        particle.velocity_x -= particle.velocity_x * self.friction
-        particle.velocity_y -= particle.velocity_y * self.friction
+    property radial_acceleration_variance:
+        def __get__(self):
+            return self.radial_acceleration_variance
+        def __set__(self, value):
+            self.radial_acceleration_variance = value
 
-        particle.x += particle.velocity_x * passed_time
-        particle.y += particle.velocity_y * passed_time
+    property tangential_acceleration:
+        def __get__(self):
+            return self.tangential_acceleration
+        def __set__(self, value):
+            self.tangenialt_acceleration = value
 
-    def advance_particle(self, Particle particle, float passed_time):
-        passed_time = min(passed_time, particle.total_time - 
-            particle.current_time)
-        particle.current_time += passed_time
+    property tangential_acceleration_variance:
+        def __get__(self):
+            return self.tangential_acceleration_variance
+        def __set__(self, value):
+            self.tangential_acceleration_variance = value
 
-        if self.emitter_type == EMITTER_TYPE_RADIAL:
-            pos = self.pos
-            particle.emit_rotation += (particle.emit_rotation_delta * 
-                passed_time)
-            particle.emit_radius -= particle.emit_radius_delta * passed_time
-            particle.x = (pos[0] - 
-                cos(particle.emit_rotation) * particle.emit_radius)
-            particle.y = (pos[1] - 
-                sin(particle.emit_rotation) * particle.emit_radius)
+    property max_radius:
+        def __get__(self):
+            return self.max_radius
+        def __set__(self, value):
+            self.max_radius = value
 
-            if particle.emit_radius < self.min_radius:
-                particle.current_time = particle.total_time
+    property max_radius_variance:
+        def __get__(self):
+            return self.max_radius_variance
+        def __set__(self, value):
+            self.max_radius_variance = value
 
-        else:
-            self.advance_particle_gravity(particle, passed_time)
+    property min_radius:
+        def __get__(self):
+            return self.min_radius
+        def __set__(self, value):
+            self.min_radius = value
 
-        particle.scale += particle.scale_delta * passed_time
-        particle.rotation += particle.rotation_delta * passed_time
+    property rotate_per_second:
+        def __get__(self):
+            return self.rotate_per_second
+        def __set__(self, value):
+            self.rotate_per_second = value
 
-        particle.color = [particle.color[i] + particle.color_delta[i] * 
-            passed_time for i in range(4)]
+    property rotate_per_second_variance:
+        def __get__(self):
+            return self.rotate_per_second_variance
+        def __set__(self, value):
+            self.rotate_per_second_variance = value
 
+    property start_color:
+        def __get__(self):
+            return self.start_color
+        def __set__(self, value):
+            self.start_color = value
 
-    def update(self, float dt):
-        '''
-        loop through particles
-        if total_time < current_time:
-            free particle
-        else:
-            advance_particle
-        '''
-        gameworld = self.gameworld
-        cdef list entities = gameworld.entities
-        cdef Particle particle
-        cdef dict entity
-        cdef list particles = self.particles
-        for entity_id in particles:
-            entity = entities[entity_id]
-            particle = entity['particle_manager']['particle']
-            if particle.total_time <= particle.current_time:
-                self.free_particle(entity_id)
-            else:
-                self.advance_particle(particle, dt)
-                self.render_particle(entity)
+    property start_color_variance:
+        def __get__(self):
+            return self.start_color_variance
+        def __set__(self, value):
+            self.start_color_variance = value
 
+    property end_color:
+        def __get__(self):
+            return self.end_color
+        def __set__(self, value):
+            self.end_color = value
+
+    property end_color_variance:
+        def __get__(self):
+            return self.end_color_variance
+        def __set__(self, value):
+            self.end_color_variance = value

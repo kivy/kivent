@@ -10,6 +10,23 @@ from kivy.graphics.transformation import Matrix
 import json
 
 
+cdef class CRenderer:
+    cdef void* frame_info_ptr
+    cdef void* indice_info_ptr
+    cdef long i_count
+    cdef long v_count
+
+    def __dealloc__(self):
+        frame_info = <float *>self.frame_info_ptr
+        if frame_info != NULL:
+            free(frame_info)
+            frame_info = NULL
+        indice_info = <unsigned short *>self.indice_info_ptr
+        if indice_info != NULL:
+            free(indice_info)
+            indice_info = NULL
+
+
 class Renderer(GameSystem):
     system_id = StringProperty('renderer')
     updateable = BooleanProperty(True)
@@ -29,6 +46,7 @@ class Renderer(GameSystem):
         super(Renderer, self).__init__(**kwargs)
         self.redraw = Clock.create_trigger(self.trigger_redraw)
         self.vertex_format = self.calculate_vertex_format()
+        self.crenderer = CRenderer()
         
     def on_shader_source(self, instance, value):
         self.canvas.shader.source = value
@@ -95,34 +113,76 @@ class Renderer(GameSystem):
         cdef list entities = gameworld.entities
         cdef str system_id = self.system_id
         cdef list entity_ids = entities_to_draw
-        do_color = self.do_color
-        do_scale = self.do_scale
-        do_rotate = self.do_rotate
-        cdef str position_information_from
-        cdef str scale_information_from
-        cdef str rotate_information_from
-        cdef str color_information_from
+        cdef CRenderer cr = self.crenderer
+        cdef CMesh cmesh
+        cdef bool do_color = self.do_color
+        cdef bool do_scale = self.do_scale
+        cdef bool do_rotate = self.do_rotate
         cdef dict entity
         cdef dict system_data
-        cdef dict position_information
-        cdef dict scale_information
-        cdef dict rotate_information
-        cdef dict color_information
+        cdef str position_from
+        cdef str scale_from
+        cdef str rotate_from
+        cdef str color_from
         vertex_format = self.vertex_format
-        cdef list indices = []
+        cdef int vert_data_count = 6
+        if do_scale:
+            vert_data_count += 1
+        if do_rotate:
+            vert_data_count += 1
+        if do_color:
+            vert_data_count += 4
+        cdef int num_elements = len(entity_ids)
+        cdef int i
+        cdef int entity_id
+        cdef void* indices_ptr
+        cdef float* frame_info
+        cdef unsigned short * indice_info
+        frame_info = <float *>cr.frame_info_ptr
+        if frame_info != NULL:
+            free(frame_info)
+            frame_info = NULL
+        indice_info = <unsigned short *>cr.indice_info_ptr
+        if indice_info != NULL:
+            free(indice_info)
+            indice_info = NULL
+        cr.indice_info_ptr = indices_ptr = <void *>malloc(
+            sizeof(unsigned short) * num_elements * 6)
+        cdef void* frame_ptr
+        cr.frame_info_ptr = frame_ptr = <void *>malloc(sizeof(float) * 
+            num_elements * 4 * vert_data_count)
+        if not frame_ptr or not indices_ptr:
+            raise MemoryError()
+        cdef unsigned short * indices_info = <unsigned short *>indices_ptr
+        frame_info = <float *>frame_ptr
         cdef dict uv_dict = self.uv_dict
-        ie = indices.extend
-        cdef list vertices = []
-        e = vertices.extend
-        for entity_n in range(len(entity_ids)):
-            offset = 4 * entity_n
-            ie([0 + offset, 1 + offset, 
-                2 + offset, 2 + offset,
-                3 + offset, 0 + offset])
-        for entity_id in entity_ids:
+        cdef int offset 
+        cdef int indice_offset
+        cr.v_count = <long>num_elements * 4 * vert_data_count
+        cr.i_count = <long>num_elements * 6
+        cdef int index
+        cdef float rotate
+        cdef float x, y
+        cdef float x0, y0, x1, y1
+        cdef float w, h
+        cdef int fr_index
+        cdef tuple color
+        cdef float scale
+        cdef float r, g, b, a
+        for i in range(num_elements):
+            entity_id = entity_ids[i]
             entity = entities[entity_id]
             if system_id not in entity:
                 continue
+            offset = 4 * i
+            indice_offset = i*6
+            index = 4 * vert_data_count * i
+            indices_info[indice_offset] = 0 + offset
+            indices_info[indice_offset+1] = 1 + offset
+            indices_info[indice_offset+2] = 2 + offset
+            indices_info[indice_offset+3] = 2 + offset
+            indices_info[indice_offset+4] = 3 + offset
+            indices_info[indice_offset+5] = 0 + offset
             system_data = entity[system_id]
             position_from = system_data['position_from']
             if do_scale:
@@ -138,36 +198,86 @@ class Renderer(GameSystem):
                 w, h = uv[4], uv[5]
                 x0, y0 = uv[0], uv[1]
                 x1, y1 = uv[2], uv[3]
-                vertex1 = [-w, -h, x0, y0, position[0], position[1]]
-                vertex2 = [w, -h, x1, y0, position[0], position[1]]
-                vertex3 = [w, h, x1, y1, position[0], position[1]]
-                vertex4 = [-w, h, x0, y1, position[0], position[1]]
-                verts = [vertex1, vertex2, vertex3, vertex4]
+                x, y = position[0], position[1]
+                frame_info[index] = -w
+                frame_info[index+1] = -h
+                frame_info[index+2] = x0
+                frame_info[index+3] = y0
+                frame_info[index+4] = x
+                frame_info[index+5] = y
+                frame_info[index+vert_data_count] = w
+                frame_info[index+vert_data_count+1] = -h
+                frame_info[index+vert_data_count+2] = x1
+                frame_info[index+vert_data_count+3] = y0
+                frame_info[index+vert_data_count+4] = x
+                frame_info[index+vert_data_count+5] = y
+                frame_info[index+2*vert_data_count] = w
+                frame_info[index+2*vert_data_count+1] = h
+                frame_info[index+2*vert_data_count+2] = x1
+                frame_info[index+2*vert_data_count+3] = y1
+                frame_info[index+2*vert_data_count+4] = x
+                frame_info[index+2*vert_data_count+5] = y
+                frame_info[index+3*vert_data_count] = -w
+                frame_info[index+3*vert_data_count+1] = h
+                frame_info[index+3*vert_data_count+2] = x0
+                frame_info[index+3*vert_data_count+3] = y1
+                frame_info[index+3*vert_data_count+4] = x
+                frame_info[index+3*vert_data_count+5] = y
+                fr_index = 6
                 if do_rotate:
                     rotate = entity[rotate_from]['angle']
-                    for vert in verts:
-                        vert.append(rotate)
+                    frame_info[index+fr_index] = rotate
+                    frame_info[index+vert_data_count+fr_index] = rotate
+                    frame_info[index+2*vert_data_count+fr_index] = rotate
+                    frame_info[index+3*vert_data_count+fr_index] = rotate
+                    fr_index += 1
                 if do_color:
                     color = entity[color_from]['color']
-                    for vert in verts:
-                        vert.extend(color)
+                    r = color[0]
+                    g = color[1]
+                    b = color[2]
+                    a = color[3]
+                    frame_info[index+fr_index] = r
+                    frame_info[index+vert_data_count+fr_index] = r
+                    frame_info[index+2*vert_data_count+fr_index] = r
+                    frame_info[index+3*vert_data_count+fr_index] = r
+                    fr_index += 1
+                    frame_info[index+fr_index] = g
+                    frame_info[index+vert_data_count+fr_index] = g
+                    frame_info[index+2*vert_data_count+fr_index] = g
+                    frame_info[index+3*vert_data_count+fr_index] = g
+                    fr_index += 1
+                    frame_info[index+fr_index] = b
+                    frame_info[index+vert_data_count+fr_index] = b
+                    frame_info[index+2*vert_data_count+fr_index] = b
+                    frame_info[index+3*vert_data_count+fr_index] = b
+                    fr_index += 1
+                    frame_info[index+fr_index] = a
+                    frame_info[index+vert_data_count+fr_index] = a
+                    frame_info[index+2*vert_data_count+fr_index] = a
+                    frame_info[index+3*vert_data_count+fr_index] = a
+                    fr_index += 1
                 if do_scale:
                     scale = entity[scale_from]['scale']
-                    for vert in verts:
-                        vert.append(scale)
-                for vert in verts:
-                    e(vert)
-        if self.mesh == None:
+                    frame_info[index+fr_index] = scale
+                    frame_info[index+vert_data_count+fr_index] = scale
+                    frame_info[index+2*vert_data_count+fr_index] = scale
+                    frame_info[index+3*vert_data_count+fr_index] = scale
+                    fr_index += 1
+        mesh = self.mesh
+        if mesh == None:
             with self.canvas:
-                self.mesh = Mesh(
-                    indices=indices,
-                    vertices=vertices,
-                    fmt=vertex_format,
+                cmesh = CMesh(fmt=vertex_format,
                     mode='triangles',
                     texture=uv_dict['main_texture'])
-        else:
-            self.mesh.vertices = vertices
-            self.mesh.indices = indices
+                self.mesh = cmesh
+
+        cmesh = self.mesh
+        cmesh._vertices = cr.frame_info_ptr
+        cmesh._indices = cr.indice_info_ptr
+        cmesh.vcount = cr.v_count
+        cmesh.icount = cr.i_count
+        cmesh.flag_update()
 
     def update(self, dt):
         cdef list entity_ids = self.update_render_state()

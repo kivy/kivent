@@ -12,7 +12,6 @@ cdef class CMesh(VertexInstruction):
     cdef long vcount
     cdef long icount
 
-
     def __init__(self, **kwargs):
         VertexInstruction.__init__(self, **kwargs)
         fmt = kwargs.get('fmt')
@@ -30,7 +29,9 @@ cdef class CMesh(VertexInstruction):
         cdef long vcount = self.vcount
         cdef vsize = self.batch.vbo.vertex_format.vsize
         cdef long icount = self.icount
+        print 'start update', vcount, vsize, icount
         self.batch.set_data(vertices, <int>(vcount / vsize), indices, <int>icount)
+        print 'end update'
 
     property mode:
         '''VBO Mode used for drawing vertices/indices. Can be one of 'points',
@@ -40,3 +41,4 @@ cdef class CMesh(VertexInstruction):
             self.batch.get_mode()
         def __set__(self, mode):
             self.batch.set_mode(mode)
+

@@ -166,6 +166,7 @@ class ParticleManager(GameSystem):
         pm = self._particle_manager
         calculate_particle_offset = self.calculate_particle_offset
         for entity_id in self.entity_ids:
+
             entity = entities[entity_id]
             particle_systems = entity[system_data_from]
             for particle_effect in particle_systems:

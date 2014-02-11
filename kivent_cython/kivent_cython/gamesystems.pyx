@@ -189,21 +189,32 @@ class GameView(GameSystem):
                 self.camera_pos[1] += dist_y
 
     def lock_scroll(self, float distance_x, float distance_y):
-        camera_pos = self.camera_pos
         currentmap = self.gameworld.currentmap
-        map_size = currentmap.map_size
-        margins = currentmap.margins
         size = self.size
         pos = self.pos
-        if camera_pos[0] + distance_x > pos[0] + margins[0]:
-            distance_x = pos[0] - camera_pos[0] + margins[0]
-        elif camera_pos[0] + map_size[0] + distance_x <= pos[0] + size[0] - margins[0]:
-            distance_x = pos[0] + size[0] - margins[0] - camera_pos[0] - map_size[0]
+        map_size = currentmap.map_size
+        margins = currentmap.margins
+        camera_pos = self.camera_pos
+        cdef float x= pos[0]
+        cdef float y = pos[1]
+        cdef float w = size[0]
+        cdef float h = size[1]
+        cdef float mw = map_size[0]
+        cdef float mh = map_size[1]
+        cdef float marg_x = margins[0]
+        cdef float marg_y = margins[1]
+        cdef float cx = camera_pos[0]
+        cdef float cy = camera_pos[1]
 
-        if camera_pos[1] + distance_y > pos[1] + margins[1]:
-            distance_y = pos[1] - camera_pos[1] + margins[1] 
-        elif camera_pos[1] + map_size[1] + distance_y <= pos[1] + size[1] - margins[1]:
-            distance_y = pos[1] + size[1] - camera_pos[1] - map_size[1]  - margins[1]
+        if cx + distance_x > x + marg_x:
+            distance_x = x - cx + marg_x
+        elif cx + mw + distance_x <= x + w - marg_x:
+            distance_x = x + w - marg_x - cx - mw
+
+        if cy + distance_y > y + marg_y:
+            distance_y = y - cy + marg_y 
+        elif cy + mh + distance_y <= y + h - marg_y:
+            distance_y = y + h - cy - mh  - marg_y
 
         return distance_x, distance_y
 

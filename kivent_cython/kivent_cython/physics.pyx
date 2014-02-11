@@ -1,7 +1,7 @@
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk
-import math
+from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape
 from libc.math cimport M_PI_2
 
 class CymunkPhysics(GameSystem):
@@ -9,9 +9,9 @@ class CymunkPhysics(GameSystem):
     space = ObjectProperty(None)
     gravity = ListProperty((0, 0))
     updateable = BooleanProperty(True)
-    iterations = NumericProperty(5)
-    sleep_time_threshold = NumericProperty(.5)
-    collision_slop = NumericProperty(.1)
+    iterations = NumericProperty(2)
+    sleep_time_threshold = NumericProperty(5.0)
+    collision_slop = NumericProperty(.25)
     damping = NumericProperty(1.0)
 
     def __init__(self, **kwargs):
@@ -24,7 +24,8 @@ class CymunkPhysics(GameSystem):
         
     def add_collision_handler(self, int type_a, int type_b, begin_func=None, 
         pre_solve_func=None, post_solve_func=None, separate_func=None):
-        self.space.add_collision_handler(type_a, type_b, 
+        cdef Space space = self.space
+        space.add_collision_handler(type_a, type_b, 
             begin_func, pre_solve_func, 
             post_solve_func, separate_func)
 
@@ -35,7 +36,8 @@ class CymunkPhysics(GameSystem):
         self.space.damping = value
 
     def init_physics(self):
-        self.space = space = cymunk.Space()
+        cdef Space space
+        self.space = space = Space()
         space.iterations = self.iterations
         space.gravity = self.gravity
         space.damping = self.damping
@@ -45,7 +47,7 @@ class CymunkPhysics(GameSystem):
         space.register_bb_query_func(self.bb_query_func)
         space.register_segment_query_func(self.segment_query_func)
 
-    def bb_query_func(self, object shape):
+    def bb_query_func(self, Shape shape):
         self.bb_query_result.append(shape.body.data)
 
     def segment_query_func(self, object shape, float t, dict n):
@@ -66,10 +68,11 @@ class CymunkPhysics(GameSystem):
         return self.segment_query_result
 
     def query_bb(self, list box_to_query):
-        bb = cymunk.BB(
+        cdef Space space = self.space
+        bb = BB(
             box_to_query[0], box_to_query[1], box_to_query[2], box_to_query[3])
         self.bb_query_result = []
-        self.space.space_bb_query(bb)
+        space.space_bb_query(bb)
         return self.bb_query_result
 
     def generate_component_data(self, dict entity_component_dict):
@@ -95,10 +98,10 @@ class CymunkPhysics(GameSystem):
         '''
         cdef dict shape = entity_component_dict['col_shapes'][0]
         cdef float moment
-        cdef object body
-        cdef object space
+        cdef Body body
+        cdef Space space
         cdef list shapes
-        cdef object new_shape
+        cdef Shape new_shape
         space = self.space
 
         if shape['shape_type'] == 'circle':
@@ -115,9 +118,9 @@ class CymunkPhysics(GameSystem):
         else:
             print 'error: shape ', shape['shape_type'], 'not supported'
         if entity_component_dict['mass'] == 0:
-            body = cymunk.Body(None, None)
+            body = Body(None, None)
         else:
-            body = cymunk.Body(entity_component_dict['mass'], moment)
+            body = Body(entity_component_dict['mass'], moment)
             body.velocity = entity_component_dict['velocity']
             body.angular_velocity = entity_component_dict[
                 'angular_velocity']
@@ -136,13 +139,13 @@ class CymunkPhysics(GameSystem):
         for shape in entity_component_dict['col_shapes']:
             shape_info = shape['shape_info']
             if shape['shape_type'] == 'circle':
-                new_shape = cymunk.Circle(body, shape_info['outer_radius']) 
+                new_shape = Circle(body, shape_info['outer_radius']) 
                 new_shape.friction = shape['friction']
             elif shape['shape_type'] == 'box':
                 #we need to switch the width and height of our objects 
                 #because kivy's drawing is
                 #oriented at a 90 degree angle to chipmunk
-                new_shape = cymunk.BoxShape(
+                new_shape = BoxShape(
                     body, shape_info['height'], shape_info['width'])
                 new_shape.friction = shape['friction']
             else:
@@ -165,27 +168,32 @@ class CymunkPhysics(GameSystem):
             entity_id, entity_component_dict)
 
     def remove_entity(self, int entity_id):
-        cdef object space = self.space
+        cdef Space space = self.space
         cdef dict system_data = self.gameworld.entities[
             entity_id][self.system_id]
-        cdef object shape
+        cdef Shape shape
+        cdef Body body = system_data['body']
         for shape in system_data['shapes']:
             space.remove(shape)
         system_data['shapes'] = None
-        if not system_data['body'].is_static:
-            space.remove(system_data['body'])
+        if not body.is_static:
+            space.remove(body)
         system_data['body'] = None
 
         super(CymunkPhysics, self).remove_entity(entity_id)
 
     def update(self, dt):
         cdef list entities = self.gameworld.entities
-        self.space.step(dt)
+        space = self.space
+        space.step(dt)
         cdef str system_id = self.system_id
         cdef dict entity
         cdef dict system_data
-        cdef object body
-        for entity_id in self.entity_ids:
+        cdef Body body
+        cdef int i
+        cdef list entity_ids = self.entity_ids
+        for i in range(len(entity_ids)):
+            entity_id = entity_ids[i]
             entity = entities[entity_id]
             if system_id not in entity:
                 continue

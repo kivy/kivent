@@ -306,7 +306,7 @@ class ShipSystem(GameSystem):
         'width': 62, 'height': 100, 'offset_distance': 50, 'color': 'orange',
         'engine_effect': 'assets/pexfiles/engine_burn_effect6.pex', 'engine_offset': 27,
         'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
-        'hard_points': [(-18, 63)], 'total_rocket_ammo': 15, 'total_bullet_ammo': 150}
+        'hard_points': [(18, 63)], 'total_rocket_ammo': 15, 'total_bullet_ammo': 150}
         ship_dicts['ship_5'] = {'name': 'Cavalier','health': 110, 'mass': 120,'max_speed': 220, 
         'max_turn_speed': 125, 'accel': 22000,'angular_accel': 45, 'caliber': '8px', 
         'num_weapons': 1, 'texture': 'ship6', 'price': 1000,
@@ -334,46 +334,10 @@ class ShipSystem(GameSystem):
 
     def fire_projectiles(self, entity_id):
         gameworld = self.gameworld
-        is_character = False
-        player_character_system = gameworld.systems['player_character']
-        if entity_id == player_character_system.current_character_id:
-            is_character = True
-        character = gameworld.entities[entity_id]
-        projectile_system = gameworld.systems['projectile_system']
-        sound_system = gameworld.systems['sound_system']
-        ship_system_data = character['ship_system']
-        current_projectile_type = ship_system_data['current_projectile_type']
-        current_bullet_ammo = ship_system_data['current_bullet_ammo']
-        current_rocket_ammo = ship_system_data['current_rocket_ammo']
-        projectiles_dict = projectile_system.projectiles_dict
-        projectile_type = ship_system_data['projectile_type']+current_projectile_type
-        projectile_width = projectiles_dict[projectile_type]['width']
-        projectile_height = projectiles_dict[projectile_type]['height']
-        character_physics = character['cymunk-physics']
-        character_position = character_physics['position']
-        number_of_shots = len(ship_system_data['hard_points'])
-        if ((current_projectile_type == '_bullet' and current_bullet_ammo - number_of_shots >= 0) or 
-            (current_projectile_type == '_rocket' and current_rocket_ammo - number_of_shots >= 0)):
-            for hard_point in ship_system_data['hard_points']:
-                position_offset = hard_point[0], hard_point[1] + projectile_height*.5
-                position_offset_rotated = Vector(position_offset).rotate(
-                    math.degrees(character_physics['angle']))
-                location = (character_position[0] + position_offset_rotated[0],
-                    character_position[1] + position_offset_rotated[1])
-                angle = character_physics['body'].angle
-                projectile_system.spawn_projectile(projectile_type, location, 
-                    angle, ship_system_data['color'])
-            if current_projectile_type == '_bullet':
-                ship_system_data['current_bullet_ammo'] -= number_of_shots
-                if is_character:
-                    Clock.schedule_once(partial(sound_system.schedule_play, 'bulletfire'))
-                    player_character_system.current_bullet_ammo = ship_system_data['current_bullet_ammo']
-            if current_projectile_type == '_rocket':
-                ship_system_data['current_rocket_ammo'] -= number_of_shots
-                if is_character:
-                    Clock.schedule_once(partial(sound_system.schedule_play, 'rocketfire'))
-                    player_character_system.current_rocket_ammo = ship_system_data['current_rocket_ammo']
-                    
+        systems = gameworld.systems
+        projectile_system = systems['projectile_system']
+        projectile_system.add_fire_event(entity_id)
+
 
     def update(self, dt):
         for entity_id in self.entity_ids:

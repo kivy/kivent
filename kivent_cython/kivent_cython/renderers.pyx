@@ -40,13 +40,14 @@ class Renderer(GameSystem):
     shader_source = StringProperty('positionshader.glsl')
 
     def __init__(self, **kwargs):
-        self.canvas = RenderContext(use_parent_projection=True)
+        self.canvas = RenderContext(use_parent_projection=True, nocompiler=True)
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
         super(Renderer, self).__init__(**kwargs)
         self.redraw = Clock.create_trigger(self.trigger_redraw)
         self.vertex_format = self.calculate_vertex_format()
         self.crenderer = CRenderer()
+        self.on_screen_last_frame = []
         
     def on_shader_source(self, instance, value):
         self.canvas.shader.source = value
@@ -331,30 +332,40 @@ class DynamicRenderer(Renderer):
         cdef list entity_ids = self.entity_ids
         cdef object physics_system
         cdef list on_screen
+        cdef set last_on_screen
+        last_on_screen = set(self.on_screen_last_frame)
         if self.physics_system in systems:
             physics_system = systems[self.physics_system]
             on_screen = [x for x in physics_system.on_screen_result]
         else:
             on_screen = []
+        set_on_screen = set(on_screen)
+        new_to_screen = set_on_screen - last_on_screen
+        left_screen = last_on_screen - set_on_screen
         cdef dict entity
         cdef dict system_data
         cdef list to_render = []
         tr_a = to_render.append
-        tr_r = to_render.remove
-        for entity_id in entity_ids:
+        for entity_id in new_to_screen:
             entity = entities[entity_id]
             if system_id not in entity:
                 continue
             system_data = entity[system_id]
-            on_screen_status = system_data['on_screen']
-            if not on_screen_status and entity_id in on_screen:
-                system_data['on_screen'] = True
-            if on_screen_status and not entity_id in on_screen:
-                system_data['on_screen'] = False
-            if entity_id in on_screen:
+            system_data['on_screen'] = True
+        for entity_id in left_screen:
+            entity = entities[entity_id]
+            if system_id not in entity:
+                continue
+            system_data = entity[system_id]
+            system_data['on_screen'] = False
+        for entity_id in on_screen:
+            entity = entities[entity_id]
+            if system_id not in entity:
+                continue
+            system_data = entity[system_id]
+            if system_data['render']:
                 tr_a(entity_id)
-            if system_data['on_screen'] and not system_data['render']:
-                tr_r(entity_id)
+        self.on_screen_last_frame = on_screen
         return to_render
 
 
@@ -363,4 +374,5 @@ class StaticQuadRenderer(Renderer):
     shader_source = StringProperty('positionshader.glsl')
 
     def update(self, dt):
-        self.update_render_state()
+        pass
+        #self.update_render_state()

@@ -65,10 +65,11 @@ class GameWorld(Widget):
         return entity['id']
 
     def init_entity(self, dict components_to_use, list component_order):
-        if self.deactivated_entities == []:
+        deactivated_entities = self.deactivated_entities
+        if deactivated_entities == []:
             entity_id = self.create_entity()
         else:
-            entity_id = self.deactivated_entities.pop()
+            entity_id = deactivated_entities.pop()
         systems = self.systems
         self.entities[entity_id]['entity_load_order'] = component_order
         for component in component_order:
@@ -85,13 +86,14 @@ class GameWorld(Widget):
         cdef dict systems = self.systems
         cdef str data
         cdef str component
+        ca = components_to_delete.append
         if 'entity_load_order' in entity:
             entity['entity_load_order'].reverse()
             
             for data_system in entity['entity_load_order']:    
-                components_to_delete.append(data_system)
+                ca(data_system)
                 systems[data_system].remove_entity(entity_id)
-            components_to_delete.append('entity_load_order')
+            ca('entity_load_order')
             for component in components_to_delete:
                 del entity[component]
             Clock.schedule_once(partial(
@@ -119,9 +121,11 @@ class GameWorld(Widget):
 
     def remove_entities(self, dt):
         entities_to_remove = [entity_id for entity_id in self.entities_to_remove]
+        remove_entity = self.remove_entity
+        er = self.entities_to_remove.remove
         for entity_id in entities_to_remove:
-            self.remove_entity(entity_id)
-            self.entities_to_remove.remove(entity_id)
+            remove_entity(entity_id)
+            er(entity_id)
 
     def load_entity(self, entity_dict):
         pass
@@ -131,8 +135,10 @@ class GameWorld(Widget):
         return entity_dict
 
     def clear_entities(self):
+        entities = self.entities
+        er = self.remove_entity
         for entity in self.entities:
-            self.remove_entity(entity['id'])
+            er(entity['id'])
 
     def remove_system(self, system_id):
         systems = self.systems

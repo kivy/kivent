@@ -40,7 +40,8 @@ class ParticleManager(GameSystem):
     mesh = ObjectProperty(None, allownone=True)
 
     def __init__(self, **kwargs):
-        self.canvas = RenderContext(use_parent_projection=True)
+        self.canvas = RenderContext(use_parent_projection=True, 
+            nocompiler=True)
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
         super(ParticleManager, self).__init__(**kwargs)

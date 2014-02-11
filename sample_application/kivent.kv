@@ -47,6 +47,38 @@ TestGame:
 		current_health: self.player_character.current_health
 		total_health: self.player_character.total_health
 		gamescreenmanager: gamescreenmanager
+		CymunkPhysics:
+			gameworld: root.gameworld
+			update_time: 1./48.
+		GameSystem:
+			system_id: 'position'
+			gameworld: root.gameworld
+		ProjectileSystem:
+			system_id: 'projectile_system'
+			gameworld: root.gameworld
+			updateable: True
+		ShipSystem:
+			system_id: 'ship_system'
+			gameworld: root.gameworld
+		ShipAISystem:
+			id: ship_ai_system
+			system_id: 'ship_ai_system'
+			gameworld: root.gameworld
+			update_time: 1./30.
+		ProbeSystem:
+			id: probe_system
+			system_id: 'probe_system'
+			gameworld: root.gameworld
+		PlayerCharacter:
+			id: player_character
+			system_id: 'player_character'
+			gameworld: root.gameworld
+			current_character_id: self.current_character_id
+			current_bullet_ammo: self.current_bullet_ammo
+			current_rocket_ammo: self.current_rocket_ammo
+		AsteroidSystem:
+			id: asteroid_system
+			gameworld: root.gameworld
 		MusicController:
 			id: music_controller
 		GameView:
@@ -71,35 +103,6 @@ TestGame:
 			atlas_dir: 'assets/background_objects/'
 			atlas: 'background_objects'
 			shader_source: app.shader_path + 'positionshader.glsl'
-		GameSystem:
-			system_id: 'position'
-			gameworld: root.gameworld
-		ProjectileSystem:
-			system_id: 'projectile_system'
-			gameworld: root.gameworld
-		ShipSystem:
-			system_id: 'ship_system'
-			gameworld: root.gameworld
-		ShipAISystem:
-			id: ship_ai_system
-			system_id: 'ship_ai_system'
-			gameworld: root.gameworld
-		ProbeSystem:
-			id: probe_system
-			system_id: 'probe_system'
-			gameworld: root.gameworld
-		PlayerCharacter:
-			id: player_character
-			system_id: 'player_character'
-			gameworld: root.gameworld
-			current_character_id: self.current_character_id
-			current_bullet_ammo: self.current_bullet_ammo
-			current_rocket_ammo: self.current_rocket_ammo
-		AsteroidSystem:
-			id: asteroid_system
-			gameworld: root.gameworld
-		CymunkPhysics:
-			gameworld: root.gameworld
 		DynamicRenderer:
 			gameworld: root.gameworld
 			system_id: 'physics_renderer'

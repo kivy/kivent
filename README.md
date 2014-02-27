@@ -15,10 +15,10 @@ Cymunk and Kivy must both be in your environment path in order to buld kivent as
 
 Do not make install kivy, simply make it and then
 
-export PYTHONPATH=~/path/to/kivy/kivy:$PYTHONPATH 
+export PYTHONPATH=~/path/to/kivy:$PYTHONPATH 
 
 do the same for cymunk
-
+(this is the path to python folder in cymunk)
 export PYTHONPATH=~/path/to/cymunk/cymunk/python:$PYTHONPATH
 
 

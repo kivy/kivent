@@ -379,7 +379,7 @@ class StaticQuadRenderer(Renderer):
         #self.update_render_state()
 
 
-class DynamicPolyRenderer(Renderer):
+class DynamicRendererNoTextures(Renderer):
 
     def calculate_vertex_format(self):
         vertex_format = [

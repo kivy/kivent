@@ -152,6 +152,9 @@ class TestGame(Widget):
             game_screen = gameworld.gamescreenmanager.get_screen('main_game')
             game_screen.objective_panel.reset_objectives()
 
+    def null_collide(self, space, arbiter):
+        return False
+
     def setup_gameobjects(self):
         Clock.schedule_once(
             self.gameworld.systems['asteroids_level'].generate_new_level)
@@ -200,7 +203,7 @@ class TestGame(Widget):
             separate_func=projectile_system.collision_solve_ship_bullet)
         physics.add_collision_handler(2, 1, 
             begin_func=ship_system.collision_begin_ship_asteroid)
-        physics.add_collision_handler(3,3, 
+        physics.add_collision_handler(3, 3, 
             begin_func=projectile_system.collision_begin_bullet_bullet, 
             separate_func=projectile_system.collision_solve_bullet_bullet)
         physics.add_collision_handler(2, 4, 
@@ -217,6 +220,25 @@ class TestGame(Widget):
         physics.add_collision_handler(4, 10,
             begin_func=boundary_system.collision_begin_func,
             separate_func=boundary_system.collision_separate_func)
+        physics.add_collision_handler(5, 1,
+            begin_func=ship_system.collision_object_shipview_begin,
+            separate_func=ship_system.collision_object_shipview_end)
+        physics.add_collision_handler(5, 2,
+            begin_func=ship_system.collision_object_shipview_begin,
+            separate_func=ship_system.collision_object_shipview_end)   
+        physics.add_collision_handler(5, 3,
+            begin_func=ship_system.collision_object_shipview_begin,
+            separate_func=ship_system.collision_object_shipview_end)   
+        physics.add_collision_handler(5, 4,
+            begin_func=ship_system.collision_object_shipview_begin,
+            separate_func=ship_system.collision_object_shipview_end)  
+        physics.add_collision_handler(5, 5,
+            begin_func=self.null_collide,
+            separate_func=self.null_collide)
+        physics.add_collision_handler(5, 10,
+            begin_func=self.null_collide,
+            separate_func=self.null_collide)
+        
 
     def set_choose_character_state(self, dt):
         self.gameworld.state = 'choose_character'

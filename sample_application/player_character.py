@@ -8,18 +8,23 @@ import math
 
 class ShipAISystem(GameSystem):
     updateable = BooleanProperty(True)
-    cycles_to_skip = NumericProperty(5)
-    cycle_count = NumericProperty(0)
     number_of_enemies = NumericProperty(0)
 
     def remove_entity(self, entity_id):
+        entities = self.gameworld.entities
+        entity = entities[entity_id]
+        if not 'player_character' in entity:
+            self.number_of_enemies -= 1
         super(ShipAISystem, self).remove_entity(entity_id)
-        self.number_of_enemies -= 1
 
     def create_component(self, entity_id, entity_component_dict):
-        self.number_of_enemies += 1
-        entity_component_dict['distance_to_target'] = 0.
-        entity_component_dict['angle_tolerance'] = 10.
+        if not entity_component_dict['is_player']:
+            self.number_of_enemies += 1
+            entity_component_dict['angle_tolerance'] = 7.5
+        else:
+            entity_component_dict['angle_tolerance'] = 15.
+        entity_component_dict['distance_to_target'] = 20.
+
         entity_component_dict['follow_distance'] = 300
         entity_component_dict['site_distance'] = 650
         entity_component_dict['ai_state'] = 'follow'
@@ -41,7 +46,8 @@ class ShipAISystem(GameSystem):
         return in_radius
     
 
-    def calculate_desired_vector(self, target, location, ship_data, ship_ai_data):
+    def calculate_desired_vector(self, target, location, ship_data, 
+        ship_ai_data, is_player):
         g_map = self.gameworld.systems['default_map']
         map_size_x = g_map.map_size[0]/1.9
         map_size_y = g_map.map_size[1]/1.9
@@ -52,12 +58,13 @@ class ShipAISystem(GameSystem):
         v = Vector(target) - Vector(location)
         v = v.normalize()
         v *= max_speed
-        if ship_ai_data['ai_state'] == 'flee':
-            v *= -1
-        if dist_x > map_size_x:
-            v[0] *=-1
-        if dist_y > map_size_y:
-            v[1] *=-1
+        if not is_player:
+            if ship_ai_data['ai_state'] == 'flee':
+                v *= -1
+            if dist_x > map_size_x:
+                v[0] *=-1
+            if dist_y > map_size_y:
+                v[1] *=-1
         return v
 
     def calculate_desired_angle_delta(self, target_vector, unit_vector):
@@ -68,18 +75,12 @@ class ShipAISystem(GameSystem):
     def do_turning(self, target_vector, unit_vector, ship_data, ship_ai_data, physics_body):
         desired_angle_change = self.calculate_desired_angle_delta(
             target_vector, unit_vector)
-        turn_speed = ship_data['ang_accel']
-        desired_multiplier = math.fabs(
-            desired_angle_change / turn_speed)
-        ship_data['turn_speed_multiplier'] = min(1.0, desired_multiplier)
+        turn_speed = math.degrees(ship_data['ang_accel'])
+        desired_multiplier = desired_angle_change / turn_speed
+        next_angle = physics_body.angle + physics_body.angular_velocity/3.0
         angle_tolerance = ship_ai_data['angle_tolerance']
-        if desired_angle_change < -angle_tolerance:
-            ship_data['is_turning'] = 'left'
-        if desired_angle_change > angle_tolerance:
-            ship_data['is_turning'] = 'right'
-        if -angle_tolerance <= desired_angle_change <= angle_tolerance:
-            ship_data['is_turning'] = 'zero'
-            physics_body.angular_velocity = 0
+        ship_data['turn_speed_multiplier'] = -1*desired_multiplier
+        ship_data['desired_angle'] = desired_angle_change
         return desired_angle_change
 
     def query_view(self, position, unit_vector, site_distance):
@@ -93,12 +94,14 @@ class ShipAISystem(GameSystem):
 
     def avoid_obstacles_vector(self, entity_id, position):
         entities = self.gameworld.entities
-        obstacles_to_avoid = self.query_physics_bb(position, 100)
+        obstacles_to_avoid = entities[entity_id]['ship_system']['in_view']
         sum_avoidance = Vector(0, 0)
         ob_count = 0
         for obstacle in obstacles_to_avoid:
             if obstacle != entity_id:
                 obstacle = entities[obstacle]
+                if 'cymunk-physics' not in obstacle or 'boundary_system' in obstacle:
+                    continue
                 ob_location = obstacle['cymunk-physics']['position']
                 dist = Vector(ob_location).distance(position)
                 scale_factor = (150.-dist)/150.
@@ -119,12 +122,10 @@ class ShipAISystem(GameSystem):
         max_speed2 = max_speed * max_speed
         distance_to_target = ship_ai_data['distance_to_target']
         desired_multiplier = 1.0
-        if ship_ai_data['ai_state'] == 'follow':
-            if distance_to_target < follow_distance:
-                desired_multiplier = math.fabs((distance_to_target-follow_distance)/(max_speed2))
+        desired_multiplier = math.fabs((distance_to_target)/(max_speed2))
         ship_data['engine_speed_multiplier'] = min(1.0, desired_multiplier)
         if distance_to_target > follow_distance or ship_ai_data['ai_state'] == 'flee':
-            if -45 <= desired_angle <= 45 and not None:
+            if -25 <= desired_angle <= 25 and not None:
                 ship_data['fire_engines'] = True
                 entity_engine_effect['particle_system_on'] = True
             else: 
@@ -154,11 +155,10 @@ class ShipAISystem(GameSystem):
     def determine_fire_weapons(self, position, unit_vector, ship_ai_data, ship_data, entity_id):
         gameworld = self.gameworld
         systems = gameworld.systems
-        in_view = self.query_view(position, unit_vector, ship_ai_data['site_distance'])
+        in_view = ship_data['in_view']
         if in_view != [] and ship_ai_data['ready_to_fire']:
-            entities_in_view = zip(*in_view)[0]
             current_player_character_id = systems['player_character'].current_character_id
-            if current_player_character_id in entities_in_view:
+            if current_player_character_id in in_view:
                 projectile_system = systems['projectile_system']
                 weapon_type = ship_data['projectile_type'] + ship_data['current_projectile_type']
                 delay = projectile_system.projectiles_dict[weapon_type]['cooldown'] + ship_ai_data['attack_delay']
@@ -180,22 +180,32 @@ class ShipAISystem(GameSystem):
                     Clock.schedule_once(partial(self.reset_ship_fire_status, entity_id), ship_ai_data['burst_delay'])
 
     def update(self, dt):
-        if self.cycle_count < self.cycles_to_skip:
-            self.cycle_count += 1
-        else:
-            self.cycle_count = 0
-            gameworld = self.gameworld
-            entities = gameworld.entities
-
-            for entity_id in self.entity_ids:
-                entity = entities[entity_id]
-                physics_data = entity['cymunk-physics']
-                ship_data = entity['ship_system']
-                ship_ai_data = entity['ship_ai_system']
-                velocity = physics_data['body'].velocity
-                position = physics_data['position']
-                follow_distance = ship_ai_data['follow_distance']
-                unit_vector = physics_data['unit_vector']
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        player_character_system = self.gameworld.systems['player_character']
+        current_character_id = player_character_system.current_character_id
+        for entity_id in self.entity_ids:
+            entity = entities[entity_id]
+            physics_data = entity['cymunk-physics']
+            ship_data = entity['ship_system']
+            ship_ai_data = entity['ship_ai_system']
+            velocity = physics_data['body'].velocity
+            position = physics_data['position']
+            follow_distance = ship_ai_data['follow_distance']
+            unit_vector = physics_data['unit_vector']
+            if entity_id == current_character_id:
+                player_data = entity['player_character']
+                mspeed = ship_data['max_speed']
+                if 'move_vector' in player_data:
+                    target_vector = player_data['move_vector']
+                    target_position = (position[0] + target_vector[0] * mspeed, 
+                        position[1] + target_vector[1] * mspeed)
+                    desired_vector = self.calculate_desired_vector(target_position, 
+                        position, ship_data, ship_ai_data, True)
+                    ship_ai_data['ai_state'] = 'flee'
+                else:
+                    continue
+            else:
                 target_position = self.target_player(dt)
                 self.determine_fire_weapons(position, unit_vector, 
                     ship_ai_data, ship_data, entity_id)
@@ -207,13 +217,13 @@ class ShipAISystem(GameSystem):
                 if dist < 100 and ship_ai_data['ai_state'] == 'follow':
                     ship_ai_data['ai_state'] = 'flee'
                 desired_vector = self.calculate_desired_vector(target_position, 
-                    position, ship_data, ship_ai_data)
+                    position, ship_data, ship_ai_data, False)
                 desired_vector *= 1.5
                 avoidance_vector = self.avoid_obstacles_vector(entity_id, position)
                 avoidance_vector *= .25
                 desired_vector = (desired_vector + avoidance_vector)
-                steering_vector = desired_vector - Vector(velocity)
-                self.steer(steering_vector, entity)
+            steering_vector = desired_vector - Vector(velocity)
+            self.steer(steering_vector, entity)
 
 
     def steer(self, target_vector, entity):
@@ -237,7 +247,7 @@ class ShipAISystem(GameSystem):
             target_physics_data = current_player_character['cymunk-physics']
             target_position = Vector(target_physics_data['position'])
             velocity = Vector(target_physics_data['body'].velocity)
-            velocity *= dt *self.cycles_to_skip
+            velocity *= dt
             target_position+= velocity
             return target_position
         else:
@@ -355,10 +365,19 @@ class ShipSystem(GameSystem):
             if physics_body.is_sleeping:
                 physics_body.activate()
             turning = system_data['is_turning']
-            if turning == 'left':
-                physics_body.angular_velocity += system_data['turn_speed_multiplier']*system_data['ang_accel']*dt
-            elif turning == 'right':
-                physics_body.angular_velocity -= system_data['turn_speed_multiplier']*system_data['ang_accel']*dt
+            turn_speed = system_data['turn_speed_multiplier']*system_data['ang_accel']*dt
+            desired_angle = system_data['desired_angle']
+            angle = math.degrees(physics_body.angle)
+            while desired_angle < -180.0:
+                desired_angle += 360.0
+            while desired_angle > 180.0:
+                desired_angle -= 360.0
+            print math.fabs(angle + desired_angle), math.fabs(angle + math.degrees(turn_speed))
+            if math.fabs(angle + desired_angle) < math.fabs(angle + math.degrees(turn_speed)):
+                physics_body.angular_velocity += turn_speed
+            else:
+                physics_body.angular_velocity = 0
+                physics_body.angle -= math.radians(desired_angle)
             if system_data['health'] <= 0 and not system_data['character_dying']:
                 self.do_death(entity_id)
                 system_data['character_dying'] = True
@@ -409,16 +428,46 @@ class ShipSystem(GameSystem):
         return True
 
 
+    def collision_object_shipview_begin(self, space, arbiter):
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        entities = gameworld.entities
+        ship_id = arbiter.shapes[0].body.data
+        object_id = arbiter.shapes[1].body.data
+        ship_ent = entities[ship_id]
+        in_view = ship_ent['ship_system']['in_view']
+        if object_id not in in_view:
+            in_view.append(object_id)
+        return False
+
+    def collision_object_shipview_end(self, space, arbiter):
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        entities = gameworld.entities
+        ship_id = arbiter.shapes[0].body.data
+        object_id = arbiter.shapes[1].body.data
+        ship_ent = entities[ship_id]
+        in_view = ship_ent['ship_system']['in_view']
+        if object_id in in_view:
+            in_view.remove(object_id)
+        return False
+
 
     def spawn_ship_with_dict(self, ship_dict, is_player_character, position):
         box_dict = {'width': ship_dict['width'], 'height': ship_dict['height'],
          'mass': ship_dict['mass']}
+        view_dict = {'vertices': [(0., 0.), (0.0, ship_dict['width']), 
+        (800.0, ship_dict['width']), (800.0, 0.0)],
+        'offset': (ship_dict['height']/2., -ship_dict['width']/2.)}
         col_shape_dict = {'shape_type': 'box', 'elasticity': .5, 
         'collision_type': 2, 'shape_info': box_dict, 'friction': 1.0}
+        view_shape_dict = {'shape_type': 'poly', 'elasticity': 0.0, 
+        'collision_type':5, 'shape_info': view_dict, 'friction': 0.0}
         physics_component_dict = { 'main_shape': 'box', 
         'velocity': (0, 0), 'position': position, 'angle': 0, 
         'angular_velocity': 0, 'mass': ship_dict['mass'], 'vel_limit': ship_dict['max_speed'], 
-        'ang_vel_limit': math.radians(ship_dict['max_turn_speed']), 'col_shapes': [col_shape_dict]}
+        'ang_vel_limit': math.radians(ship_dict['max_turn_speed']), 
+        'col_shapes': [col_shape_dict, view_shape_dict]}
         ship_system_dict = {'health': ship_dict['health'], 
         'max_speed': ship_dict['max_speed'], 'accel': ship_dict['accel'], 
         'offset_distance': ship_dict['offset_distance'], 'color': ship_dict['color'],
@@ -429,7 +478,9 @@ class ShipSystem(GameSystem):
         'total_rocket_ammo': ship_dict['total_rocket_ammo'], 
         'current_rocket_ammo': ship_dict['total_rocket_ammo'],
         'total_bullet_ammo': ship_dict['total_bullet_ammo'],
-        'current_bullet_ammo': ship_dict['total_bullet_ammo']}
+        'current_bullet_ammo': ship_dict['total_bullet_ammo'],
+        'in_view': [],
+        'desired_angle': 0.0}
         particle_system1 = {'particle_file': ship_dict['engine_effect'], 
         'offset': ship_dict['engine_offset']}
         particle_system2 = {'particle_file': ship_dict['explosion_effect'], 'offset': 0}
@@ -448,10 +499,11 @@ class ShipSystem(GameSystem):
             component_order.append('player_character')
             player_character_system.current_bullet_ammo = ship_system_dict['current_bullet_ammo']
             player_character_system.current_rocket_ammo = ship_system_dict['current_rocket_ammo']
+            create_component_dict['ship_ai_system'] = {'is_player': True}
         else:
-            create_component_dict['ship_ai_system'] = {}
-            component_order.append('ship_ai_system')
             Clock.schedule_once(partial(self.gameworld.systems['sound_system'].schedule_play, 'enemyshipenterarea'))
+            create_component_dict['ship_ai_system'] = {'is_player': False}
+        component_order.append('ship_ai_system')
         self.gameworld.init_entity(create_component_dict, component_order)
 
 class PlayerCharacter(GameSystem):
@@ -485,32 +537,11 @@ class PlayerCharacter(GameSystem):
     def on_touch_values(self, instance, value):
         if not self.current_character_id == None:
             entity = self.gameworld.entities[self.current_character_id]
-            ship_system_data = entity['ship_system']
-            physics_body = entity['cymunk-physics']['body']
+            ship_data  = entity['ship_system']
+            entity_engine_effect = entity['particle_manager']['engine_effect']
             if not value == []:
+                entity['player_character']['move_vector'] = value
 
-                if value[0] <= .33:
-                    ship_system_data['is_turning'] = 'left'
-                    ship_system_data['turn_speed_multiplier'] = 1 - value[0]/.33
-                if value[0] >= .66:
-                    ship_system_data['is_turning'] = 'right'
-                    ship_system_data['turn_speed_multiplier'] = (value[0]-.66)/.33
-                if .33 < value[0] < .66:
-                    ship_system_data['is_turning'] = 'zero'
-                    physics_body.angular_velocity = 0
-                if value[1] >= .34:
-                    ship_system_data['fire_engines'] = True
-                    ship_system_data['engine_speed_multiplier'] = (value[1] - .33 )/ .66 
-                    entity['particle_manager']['engine_effect']['particle_system_on'] = True
-                if value[1] < .34: 
-                    ship_system_data['fire_engines'] = False
-                    entity['particle_manager']['engine_effect']['particle_system_on'] = False
-            else:
-                ship_system_data['is_turning'] = 'zero'
-                ship_system_data['fire_engines'] = False
-
-                physics_body.angular_velocity = 0
-                entity['particle_manager']['engine_effect']['particle_system_on'] = False
 
     def create_component(self, entity_id, entity_component_dict):
         super(PlayerCharacter, self).create_component(entity_id, entity_component_dict)
@@ -532,8 +563,8 @@ class PlayerCharacter(GameSystem):
                 ship_system.fire_projectiles(self.current_character_id)
                 self.weapons_locked = True
                 
-    def spawn_projectile(self, state):
-        if state == 'down':
+    def spawn_projectile(self):
+        if not self.weapons_locked:
             Clock.schedule_once(self.fire_projectiles)
         
     def on_current_projectile_type(self, instance, value):

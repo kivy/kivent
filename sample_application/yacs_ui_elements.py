@@ -17,7 +17,8 @@ class YACSButtonCircle(ToggleButton):
         if self.weapons_locked:
             pass
         else:
-            super(YACSButtonCircle, self).on_touch_down(touch)
+            return super(YACSButtonCircle, self).on_touch_down(touch)
+
 
 class YACSButton(Button):
     pass
@@ -53,8 +54,41 @@ class CharacterInputPanel(Widget):
  
 
     def determine_touch_values(self, touch_x, touch_y):
-        x_value = (touch_x - self.pos[0])/self.size[0]
-        y_value = (touch_y - self.pos[1])/self.size[1]
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        size = self.size
+        viewport = systems['default_gameview']
+        player_character = systems['player_character']
+        character_id = player_character.current_character_id
+        camera_pos = viewport.camera_pos
+        physics_system = systems['cymunk-physics']
+        entities = gameworld.entities
+        character = entities[character_id]
+        physics = character['cymunk-physics']
+        ship_ai_system = systems['ship_ai_system']
+        pos = physics['position']
+        shape= physics['shapes'][0]
+        w, h = shape.width, shape.height
+        t_pos_x = pos[0] + camera_pos[0]
+        t_pos_y = pos[1] + camera_pos[1]        
+        unit_vector = physics['unit_vector']
+        touch_pos = (touch_x - camera_pos[0], touch_y - camera_pos[1])
+        r = 5
+        in_view = character['ship_system']['in_view']
+        query_touch = physics_system.query_bb([touch_pos[0] -r, touch_pos[1] -r, 
+            touch_pos[0] + r, touch_pos[1] + r], ignore_groups=[5, 10])
+        for each in query_touch:
+            if not 'boundary_system' in entities[each]:
+                if each in in_view:
+                    player_character.spawn_projectile()
+        if touch_x < t_pos_x:
+            x_value = -(t_pos_x - touch_x)/t_pos_x
+        else:
+            x_value = (touch_x - t_pos_x)/(size[0]-t_pos_x)
+        if touch_y < t_pos_y:
+            y_value = -(t_pos_y - touch_y)/t_pos_y
+        else:
+            y_value = (touch_y - t_pos_y)/(size[1]-t_pos_y)
         return (x_value, y_value)
 
     def on_current_touch(self, instance, value):
@@ -62,6 +96,7 @@ class CharacterInputPanel(Widget):
         player_character = gameworld.systems['player_character']
         if not value == []: 
             touch_values = self.determine_touch_values(value[0], value[1])
+
             # particle_system_id = self.particle_system
             # particle_system_entity = gameworld.entities[particle_system_id]
             # particle_system = particle_system_entity['particle_manager']['effect1']['particle_system']
@@ -74,19 +109,19 @@ class CharacterInputPanel(Widget):
 
             
     def on_touch_down(self, touch):
-        if self.collide_point(touch.x, touch.y):
+        if self.collide_point(touch.x, touch.y) and not self.weapon_panel.collide_point(touch.x, touch.y):
             self.current_touch = (touch.x, touch.y)
             # particle_system_id = self.particle_system
             # particle_system_entity = self.gameworld.entities[particle_system_id]
             # particle_system_entity['particle_manager']['effect1']['particle_system_on'] = True
     
     def on_touch_move(self, touch):
-        if self.collide_point(touch.x, touch.y):
+        if self.collide_point(touch.x, touch.y) and not self.weapon_panel.collide_point(touch.x, touch.y):
             self.current_touch = (touch.x, touch.y)
             
 
     def on_touch_up(self, touch):
-        if self.collide_point(touch.x, touch.y):
+        if self.collide_point(touch.x, touch.y) and not self.weapon_panel.collide_point(touch.x, touch.y):
             self.current_touch = []
             #particle_system_id = self.particle_system
             #particle_system_entity = self.gameworld.entities[particle_system_id]

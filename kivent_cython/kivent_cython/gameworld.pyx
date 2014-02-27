@@ -8,6 +8,7 @@ from kivy.graphics.transformation import Matrix
 from kivy.graphics import RenderContext
 
 
+
 class GameWorld(Widget):
     state = StringProperty('initial')
     number_entities = NumericProperty(1)

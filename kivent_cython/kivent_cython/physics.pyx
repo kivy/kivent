@@ -1,6 +1,7 @@
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk
+from cymunk import Poly
 from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape
 from libc.math cimport M_PI_2
 
@@ -48,7 +49,9 @@ class CymunkPhysics(GameSystem):
         space.register_segment_query_func(self.segment_query_func)
 
     def bb_query_func(self, Shape shape):
-        self.bb_query_result.append(shape.body.data)
+        ignore_groups = self.ignore_groups
+        if not shape.collision_type in ignore_groups:
+            self.bb_query_result.append(shape.body.data)
 
     def segment_query_func(self, object shape, float t, dict n):
         self.segment_query_result.append((shape.body.data, t, n))
@@ -67,8 +70,9 @@ class CymunkPhysics(GameSystem):
         self.space.space_segment_query(vect_start, vect_end)
         return self.segment_query_result
 
-    def query_bb(self, list box_to_query):
+    def query_bb(self, list box_to_query, ignore_groups=[]):
         cdef Space space = self.space
+        self.ignore_groups=ignore_groups
         bb = BB(
             box_to_query[0], box_to_query[1], box_to_query[2], box_to_query[3])
         self.bb_query_result = []
@@ -148,6 +152,9 @@ class CymunkPhysics(GameSystem):
                 new_shape = BoxShape(
                     body, shape_info['height'], shape_info['width'])
                 new_shape.friction = shape['friction']
+            elif shape['shape_type'] == 'poly':
+                new_shape = Poly(body, shape_info['vertices'], 
+                    offset=shape_info['offset'])
             else:
                 print 'shape not created'
             new_shape.elasticity = shape['elasticity']

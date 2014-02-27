@@ -40,7 +40,8 @@ class Renderer(GameSystem):
     shader_source = StringProperty('positionshader.glsl')
 
     def __init__(self, **kwargs):
-        self.canvas = RenderContext(use_parent_projection=True, nocompiler=True)
+        self.canvas = RenderContext(
+            use_parent_projection=True, nocompiler=True)
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
         super(Renderer, self).__init__(**kwargs)
@@ -376,3 +377,141 @@ class StaticQuadRenderer(Renderer):
     def update(self, dt):
         pass
         #self.update_render_state()
+
+
+class DynamicPolyRenderer(Renderer):
+
+    def calculate_vertex_format(self):
+        vertex_format = [
+            ('vPosition', 2, 'float'),
+            ('vCenter', 2, 'float'),
+            ('vColor', 4, 'float')
+            ]
+        self.clear_mesh()
+        self.redraw()
+        return vertex_format
+
+    def draw_mesh(self, list entities_to_draw):
+        cdef object gameworld = self.gameworld
+        cdef list entities = gameworld.entities
+        cdef str system_id = self.system_id
+        cdef list entity_ids = entities_to_draw
+        cdef CRenderer cr = self.crenderer
+        cdef CMesh cmesh
+        cdef dict entity
+        cdef dict system_data
+        cdef str position_from
+        cdef str color_from
+        vertex_format = self.vertex_format
+        cdef int vert_data_count = 8
+        cdef int num_elements = len(entity_ids)
+        cdef int i
+        cdef int entity_id
+        cdef void* indices_ptr
+        cdef float* frame_info
+        cdef unsigned short * indice_info
+        frame_info = <float *>cr.frame_info_ptr
+        if frame_info != NULL:
+            free(frame_info)
+            frame_info = NULL
+        indice_info = <unsigned short *>cr.indice_info_ptr
+        if indice_info != NULL:
+            free(indice_info)
+            indice_info = NULL
+        cr.indice_info_ptr = indices_ptr = <void *>malloc(
+            sizeof(unsigned short) * num_elements * 6)
+        cdef void* frame_ptr
+        cr.frame_info_ptr = frame_ptr = <void *>malloc(sizeof(float) * 
+            num_elements * 4 * vert_data_count)
+        if not frame_ptr or not indices_ptr:
+            raise MemoryError()
+        cdef unsigned short * indices_info = <unsigned short *>indices_ptr
+        frame_info = <float *>frame_ptr
+        cdef int offset 
+        cdef int indice_offset
+        cr.v_count = <long>num_elements * 4 * vert_data_count
+        cr.i_count = <long>num_elements * 6
+        cdef int index
+        cdef float rotate
+        cdef float x, y
+        cdef float w, h
+        cdef int fr_index
+        cdef tuple color
+        cdef tuple size
+        cdef float r, g, b, a
+        for i in range(num_elements):
+            entity_id = entity_ids[i]
+            entity = entities[entity_id]
+            if system_id not in entity:
+                continue
+            offset = 4 * i
+            indice_offset = i*6
+            index = 4 * vert_data_count * i
+            indices_info[indice_offset] = 0 + offset
+            indices_info[indice_offset+1] = 1 + offset
+            indices_info[indice_offset+2] = 2 + offset
+            indices_info[indice_offset+3] = 2 + offset
+            indices_info[indice_offset+4] = 3 + offset
+            indices_info[indice_offset+5] = 0 + offset
+            system_data = entity[system_id]
+            position_from = system_data['position_from']
+            color_from = system_data['color_from']
+            if system_data['render']:
+                position = entity[position_from]['position']
+                size = system_data['size']
+                w, h = size[0], size[1]
+                x, y = position[0], position[1]
+                frame_info[index] = -w
+                frame_info[index+1] = -h
+                frame_info[index+2] = x
+                frame_info[index+3] = y
+                frame_info[index+vert_data_count] = w
+                frame_info[index+vert_data_count+1] = -h
+                frame_info[index+vert_data_count+2] = x
+                frame_info[index+vert_data_count+3] = y
+                frame_info[index+2*vert_data_count] = w
+                frame_info[index+2*vert_data_count+1] = h
+                frame_info[index+2*vert_data_count+2] = x
+                frame_info[index+2*vert_data_count+3] = y
+                frame_info[index+3*vert_data_count] = -w
+                frame_info[index+3*vert_data_count+1] = h
+                frame_info[index+3*vert_data_count+2] = x
+                frame_info[index+3*vert_data_count+3] = y
+                fr_index = 4
+                color = entity[color_from]['color']
+                r = color[0]
+                g = color[1]
+                b = color[2]
+                a = color[3]
+                frame_info[index+fr_index] = r
+                frame_info[index+vert_data_count+fr_index] = r
+                frame_info[index+2*vert_data_count+fr_index] = r
+                frame_info[index+3*vert_data_count+fr_index] = r
+                fr_index += 1
+                frame_info[index+fr_index] = g
+                frame_info[index+vert_data_count+fr_index] = g
+                frame_info[index+2*vert_data_count+fr_index] = g
+                frame_info[index+3*vert_data_count+fr_index] = g
+                fr_index += 1
+                frame_info[index+fr_index] = b
+                frame_info[index+vert_data_count+fr_index] = b
+                frame_info[index+2*vert_data_count+fr_index] = b
+                frame_info[index+3*vert_data_count+fr_index] = b
+                fr_index += 1
+                frame_info[index+fr_index] = a
+                frame_info[index+vert_data_count+fr_index] = a
+                frame_info[index+2*vert_data_count+fr_index] = a
+                frame_info[index+3*vert_data_count+fr_index] = a
+        mesh = self.mesh
+        if mesh == None:
+            with self.canvas:
+                cmesh = CMesh(fmt=vertex_format,
+                    mode='triangles')
+                self.mesh = cmesh
+
+        cmesh = self.mesh
+        cmesh._vertices = cr.frame_info_ptr
+        cmesh._indices = cr.indice_info_ptr
+        cmesh.vcount = cr.v_count
+        cmesh.icount = cr.i_count
+        cmesh.flag_update()

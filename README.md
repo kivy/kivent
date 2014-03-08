@@ -1,6 +1,8 @@
 KivEnt
 ======
 
+Warning Tutorials Out Dated! Will Fix Soon, Look at Sample Application (more complex) or https://github.com/Kovak/KivyMallDirectory (simple example)
+
 KivEnt is an Entity Based Game Engine for Kivy
 
 Requires Cymunk in order to run: 

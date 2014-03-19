@@ -8,6 +8,11 @@ from kivy.graphics.transformation import Matrix
 from kivy.graphics import RenderContext
 
 
+class Entity(object):
+
+    def __init__(self, entity_id):
+        self.entity_id = entity_id
+
 
 class GameWorld(Widget):
     state = StringProperty('initial')
@@ -25,7 +30,7 @@ class GameWorld(Widget):
         self.canvas = RenderContext()
         super(GameWorld, self).__init__(**kwargs)
         self.entities = []
-        self.entities.append(0)
+        self.entities.append(Entity(0))
         self.states = {}
         self.deactivated_entities = []
         self.entities_to_remove = []
@@ -43,7 +48,6 @@ class GameWorld(Widget):
         state_dict = self.states[value]
         gamescreenmanager = self.gamescreenmanager
         gamescreenmanager.state = value
-        
         systems = self.systems
         children = self.children
         for system in state_dict['systems_added']:
@@ -60,45 +64,44 @@ class GameWorld(Widget):
             systems[system].paused = False
 
     def create_entity(self):
-        entity = {'id': self.number_entities}
+        entity = Entity(self.number_entities)
         self.entities.append(entity)
         self.number_entities += 1
-        return entity['id']
+        return entity
 
     def init_entity(self, dict components_to_use, list component_order):
-        deactivated_entities = self.deactivated_entities
+        cdef list deactivated_entities = self.deactivated_entities
         if deactivated_entities == []:
-            entity_id = self.create_entity()
+            entity = self.create_entity()
         else:
-            entity_id = deactivated_entities.pop()
-        systems = self.systems
-        self.entities[entity_id]['entity_load_order'] = component_order
+            entity = self.entities[deactivated_entities.pop()]
+        cdef dict systems = self.systems
+        entity.load_order = component_order
         for component in component_order:
-            systems[component].create_component(entity_id, 
+            systems[component].create_component(entity, 
                 components_to_use[component])
-        return entity_id
+        return entity.entity_id
 
     def timed_remove_entity(self, int entity_id, dt):
         self.entities_to_remove.append(entity_id)
 
     def remove_entity(self, int entity_id):
-        cdef dict entity = self.entities[entity_id]
+        cdef object entity = self.entities[entity_id]
         cdef list components_to_delete = []
         cdef dict systems = self.systems
         cdef str data
         cdef str component
         ca = components_to_delete.append
-        if 'entity_load_order' in entity:
-            entity['entity_load_order'].reverse()
-            
-            for data_system in entity['entity_load_order']:    
-                ca(data_system)
-                systems[data_system].remove_entity(entity_id)
-            ca('entity_load_order')
-            for component in components_to_delete:
-                del entity[component]
-            Clock.schedule_once(partial(
-                self.add_entity_to_deactivated, entity_id), 1.0)
+        load_order = entity.load_order
+        load_order.reverse()
+        for data_system in load_order:    
+            ca(data_system)
+            systems[data_system].remove_entity(entity_id)
+        for component in components_to_delete:
+            delattr(entity, component)
+        del entity.load_order
+        Clock.schedule_once(partial(
+            self.add_entity_to_deactivated, entity_id), 1.0)
 
     def add_entity_to_deactivated(self, int entity_id, dt):
         self.deactivated_entities.append(entity_id)
@@ -149,7 +152,6 @@ class GameWorld(Widget):
 
     def add_system(self, widget, dt):
         self.systems[widget.system_id] = widget
-        widget.on_init_system()
         widget.on_add_system()
 
     def add_widget(self, widget):
@@ -157,7 +159,6 @@ class GameWorld(Widget):
             Clock.schedule_once(partial(self.add_system, widget))
         super(GameWorld, self).add_widget(widget)
         
-
     def remove_widget(self, widget):
         if isinstance(widget, GameSystem):
             widget.on_remove_system()

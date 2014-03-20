@@ -349,7 +349,7 @@ class Renderer(GameSystem):
         '''
         texture = entity_component_dict['texture']
         size = entity_component_dict['size']
-        new_component = RenderComponent.__new__(RenderComponent, True, False, 
+        new_component = RenderComponent.__new__(RenderComponent, True, True, 
             texture, size[0], size[1])
         return new_component
 
@@ -542,13 +542,13 @@ class QuadRendererNoTextures(Renderer):
                 frame_info[index+vert_data_count+fr_index] = a
                 frame_info[index+2*vert_data_count+fr_index] = a
                 frame_info[index+3*vert_data_count+fr_index] = a
+                fr_index += 1
         mesh = self.mesh
         if mesh == None:
             with self.canvas:
                 cmesh = CMesh(fmt=vertex_format,
                     mode='triangles')
                 self.mesh = cmesh
-
         cmesh = self.mesh
         cmesh._vertices = cr.frame_info_ptr
         cmesh._indices = cr.indice_info_ptr

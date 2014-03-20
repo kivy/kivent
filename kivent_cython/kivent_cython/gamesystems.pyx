@@ -261,16 +261,17 @@ class GameView(GameSystem):
         cdef float dist_y
         cdef dict entity
         cdef float camera_speed_multiplier
+        cdef PositionComponent position_data
         gameworld = self.gameworld
         if self.focus_entity:
             entity_to_focus = self.entity_to_focus
             entity = gameworld.entities[entity_to_focus]
-            position_data = entity[self.focus_position_info_from]['position']
+            position_data = entity.position
             camera_pos = self.camera_pos
             camera_speed_multiplier = self.camera_speed_multiplier
             size = self.size
-            dist_x = -camera_pos[0] - position_data[0] + size[0]*.5
-            dist_y = -camera_pos[1] - position_data[1] + size[1]*.5
+            dist_x = -camera_pos[0] - position_data._x + size[0]*.5
+            dist_y = -camera_pos[1] - position_data._y + size[1]*.5
             if self.lock_scroll:
                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
             self.camera_pos[0] += dist_x*camera_speed_multiplier*dt
@@ -282,6 +283,7 @@ class GameView(GameSystem):
             dist_x, dist_y = self.lock_scroll(0, 0)
             self.camera_pos[0] += dist_x
             self.camera_pos[1] += dist_y
+        self.gameworld.update_render_state(self)
 
     def forced_camera_update(self):
         systems = self.gameworld.systems

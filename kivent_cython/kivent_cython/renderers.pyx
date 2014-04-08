@@ -234,7 +234,8 @@ class Renderer(GameSystem):
                 pos_comp = entity.position
                 tex_choice = system_data._texture
                 uv = uv_dict[tex_choice]
-                w, h = uv[4], uv[5]
+                w = system_data._width
+                h = system_data._height
                 x0, y0 = uv[0], uv[1]
                 x1, y1 = uv[2], uv[3]
                 x, y = pos_comp._x, pos_comp._y
@@ -335,31 +336,17 @@ class Renderer(GameSystem):
         super(Renderer, self).remove_entity(entity_id)
         self.redraw()
 
-    def create_component(self, object entity, dict entity_component_dict):
+    def create_component(self, object entity, args):
         super(Renderer, self).create_component(
-            entity, entity_component_dict)
+            entity, args)
         self.redraw()
 
     def generate_component(self, dict entity_component_dict):
-        ''' You must provide at least a 'position_from', component 
-        which contains a string referencing the entities 
-        component that contains the 'position' attribute. 
-        if do_rotate, do_color or do_scale is True you must also include,
-        'rotate_from', 'color_from', and 'scale_from'.
-        '''
         texture = entity_component_dict['texture']
         size = entity_component_dict['size']
         new_component = RenderComponent.__new__(RenderComponent, True, True, 
             texture, size[0], size[1])
         return new_component
-
-
-    def generate_entity_component_dict(self, int entity_id):
-        ##FixMe
-        entity = self.gameworld.entities[entity_id]
-        entity_system_dict = entity[self.system_id]
-        entity_component_dict = {'texture': entity_system_dict['texture']}
-        return entity_component_dict
 
 
 class DynamicRenderer(Renderer):
@@ -427,12 +414,6 @@ class QuadRendererNoTextures(Renderer):
         return vertex_format
 
     def generate_component(self, dict entity_component_dict):
-        ''' You must provide at least a 'position_from', component 
-        which contains a string referencing the entities 
-        component that contains the 'position' attribute. 
-        if do_rotate, do_color or do_scale is True you must also include,
-        'rotate_from', 'color_from', and 'scale_from'.
-        '''
         size = entity_component_dict['size']
         new_component = RenderComponent.__new__(RenderComponent, True, True, None,
             size[0], size[1])

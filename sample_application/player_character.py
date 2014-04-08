@@ -13,7 +13,7 @@ class ShipAISystem(GameSystem):
     def remove_entity(self, entity_id):
         entities = self.gameworld.entities
         entity = entities[entity_id]
-        if not 'player_character' in entity:
+        if not hasattr(entity, 'player_character'):
             self.number_of_enemies -= 1
         super(ShipAISystem, self).remove_entity(entity_id)
 
@@ -24,7 +24,6 @@ class ShipAISystem(GameSystem):
         else:
             entity_component_dict['angle_tolerance'] = 15.
         entity_component_dict['distance_to_target'] = 20.
-
         entity_component_dict['follow_distance'] = 300
         entity_component_dict['site_distance'] = 650
         entity_component_dict['ai_state'] = 'follow'
@@ -37,14 +36,12 @@ class ShipAISystem(GameSystem):
         entity_component_dict['shot_count'] = 0
         super(ShipAISystem, self).create_component(entity_id, entity_component_dict)
 
-
     def query_physics_bb(self, position, radius):
         physics_system = self.gameworld.systems['cymunk-physics']
         bb_list = [position[0] - radius, position[1] - radius, 
             position[0] + radius, position[1] + radius]
         in_radius = physics_system.query_bb(bb_list)
         return in_radius
-    
 
     def calculate_desired_vector(self, target, location, ship_data, 
         ship_ai_data, is_player):
@@ -464,31 +461,34 @@ class ShipSystem(GameSystem):
         view_shape_dict = {'shape_type': 'poly', 'elasticity': 0.0, 
         'collision_type':5, 'shape_info': view_dict, 'friction': 0.0}
         physics_component_dict = { 'main_shape': 'box', 
-        'velocity': (0, 0), 'position': position, 'angle': 0, 
-        'angular_velocity': 0, 'mass': ship_dict['mass'], 'vel_limit': ship_dict['max_speed'], 
-        'ang_vel_limit': math.radians(ship_dict['max_turn_speed']), 
-        'col_shapes': [col_shape_dict, view_shape_dict]}
+            'velocity': (0, 0), 'position': position, 'angle': 0, 
+            'angular_velocity': 0, 'mass': ship_dict['mass'], 
+            'vel_limit': ship_dict['max_speed'], 
+            'ang_vel_limit': math.radians(ship_dict['max_turn_speed']), 
+            'col_shapes': [col_shape_dict, view_shape_dict]}
         ship_system_dict = {'health': ship_dict['health'], 
-        'max_speed': ship_dict['max_speed'], 'accel': ship_dict['accel'], 
-        'offset_distance': ship_dict['offset_distance'], 'color': ship_dict['color'],
-        'ang_accel': math.radians(ship_dict['angular_accel']), 'hard_points': ship_dict['hard_points'], 
-        'projectile_type': ship_dict['caliber'], 'is_turning': 'zero', 'fire_engines': False, 
-        'turn_speed_multiplier': 0, 'engine_speed_multiplier': 0, 'character_dying': False,
-        'current_projectile_type': '_bullet', 'current_probes': 0, 
-        'total_rocket_ammo': ship_dict['total_rocket_ammo'], 
-        'current_rocket_ammo': ship_dict['total_rocket_ammo'],
-        'total_bullet_ammo': ship_dict['total_bullet_ammo'],
-        'current_bullet_ammo': ship_dict['total_bullet_ammo'],
-        'in_view': [],
-        'desired_angle': 0.0}
+            'max_speed': ship_dict['max_speed'], 'accel': ship_dict['accel'], 
+            'offset_distance': ship_dict['offset_distance'], 
+            'color': ship_dict['color'],
+            'ang_accel': math.radians(ship_dict['angular_accel']), 
+            'hard_points': ship_dict['hard_points'], 
+            'projectile_type': ship_dict['caliber'], 
+            'is_turning': 'zero', 'fire_engines': False, 
+            'turn_speed_multiplier': 0, 'engine_speed_multiplier': 0, 
+            'character_dying': False,
+            'current_projectile_type': '_bullet', 'current_probes': 0, 
+            'total_rocket_ammo': ship_dict['total_rocket_ammo'], 
+            'current_rocket_ammo': ship_dict['total_rocket_ammo'],
+            'total_bullet_ammo': ship_dict['total_bullet_ammo'],
+            'current_bullet_ammo': ship_dict['total_bullet_ammo'],
+            'in_view': [],
+            'desired_angle': 0.0}
         particle_system1 = {'particle_file': ship_dict['engine_effect'], 
         'offset': ship_dict['engine_offset']}
         particle_system2 = {'particle_file': ship_dict['explosion_effect'], 'offset': 0}
         particle_systems = {'engine_effect': particle_system1, 'explosion_effect': particle_system2}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
-        'physics_renderer': {'texture': ship_dict['texture'], 
-            'position_from': 'cymunk-physics', 
-            'rotate_from': 'cymunk-physics'}, 
+        'physics_renderer': {'texture': ship_dict['texture'], 'size': }, 
         'ship_system': ship_system_dict,
         'particle_manager': particle_systems}
         component_order = ['cymunk-physics', 'physics_renderer', 'ship_system',
@@ -583,80 +583,107 @@ class ProbeSystem(GameSystem):
         self.setup_probe_dict()
 
     def clear_probes(self):
+        timed_remove_entity = self.gameworld.timed_remove_entity
         for entity_id in self.entity_ids:
-            Clock.schedule_once(partial(
-                self.gameworld.timed_remove_entity, entity_id))
+            Clock.schedule_once(partial(timed_remove_entity, entity_id))
 
     def update(self, dt):
         gameworld = self.gameworld
         entities = gameworld.entities
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
-            system_data = entity['probe_system']
-            physics_data = entity['cymunk-physics']
-            unit_vector = physics_data['unit_vector']
-            system_data['position'] = (
-                physics_data[
-                    'position'][0] - unit_vector[0]*system_data['offset'],
-                physics_data[
-                    'position'][1] - unit_vector[1]*system_data['offset'])
-
-            color = system_data['color']
+            system_data = entity.probe_system
+            physics_data = entity.cymunk_physics
+            unit_vector = physics_data.unit_vector
+            offset = system_data.offset
+            position_data = entity.position
+            attached = system_data.attached
+            color = system_data.color
             if color[3] >= 1.0:
-                system_data['color_change'] = 'descending'
+                system_data.color_change = 'descending'
             if color[3] <= 0.:
-                system_data['color_change'] = 'ascending'
-            color_change = system_data['color_change']
+                system_data.color_change = 'ascending'
+            color_change = system_data.color_change
             if color_change == 'ascending':
-                new_alpha = color[3] + system_data['color_change_speed']*dt
-                system_data['color'] = (
+                new_alpha = color[3] + system_data.color_change_speed*dt
+                system_data.color = color = (
                     color[0], color[1], color[2], new_alpha)
             if color_change == 'descending':
-                new_alpha = color[3] - system_data['color_change_speed']*dt
-                system_data['color'] = (
+                new_alpha = color[3] - system_data.color_change_speed*dt
+                system_data.color = color = (
                     color[0], color[1], color[2], new_alpha)
+            for each in attached:
+                attached_ent = entities[each]
+                att_position = attached_ent.position
+                att_color = attached_ent.color
+                att_position.x = position_data.x - unit_vector[0]*offset
+                att_position.y = position_data.y - unit_vector[1]*offset
+                att_color.r = color[0]
+                att_color.g = color[1]
+                att_color.b = color[2]
+                att_color.a = color[3]
 
     def setup_probe_dict(self):
         self.probe_dict['probe1'] = {'inner_radius': 0, 
-        'outer_radius': 16, 'mass': 100,
-        'max_speed': 280, 'max_turn_speed': 180, 
-        'texture': 'probe', 'offset': 5,
-        'color': (0.788235294, 0.643137255, 1., 1.), 
-        'color_change_speed': 1., 
-        'lighting_texture': 'probelight'}
+            'outer_radius': 16, 'mass': 100,
+            'max_speed': 280, 'max_turn_speed': 180, 
+            'texture': 'probe', 'offset': 5,
+            'color': (0.788235294, 0.643137255, 1., 1.), 
+            'color_change_speed': 1., 
+            'lighting_texture': 'probelight'}
 
     def spawn_probe_with_dict(self, probe_dict, position):
         circle_dict = {'inner_radius': probe_dict['inner_radius'], 
-        'outer_radius': probe_dict['outer_radius'], 'mass': probe_dict['mass'], 
-        'offset': (0, 0)}
+            'outer_radius': probe_dict['outer_radius'], 
+            'mass': probe_dict['mass'], 
+            'offset': (0, 0)}
         col_shape_dict = {'shape_type': 'circle', 'elasticity': .5, 
-        'collision_type': 4, 'shape_info': circle_dict, 'friction': 1.0}
+            'collision_type': 4, 'shape_info': circle_dict, 'friction': 1.0}
         physics_component_dict = { 'main_shape': 'box', 
-        'velocity': (0, 0), 'position': position, 'angle': 0, 
-        'angular_velocity': 0, 'mass': probe_dict['mass'], 
-        'vel_limit': probe_dict['max_speed'], 
-        'ang_vel_limit': math.radians(probe_dict['max_turn_speed']), 
-        'col_shapes': [col_shape_dict]}
+            'velocity': (0, 0), 'position': position, 'angle': 0, 
+            'angular_velocity': 0, 'mass': probe_dict['mass'], 
+            'vel_limit': probe_dict['max_speed'], 
+            'ang_vel_limit': math.radians(probe_dict['max_turn_speed']), 
+            'col_shapes': [col_shape_dict]}
         probe_system_dict = {'color': probe_dict['color'], 
-        'offset': probe_dict['offset'], 
-        'color_change_speed': probe_dict['color_change_speed'], 
-        'color_change': 'ascending',
-        'position': position}
-        create_component_dict = {'cymunk-physics': physics_component_dict, 
-        'physics_renderer': {'texture': probe_dict['texture'],
-            'position_from': 'cymunk-physics', 
-            'rotate_from': 'cymunk-physics'}, 
-        'lighting_renderer': {'texture': probe_dict['lighting_texture'], 
-            'position_from': 'cymunk-physics', 'rotate_from': 'cymunk-physics',
-            'color_from': 'probe_system',
-        'size': (probe_dict['outer_radius']*2, probe_dict['outer_radius']*2)}, 
-        'probe_system': probe_system_dict}
-        component_order = ['cymunk-physics', 'physics_renderer', 
+            'offset': probe_dict['offset'], 
+            'color_change_speed': probe_dict['color_change_speed'], 
+            'color_change': 'ascending',
+            'attached': []}
+        create_component_dict = {
+            'position': position, 'rotate': 0,
+            'cymunk_physics': physics_component_dict, 
+            'physics_renderer': {'texture': probe_dict['texture'],
+                'size': (32, 32)},
+            'probe_system': probe_system_dict}
+        component_order = ['position', 'rotate',
+            'cymunk-physics', 'physics_renderer', 
             'probe_system', 'lighting_renderer']
-        self.gameworld.init_entity(create_component_dict, component_order)
+        gameworld = self.gameworld
+        init_entity = gameworld.init_entity
+        probe_ent = init_entity(create_component_dict, component_order)
+        create_component_dict = {
+            'position': position, 'rotate': 0., 'color': probe_dict['color'],
+            'lighting_renderer': {'texture': probe_dict['lighting_texture'],
+            'size': (probe_dict['outer_radius']*2, 
+                probe_dict['outer_radius']*2)}
+        }
+        component_order = ['position', 'rotate', 'color', 'lighting_renderer']
+        probe_light_ent = init_entity(create_component_dict, component_order)
+        
+        entities = gameworld.entities
+        probe = entities[probe_ent]
+        probe_data = probe.probe_system
+        probe_data.attached.append(probe_light_ent)
         self.number_of_probes += 1
 
     def remove_entity(self, entity_id):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        entity = entities[entity_id]
+        remove_entity = gameworld.remove_entity
+        for each in entity.probe_system.attached:
+            remove_entity(each)
         super(ProbeSystem, self).remove_entity(entity_id)
         self.number_of_probes -= 1
     

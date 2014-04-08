@@ -121,16 +121,15 @@ class GameSystem(Widget):
             self.update(update_time)
             self.frame_time -= update_time
 
-    def generate_component(self, dict entity_component_dict):
+    def generate_component(self, args):
         #this is the function that generates a new component
         new_component = Component()
-        for each in entity_component_dict:
-            setattr(new_component, each, entity_component_dict[each])
+        for each in args:
+            setattr(new_component, each, args[each])
         return new_component
 
-    def create_component(self, object entity, dict entity_component_dict):
-        setattr(entity, self.system_id, self.generate_component(
-            entity_component_dict))
+    def create_component(self, object entity, args):
+        setattr(entity, self.system_id, self.generate_component(args))
         self.entity_ids.append(entity.entity_id)
 
     def generate_entity_component_dict(self, int entity_id):
@@ -156,8 +155,7 @@ class GameSystem(Widget):
 
 class PositionSystem(GameSystem):
 
-    def generate_component(self, dict entity_component_dict):
-        pos = entity_component_dict['pos']
+    def generate_component(self, tuple pos):
         x = pos[0]
         y = pos[1]
         new_component = PositionComponent.__new__(PositionComponent, x, y)
@@ -165,23 +163,20 @@ class PositionSystem(GameSystem):
 
 class ScaleSystem(GameSystem):
 
-    def generate_component(self, dict entity_component_dict):
-        s = entity_component_dict['scale']
+    def generate_component(self, float s):
         new_component = ScaleComponent.__new__(ScaleComponent, s)
         return new_component
 
 class RotateSystem(GameSystem):
 
-    def generate_component(self, dict entity_component_dict):
-        r = entity_component_dict['r']
+    def generate_component(self, float r):
         new_component = RotateComponent.__new__(RotateComponent, r)
         return new_component
 
 
 class ColorSystem(GameSystem):
 
-    def generate_component(self, dict entity_component_dict):
-        color = entity_component_dict['color']
+    def generate_component(self, list color):
         r = color[0]
         g = color[1]
         b = color[2]

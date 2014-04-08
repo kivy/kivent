@@ -39,7 +39,7 @@ cdef class PhysicsComponent:
             self._shape_type = value
 
 class CymunkPhysics(GameSystem):
-    system_id = StringProperty('cymunk-physics')
+    system_id = StringProperty('cymunk_physics')
     space = ObjectProperty(None)
     gravity = ListProperty((0, 0))
     updateable = BooleanProperty(True)
@@ -200,11 +200,12 @@ class CymunkPhysics(GameSystem):
         new_component = PhysicsComponent.__new__(PhysicsComponent, body, shapes, shape_type)
         return new_component
 
-    def create_component(self, object entity, dict entity_component_dict):
-        entity_component_dict['entity_id'] = entity.entity_id
+    def create_component(self, object entity, args):
+        args['entity_id'] = entity.entity_id
         super(CymunkPhysics, self).create_component(
-            entity, entity_component_dict)
-        cdef PhysicsComponent physics = entity.physics
+            entity, args)
+        cdef str system_id = self.system_id
+        cdef PhysicsComponent physics = getattr(entity, system_id)
         cdef PositionComponent position = entity.position
         cdef RotateComponent rotate = entity.rotate
         cdef Body body = physics._body

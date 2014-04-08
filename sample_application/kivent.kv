@@ -50,8 +50,17 @@ TestGame:
 		CymunkPhysics:
 			gameworld: root.gameworld
 			update_time: 1./48.
-		GameSystem:
+		PositionSystem:
 			system_id: 'position'
+			gameworld: root.gameworld
+		RotateSystem:
+			system_id: 'rotate'
+			gameworld: root.gameworld
+		ScaleSystem:
+			system_id: 'scale'
+			gameworld: root.gameworld
+		ColorSystem:
+			system_id: 'color'
 			gameworld: root.gameworld
 		ProjectileSystem:
 			system_id: 'projectile_system'
@@ -121,6 +130,7 @@ TestGame:
 			gameworld: root.gameworld
 			size: root.size
 			max_number_particles: 100
+			system_id: 'particles'
 			pos: root.pos
 			atlas_dir: 'assets/particles/'
 			atlas: 'particles'

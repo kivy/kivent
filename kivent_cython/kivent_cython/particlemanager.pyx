@@ -24,23 +24,23 @@ BLEND_FUNC = {
 
 
 cdef class ParticleComponent:
-    cdef int _attached_to
+    cdef int _parent
     cdef keParticleEmitter _particle_emitter
     cdef bool _system_on
     cdef float _offset
 
-    def __cinit__(self, int attached, keParticleEmitter emitter, 
+    def __cinit__(self, int parent, keParticleEmitter emitter, 
         bool system_on, float offset=0.0):
-        self._attached_to = attached
+        self._parent = parent
         self._particle_emitter = emitter
         self._system_on = system_on
         self._offset = offset
 
-    property attached_to:
+    property parent:
         def __get__(self):
-            return self._attached_to
+            return self._parent
         def __set__(self, int value):
-            self._attached_to = value
+            self._parent = value
 
     property offset:
         def __get__(self):
@@ -139,9 +139,8 @@ class ParticleManager(GameSystem):
             pm.add_emitter(emitter)
         emitter = pm.load_particle_system_with_emitter(
             emitter, config)
-        attached = entity_component_dict['parent']
         cdef ParticleComponent new_component = ParticleComponent.__new__(
-            ParticleComponent, attached,
+            ParticleComponent, entity_component_dict['parent'],
             emitter, False)
         if 'offset' in entity_component_dict:
             new_component._offset = entity_component_dict['offset']
@@ -207,7 +206,7 @@ class ParticleManager(GameSystem):
             particle_comp = getattr(entity, system_id)
             particle_emitter = particle_comp._particle_emitter
             paused = particle_emitter.paused
-            parent_entity = entities[particle_comp._attached_to]
+            parent_entity = entities[particle_comp._parent]
             render_comp = getattr(parent_entity, render_information_from)
             if render_comp._on_screen:
                 if particle_comp._system_on:

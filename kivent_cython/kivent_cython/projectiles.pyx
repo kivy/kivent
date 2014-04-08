@@ -2,6 +2,51 @@ from kivy.clock import Clock
 from functools import partial
 
 
+cdef class ProjectileComponent:
+    cdef float _damage
+    cdef float _accel
+    cdef bool _armed
+    cdef float _lifespan
+    cdef list _linked
+    
+    def __cinit__(self, float damage, float accel, 
+        bool armed, float life_span):
+        self._damage = damage
+        self._accel = accel
+        self._armed = armed
+        self._linked = []
+        self._lifespan = life_span
+
+    property damage:
+        def __get__(self):
+            return self._damage
+        def __set__(self, float value):
+            self._damage = value
+
+    property accel:
+        def __get__(self):
+            return self._accel
+        def __set__(self, float value):
+            self._accel = value
+
+    property lifespan:
+        def __get__(self):
+            return self._lifespan
+        def __set__(self, float value):
+            self._lifespan = value
+
+    property armed:
+        def __get__(self):
+            return self._armed
+        def __set__(self, bool value):
+            self._armed = value
+
+    property linked:
+        def __get__(self):
+            return self._linked
+        def __set__(self, list value):
+            self._linked = value
+
 cdef tuple get_rotated_vector(float angle, float x, float y):
         return ((y * cos(angle)) - (x * sin(angle)), 
             (x * cos(angle)) + (y * sin(angle)))
@@ -29,17 +74,17 @@ class ProjectileSystem(GameSystem):
         fire_projectile = self.fire_projectile
         c_once = Clock.schedule_once
         cdef int num_events = len(fire_events)
+        timed_remove_entity = gameworld.timed_remove_entity
         fe_p = fire_events.pop
         cdef int i
         cdef int entity_id
-        cdef dict character
-        cdef dict ship_system_data
+        cdef Entity character
         cdef int current_bullet_ammo, current_rocket_ammo
         cdef str projectile_type
         cdef float projectile_width
         cdef float projectile_height
-        cdef dict character_physics
-        cdef tuple character_position
+        cdef PhysicsComponent character_physics
+        cdef PositionComponent character_position
         cdef list hard_points
         cdef int number_of_shots
         cdef tuple position_offset
@@ -47,32 +92,30 @@ class ProjectileSystem(GameSystem):
         cdef float x, y
         for entity_id in entity_ids:
             entity = entities[entity_id]
-            projectile_system = entity['projectile_system']
-            if 'particle_manager' not in entity:
-                projectile_system['life_span'] += dt
-                if projectile_system['life_span'] >= 14.0:
+            projectile_system = entity.projectile_system
+            if len(projectile_system._linked) == 0: 
+                projectile_system._lifespan += dt
+                if projectile_system._lifespan >= 14.0:
                     c_once(
-                        partial(gameworld.timed_remove_entity, entity_id))
+                        partial(timed_remove_entity, entity_id))
         for i in xrange(num_events):
             entity_id = fe_p(0)
             character = entities[entity_id]
             is_character = False
             if entity_id == player_character_system.current_character_id:
                 is_character = True
-            ship_system_data = character['ship_system']
-            current_projectile_type = ship_system_data[
-                'current_projectile_type']
-            current_bullet_ammo = ship_system_data['current_bullet_ammo']
-            current_rocket_ammo = ship_system_data['current_rocket_ammo']
-            projectile_type = ship_system_data[
-                'projectile_type']+current_projectile_type
-            projectile_width = projectiles_dict[projectile_type]['width']
-            projectile_height = projectiles_dict[projectile_type]['height']
-            character_physics = character['cymunk-physics']
-            character_position = (
-                character_physics['position'][0], 
-                character_physics['position'][1])
-            hard_points = ship_system_data['hard_points']
+            ship_system_data = character.ship_system
+            current_projectile_type = ship_system_data.current_projectile_type
+            current_bullet_ammo = ship_system_data.current_bullet_ammo
+            current_rocket_ammo = ship_system_data.current_rocket_ammo
+            projectile_type = ship_system_data.projectile_type + 
+                current_projectile_type
+            projectile = projectiles_dict[projectile_type]
+            projectile_width = projectile['width']
+            projectile_height = projectile['height']
+            character_physics = character.cymunk_physics
+            character_position = character.position
+            hard_points = ship_system_data.hard_points
             number_of_shots = len(hard_points)
             if ((current_projectile_type == '_bullet' and 
                  current_bullet_ammo - number_of_shots >= 0) or 
@@ -87,8 +130,8 @@ class ProjectileSystem(GameSystem):
                         angle, x, y
                         )
                     location = (
-                        character_position[0] + position_offset_rotated[0],
-                        character_position[1] + position_offset_rotated[1])
+                        character_position._x + position_offset_rotated[0],
+                        character_position._y + position_offset_rotated[1])
                     bullet_ent_id = spawn_proj(
                         location, angle, ship_system_data['color'], 
                         projectiles_dict[projectile_type])
@@ -103,14 +146,23 @@ class ProjectileSystem(GameSystem):
                     player_character_system.current_bullet_ammo = ship_system_data['current_bullet_ammo']
                     player_character_system.current_rocket_ammo = ship_system_data['current_rocket_ammo']
 
+    def remove_entity(self, int entity_id):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        entity = entities[entity_id]
+        linked = entity.projectile_system._linked
+        for each in linked:
+            gameworld.remove_entity(each)
+        super(ProjectileSystem, self).remove_entity(entity_id)
+
     def create_rocket_explosion(self, entity_id):
         gameworld = self.gameworld
         entities = gameworld.entities
         entity = entities[entity_id]
         
         entity['physics_renderer']['render'] = False
-        entity['cymunk-physics']['body'].velocity = (0, 0)
-        entity['cymunk-physics']['body'].reset_forces()
+        entity['cymunk_physics']['body'].velocity = (0, 0)
+        entity['cymunk_physics']['body'].reset_forces()
         entity['particle_manager'][
             'engine_effect']['particle_system_on'] = False
         entity['particle_manager'][
@@ -128,6 +180,12 @@ class ProjectileSystem(GameSystem):
             location, angle, color, 
             self.projectiles_dict[projectile_type])
         self.fire_projectile(bullet_ent_id)
+
+    def generate_component(self, tuple projectile_args):
+        new_component = ProjectileComponent.__new__(ProjectileComponent, 
+            projectile_args[0], projectile_args[1], projectile_args[2], 
+            projectile_args[3])
+        return new_component
 
     def setup_projectiles_dicts(self):
         self.projectiles_dict = projectiles_dict = {}
@@ -170,36 +228,41 @@ class ProjectileSystem(GameSystem):
 
     def spawn_projectile_with_dict(self, 
         location, angle, color, projectile_dict):
+        gameworld = self.gameworld
+        init_entity = gameworld.init_entity
+        entities = gameworld.entities
         projectile_box_dict = {
-        'width': projectile_dict['width'], 
-        'height': projectile_dict['height'], 
-        'mass': projectile_dict['mass']}
+            'width': projectile_dict['width'], 
+            'height': projectile_dict['height'], 
+            'mass': projectile_dict['mass']}
         projectile_col_shape_dict = {
-        'shape_type': 'box', 'elasticity': 1.0, 
-        'collision_type': 3, 
-        'shape_info': projectile_box_dict, 
-        'friction': .3}
+            'shape_type': 'box', 'elasticity': 1.0, 
+            'collision_type': 3, 
+            'shape_info': projectile_box_dict, 
+            'friction': .3}
         projectile_physics_component_dict = { 
-        'main_shape': 'box', 
-        'velocity': (0, 0), 
-        'position': (location[0], location[1]), 
-        'angle': angle, 
-        'angular_velocity': 0, 
-        'mass': projectile_dict['mass'], 
-        'vel_limit': projectile_dict['vel_limit'], 
-        'ang_vel_limit': keRadians(projectile_dict['ang_vel_limit']),
-        'col_shapes': [projectile_col_shape_dict]}
+            'main_shape': 'box', 
+            'velocity': (0, 0), 
+            'position': location, 
+            'angle': angle, 
+            'angular_velocity': 0, 
+            'mass': projectile_dict['mass'], 
+            'vel_limit': projectile_dict['vel_limit'], 
+            'ang_vel_limit': keRadians(projectile_dict['ang_vel_limit']),
+            'col_shapes': [projectile_col_shape_dict]}
         projectile_renderer_dict = {
-        'texture': projectile_dict['texture'],
-            'position_from': 'cymunk-physics', 
-            'rotate_from': 'cymunk-physics'}
+            'texture': projectile_dict['texture'], 
+            'size': (projectile_dict['width'], projectile_dict['size'])}
         create_projectile_dict = {
-        'cymunk-physics': projectile_physics_component_dict, 
-        'physics_renderer': projectile_renderer_dict, 
-        'projectile_system': {'damage': projectile_dict['damage'], 
-        'accel': projectile_dict['accel'], 'armed': True, 'life_span': 0.0}}
-        component_order = ['cymunk-physics', 'physics_renderer', 
-        'projectile_system']
+            'position': location,
+            'rotate': angle,
+            'cymunk_physics': projectile_physics_component_dict, 
+            'physics_renderer': projectile_renderer_dict, 
+            'projectile_system': ('damage': projectile_dict['damage'], 
+            'accel': projectile_dict['accel'], 'armed': True, 'life_span': 0.0)}
+        component_order = ['position', 'rotate', 'cymunk_physics', 
+            'physics_renderer', 'projectile_system']
+        bullet_ent_id = init_entity(create_projectile_dict, component_order)
         if projectile_dict['type'] == 'rocket':
             if color == 'orange':
                 effect_string = 'assets/pexfiles/rocket_burn_effect1.pex'
@@ -214,15 +277,18 @@ class ProjectileSystem(GameSystem):
                 effect_string = 'assets/pexfiles/rocket_burn_effect4.pex'
                 explosion_string = 'assets/pexfiles/rocket_explosion_4.pex'
             particle_system1 = {'particle_file': effect_string, 
-            'offset': projectile_dict['height']*.5}
+                'offset': projectile_dict['height']*.5, 
+                'parent': bullet_ent_id}
             particle_system2 = {'particle_file': explosion_string, 
-                'offset': 0}
-            particle_systems = {'engine_effect': particle_system1, 
-            'explosion_effect': particle_system2}
-            create_projectile_dict['particle_manager'] = particle_systems
-            component_order.append('particle_manager')
-        bullet_ent_id = self.gameworld.init_entity(
-            create_projectile_dict, component_order)
+                'offset': 0, 'parent': bullet_ent_id}
+            p_ent = init_entity(
+                {'particles': particle_system1}, ['particles'])
+            p_ent2 = init_entity(
+                {'particles': particle_system2}, ['particles'])
+            particle_comp = entities[p_ent].particles
+            particle_comp.system_on = True
+            projectile_system_data = entities[bulllet_ent_id].projectile_system
+            projectile_system_data.linked = [p_ent, p_ent2]
         return bullet_ent_id
 
     def set_armed(self, entity_id, dt):

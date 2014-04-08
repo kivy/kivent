@@ -23,7 +23,7 @@ class LevelBoundaries(GameSystem):
             'col_shapes': [col_shape_dict]}
         boundary_system = {}
         create_component_dict = {'cymunk-physics': physics_component_dict, 
-                                 'boundary_system': boundary_system}
+            'boundary_system': boundary_system}
         component_order = ['cymunk-physics', 'boundary_system']
         self.gameworld.init_entity(create_component_dict, component_order)
 
@@ -205,10 +205,9 @@ class AsteroidsLevel(GameSystem):
     def generate_star(self, star_graphic, star_size):
         rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])
         rand_y = random.randint(0, self.gameworld.currentmap.map_size[1])
-        create_component_dict = {'position': {'position': (rand_x, rand_y)}, 
-        'static_renderer': {'texture': star_graphic, 
-            'position_from': 'position'}, 
-        'asteroids_level': {'level_id': self.current_level_id}}
+        create_component_dict = {'position': (rand_x, rand_y), 
+            'static_renderer': {'texture': star_graphic, 'size': star_size}, 
+            'asteroids_level': {'level_id': self.current_level_id}}
         component_order = ['position', 'static_renderer', 'asteroids_level']
         self.gameworld.init_entity(create_component_dict, component_order)
 
@@ -238,17 +237,14 @@ class AsteroidsLevel(GameSystem):
                     y * y_distance + y_distance*.5)
                 index += 1
                 print index
-        print num_tiles
         for num in range(num_tiles):
-            print num
-            create_component_dict = {'position': {
+            create_component_dict = {
             'position': position_dict[num], 
-            'scale': scale_x/2.}, 
-            'background_renderer': {'texture': str(num+1), 'size': size,
-            'position_from': 'position', 'scale_from': 'position'}, 
+            'scale': scale_x/2., 
+            'background_renderer': {'texture': str(num+1), 'size': size,}, 
             'asteroids_level': {'level_id': self.current_level_id}}
-            component_order = ['position', 'background_renderer', 
-                'asteroids_level']
+            component_order = ['position', 'scale', 
+                'background_renderer', 'asteroids_level']
             self.gameworld.init_entity(create_component_dict, component_order)
 
 class AsteroidSystem(GameSystem):
@@ -289,31 +285,30 @@ class AsteroidSystem(GameSystem):
         angle = math.radians(random.randint(-360, 360))
         angular_velocity = math.radians(random.randint(-150, -150))
         shape_dict = {'inner_radius': 0, 'outer_radius': 43, 'mass': 150, 
-        'offset': (0, 0)}
+            'offset': (0, 0)}
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
-        'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
+         'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         physics_component = {'main_shape': 'circle', 
-        'velocity': (x_vel, y_vel), 
-        'position': (pos[0], pos[1]), 'angle': angle, 
-        'angular_velocity': angular_velocity,
-        'vel_limit': 200, 
-        'ang_vel_limit': math.radians(150), 
-        'mass': 100, 'col_shapes': col_shapes}
+            'velocity': (x_vel, y_vel), 
+            'position': pos, 'angle': angle, 
+            'angular_velocity': angular_velocity,
+            'vel_limit': 200, 
+            'ang_vel_limit': math.radians(150), 
+            'mass': 100, 'col_shapes': col_shapes}
         asteroid_component = {'health': 30, 'damage': 15, 
         'asteroid_size': 2, 'pending_destruction': False}
-        create_component_dict = {'cymunk-physics': physics_component, 
-        'physics_renderer': {'texture': 
-            'asteroid2',
-            'position_from': 'cymunk-physics', 'rotate_from': 'cymunk-physics'}, 
-        'asteroid_system': asteroid_component}
-        component_order = ['cymunk-physics', 'physics_renderer', 
+        create_component_dict = {'position': pos, 
+            'rotate': 0,
+            'cymunk-physics': physics_component, 
+            'physics_renderer': {'texture': 'asteroid2', 'size': (90, 90)}, 
+            'asteroid_system': asteroid_component}
+        component_order = ['position', 'rotate', 
+            'cymunk-physics', 'physics_renderer', 
             'asteroid_system']
         self.gameworld.init_entity(create_component_dict, component_order)
 
     def create_asteroid_1(self, pos):
-        x = pos[0]
-        y = pos[1]
         x_vel = random.randint(-100, 100)
         y_vel = random.randint(-100, 100)
         angle = math.radians(random.randint(-360, 360))
@@ -325,7 +320,7 @@ class AsteroidSystem(GameSystem):
         col_shapes = [col_shape]
         physics_component = {'main_shape': 'circle', 
         'velocity': (x_vel, y_vel), 
-        'position': (x, y), 'angle': angle, 
+        'position': pos, 'angle': angle, 
         'angular_velocity': angular_velocity, 
         'vel_limit': 250, 
         'ang_vel_limit': math.radians(200), 
@@ -333,12 +328,11 @@ class AsteroidSystem(GameSystem):
         asteroid_component = {'health': 15, 'damage': 5, 
         'asteroid_size': 1, 'pending_destruction': False}
         create_component_dict = {'cymunk-physics': physics_component, 
-        'physics_renderer': {'texture': 
-            'asteroid1',
-            'position_from': 'cymunk-physics', 
-            'rotate_from': 'cymunk-physics'}, 
-        'asteroid_system': asteroid_component}
-        component_order = ['cymunk-physics', 'physics_renderer', 
+            'physics_renderer': {'texture': 'asteroid1', 'size': (64 , 64)}, 
+            'asteroid_system': asteroid_component, 'position': pos,
+            'rotate': 0}
+        component_order = ['position', 'rotate', 
+            'cymunk-physics', 'physics_renderer', 
             'asteroid_system']
         self.gameworld.init_entity(create_component_dict, component_order)
 

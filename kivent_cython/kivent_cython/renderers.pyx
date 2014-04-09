@@ -352,7 +352,7 @@ class Renderer(GameSystem):
 class DynamicRenderer(Renderer):
     system_id = StringProperty('dynamic_renderer')
     do_rotate = BooleanProperty(True)
-    physics_system = StringProperty('cymunk-physics')
+    physics_system = StringProperty('cymunk_physics')
 
     def update_render_state(self):
         cdef object parent = self.gameworld
@@ -378,17 +378,26 @@ class DynamicRenderer(Renderer):
         tr_a = to_render.append
         for entity_id in new_to_screen:
             entity = entities[entity_id]
-            system_data = getattr(entity, system_id)
-            system_data._on_screen = True
+            try:
+                system_data = getattr(entity, system_id)
+                system_data._on_screen = True
+            except:
+                continue
         for entity_id in left_screen:
             entity = entities[entity_id]
-            system_data = getattr(entity, system_id)
-            system_data._on_screen = False
+            try:
+                system_data = getattr(entity, system_id)
+                system_data._on_screen = False
+            except:
+                continue
         for entity_id in on_screen:
             entity = entities[entity_id]
-            system_data = getattr(entity, system_id)
-            if system_data._render:
-                tr_a(entity_id)
+            try:
+                system_data = getattr(entity, system_id)
+                if system_data._render:
+                    tr_a(entity_id)
+            except:
+                continue
         self.on_screen_last_frame = on_screen
         return to_render
 

@@ -62,10 +62,10 @@ cdef class ParticleComponent:
 
 
 class ParticleManager(GameSystem):
-    system_id = StringProperty('particle_manager')
+    system_id = StringProperty('particles')
     max_number_particles = NumericProperty(100)
-    position_data_from = StringProperty('cymunk-physics')
-    physics_data_from = StringProperty('cymunk-physics')
+    position_data_from = StringProperty('cymunk_physics')
+    physics_data_from = StringProperty('cymunk_physics')
     render_information_from = StringProperty('physics_renderer')
     shader_source = StringProperty('pointshader.glsl')
     updateable = BooleanProperty(True)

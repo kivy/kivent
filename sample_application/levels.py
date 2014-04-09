@@ -22,9 +22,13 @@ class LevelBoundaries(GameSystem):
             'mass': 0, 'vel_limit': 0, 'ang_vel_limit': 0, 
             'col_shapes': [col_shape_dict]}
         boundary_system = {}
-        create_component_dict = {'cymunk-physics': physics_component_dict, 
+        create_component_dict = {
+            'position': pos,
+            'rotate': 0.,
+            'cymunk_physics': physics_component_dict, 
             'boundary_system': boundary_system}
-        component_order = ['cymunk-physics', 'boundary_system']
+        component_order = ['position', 'rotate', 
+            'cymunk_physics', 'boundary_system']
         self.gameworld.init_entity(create_component_dict, component_order)
 
     def clear(self):
@@ -40,8 +44,8 @@ class LevelBoundaries(GameSystem):
         map_pos = gameworld.pos
         map_size = gameworld.currentmap.map_size
         mapw, maph = map_size
-        physics_data = entity['cymunk-physics']
-        body = physics_data['body']
+        physics_data = entity.cymunk_physics
+        body = physics_data.body
         x_pos, y_pos = body.position
         if x_pos < map_pos[0] or x_pos > mapw:
             new_x = mapw - x_pos
@@ -164,7 +168,7 @@ class AsteroidsLevel(GameSystem):
         #'x', 'y', 'xy', '
         choice = random.choice(['none', 'none', 'none', 'none'])
         systems = self.gameworld.systems
-        physics_system = systems['cymunk-physics']
+        physics_system = systems['cymunk_physics']
         if choice == 'none':
             physics_system.gravity = (0, 0)
         if choice == 'x':
@@ -181,7 +185,7 @@ class AsteroidsLevel(GameSystem):
     def choose_damping(self):
         systems = self.gameworld.systems
         level_damping = [.75, .75, .80, .9, 1.0]
-        physics_system = systems['cymunk-physics']
+        physics_system = systems['cymunk_physics']
         #damping_factor = .75 + .25*random.random()
         physics_system.damping = level_damping[self.current_level_id]
 
@@ -300,11 +304,11 @@ class AsteroidSystem(GameSystem):
         'asteroid_size': 2, 'pending_destruction': False}
         create_component_dict = {'position': pos, 
             'rotate': 0,
-            'cymunk-physics': physics_component, 
+            'cymunk_physics': physics_component, 
             'physics_renderer': {'texture': 'asteroid2', 'size': (90, 90)}, 
             'asteroid_system': asteroid_component}
         component_order = ['position', 'rotate', 
-            'cymunk-physics', 'physics_renderer', 
+            'cymunk_physics', 'physics_renderer', 
             'asteroid_system']
         self.gameworld.init_entity(create_component_dict, component_order)
 
@@ -327,12 +331,12 @@ class AsteroidSystem(GameSystem):
         'mass': 50, 'col_shapes': col_shapes}
         asteroid_component = {'health': 15, 'damage': 5, 
         'asteroid_size': 1, 'pending_destruction': False}
-        create_component_dict = {'cymunk-physics': physics_component, 
+        create_component_dict = {'cymunk_physics': physics_component, 
             'physics_renderer': {'texture': 'asteroid1', 'size': (64 , 64)}, 
             'asteroid_system': asteroid_component, 'position': pos,
             'rotate': 0}
         component_order = ['position', 'rotate', 
-            'cymunk-physics', 'physics_renderer', 
+            'cymunk_physics', 'physics_renderer', 
             'asteroid_system']
         self.gameworld.init_entity(create_component_dict, component_order)
 
@@ -350,15 +354,15 @@ class AsteroidSystem(GameSystem):
         entities = self.gameworld.entities
         for entity_id in self.entity_ids:
             entity = entities[entity_id]
-            if system_id not in entity:
+            if not hasattr(entity, system_id):
                 continue
-            system_data = entity[system_id]
-            if (system_data['health'] <= 0 and 
-                not system_data['pending_destruction']):
-                system_data['pending_destruction'] = True
-                if system_data['asteroid_size'] == 2:
+            system_data = getattr(entity, system_id)
+            if (system_data.health <= 0 and 
+                not system_data.pending_destruction):
+                system_data.pending_destruction = True
+                if system_data.asteroid_size == 2:
                     for x in range(4):
-                        position = entity['cymunk-physics']['position']
+                        position = (entity.position.x, entity.position.y)
                         self.create_asteroid_1(position)
                 Clock.schedule_once(partial(
                     self.gameworld.timed_remove_entity, entity_id))
@@ -367,8 +371,8 @@ class AsteroidSystem(GameSystem):
         system_id = self.system_id
         entities = self.gameworld.entities
         entity = entities[entity_id]
-        system_data = entity[system_id]
-        system_data['health'] -= damage
+        system_data = getattr(entity, system_id)
+        system_data.health -= damage
 
     def collision_begin_asteroid_asteroid(self, space, arbiter):
         gameworld = self.gameworld
@@ -377,8 +381,8 @@ class AsteroidSystem(GameSystem):
         asteroid2_id = arbiter.shapes[1].body.data
         asteroid1 = entities[asteroid1_id]
         asteroid2 = entities[asteroid2_id]
-        if (asteroid1['physics_renderer']['on_screen'] or 
-            asteroid2['physics_renderer']['on_screen']):
+        if (asteroid1.physics_renderer.on_screen or 
+            asteroid2.physics_renderer.on_screen):
             sound_system = gameworld.systems['sound_system']
             sound_system.play('asteroidhitasteroid')
         return True

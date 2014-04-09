@@ -132,14 +132,6 @@ class GameSystem(Widget):
         setattr(entity, self.system_id, self.generate_component(args))
         self.entity_ids.append(entity.entity_id)
 
-    def generate_entity_component_dict(self, int entity_id):
-        cdef dict entity = self.gameworld.entities[entity_id]
-        return entity[self.system_id]
-
-    def save_component(self, int entity_id):
-        entity_component_dict = self.generate_entity_component_dict(entity_id)
-        return entity_component_dict
-
     def remove_entity(self, int entity_id):
         self.entity_ids.remove(entity_id)
 
@@ -176,7 +168,7 @@ class RotateSystem(GameSystem):
 
 class ColorSystem(GameSystem):
 
-    def generate_component(self, list color):
+    def generate_component(self, tuple color):
         r = color[0]
         g = color[1]
         b = color[2]
@@ -254,7 +246,7 @@ class GameView(GameSystem):
         cdef int entity_to_focus
         cdef float dist_x
         cdef float dist_y
-        cdef dict entity
+        cdef object entity
         cdef float camera_speed_multiplier
         cdef PositionComponent position_data
         gameworld = self.gameworld

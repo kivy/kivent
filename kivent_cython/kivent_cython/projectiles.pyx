@@ -78,7 +78,7 @@ class ProjectileSystem(GameSystem):
         fe_p = fire_events.pop
         cdef int i
         cdef int entity_id
-        cdef Entity character
+        cdef object character
         cdef int current_bullet_ammo, current_rocket_ammo
         cdef str projectile_type
         cdef float projectile_width
@@ -93,7 +93,7 @@ class ProjectileSystem(GameSystem):
         for entity_id in entity_ids:
             entity = entities[entity_id]
             projectile_system = entity.projectile_system
-            if len(projectile_system._linked) == 0: 
+            if not hasattr(projectile_system, 'linked'): 
                 projectile_system._lifespan += dt
                 if projectile_system._lifespan >= 14.0:
                     c_once(
@@ -108,8 +108,7 @@ class ProjectileSystem(GameSystem):
             current_projectile_type = ship_system_data.current_projectile_type
             current_bullet_ammo = ship_system_data.current_bullet_ammo
             current_rocket_ammo = ship_system_data.current_rocket_ammo
-            projectile_type = ship_system_data.projectile_type + 
-                current_projectile_type
+            projectile_type = ship_system_data.projectile_type + current_projectile_type
             projectile = projectiles_dict[projectile_type]
             projectile_width = projectile['width']
             projectile_height = projectile['height']
@@ -124,7 +123,7 @@ class ProjectileSystem(GameSystem):
                 for hard_point in hard_points:
                     position_offset = (
                         hard_point[0], hard_point[1] + projectile_height*.5)
-                    angle = character_physics['body'].angle
+                    angle = character_physics.body.angle
                     x, y = position_offset
                     position_offset_rotated = get_rotated_vector(
                         angle, x, y
@@ -133,41 +132,45 @@ class ProjectileSystem(GameSystem):
                         character_position._x + position_offset_rotated[0],
                         character_position._y + position_offset_rotated[1])
                     bullet_ent_id = spawn_proj(
-                        location, angle, ship_system_data['color'], 
+                        location, angle, ship_system_data.color, 
                         projectiles_dict[projectile_type])
                     fire_projectile(bullet_ent_id)
                 if current_projectile_type == '_bullet':
-                    ship_system_data['current_bullet_ammo'] -= number_of_shots
+                    ship_system_data.current_bullet_ammo -= number_of_shots
                     c_once(partial(sound_system.schedule_play, 'bulletfire'))  
                 if current_projectile_type == '_rocket':
-                    ship_system_data['current_rocket_ammo'] -= number_of_shots
+                    ship_system_data.current_rocket_ammo -= number_of_shots
                     c_once(partial(sound_system.schedule_play, 'rocketfire'))
                 if is_character:
-                    player_character_system.current_bullet_ammo = ship_system_data['current_bullet_ammo']
-                    player_character_system.current_rocket_ammo = ship_system_data['current_rocket_ammo']
+                    player_character_system.current_bullet_ammo = ship_system_data.current_bullet_ammo
+                    player_character_system.current_rocket_ammo = ship_system_data.current_rocket_ammo
 
     def remove_entity(self, int entity_id):
         gameworld = self.gameworld
         entities = gameworld.entities
         entity = entities[entity_id]
-        linked = entity.projectile_system._linked
-        for each in linked:
-            gameworld.remove_entity(each)
+        if hasattr(entity.projectile_system, 'linked'):
+            linked = entity.projectile_system.linked
+            for each in linked:
+                gameworld.remove_entity(each)
         super(ProjectileSystem, self).remove_entity(entity_id)
 
     def create_rocket_explosion(self, entity_id):
         gameworld = self.gameworld
         entities = gameworld.entities
         entity = entities[entity_id]
-        
-        entity['physics_renderer']['render'] = False
-        entity['cymunk_physics']['body'].velocity = (0, 0)
-        entity['cymunk_physics']['body'].reset_forces()
-        entity['particle_manager'][
-            'engine_effect']['particle_system_on'] = False
-        entity['particle_manager'][
-            'explosion_effect']['particle_system_on'] = True
-        if entity['physics_renderer']['on_screen']:
+        entity.physics_renderer.render = False
+        entity.cymunk_physics.body.velocity = (0, 0)
+        entity.cymunk_physics.body.reset_forces()
+        projectile_data = entity.projectile_system
+        linked = projectile_data.linked
+        engine_effect_id = linked[0]
+        explosion_effect_id = linked[1]
+        engine_effect = entities[engine_effect_id].particles
+        explosion_effect = entities[explosion_effect_id].particles
+        engine_effect.system_on = False
+        explosion_effect.system_on = True
+        if entity.physics_renderer.on_screen:
             sound_system = gameworld.systems['sound_system']
             Clock.schedule_once(partial(
                 sound_system.schedule_play, 'rocketexplosion'))
@@ -252,14 +255,14 @@ class ProjectileSystem(GameSystem):
             'col_shapes': [projectile_col_shape_dict]}
         projectile_renderer_dict = {
             'texture': projectile_dict['texture'], 
-            'size': (projectile_dict['width'], projectile_dict['size'])}
+            'size': (projectile_dict['width'], projectile_dict['height'])}
         create_projectile_dict = {
             'position': location,
             'rotate': angle,
             'cymunk_physics': projectile_physics_component_dict, 
             'physics_renderer': projectile_renderer_dict, 
-            'projectile_system': ('damage': projectile_dict['damage'], 
-            'accel': projectile_dict['accel'], 'armed': True, 'life_span': 0.0)}
+            'projectile_system': (projectile_dict['damage'], 
+                projectile_dict['accel'], True, 0.0)}
         component_order = ['position', 'rotate', 'cymunk_physics', 
             'physics_renderer', 'projectile_system']
         bullet_ent_id = init_entity(create_projectile_dict, component_order)
@@ -287,30 +290,31 @@ class ProjectileSystem(GameSystem):
                 {'particles': particle_system2}, ['particles'])
             particle_comp = entities[p_ent].particles
             particle_comp.system_on = True
-            projectile_system_data = entities[bulllet_ent_id].projectile_system
+            projectile_system_data = entities[bullet_ent_id].projectile_system
             projectile_system_data.linked = [p_ent, p_ent2]
         return bullet_ent_id
 
     def set_armed(self, entity_id, dt):
         entities = self.gameworld.entities
         bullet = entities[entity_id]
-        if 'projectile_system' in bullet:
-            bullet['projectile_system']['armed'] = True
+        if hasattr(bullet, 'projectile_system'):
+            bullet.projectile_system.armed = True
 
     def fire_projectile(self, entity_id):
         entities = self.gameworld.entities
         bullet = entities[entity_id]
-        physics_data = bullet['cymunk-physics']
-        unit_vector = physics_data['unit_vector']
-        bullet_accel = bullet['projectile_system']['accel']
+        physics_data = bullet.cymunk_physics
+        unit_vector = physics_data.unit_vector
+        projectile_system = bullet.projectile_system
+        bullet_accel = projectile_system.accel
         force = bullet_accel*unit_vector[0], bullet_accel*unit_vector[1]
         force_offset = -unit_vector[0], -unit_vector[1]
-        bullet_body = bullet['cymunk-physics']['body']
+        bullet_body = bullet.cymunk_physics.body
         bullet_body.apply_impulse(force, force_offset)
-        if 'particle_manager' in bullet:
+        if len(projectile_system.linked) > 0:
             bullet_body.apply_force(force, force_offset)
-            bullet['particle_manager'][
-                'engine_effect']['particle_system_on'] = True
+            engine_effect = entities[projectile_system.linked[0]].particles
+            engine_effect.particle_system_on = True
 
 
     def clear_projectiles(self):
@@ -325,13 +329,14 @@ class ProjectileSystem(GameSystem):
         bullet_id = arbiter.shapes[1].body.data
         asteroid_id = arbiter.shapes[0].body.data
         bullet = entities[bullet_id]
-        if bullet['projectile_system']['armed']:
-            bullet_damage = bullet['projectile_system']['damage']
+        projectile_system = bullet.projectile_system
+        if projectile_system.armed:
+            bullet_damage = projectile_system.damage
             systems['asteroid_system'].damage(asteroid_id, bullet_damage)
-            if 'particle_manager' in bullet:
+            if len(projectile_system.linked) > 0:
                 self.create_rocket_explosion(bullet_id)
             else:
-                bullet['projectile_system']['armed'] = False
+                projectile_system.armed = False
                 Clock.schedule_once(
                     partial(gameworld.timed_remove_entity, bullet_id))
             return True
@@ -344,18 +349,20 @@ class ProjectileSystem(GameSystem):
         gameworld = self.gameworld
         entities = gameworld.entities
         bullet1 = entities[bullet_id1]
+        proj1_s = bullet1.projectile_system
         bullet2 = entities[bullet_id2]
-        if bullet1['projectile_system']['armed'] and bullet2['projectile_system']['armed']:
-            if 'particle_manager' in bullet1:
+        proj2_s = bullet2.projectile_system
+        if proj1_s.armed and proj2_s.armed:
+            if len(proj1_s.linked) > 0:
                 self.create_rocket_explosion(bullet_id1)
             else:
-                bullet1['projectile_system']['armed'] = False
+                proj1_s.armed = False
                 Clock.schedule_once(
                     partial(gameworld.timed_remove_entity, bullet_id1))
-            if 'particle_manager' in bullet2:
+            if len(proj2_s.linked) > 0:
                 self.create_rocket_explosion(bullet_id2)
             else:
-                bullet2['projectile_system']['armed'] = False
+                proj2_s.armed = False
                 Clock.schedule_once(
                     partial(gameworld.timed_remove_entity, bullet_id2))
 
@@ -368,7 +375,7 @@ class ProjectileSystem(GameSystem):
         character_id = systems['player_character'].current_character_id
         ship_id = arbiter.shapes[0].body.data
         bullet = entities[bullet_id]
-        if bullet['projectile_system']['armed']:
+        if bullet.projectile_system.armed:
             if character_id == ship_id:
                 Clock.schedule_once(partial(
                     sound_system.schedule_play, 'shiphitbybullet'))
@@ -383,8 +390,8 @@ class ProjectileSystem(GameSystem):
         bullet_id1 = arbiter.shapes[0].body.data
         bullet1 = entities[bullet_id1]
         bullet2 = entities[bullet_id2]
-        if bullet1['projectile_system']['armed'] and bullet2['projectile_system']['armed']:
-            if bullet1['physics_renderer']['on_screen'] or bullet2['physics_renderer']['on_screen']:
+        if bullet1.projectile_system.armed and bullet2.projectile_system.armed:
+            if bullet1.physics_renderer.on_screen or bullet2.physics_renderer.on_screen:
                 sound_system = gameworld.systems['sound_system']
                 Clock.schedule_once(partial(sound_system.schedule_play, 'bullethitbullet'))
             return True
@@ -397,8 +404,8 @@ class ProjectileSystem(GameSystem):
         bullet_id = arbiter.shapes[1].body.data
         asteroid_id = arbiter.shapes[0].body.data
         bullet = entities[bullet_id]
-        if bullet['projectile_system']['armed']:
-            if bullet['physics_renderer']['on_screen']:
+        if bullet.projectile_system.armed:
+            if bullet.physics_renderer.on_screen:
                 sound_system = gameworld.systems['sound_system']
                 Clock.schedule_once(
                     partial(sound_system.schedule_play, 'bullethitasteroid'))
@@ -413,13 +420,14 @@ class ProjectileSystem(GameSystem):
         bullet_id = arbiter.shapes[1].body.data
         ship_id = arbiter.shapes[0].body.data
         bullet = entities[bullet_id]
-        if bullet['projectile_system']['armed']:
-            bullet_damage = bullet['projectile_system']['damage']
+        projectile_system = bullet.projectile_system
+        if projectile_system.armed:
+            bullet_damage = bullet.projectile_system.damage
             systems['ship_system'].damage(ship_id, bullet_damage)
-            if 'particle_manager' in bullet:
+            if len(projectile_system.linked) > 0:
                 self.create_rocket_explosion(bullet_id)
             else:
-                bullet['projectile_system']['armed'] = False
+                projectile_system.armed = False
                 Clock.schedule_once(
                     partial(gameworld.timed_remove_entity, bullet_id))
             return True

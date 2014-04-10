@@ -40,8 +40,9 @@ class GameWorld(Widget):
     def add_state(self, state_name, systems_added, systems_removed, 
         systems_paused, systems_unpaused, screenmanager_screen):
         self.states[state_name] = {'systems_added': systems_added, 
-        'systems_removed': systems_removed, 'systems_paused': systems_paused, 
-        'systems_unpaused': systems_unpaused}
+            'systems_removed': systems_removed, 
+            'systems_paused': systems_paused, 
+            'systems_unpaused': systems_unpaused}
         self.gamescreenmanager.states[state_name] = screenmanager_screen
 
     def on_state(self, instance, value):
@@ -99,7 +100,7 @@ class GameWorld(Widget):
             systems[data_system].remove_entity(entity_id)
         for component in components_to_delete:
             delattr(entity, component)
-        del entity.load_order
+        entity.load_order = []
         Clock.schedule_once(partial(
             self.add_entity_to_deactivated, entity_id), 1.0)
 
@@ -130,13 +131,6 @@ class GameWorld(Widget):
         for entity_id in entities_to_remove:
             remove_entity(entity_id)
             er(entity_id)
-
-    def load_entity(self, entity_dict):
-        pass
-
-    def save_entity(self, entity):
-        entity_dict = {}
-        return entity_dict
 
     def clear_entities(self):
         entities = self.entities

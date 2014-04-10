@@ -136,9 +136,9 @@ class ParticleManager(GameSystem):
             emitter = unused_particle_effects.pop()
         else:
             emitter = pm.get_emitter()
-            pm.add_emitter(emitter)
         emitter = pm.load_particle_system_with_emitter(
             emitter, config)
+        pm.add_emitter(emitter)
         cdef ParticleComponent new_component = ParticleComponent.__new__(
             ParticleComponent, entity_component_dict['parent'],
             emitter, False)
@@ -157,7 +157,7 @@ class ParticleManager(GameSystem):
         cdef ParticleComponent particle_comp = getattr(entity, system_id)
         pm = self._particle_manager
         particle_emitter = particle_comp._particle_emitter
-        particle_emitter.paused = True
+        pm.remove_emitter(particle_emitter)
         self.unused_particle_effects.append(particle_emitter)
         super(ParticleManager, self).remove_entity(entity_id)
 

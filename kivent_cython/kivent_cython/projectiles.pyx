@@ -174,7 +174,7 @@ class ProjectileSystem(GameSystem):
             sound_system = gameworld.systems['sound_system']
             Clock.schedule_once(partial(
                 sound_system.schedule_play, 'rocketexplosion'))
-        entity['projectile_system']['armed'] = False
+        projectile_data.armed = False
         Clock.schedule_once(partial(
             gameworld.timed_remove_entity, entity_id), 2.0)
 
@@ -314,7 +314,7 @@ class ProjectileSystem(GameSystem):
         if len(projectile_system.linked) > 0:
             bullet_body.apply_force(force, force_offset)
             engine_effect = entities[projectile_system.linked[0]].particles
-            engine_effect.particle_system_on = True
+            engine_effect.system_on = True
 
 
     def clear_projectiles(self):

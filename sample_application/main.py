@@ -31,10 +31,6 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         Clock.schedule_once(self.init_game)
-        self.bind(state=self.test)
-
-    def test(self, instance, value):
-        print value, 'state'
 
     def init_game(self, dt):
         try: 
@@ -68,7 +64,6 @@ class TestGame(Widget):
             self.setup_new_level()
                 
     def setup_new_level(self):
-        gc.collect()
         Clock.schedule_once(
             self.gameworld.systems['asteroids_level'].generate_new_level)
         

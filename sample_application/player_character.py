@@ -103,14 +103,15 @@ class ShipAISystem(GameSystem):
             if obstacle != entity_id:
                 obstacle = entities[obstacle]
                 if not hasattr(obstacle, 'cymunk_physics') or hasattr(
-                    'boundary_system', obstacle):
+                    obstacle, 'boundary_system'):
                     continue
                 ob_location = obstacle.position
                 dist = Vector((ob_location.x, ob_location.y)).distance(
                     (position.x, position.y))
                 scale_factor = (150.-dist)/150.
                 avoidance_vector = Vector(
-                    (position.x, position.y)) - Vector(ob_location)
+                    (position.x, position.y)) - Vector(
+                    (ob_location.x, ob_location.y))
                 avoidance_vector = avoidance_vector.normalize()
                 avoidance_vector *= scale_factor
                 sum_avoidance += avoidance_vector
@@ -291,7 +292,7 @@ class ShipSystem(GameSystem):
         entities = self.gameworld.entities
         entity = entities[entity_id]
         entity.physics_renderer.render = False
-        explosion_id = entity.ship_data.linked['explosion']
+        explosion_id = entity.ship_system.linked['explosion']
         explosion = entities[explosion_id].particles
         explosion.particle_emitter.emitter_type = 0
 
@@ -313,7 +314,7 @@ class ShipSystem(GameSystem):
             self.update_death_animation, entity_id), .5)
         Clock.schedule_once(partial(
             gameworld.timed_remove_entity, entity_id), 2.0)
-        if 'player_character' in entity:
+        if hasattr(entity, 'player_character'):
             Clock.schedule_once(gameworld.parent.player_lose, 4.0)
 
 
@@ -399,7 +400,8 @@ class ShipSystem(GameSystem):
             'engine_offset': 45,
             'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
             'hard_points': [(-6, 47), (6, 47)], 'total_rocket_ammo': 30, 
-            'total_bullet_ammo': 200}
+            'total_bullet_ammo': 200,
+            'texture_size': (88, 96)}
         
     def get_ship_values(self, ship_name):
         if ship_name in self.ship_dicts:
@@ -534,6 +536,16 @@ class ShipSystem(GameSystem):
         if object_id in in_view:
             in_view.remove(object_id)
         return False
+
+    def remove_entity(self, entity_id):
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        entity = entities[entity_id]
+        if hasattr(entity.ship_system, 'linked'):
+            linked = entity.ship_system.linked
+            for each in linked:
+                gameworld.remove_entity(linked[each])
+        super(ShipSystem, self).remove_entity(entity_id)
 
 
     def spawn_ship_with_dict(self, ship_dict, is_player_character, position):

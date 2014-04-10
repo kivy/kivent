@@ -92,6 +92,7 @@ class Renderer(GameSystem):
         super(Renderer, self).__init__(**kwargs)
         self.redraw = Clock.create_trigger(self.trigger_redraw)
         self.vertex_format = self.calculate_vertex_format()
+        self.redraw_mesh = True
         self.crenderer = CRenderer()
         self.uv_dict = {}
         self.on_screen_last_frame = []
@@ -148,7 +149,6 @@ class Renderer(GameSystem):
             vertex_format.append(('vColor', 4, 'float'))
         if self.do_scale:
             vertex_format.append(('vScale', 1, 'float'))
-        self.clear_mesh()
         self.redraw()
         return vertex_format
 
@@ -306,13 +306,13 @@ class Renderer(GameSystem):
                     frame_info[index+2*vert_data_count+fr_index] = scale
                     frame_info[index+3*vert_data_count+fr_index] = scale
                     fr_index += 1
-        mesh = self.mesh
-        if mesh == None:
+        if self.redraw_mesh:
             with self.canvas:
                 cmesh = CMesh(fmt=vertex_format,
                     mode='triangles',
                     texture=uv_dict['main_texture'])
                 self.mesh = cmesh
+                self.redraw_mesh = False
         cmesh = self.mesh
         cmesh._vertices = cr.frame_info_ptr
         cmesh._indices = cr.indice_info_ptr
@@ -329,8 +329,9 @@ class Renderer(GameSystem):
         return entity_ids
 
     def clear_mesh(self):
-        self.canvas.clear()
-        self.mesh = None
+        if self.mesh is not None and not self.redraw_mesh:
+            self.canvas.remove(self.mesh)
+            self.redraw_mesh = True
 
     def remove_entity(self, int entity_id):
         super(Renderer, self).remove_entity(entity_id)
@@ -418,7 +419,6 @@ class QuadRendererNoTextures(Renderer):
             ('vCenter', 2, 'float'),
             ('vColor', 4, 'float')
             ]
-        self.clear_mesh()
         self.redraw()
         return vertex_format
 

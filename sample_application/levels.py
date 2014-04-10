@@ -230,24 +230,22 @@ class AsteroidsLevel(GameSystem):
         side_length_y = side_length_x
         scale_x = map_size[0]/atlas_size[0]
         scale_y = map_size[1]/atlas_size[1]
-        x_distance = map_size[0]/side_length_x
-        y_distance = map_size[1]/side_length_y
+        x_distance = map_size[0]/4.
+        y_distance = map_size[1]/4.
         position_dict = {}
         index = 0
         size = (x_distance, y_distance)
-        for y in range(int(side_length_y)):
-            for x in range(int(side_length_x)):
+        for y in range(4):
+            for x in range(4):
                 position_dict[index] = (x * x_distance + x_distance *.5, 
                     y * y_distance + y_distance*.5)
                 index += 1
-                print index
         for num in range(num_tiles):
             create_component_dict = {
             'position': position_dict[num], 
-            'scale': scale_x/2., 
             'background_renderer': {'texture': str(num+1), 'size': size,}, 
             'asteroids_level': {'level_id': self.current_level_id}}
-            component_order = ['position', 'scale', 
+            component_order = ['position', 
                 'background_renderer', 'asteroids_level']
             self.gameworld.init_entity(create_component_dict, component_order)
 

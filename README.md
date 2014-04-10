@@ -12,8 +12,7 @@ get the master branch from here:https://github.com/tito/cymunk
 
 You will need to compile both the cymunk module as well as the kivent_cython folders code.
 
-I develop using [Kivy 1.8](https://github.com/kivy/kivy) (so current indevelopment branch, this is because there are some great performance enhancements
-in the most recent branch)
+I develop using [Kivy Master Branch](https://github.com/kivy/kivy)
 
 Cymunk and Kivy must both be in your environment path in order to buld kivent as it must cimport modules from both of these modules.
 

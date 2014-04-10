@@ -1,11 +1,11 @@
 KivEnt
 ======
 
-Warning Tutorials Out Dated! Will Fix Soon, Look at Sample Application (more complex) or https://github.com/Kovak/KivyMallDirectory (simple example)
-
-Also Warning: Development is active right now and I expect to break everything with my next planned changes. This is going to be good though because Entities and Components will be getting a better, more optimizable interface.
+Warning Tutorials Out Dated! Will Fix Soon.
+Update: 2_basic_app tutorial and sample_application up to date. 04/10/14
 
 KivEnt is an Entity Based Game Engine for Kivy
+https://github.com/Kovak/KivEnt/wiki/An-Introduction-to-KivEnt
 
 Requires Cymunk in order to run: 
 get the master branch from here:https://github.com/tito/cymunk

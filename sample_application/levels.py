@@ -198,13 +198,13 @@ class AsteroidsLevel(GameSystem):
         second_star_choice1, second_star_choice2, num_star_1, 
         num_star_2, num_star_3, num_star_4):
         for x in range(num_star_1):
-            self.generate_star(first_star_choice1, (14, 14))
+            self.generate_star(first_star_choice1, (28, 28))
         for x in range(num_star_2):
-            self.generate_star(first_star_choice2, (8, 8))
+            self.generate_star(first_star_choice2, (16, 16))
         for x in range(num_star_3):
-            self.generate_star(second_star_choice1, (14, 14))
+            self.generate_star(second_star_choice1, (28, 28))
         for x in range(num_star_4):
-            self.generate_star(second_star_choice2, (8, 8))
+            self.generate_star(second_star_choice2, (16, 16))
 
     def generate_star(self, star_graphic, star_size):
         rand_x = random.randint(0, self.gameworld.currentmap.map_size[0])

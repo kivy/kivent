@@ -36,7 +36,7 @@ TestGame:
             system_id: 'particles'
             gameworld: root.gameworld
             size: root.size
-            max_number_particles: 15000
+            max_number_particles: 1000
             render_information_from: 'renderer'
             physics_data_from: 'physics'
             pos: root.pos
@@ -59,18 +59,4 @@ TestGame:
 <MainScreen@GameScreen>:
     name: 'main'
     FloatLayout:
-        BoxLayout:
-            size_hint: (.2, .1)
-            pos_hint: {'x': .4, 'y': .1}
-            orientation: 'vertical'
-            DebugPanel:
-
-<DebugPanel>:
-    Label:
-        pos: root.pos
-        size: root.size
-        halign: 'center'
-        valign: 'middle'
-        color: (1,1,1,1)
-        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'
 

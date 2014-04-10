@@ -10,6 +10,51 @@ from kivy.graphics.transformation import Matrix
 import json
 
 
+cdef class RenderComponent:
+    cdef bool _render
+    cdef bool _on_screen
+    cdef str _texture
+    cdef float _width
+    cdef float _height
+
+    def __cinit__(self, bool render, bool on_screen, str texture, 
+        float width, float height):
+        self._render = render
+        self._on_screen = on_screen
+        self._texture = texture
+        self._width = width
+        self._height = height
+
+    property texture:
+        def __get__(self):
+            return self._texture
+        def __set__(self, str value):
+            self._texture = value
+
+    property render:
+        def __get__(self):
+            return self._render
+        def __set__(self, bool value):
+            self._render = value
+
+    property on_screen:
+        def __get__(self):
+            return self._on_screen
+        def __set__(self, bool value):
+            self._on_screen = value
+
+    property width:
+        def __get__(self):
+            return self._width
+        def __set__(self, float value):
+            self._width = value
+
+    property height:
+        def __get__(self):
+            return self._height
+        def __set__(self, float value):
+            self._height = value
+
 cdef class CRenderer:
     cdef void* frame_info_ptr
     cdef void* indice_info_ptr
@@ -41,13 +86,15 @@ class Renderer(GameSystem):
 
     def __init__(self, **kwargs):
         self.canvas = RenderContext(
-            use_parent_projection=True, nocompiler=True)
+            use_parent_projection=True)
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
         super(Renderer, self).__init__(**kwargs)
         self.redraw = Clock.create_trigger(self.trigger_redraw)
         self.vertex_format = self.calculate_vertex_format()
+        self.redraw_mesh = True
         self.crenderer = CRenderer()
+        self.uv_dict = {}
         self.on_screen_last_frame = []
         
     def on_shader_source(self, instance, value):
@@ -102,11 +149,11 @@ class Renderer(GameSystem):
             vertex_format.append(('vColor', 4, 'float'))
         if self.do_scale:
             vertex_format.append(('vScale', 1, 'float'))
-        self.clear_mesh()
         self.redraw()
         return vertex_format
 
     def trigger_redraw(self, dt):
+        self.clear_mesh()
         cdef list entity_ids = self.update_render_state()
         self.draw_mesh(entity_ids)
 
@@ -120,12 +167,8 @@ class Renderer(GameSystem):
         cdef bool do_color = self.do_color
         cdef bool do_scale = self.do_scale
         cdef bool do_rotate = self.do_rotate
-        cdef dict entity
-        cdef dict system_data
-        cdef str position_from
-        cdef str scale_from
-        cdef str rotate_from
-        cdef str color_from
+        cdef object entity
+        cdef RenderComponent system_data
         vertex_format = self.vertex_format
         cdef int vert_data_count = 6
         if do_scale:
@@ -168,14 +211,15 @@ class Renderer(GameSystem):
         cdef float x0, y0, x1, y1
         cdef float w, h
         cdef int fr_index
-        cdef tuple color
+        cdef ColorComponent color_comp
+        cdef PositionComponent pos_comp
+        cdef ScaleComponent scale_comp
+        cdef RotateComponent rot_comp
         cdef float scale
         cdef float r, g, b, a
         for i in range(num_elements):
             entity_id = entity_ids[i]
             entity = entities[entity_id]
-            if system_id not in entity:
-                continue
             offset = 4 * i
             indice_offset = i*6
             index = 4 * vert_data_count * i
@@ -185,22 +229,16 @@ class Renderer(GameSystem):
             indices_info[indice_offset+3] = 2 + offset
             indices_info[indice_offset+4] = 3 + offset
             indices_info[indice_offset+5] = 0 + offset
-            system_data = entity[system_id]
-            position_from = system_data['position_from']
-            if do_scale:
-                scale_from = system_data['scale_from']
-            if do_rotate:
-                rotate_from = system_data['rotate_from']
-            if do_color:
-                color_from = system_data['color_from']
-            if system_data['render']:
-                tex_choice = system_data['texture']
-                position = entity[position_from]['position']
+            system_data = getattr(entity, system_id)
+            if system_data._render:
+                pos_comp = entity.position
+                tex_choice = system_data._texture
                 uv = uv_dict[tex_choice]
-                w, h = uv[4], uv[5]
+                w = system_data._width
+                h = system_data._height
                 x0, y0 = uv[0], uv[1]
                 x1, y1 = uv[2], uv[3]
-                x, y = position[0], position[1]
+                x, y = pos_comp._x, pos_comp._y
                 frame_info[index] = -w
                 frame_info[index+1] = -h
                 frame_info[index+2] = x0
@@ -227,18 +265,19 @@ class Renderer(GameSystem):
                 frame_info[index+3*vert_data_count+5] = y
                 fr_index = 6
                 if do_rotate:
-                    rotate = entity[rotate_from]['angle']
+                    rot_comp = entity.rotate
+                    rotate = rot_comp._r
                     frame_info[index+fr_index] = rotate
                     frame_info[index+vert_data_count+fr_index] = rotate
                     frame_info[index+2*vert_data_count+fr_index] = rotate
                     frame_info[index+3*vert_data_count+fr_index] = rotate
                     fr_index += 1
                 if do_color:
-                    color = entity[color_from]['color']
-                    r = color[0]
-                    g = color[1]
-                    b = color[2]
-                    a = color[3]
+                    color_comp = entity.color
+                    r = color_comp._r
+                    g = color_comp._g
+                    b = color_comp._b
+                    a = color_comp._a
                     frame_info[index+fr_index] = r
                     frame_info[index+vert_data_count+fr_index] = r
                     frame_info[index+2*vert_data_count+fr_index] = r
@@ -260,20 +299,20 @@ class Renderer(GameSystem):
                     frame_info[index+3*vert_data_count+fr_index] = a
                     fr_index += 1
                 if do_scale:
-                    scale = entity[scale_from]['scale']
+                    scale_comp = entity.scale
+                    scale = scale_comp._s
                     frame_info[index+fr_index] = scale
                     frame_info[index+vert_data_count+fr_index] = scale
                     frame_info[index+2*vert_data_count+fr_index] = scale
                     frame_info[index+3*vert_data_count+fr_index] = scale
                     fr_index += 1
-        mesh = self.mesh
-        if mesh == None:
+        if self.redraw_mesh:
             with self.canvas:
                 cmesh = CMesh(fmt=vertex_format,
                     mode='triangles',
                     texture=uv_dict['main_texture'])
                 self.mesh = cmesh
-
+                self.redraw_mesh = False
         cmesh = self.mesh
         cmesh._vertices = cr.frame_info_ptr
         cmesh._indices = cr.indice_info_ptr
@@ -290,40 +329,31 @@ class Renderer(GameSystem):
         return entity_ids
 
     def clear_mesh(self):
-        self.canvas.clear()
-        self.mesh = None
+        if self.mesh is not None and not self.redraw_mesh:
+            self.canvas.remove(self.mesh)
+            self.redraw_mesh = True
 
     def remove_entity(self, int entity_id):
         super(Renderer, self).remove_entity(entity_id)
         self.redraw()
 
-    def create_component(self, int entity_id, dict entity_component_dict):
+    def create_component(self, object entity, args):
         super(Renderer, self).create_component(
-            entity_id, entity_component_dict)
+            entity, args)
         self.redraw()
 
-    def generate_component_data(self, dict entity_component_dict):
-        ''' You must provide at least a 'position_from', component 
-        which contains a string referencing the entities 
-        component that contains the 'position' attribute. 
-        if do_rotate, do_color or do_scale is True you must also include,
-        'rotate_from', 'color_from', and 'scale_from'.
-        '''
-        entity_component_dict['on_screen'] = False
-        entity_component_dict['render'] = True
-        return entity_component_dict
-
-    def generate_entity_component_dict(self, int entity_id):
-        entity = self.gameworld.entities[entity_id]
-        entity_system_dict = entity[self.system_id]
-        entity_component_dict = {'texture': entity_system_dict['texture']}
-        return entity_component_dict
+    def generate_component(self, dict entity_component_dict):
+        texture = entity_component_dict['texture']
+        size = entity_component_dict['size']
+        new_component = RenderComponent.__new__(RenderComponent, True, True, 
+            texture, size[0], size[1])
+        return new_component
 
 
 class DynamicRenderer(Renderer):
     system_id = StringProperty('dynamic_renderer')
     do_rotate = BooleanProperty(True)
-    physics_system = StringProperty('cymunk-physics')
+    physics_system = StringProperty('cymunk_physics')
 
     def update_render_state(self):
         cdef object parent = self.gameworld
@@ -343,29 +373,32 @@ class DynamicRenderer(Renderer):
         set_on_screen = set(on_screen)
         new_to_screen = set_on_screen - last_on_screen
         left_screen = last_on_screen - set_on_screen
-        cdef dict entity
-        cdef dict system_data
+        cdef object entity
+        cdef RenderComponent system_data
         cdef list to_render = []
         tr_a = to_render.append
         for entity_id in new_to_screen:
             entity = entities[entity_id]
-            if system_id not in entity:
+            try:
+                system_data = getattr(entity, system_id)
+                system_data._on_screen = True
+            except:
                 continue
-            system_data = entity[system_id]
-            system_data['on_screen'] = True
         for entity_id in left_screen:
             entity = entities[entity_id]
-            if system_id not in entity:
+            try:
+                system_data = getattr(entity, system_id)
+                system_data._on_screen = False
+            except:
                 continue
-            system_data = entity[system_id]
-            system_data['on_screen'] = False
         for entity_id in on_screen:
             entity = entities[entity_id]
-            if system_id not in entity:
+            try:
+                system_data = getattr(entity, system_id)
+                if system_data._render:
+                    tr_a(entity_id)
+            except:
                 continue
-            system_data = entity[system_id]
-            if system_data['render']:
-                tr_a(entity_id)
         self.on_screen_last_frame = on_screen
         return to_render
 
@@ -376,10 +409,9 @@ class StaticQuadRenderer(Renderer):
 
     def update(self, dt):
         pass
-        #self.update_render_state()
 
 
-class DynamicRendererNoTextures(Renderer):
+class QuadRendererNoTextures(Renderer):
 
     def calculate_vertex_format(self):
         vertex_format = [
@@ -387,9 +419,14 @@ class DynamicRendererNoTextures(Renderer):
             ('vCenter', 2, 'float'),
             ('vColor', 4, 'float')
             ]
-        self.clear_mesh()
         self.redraw()
         return vertex_format
+
+    def generate_component(self, dict entity_component_dict):
+        size = entity_component_dict['size']
+        new_component = RenderComponent.__new__(RenderComponent, True, True, None,
+            size[0], size[1])
+        return new_component
 
     def draw_mesh(self, list entities_to_draw):
         cdef object gameworld = self.gameworld
@@ -398,10 +435,8 @@ class DynamicRendererNoTextures(Renderer):
         cdef list entity_ids = entities_to_draw
         cdef CRenderer cr = self.crenderer
         cdef CMesh cmesh
-        cdef dict entity
-        cdef dict system_data
-        cdef str position_from
-        cdef str color_from
+        cdef object entity
+        cdef RenderComponent system_data
         vertex_format = self.vertex_format
         cdef int vert_data_count = 8
         cdef int num_elements = len(entity_ids)
@@ -436,14 +471,12 @@ class DynamicRendererNoTextures(Renderer):
         cdef float x, y
         cdef float w, h
         cdef int fr_index
-        cdef tuple color
-        cdef tuple size
+        cdef PositionComponent position
+        cdef ColorComponent color
         cdef float r, g, b, a
         for i in range(num_elements):
             entity_id = entity_ids[i]
             entity = entities[entity_id]
-            if system_id not in entity:
-                continue
             offset = 4 * i
             indice_offset = i*6
             index = 4 * vert_data_count * i
@@ -453,14 +486,11 @@ class DynamicRendererNoTextures(Renderer):
             indices_info[indice_offset+3] = 2 + offset
             indices_info[indice_offset+4] = 3 + offset
             indices_info[indice_offset+5] = 0 + offset
-            system_data = entity[system_id]
-            position_from = system_data['position_from']
-            color_from = system_data['color_from']
-            if system_data['render']:
-                position = entity[position_from]['position']
-                size = system_data['size']
-                w, h = size[0], size[1]
-                x, y = position[0], position[1]
+            system_data = getattr(entity, system_id)
+            if system_data._render:
+                position = entity.position
+                w, h = system_data._width, system_data._height
+                x, y = position._x, position._y
                 frame_info[index] = -w
                 frame_info[index+1] = -h
                 frame_info[index+2] = x
@@ -478,11 +508,11 @@ class DynamicRendererNoTextures(Renderer):
                 frame_info[index+3*vert_data_count+2] = x
                 frame_info[index+3*vert_data_count+3] = y
                 fr_index = 4
-                color = entity[color_from]['color']
-                r = color[0]
-                g = color[1]
-                b = color[2]
-                a = color[3]
+                color = entity.color
+                r = color._r
+                g = color._g
+                b = color._b
+                a = color._a
                 frame_info[index+fr_index] = r
                 frame_info[index+vert_data_count+fr_index] = r
                 frame_info[index+2*vert_data_count+fr_index] = r
@@ -502,13 +532,13 @@ class DynamicRendererNoTextures(Renderer):
                 frame_info[index+vert_data_count+fr_index] = a
                 frame_info[index+2*vert_data_count+fr_index] = a
                 frame_info[index+3*vert_data_count+fr_index] = a
+                fr_index += 1
         mesh = self.mesh
         if mesh == None:
             with self.canvas:
                 cmesh = CMesh(fmt=vertex_format,
                     mode='triangles')
                 self.mesh = cmesh
-
         cmesh = self.mesh
         cmesh._vertices = cr.frame_info_ptr
         cmesh._indices = cr.indice_info_ptr

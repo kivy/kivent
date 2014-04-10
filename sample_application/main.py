@@ -31,10 +31,6 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         Clock.schedule_once(self.init_game)
-        self.bind(state=self.test)
-
-    def test(self, instance, value):
-        print value, 'state'
 
     def init_game(self, dt):
         try: 
@@ -68,53 +64,52 @@ class TestGame(Widget):
             self.setup_new_level()
                 
     def setup_new_level(self):
-        gc.collect()
         Clock.schedule_once(
             self.gameworld.systems['asteroids_level'].generate_new_level)
         
     def setup_states(self):
         self.gameworld.add_state(state_name='main_menu', systems_added=[
             'static_renderer', 'default_map'], 
-            systems_removed=['physics_renderer', 'particle_manager', 
+            systems_removed=['physics_renderer', 'particles', 
             'lighting_renderer', 'static_renderer', 
             'probe_system', 'background_renderer'], 
-            systems_paused=['cymunk-physics', 'default_gameview', 
+            systems_paused=['cymunk_physics', 'default_gameview', 
             'physics_renderer', 'background_renderer', 'static_renderer',
-            'particle_manager', 'asteroid_system', 
+            'particles', 'asteroid_system', 
             'ship_system', 'lighting_renderer', 'probe_system', 
             'ship_ai_system'], systems_unpaused=[],
             screenmanager_screen='main_menu')
         self.gameworld.add_state(state_name='choose_character', systems_added=[
             'static_renderer',  'default_map'], 
-            systems_removed=['physics_renderer', 'particle_manager', 
+            systems_removed=['physics_renderer', 'particles', 
              'lighting_renderer','probe_system', 'background_renderer',
              'static_renderer'], 
-            systems_paused=['cymunk-physics', 'default_gameview', 
+            systems_paused=['cymunk_physics', 'default_gameview', 
             'physics_renderer', 'static_renderer', 'background_renderer',
-            'particle_manager', 'asteroid_system', 
+            'particles', 'asteroid_system', 
             'ship_system', 'lighting_renderer', 'probe_system', 
             'ship_ai_system'], systems_unpaused=[],
             screenmanager_screen='choose_character')
         self.gameworld.add_state(state_name='main_game', systems_added=[
             'background_renderer', 'static_renderer', 'physics_renderer', 
-            'cymunk-physics', 
+            'cymunk_physics', 
             'default_map', 'probe_system', 'lighting_renderer', 
-            'particle_manager'], 
+            'particles'], 
             systems_removed=[], systems_paused=[], 
-            systems_unpaused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'particle_manager', 
+            systems_unpaused=['cymunk_physics', 'default_gameview', 
+            'physics_renderer', 'particles', 
             'static_renderer','asteroid_system', 'ship_system', 
             'lighting_renderer', 'background_renderer',
             'projectile_system', 'probe_system', 'ship_ai_system'], 
             screenmanager_screen='main_game')
         self.gameworld.add_state(state_name='game_over', systems_added=[ 
             'background_renderer', 'static_renderer', 'physics_renderer', 
-            'cymunk-physics', 
+            'cymunk_physics', 
             'default_map', 'probe_system', 'lighting_renderer', 
-            'particle_manager'], 
+            'particles'], 
             systems_removed=[], systems_paused=[], 
-            systems_unpaused=['cymunk-physics', 'default_gameview', 
-            'physics_renderer', 'particle_manager',
+            systems_unpaused=['cymunk_physics', 'default_gameview', 
+            'physics_renderer', 'particles',
             'asteroid_system', 'ship_system', 'background_renderer',
             'lighting_renderer', 'probe_system', 'ship_ai_system'], 
             screenmanager_screen='game_over')
@@ -170,9 +165,9 @@ class TestGame(Widget):
         'assets/pexfiles/rocket_burn_effect4.pex',
         'assets/pexfiles/rocket_explosion_4.pex',
         ]
-        particle_manager = self.gameworld.systems['particle_manager']
+        particles = self.gameworld.systems['particles']
         for effect in particle_effects:
-            particle_manager.load_particle_config(effect)
+            particles.load_particle_config(effect)
 
     def _init_game(self, dt):
         self.setup_states()
@@ -188,7 +183,7 @@ class TestGame(Widget):
 
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems
-        physics = systems['cymunk-physics']
+        physics = systems['cymunk_physics']
         ship_system = systems['ship_system']
         projectile_system = systems['projectile_system']
         asteroid_system = systems['asteroid_system']

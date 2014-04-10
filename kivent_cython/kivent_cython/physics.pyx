@@ -2,11 +2,44 @@ from kivy.properties import (StringProperty, ListProperty, ObjectProperty,
 BooleanProperty, NumericProperty)
 import cymunk
 from cymunk import Poly
-from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape
+from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape, Vec2d
 from libc.math cimport M_PI_2
 
+
+cdef class PhysicsComponent:
+    cdef Body _body
+    cdef list _shapes
+    cdef str _shape_type
+
+    def __cinit__(self, Body body, list shapes, str shape_type):
+        self._body = body
+        self._shapes = shapes
+        self._shape_type = shape_type
+
+    property body:
+        def __get__(self):
+            return self._body
+        def __set__(self, Body value):
+            self._body = value
+
+    property unit_vector:
+        def __get__(self):
+            return self._body.rotation_vector
+
+    property shapes:
+        def __get__(self):
+            return self._shapes
+        def __set__(self, list value):
+            self._shapes = value
+
+    property shape_type:
+        def __get__(self):
+            return self._shape_type
+        def __set__(self, str value):
+            self._shape_type = value
+
 class CymunkPhysics(GameSystem):
-    system_id = StringProperty('cymunk-physics')
+    system_id = StringProperty('cymunk_physics')
     space = ObjectProperty(None)
     gravity = ListProperty((0, 0))
     updateable = BooleanProperty(True)
@@ -79,7 +112,7 @@ class CymunkPhysics(GameSystem):
         space.space_bb_query(bb)
         return self.bb_query_result
 
-    def generate_component_data(self, dict entity_component_dict):
+    def generate_component(self, dict entity_component_dict):
         '''entity_component_dict of the form {
         'entity_id': id, 'main_shape': string_shape_name, 
         'velocity': (x, y), 'position': (x, y), 'angle': radians, 
@@ -161,32 +194,37 @@ class CymunkPhysics(GameSystem):
             new_shape.collision_type = shape['collision_type']
             shapes.append(new_shape)
             space.add(new_shape)
+            space.reindex_shape(new_shape)
             
-        cdef dict component_dict = {'body': body, 
-        'shapes': shapes, 'position': body.position, 
-        'angle': body.angle, 'unit_vector': body.rotation_vector, 
-        'shape_type': entity_component_dict['col_shapes'][0]['shape_type']}
+        shape_type = entity_component_dict['col_shapes'][0]['shape_type']
+        new_component = PhysicsComponent.__new__(PhysicsComponent, body, shapes, shape_type)
+        return new_component
 
-        return component_dict
-
-    def create_component(self, int entity_id, dict entity_component_dict):
-        entity_component_dict['entity_id'] = entity_id
+    def create_component(self, object entity, args):
+        args['entity_id'] = entity.entity_id
         super(CymunkPhysics, self).create_component(
-            entity_id, entity_component_dict)
+            entity, args)
+        cdef str system_id = self.system_id
+        cdef PhysicsComponent physics = getattr(entity, system_id)
+        cdef PositionComponent position = entity.position
+        cdef RotateComponent rotate = entity.rotate
+        cdef Body body = physics._body
+        rotate._r = body.angle - M_PI_2
+        cdef Vec2d p_position = body.position
+        position._x = p_position.x
+        position._y = p_position.y
 
     def remove_entity(self, int entity_id):
         cdef Space space = self.space
-        cdef dict system_data = self.gameworld.entities[
-            entity_id][self.system_id]
+        cdef list entities = self.gameworld.entities
+        cdef object entity = entities[entity_id]
+        cdef PhysicsComponent system_data = getattr(entity, self.system_id)
         cdef Shape shape
-        cdef Body body = system_data['body']
-        for shape in system_data['shapes']:
+        cdef Body body = system_data._body
+        for shape in system_data._shapes:
             space.remove(shape)
-        system_data['shapes'] = None
         if not body.is_static:
             space.remove(body)
-        system_data['body'] = None
-
         super(CymunkPhysics, self).remove_entity(entity_id)
 
     def update(self, dt):
@@ -194,20 +232,24 @@ class CymunkPhysics(GameSystem):
         space = self.space
         space.step(dt)
         cdef str system_id = self.system_id
-        cdef dict entity
-        cdef dict system_data
+        cdef object entity
+        cdef PhysicsComponent system_data
+        cdef RotateComponent rotate
+        cdef PositionComponent position
+        cdef Vec2d p_position
         cdef Body body
         cdef int i
         cdef list entity_ids = self.entity_ids
         for i in range(len(entity_ids)):
             entity_id = entity_ids[i]
             entity = entities[entity_id]
-            if system_id not in entity:
-                continue
-            system_data = entity[system_id]
-            body = system_data['body']
-            system_data['position'] = body.position
-            system_data['angle'] = body.angle - M_PI_2
-            system_data['unit_vector'] = body.rotation_vector
+            system_data = getattr(entity, system_id)
+            body = system_data._body
+            position = entity.position
+            rotate = entity.rotate
+            rotate._r = body.angle - M_PI_2
+            p_position = body.position
+            position._x = p_position.x
+            position._y = p_position.y
         self.on_screen_result = self.query_on_screen()
 

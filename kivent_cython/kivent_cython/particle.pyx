@@ -333,7 +333,7 @@ cdef class keParticleManager:
             particles[taken] = init_particle(particle_to_init, emitter_ptr, taken)
             self.taken += 1
         else: 
-            print 'too many particles'
+            pass
 
     def resize_particles(self, int number_of_particles):
         new_size = sizeof(keParticle) * number_of_particles

@@ -61,24 +61,25 @@ class CharacterInputPanel(Widget):
         player_character = systems['player_character']
         character_id = player_character.current_character_id
         camera_pos = viewport.camera_pos
-        physics_system = systems['cymunk-physics']
+        physics_system = systems['cymunk_physics']
         entities = gameworld.entities
         character = entities[character_id]
-        physics = character['cymunk-physics']
+        physics = character.cymunk_physics
         ship_ai_system = systems['ship_ai_system']
-        pos = physics['position']
-        shape= physics['shapes'][0]
+        position = character.position
+        pos = (position.x, position.y)
+        shape= physics.shapes[0]
         w, h = shape.width, shape.height
         t_pos_x = pos[0] + camera_pos[0]
         t_pos_y = pos[1] + camera_pos[1]        
-        unit_vector = physics['unit_vector']
+        unit_vector = physics.unit_vector
         touch_pos = (touch_x - camera_pos[0], touch_y - camera_pos[1])
         r = 5
-        in_view = character['ship_system']['in_view']
+        in_view = character.ship_system.in_view
         query_touch = physics_system.query_bb([touch_pos[0] -r, touch_pos[1] -r, 
             touch_pos[0] + r, touch_pos[1] + r], ignore_groups=[5, 10])
         for each in query_touch:
-            if not 'boundary_system' in entities[each]:
+            if not hasattr(entities[each], 'boundary_system'):
                 if each in in_view:
                     player_character.spawn_projectile()
         if touch_x < t_pos_x:

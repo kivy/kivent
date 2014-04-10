@@ -3,8 +3,96 @@ from kivy.uix.widget import Widget
 from kivy.properties import (StringProperty, ListProperty, 
     NumericProperty, DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
-import math
+from math import fabs
 from kivy.core.window import Window
+
+
+class Component(object):
+    pass
+
+
+cdef class RotateComponent:
+    cdef float _r
+
+    def __cinit__(self, float r):
+        self._r = r
+
+    property r:
+        def __get__(self):
+            return self._r
+        def __set__(self, float value):
+            self._r = value
+
+
+cdef class ScaleComponent:
+    cdef float _s
+
+    def __cinit__(self, float s):
+        self._s = s
+
+    property s:
+        def __get__(self):
+            return self._s
+        def __set__(self, float value):
+            self._s = value
+
+
+cdef class PositionComponent:
+    cdef float _x
+    cdef float _y
+    
+    def __cinit__(self, float x, float y):
+        self._x = x
+        self._y = y
+
+    property x:
+        def __get__(self):
+            return self._x
+        def __set__(self, float value):
+            self._x = value
+
+    property y:
+        def __get__(self):
+            return self._y
+        def __set__(self, float value):
+            self._y = value
+
+
+cdef class ColorComponent:
+    cdef float _r
+    cdef float _g
+    cdef float _b
+    cdef float _a
+    
+    def __cinit__(self, float r, float g, float b, float a):
+        self._r = r
+        self._g = g
+        self._b = b
+        self._a = a
+
+    property r:
+        def __get__(self):
+            return self._r
+        def __set__(self, float value):
+            self._r = value
+
+    property g:
+        def __get__(self):
+            return self._g
+        def __set__(self, float value):
+            self._g = value
+
+    property b:
+        def __get__(self):
+            return self._b
+        def __set__(self, float value):
+            self._b = value
+
+    property a:
+        def __get__(self):
+            return self._a
+        def __set__(self, float value):
+            self._a = value
 
 
 class GameSystem(Widget):
@@ -12,7 +100,6 @@ class GameSystem(Widget):
     updateable = BooleanProperty(False)
     renderable = BooleanProperty(False)
     paused = BooleanProperty(False)
-    active = BooleanProperty(True)
     gameworld = ObjectProperty(None)
     viewport = StringProperty('default_gameview')
     update_time = NumericProperty(1./60.)
@@ -34,41 +121,61 @@ class GameSystem(Widget):
             self.update(update_time)
             self.frame_time -= update_time
 
-    def draw_entity(self, int entity_id):
-        pass
+    def generate_component(self, args):
+        #this is the function that generates a new component
+        new_component = Component()
+        for each in args:
+            setattr(new_component, each, args[each])
+        return new_component
 
-    def generate_component_data(self, dict entity_component_dict):
-        #this is the load function
-        return entity_component_dict
-
-    def create_component(self, int entity_id, dict entity_component_dict):
-        cdef dict entity = self.gameworld.entities[entity_id]
-        entity[self.system_id] = self.generate_component_data(
-            entity_component_dict)
-        self.entity_ids.append(entity_id)
-
-    def generate_entity_component_dict(self, int entity_id):
-        cdef dict entity = self.gameworld.entities[entity_id]
-        return entity[self.system_id]
-
-    def save_component(self, int entity_id):
-        entity_component_dict = self.generate_entity_component_dict(entity_id)
-        return entity_component_dict
+    def create_component(self, object entity, args):
+        setattr(entity, self.system_id, self.generate_component(args))
+        self.entity_ids.append(entity.entity_id)
 
     def remove_entity(self, int entity_id):
         self.entity_ids.remove(entity_id)
 
-    def on_init_system(self):
+    def on_remove_system(self):
         pass
 
-    def on_remove_system(self):
-        self.active = False
-
     def on_add_system(self):
-        self.active = True
+        pass
 
     def on_delete_system(self):
         pass
+
+
+class PositionSystem(GameSystem):
+
+    def generate_component(self, tuple pos):
+        x = pos[0]
+        y = pos[1]
+        new_component = PositionComponent.__new__(PositionComponent, x, y)
+        return new_component
+
+class ScaleSystem(GameSystem):
+
+    def generate_component(self, float s):
+        new_component = ScaleComponent.__new__(ScaleComponent, s)
+        return new_component
+
+class RotateSystem(GameSystem):
+
+    def generate_component(self, float r):
+        new_component = RotateComponent.__new__(RotateComponent, r)
+        return new_component
+
+
+class ColorSystem(GameSystem):
+
+    def generate_component(self, tuple color):
+        r = color[0]
+        g = color[1]
+        b = color[2]
+        a = color[3]
+        new_component = ColorComponent.__new__(ColorComponent, r, g, b, a)
+        return new_component
+
 
 class GameMap(GameSystem):
     system_id = StringProperty('default_map')
@@ -139,36 +246,38 @@ class GameView(GameSystem):
         cdef int entity_to_focus
         cdef float dist_x
         cdef float dist_y
-        cdef dict entity
+        cdef object entity
         cdef float camera_speed_multiplier
+        cdef PositionComponent position_data
         gameworld = self.gameworld
         if self.focus_entity:
             entity_to_focus = self.entity_to_focus
             entity = gameworld.entities[entity_to_focus]
-            position_data = entity[self.focus_position_info_from]['position']
+            position_data = entity.position
             camera_pos = self.camera_pos
             camera_speed_multiplier = self.camera_speed_multiplier
             size = self.size
-            dist_x = -camera_pos[0] - position_data[0] + size[0]*.5
-            dist_y = -camera_pos[1] - position_data[1] + size[1]*.5
+            dist_x = -camera_pos[0] - position_data._x + size[0]*.5
+            dist_y = -camera_pos[1] - position_data._y + size[1]*.5
             if self.lock_scroll:
                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
             self.camera_pos[0] += dist_x*camera_speed_multiplier*dt
             self.camera_pos[1] += dist_y*camera_speed_multiplier*dt
         gameworld.update_render_state(self)
 
-
     def on_size(self, instance, value):
         if self.lock_scroll and self.gameworld.currentmap:
             dist_x, dist_y = self.lock_scroll(0, 0)
             self.camera_pos[0] += dist_x
             self.camera_pos[1] += dist_y
+        self.gameworld.update_render_state(self)
 
     def forced_camera_update(self):
         systems = self.gameworld.systems
         for system in systems:
-            if systems[system].renderable and systems[system].active:
-                systems[system].update(1)
+            sys_obj = systems[system]
+            if sys_obj.renderable and not sys_obj.paused:
+                sys_obj.update(0.0)
 
     def on_camera_pos(self, instance, value):
         if self.force_camera_update:
@@ -182,7 +291,7 @@ class GameView(GameSystem):
         if not self.focus_entity and self.do_scroll:
             dist_x = touch.dx
             dist_y = touch.dy
-            if math.fabs(dist_x) + math.fabs(dist_y) > 2:
+            if fabs(dist_x) + fabs(dist_y) > 2:
                 if self.lock_scroll and self.gameworld.currentmap:
                     dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
                 self.camera_pos[0] += dist_x

@@ -20,16 +20,21 @@ cdef class CMesh(VertexInstruction):
             self.batch = VertexBatch(vbo=VBO(self.vertex_format))
         self.mode = kwargs.get('mode') or 'points'
 
+    def __dealloc__(self):
+        self.batch.clear_data()
+            
+
     cdef void build(self):
         cdef int i
         cdef float* vertices
+        cdef VertexBatch batch = self.batch
         cdef unsigned short* indices
         vertices = <float *>self._vertices
         indices = <unsigned short*>self._indices
         cdef long vcount = self.vcount
-        cdef vsize = self.batch.vbo.vertex_format.vsize
+        cdef vsize = batch.vbo.vertex_format.vsize
         cdef long icount = self.icount
-        self.batch.set_data(vertices, <int>(vcount / vsize), indices, <int>icount)
+        batch.set_data(vertices, <int>(vcount / vsize), indices, <int>icount)
 
 
     property mode:

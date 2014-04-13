@@ -1,10 +1,9 @@
 #!/bin/bash
 
-VERSION_kivent=${VERSION_kivent:-master}
-URL_kivent=https://github.com/Kovak/KivEnt/zipball/$VERSION_kivent/kivy-$VERSION_kivent.zip
-DEPS_kivent=(cymunk kivy)
+VERSION_kivent=1.0.0
+URL_kivent=https://github.com/Kovak/KivEnt/archive/master.zip
 MD5_kivent=
-BUILD_kivent=$BUILD_PATH/kivent/kivent/
+BUILD_kivent=$BUILD_PATH/kivent/master/kivent/
 RECIPE_kivent=$RECIPES_PATH/kivent
 
 function prebuild_kivent() {
@@ -17,9 +16,9 @@ function build_kivent() {
 	push_arm
 
 	export LDSHARED="$LIBLINK"
-	export PYTHONPATH=$BUILD_kivy/kivy:$PYTHONPATH
+	export PYTHONPATH=$BUILD_kivy/kivy/:$PYTHONPATH
 	export PYTHONPATH=$BUILD_cymunk/cymunk/python:$PYTHONPATH
-	try find . -iname '*.pyx' -exec cython {} \;
+	try find . -iname '__init__.pyx' -exec cython {} \;
 	try $BUILD_PATH/python-install/bin/python.host setup.py build_ext -v
 	try find build/lib.* -name "*.o" -exec $STRIP {} \;
 

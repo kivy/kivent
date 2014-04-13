@@ -2,7 +2,7 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
-import kivent_cython  
+import kivent
 
 
 class TestGame(Widget):

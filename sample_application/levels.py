@@ -1,7 +1,7 @@
 from kivy.properties import (StringProperty, NumericProperty, BooleanProperty)
 import random
 import math
-from kivent_cython import (GameSystem)
+from kivent import (GameSystem)
 from kivy.atlas import Atlas
 from kivy.clock import Clock
 from functools import partial

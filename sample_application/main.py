@@ -4,7 +4,7 @@ from kivy.uix.widget import Widget
 from kivy.properties import (StringProperty, ObjectProperty, NumericProperty, 
     BooleanProperty)
 from kivy.clock import Clock
-from kivent_cython import (GameWorld, GameSystem, GameMap, GameView, 
+from kivent import (GameWorld, GameSystem, GameMap, GameView, 
     ParticleManager, CymunkPhysics, 
     StaticQuadRenderer, DynamicRenderer, ProjectileSystem)
 from kivy.core.window import Window

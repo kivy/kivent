@@ -1,6 +1,6 @@
 from kivy.properties import (StringProperty, ListProperty, 
 NumericProperty, BooleanProperty, DictProperty)
-from kivent_cython import (GameSystem)
+from kivent import (GameSystem)
 from kivy.clock import Clock
 from functools import partial
 from kivy.vector import Vector
@@ -231,7 +231,7 @@ class ShipAISystem(GameSystem):
                 target_position = target_player(dt)
                 determine_fire_weapons(ship_ai_data, ship_data, entity_id)
                 if target_position == None:
-                    target_position = position
+                    target_position = (position.x, position.y)
                 dist = Vector(
                     target_position).distance((position.x, position.y))
                 ai_state = ship_ai_data.ai_state

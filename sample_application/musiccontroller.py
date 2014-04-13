@@ -3,7 +3,7 @@ from kivy.properties import StringProperty, BooleanProperty
 import random
 from kivy.core.audio import SoundLoader
 from kivy.uix.widget import Widget
-from kivent_cython import (GameSystem)
+from kivent import (GameSystem)
 
 
 class SoundSystem(GameSystem):

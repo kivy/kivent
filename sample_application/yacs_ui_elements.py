@@ -5,7 +5,7 @@ from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.togglebutton import ToggleButton
-from kivent_cython import (GameScreenManager, GameScreen)
+from kivent import (GameScreenManager, GameScreen)
 from kivy.clock import Clock
 
 class YACSLabel(Label):

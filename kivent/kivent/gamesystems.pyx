@@ -96,22 +96,51 @@ cdef class ColorComponent:
 
 
 class GameSystem(Widget):
+    '''GameSystem is the part of your game that holds the logic to operate 
+    on the data of your Entity's components. They keep track of the entity_id
+    of each entity that has a component for the system. The GameSystem is 
+    responsible for the creation and deletion of its corresponding components.
+    '''
     system_id = StringProperty('default_id')
+    '''Name of this gamesystem, used to name entity component attribute, and
+    lookup system.
+    '''
     updateable = BooleanProperty(False)
-    renderable = BooleanProperty(False)
+    '''Boolean to let gameworld know whether or not to run an update tick
+    on this gamesystem. Defaults to False
+    '''
     paused = BooleanProperty(False)
+    '''Boolean used to determine whether or not this system should be updated
+    if updateable is True
+    '''
     gameworld = ObjectProperty(None)
+    '''Reference to the gameworld object, usually bound in kv'''
     viewport = StringProperty('default_gameview')
+    '''Name of the GameView this system will be rendered too. ***Not Fully
+    Implemented***
+    '''
     update_time = NumericProperty(1./60.)
+    '''The 'tick' rate of this system's update. Defaults to 1./60. or 60 FPS'''
 
     def __init__(self, **kwargs):
         cdef list entity_ids
         cdef float frame_time
         super(GameSystem, self).__init__(**kwargs)
         self.entity_ids = list()
+        '''entity_ids is a list of entities that have an active system
+        component'''
         self.frame_time = 0.0
 
     def update(self, dt):
+        '''Override this function to create your gamesystems update logic
+        typically looks like:
+
+            gameworld = self.gameworld
+            entities = gameworld.entities
+            for entity_id in self.entity_ids:
+                entity = entities[entity_id]
+                #Do your system logic per entity here
+        '''
         pass
 
     def _update(self, dt):
@@ -122,7 +151,11 @@ class GameSystem(Widget):
             self.frame_time -= update_time
 
     def generate_component(self, args):
-        #this is the function that generates a new component
+        '''This function is called to generate a component. The default 
+        behavior is to take in a dict and turn all the keys, val pairs to 
+        attributes of an Entity object. Override this to create a custom
+        component or take in a different args format.
+        ''' 
         new_component = Component()
         for each in args:
             setattr(new_component, each, args[each])
@@ -133,42 +166,79 @@ class GameSystem(Widget):
         self.entity_ids.append(entity.entity_id)
 
     def remove_entity(self, int entity_id):
+        '''Function used by gameworld to remove an entity, you should ensure
+        all data related to your component is cleaned up or recycled here'''
         self.entity_ids.remove(entity_id)
 
     def on_remove_system(self):
+        '''Function called when a system is removed during a gameworld state 
+        change
+        '''
         pass
 
     def on_add_system(self):
+        '''Function called when a system is added during a gameworld state
+        change'''
         pass
 
     def on_delete_system(self):
+        '''Function called when a system is deleted by gameworld'''
         pass
 
 
 class PositionSystem(GameSystem):
+    '''PositionSystem is optimized to hold 2d location data for your entities.
+    The rendering systems will be able to interact with this data using the
+    underlying C structures rather than the Python objects.'''
 
     def generate_component(self, tuple pos):
+        '''Position system takes in a tuple: (x, y) and creates a component 
+        with x, y properties (_x, _y to access from cython)'''
         x = pos[0]
         y = pos[1]
         new_component = PositionComponent.__new__(PositionComponent, x, y)
         return new_component
 
 class ScaleSystem(GameSystem):
+    '''ScaleSystem is optimized to hold a single scale float for your entities.
+    The rendering systems will be able to interact with this data using the
+    underlying C structures rather than the Python objects. This object will
+    potentially change in the future to support scaling at different
+    rates in different directions.'''
 
     def generate_component(self, float s):
+        '''Scale system takes in a float: s and creates a component with
+        s property (_s to access from cython)'''
         new_component = ScaleComponent.__new__(ScaleComponent, s)
         return new_component
 
 class RotateSystem(GameSystem):
+    '''RotateSystem is optimized to hold a single rotate float for your 
+    entities. The CymunkPhysics System and Renderers expect this to be an 
+    angle in radians.
+    The rendering systems will be able to interact with this data using the
+    underlying C structures rather than the Python objects. This object will
+    potentially change in the future to support rotating around arbitrary axes
+    '''
+
 
     def generate_component(self, float r):
+        '''Rotate system takes in a float: r and creates a component with
+        r property (_r to access from cython)'''
         new_component = RotateComponent.__new__(RotateComponent, r)
         return new_component
 
 
 class ColorSystem(GameSystem):
+    '''ColorSystem is optimized to hold rgba data for your entities. 
+    Renderers expect this data to be between 0.0 and 1.0 for each float.
+    The rendering systems will be able to interact with this data using the
+    underlying C structures rather than the Python objects.'''
 
     def generate_component(self, tuple color):
+        '''Color system takes in a 4 tuple of floats 0.0 to 1.0 (r, g, b, a)
+        and creates r, g, b, a properties (_r, _g, _b, _a to access 
+        from cython)'''
         r = color[0]
         g = color[1]
         b = color[2]
@@ -178,13 +248,22 @@ class ColorSystem(GameSystem):
 
 
 class GameMap(GameSystem):
+    '''GameMap is a basic implementation of a map size for your GameWorld that
+    limits the scrolling of GameView'''
     system_id = StringProperty('default_map')
     map_size = ListProperty((2000., 2000.))
-    camera_pos = ListProperty((0., 0.))
+    '''Sets the size of this map, used to determine scrolling bounds. 
+    If the map size is smaller than the window it will be centered inside 
+    the window.'''
     window_size = ListProperty((0., 0.))
     margins = ListProperty((0., 0.))
+    '''The amount of scrolling beyond the size of the map in x, y directions
+    to be allowed. If the map is smaller than the window. This value is 
+    calculated automatically.'''
     map_color = ListProperty((1., 1., 1., 1.))
     default_margins = ListProperty((0., 0.))
+    '''The amount of margin if the map is larger than the window, defaults 
+    to (0, 0): no scrolling beyond edge of map.'''
 
     def on_map_size(self, instance, value):
         self.check_margins()
@@ -209,7 +288,6 @@ class GameMap(GameSystem):
             self.margins[1] = margin_y
         if not window_larger_x and not window_larger_y:
             self.margins = self.default_margins
-        print 'margins ', self.margins
 
     def on_add_system(self):
         super(GameMap, self).on_add_system()
@@ -225,16 +303,20 @@ class GameMap(GameSystem):
 class GameView(GameSystem):
     system_id = StringProperty('default_gameview')
     lock_scroll = BooleanProperty(True)
+    '''If lock_scroll is True the scrolling will be locked to the bounds
+    of the GameWorld's currentmap.'''
     camera_pos = ListProperty((0, 0))
+    '''Current position of the camera'''
     focus_entity = BooleanProperty(False)
+    '''If True the camera will follow the entity set in entity_to_focus'''
     do_scroll = BooleanProperty(True)
+    '''If True touches will scroll the camera'''
     entity_to_focus = NumericProperty(None, allownone=True)
-    focus_position_info_from = StringProperty('cymunk-physics')
+    '''Entity entity_id for the camera to focus on.'''
     updateable = BooleanProperty(True)
-    camera_speed_multiplier = NumericProperty(1)
-    paused = BooleanProperty(True)
-    has_camera_updated = BooleanProperty(False)
-    force_camera_update = BooleanProperty(False)
+    camera_speed_multiplier = NumericProperty(1.0)
+    '''Time it will take camera to reach focused entity,
+    Speed will be 1.0/camera_speed_multiplier seconds to close distance'''
 
     def on_entity_to_focus(self, instance, value):
         if value ==  None:
@@ -272,20 +354,6 @@ class GameView(GameSystem):
             self.camera_pos[1] += dist_y
         self.gameworld.update_render_state(self)
 
-    def forced_camera_update(self):
-        systems = self.gameworld.systems
-        for system in systems:
-            sys_obj = systems[system]
-            if sys_obj.renderable and not sys_obj.paused:
-                sys_obj.update(0.0)
-
-    def on_camera_pos(self, instance, value):
-        if self.force_camera_update:
-            if not self.has_camera_updated:
-                self.forced_camera_update()
-                self.has_camera_updated = True
-            else:
-                self.has_camera_updated = False
 
     def on_touch_move(self, touch):
         if not self.focus_entity and self.do_scroll:

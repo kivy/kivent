@@ -73,16 +73,26 @@ cdef class CRenderer:
 
 
 class Renderer(GameSystem):
+    '''The basic KivEnt renderer it draws every entity_id every frame'''
     system_id = StringProperty('renderer')
     updateable = BooleanProperty(True)
     renderable = BooleanProperty(True)
     do_rotate = BooleanProperty(False)
+    '''Determines whether or not vertex format will have a float for rotate'''
     do_color = BooleanProperty(False)
+    '''Determines whether or not vertex format will have 4 floats for rgba 
+    color'''
     do_scale = BooleanProperty(False)
+    '''Determines whether or not vertex format will have a float for scale'''
     mesh = ObjectProperty(None, allownone=True)
+    '''The CMesh instruction for the Renderer'''
     atlas_dir = StringProperty(None)
+    '''String path for directory containing .atlas'''
     atlas = StringProperty(None)
+    '''name of the .atlas to be used'''
     shader_source = StringProperty('positionshader.glsl')
+    '''source for the shader that the renderer will use, you must ensure
+    that your shader matches your vertex format or you will have problems.'''
 
     def __init__(self, **kwargs):
         self.canvas = RenderContext(
@@ -91,12 +101,20 @@ class Renderer(GameSystem):
             self.canvas.shader.source = kwargs.get('shader_source')
         super(Renderer, self).__init__(**kwargs)
         self.redraw = Clock.create_trigger(self.trigger_redraw)
+        '''A trigger that can be used to request a redraw of canvas next frame,
+        will never be called more than once a frame'''
         self.vertex_format = self.calculate_vertex_format()
+        '''vertex_format is a dict describing format of data sent to shaders'''
         self.redraw_mesh = True
+        '''Used internally to determine whether or not to recreate mesh'''
         self.crenderer = CRenderer()
+        '''cython renderer used internally to manipulate c data'''
         self.uv_dict = {}
+        '''dictionary containing information about texture uv information'''
         self.on_screen_last_frame = []
-        
+        '''Used to cache data about what was on screen last frame for 
+        DynamicRenderer at the moment'''
+
     def on_shader_source(self, instance, value):
         self.canvas.shader.source = value
 
@@ -120,6 +138,9 @@ class Renderer(GameSystem):
         self.vertex_format = self.calculate_vertex_format()
 
     def return_uv_coordinates(self, atlas_name, atlas_page, atlas_dir):
+        '''function used internally to load the uv_dict informations
+        will return a list of [u0, v0, u1, v1, texture_width, texture_height] 
+        for key of texture_name'''
         uv_dict = {}
         uv_dict['main_texture'] = atlas = CoreImage(
             atlas_dir + atlas_page).texture
@@ -138,6 +159,7 @@ class Renderer(GameSystem):
         return uv_dict
 
     def calculate_vertex_format(self):
+        '''function used internally to calculate the vertex_format'''
         vertex_format = [
             ('vPosition', 2, 'float'),
             ('vTexCoords0', 2, 'float'),
@@ -158,6 +180,7 @@ class Renderer(GameSystem):
         self.draw_mesh(entity_ids)
 
     def draw_mesh(self, list entities_to_draw):
+        '''Function used internally to draw'''
         cdef object gameworld = self.gameworld
         cdef list entities = gameworld.entities
         cdef str system_id = self.system_id
@@ -325,10 +348,12 @@ class Renderer(GameSystem):
         self.draw_mesh(entity_ids)
 
     def update_render_state(self):
+        '''Returns a list of entity_ids to draw for the current screen'''
         cdef list entity_ids = self.entity_ids
         return entity_ids
 
     def clear_mesh(self):
+        '''Used internally when redraw is called'''
         if self.mesh is not None and not self.redraw_mesh:
             self.canvas.remove(self.mesh)
             self.redraw_mesh = True
@@ -343,6 +368,13 @@ class Renderer(GameSystem):
         self.redraw()
 
     def generate_component(self, dict entity_component_dict):
+        '''Renderers take in a dict containing a string 'texture' corresponding
+        to the name of the texture in the atlas, and a size tuple of width, 
+        height. RenderComponent's have a texture string, a render boolean 
+        that controls whether or not they will be drawn, an on_screen boolean.
+        on_screen returns True always for Renderer and StaticQuadRenderer.
+        For DynamicRenderer, on_screen only returns True if that entity is
+        within Window bounds.'''
         texture = entity_component_dict['texture']
         size = entity_component_dict['size']
         new_component = RenderComponent.__new__(RenderComponent, True, True, 
@@ -351,9 +383,16 @@ class Renderer(GameSystem):
 
 
 class DynamicRenderer(Renderer):
+    '''DynamicRenderer is designed to work with the cymunk_physics system,
+    and used queries of the physics to determine which entities to draw
+    rather than drawing everything. If you query your RenderComponent
+    for a DynamicRenderer the on_screen property will return True only if
+    that entity is currently within the Window bounds.'''
     system_id = StringProperty('dynamic_renderer')
     do_rotate = BooleanProperty(True)
     physics_system = StringProperty('cymunk_physics')
+    '''You must provide the system_id for your physics system'''
+
 
     def update_render_state(self):
         cdef object parent = self.gameworld
@@ -404,14 +443,19 @@ class DynamicRenderer(Renderer):
 
 
 class StaticQuadRenderer(Renderer):
+    '''The StaticQuadRenderer has no update function, and does not render
+    except for when entities are added or removed from the System. This is 
+    perfect for static objects.'''
     system_id = StringProperty('static_renderer')
     shader_source = StringProperty('positionshader.glsl')
+    updateable = BooleanProperty(False)
 
     def update(self, dt):
         pass
 
 
 class QuadRendererNoTextures(Renderer):
+    '''This renderer renders colored quads without textures.'''
 
     def calculate_vertex_format(self):
         vertex_format = [

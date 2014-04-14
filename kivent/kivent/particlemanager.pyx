@@ -62,21 +62,33 @@ cdef class ParticleComponent:
 
 
 class ParticleManager(GameSystem):
+    '''Used to manage Particle Effects loaded using the .pex file format.
+    This system is sort of a monolithic combination of renderer and logic
+    for particle physics.'''
     system_id = StringProperty('particles')
     max_number_particles = NumericProperty(100)
-    position_data_from = StringProperty('cymunk_physics')
+    '''Maximum number of particles to display on screen'''
     physics_data_from = StringProperty('cymunk_physics')
+    '''Name of the physics system that the parent entity is using'''
     render_information_from = StringProperty('physics_renderer')
-    shader_source = StringProperty('pointshader.glsl')
+    '''Name of the render system that the parent entity is using'''
+    shader_source = StringProperty('positionrotatecolorscaleshader.glsl')
+    '''source path of the shader to use'''
     updateable = BooleanProperty(True)
     number_of_effects = NumericProperty(0)
+    '''Number of effects currently active'''
     blend_factor_source = NumericProperty(GL_SRC_ALPHA)
+    '''Blend Source to use'''
     blend_factor_dest = NumericProperty(GL_ONE)
+    '''Blend dest to use'''
     atlas_dir = StringProperty(None)
     atlas = StringProperty(None)
     reset_blend_factor_source = NumericProperty(GL_SRC_ALPHA)
+    '''Blend source to reset to after drawing'''
     reset_blend_factor_dest = NumericProperty(GL_ONE_MINUS_SRC_ALPHA)
+    '''Blend dest to reset to after drawing'''
     mesh = ObjectProperty(None, allownone=True)
+    '''Mesh instruction currently drawn to canvas'''
 
     def __init__(self, **kwargs):
         self.canvas = RenderContext(use_parent_projection=True, 
@@ -125,6 +137,13 @@ class ParticleManager(GameSystem):
             pm.max_particles = value
         
     def generate_component(self, dict entity_component_dict):
+        '''Particle Components take in a dict that has a 'parent'
+        entity_id that the particle effect will be attached to,
+        a 'particle_file' string to the .pex file, and potentially
+        an 'offset' that will be used to draw the effect behind the
+        parent entity by a certain amount. This is currently written
+        for particle effects that are being used as trails for physics objects.
+        '''
         cdef keParticleManager pm = self._particle_manager
         cdef keParticleEmitter emitter
         particle_configs = pm.particle_configs
@@ -147,6 +166,9 @@ class ParticleManager(GameSystem):
         return new_component
 
     def load_particle_config(self, config):
+        '''Can be used to load .pex files ahead of time so that they don't
+        cause interuptions for the player. The xml processing can take a
+        noticeable amount of time.'''
         pm = self._particle_manager
         pm.load_particle_config(config)
 
@@ -229,6 +251,8 @@ class ParticleManager(GameSystem):
         self.draw_mesh()
 
     def calculate_particle_offset(self, object entity, float offset):
+        '''Used to calculate the offset in the opposite direction of the
+        unit vector of the physics body.'''
         cdef PositionComponent position_data = entity.position
         cdef str physics_system = self.physics_data_from
         cdef tuple effect_pos

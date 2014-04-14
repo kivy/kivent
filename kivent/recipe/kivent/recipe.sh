@@ -16,7 +16,7 @@ function build_kivent() {
 	push_arm
 
 	export LDSHARED="$LIBLINK"
-	export PYTHONPATH=$BUILD_kivy/kivy/:$PYTHONPATH
+	export PYTHONPATH=$BUILD_kivy/:$PYTHONPATH
 	export PYTHONPATH=$BUILD_cymunk/cymunk/python:$PYTHONPATH
 	try find . -iname '__init__.pyx' -exec cython {} \;
 	try $BUILD_PATH/python-install/bin/python.host setup.py build_ext -v

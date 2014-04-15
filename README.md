@@ -1,6 +1,7 @@
 KivEnt
 ======
-http://kovak.github.io/KivEnt/
+https://www.kivent.org
+https://www.kivent.org/docs
 
 Warning Tutorials Out Dated! Will Fix Soon.
 Update: 2_basic_app tutorial and sample_application up to date. 04/10/14

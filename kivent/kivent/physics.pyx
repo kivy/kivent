@@ -42,28 +42,43 @@ class CymunkPhysics(GameSystem):
     '''CymunkPhysics is a GameSystem that interacts with the Cymunk Port of
     the Chipmunk2d Physics Engine. Check the docs for Chipmunk2d to get an
     overview of how to work with Cymunk. https://chipmunk-physics.net/
+
+    **Attributes:**
+        **space** (ObjectProperty): The Cymunk Space the physics system is 
+        using
+
+        **gravity** (ListProperty): The (x, y) gravity for the space.
+
+        **iterations** (NumericProperty): Number of solving iterations 
+        for the Space
+
+        **sleep_time_threshold** (NumericProperty): How long a Body is 
+        inactive in order to be slept in the space
+
+        **collision_slop** (NumericProperty): Collision_slop for the Space 
+        (how much collisions can overlap)
+
+        **damping** (NumericProperty): Damping for the Space, this is sort of 
+        like a global kind of friction, all velocities will be reduced to 
+        damping*initial_velocity every update tick. 
+
+        **on_screen_result** (list): Caches the entity_ids that were on 
+        on_screen last update. Prefer to use this compared to query_on_screen
+
     '''
     system_id = StringProperty('cymunk_physics')
     space = ObjectProperty(None)
-    '''The Cymunk Space the physics system is using'''
     gravity = ListProperty((0, 0))
-    '''Current gravity for the space'''
     updateable = BooleanProperty(True)
     iterations = NumericProperty(2)
-    '''Number of solving iterations for the Space'''
     sleep_time_threshold = NumericProperty(5.0)
-    '''How long an object is inactive in order to be slept in the space'''
     collision_slop = NumericProperty(.25)
-    '''Collision_slop for the Space (how much collisions can overlap)'''
     damping = NumericProperty(1.0)
-    '''Damping for the Space, this is sort of like a global kind of friction,
-    all velocities will be reduced to damping*initial_velocity'''
+
 
     def __init__(self, **kwargs):
         cdef list bb_query_result
         cdef list on_screen_result
-        '''Use on_screen_result to access the entity_ids that were on on_screen
-        last frame'''
         cdef list segment_query_result
         super(CymunkPhysics, self).__init__(**kwargs)
         self.bb_query_result = list()
@@ -73,11 +88,43 @@ class CymunkPhysics(GameSystem):
         
     def add_collision_handler(self, int type_a, int type_b, begin_func=None, 
         pre_solve_func=None, post_solve_func=None, separate_func=None):
-        '''Function to add collision handlers for collisions between 
-        collision types type_a and type_b. Collision functions
+        '''
+        Args:
+            type_a (int): the collision_type for the first Shape in the 
+            collision
+
+            type_b (int): the collision_type for the second Shape in the
+            collision
+
+        Kwargs:
+
+            begin_func (function): calledwhen collision between 2 shapes begins
+
+            pre_solve_func (function): called before every solve of the physics 
+            space where a collision persists
+
+            post_solve_func (function): called after every solve of the physics 
+            space where a collision persists
+
+            separate_func (function): called when collision between 2 shapes 
+            ends
+
+
+        Function to add collision handlers for collisions between
+        pairs of collision_type. Collision functions
         for begin_func and pre_solve_func should return True if you want
         the collision to be solved, and False if you want the collisions
-        to be ignored'''
+        to be ignored
+
+        Functions should accept args: space, arbiter
+        You can then retrieve the entity_id's of the colliding shapes with:
+
+        .. code-block:: python
+
+            first_id = arbiter.shapes[0].body.data
+            second_id = arbiter.shapes[1].body.data
+
+        '''
         cdef Space space = self.space
         space.add_collision_handler(type_a, type_b, 
             begin_func, pre_solve_func, 
@@ -123,13 +170,30 @@ class CymunkPhysics(GameSystem):
         return current_on_screen
 
     def query_segment(self, vect_start, vect_end):
-        '''Queries collisions between (x1, y1) and (x2, y2)'''
+        '''
+        Args:
+            vect_start (tuple): (x1, y1) start point of segment.
+
+            vect_end (tuple): (x2, y2) end point of segment.
+
+        Queries collisions between (x1, y1) and (x2, y2)'''
         self.segment_query_result = []
         self.space.space_segment_query(vect_start, vect_end)
         return self.segment_query_result
 
     def query_bb(self, list box_to_query, ignore_groups=[]):
-        '''Queries collisions inside a box of (x, y, x+w, y+h)'''
+        '''
+        Args:
+            box_to_query (list): should be a list of [x, y, x+w, y+h] where
+            x, y is the bottom left hand corner of the box, and w, h is
+            the width and height of the box.
+
+        Kwargs:
+            ignore_groups (list): list of collision_types to ignore during 
+            this query.
+
+        Queries collisions inside a box.
+        '''
         cdef Space space = self.space
         self.ignore_groups=ignore_groups
         bb = BB(
@@ -139,7 +203,13 @@ class CymunkPhysics(GameSystem):
         return self.bb_query_result
 
     def generate_component(self, dict entity_component_dict):
-        '''entity_component_dict of the form {
+        '''
+        Args:
+            entity_component_dict (dict): dict containing the kwargs
+            required in order to initialize a Cymunk Body with one or more 
+            Shape attached.
+
+        entity_component_dict of the form {
         'entity_id': id, 'main_shape': string_shape_name, 
         'velocity': (x, y), 'position': (x, y), 'angle': radians, 
         'angular_velocity': radians, 'mass': float, 
@@ -155,8 +225,8 @@ class CymunkPhysics(GameSystem):
         'mass': float, 'offset': tuple}
         solid cirlces have an inner_radius of 0
 
-        outputs component dict: {'body': body, 'shapes': array_of_shapes, 
-        'position': body.position, angle': body.angle}
+        outputs RenderComponent with properties body, unit_vector, shapes,
+        shape_type.
 
         '''
         cdef dict shape = entity_component_dict['col_shapes'][0]

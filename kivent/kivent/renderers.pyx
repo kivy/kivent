@@ -73,26 +73,60 @@ cdef class CRenderer:
 
 
 class Renderer(GameSystem):
-    '''The basic KivEnt renderer it draws every entity_id every frame'''
+    '''The basic KivEnt renderer it draws every entity every frame.
+
+    **Attributes:**
+        **do_rotate** (BooleanProperty): Determines whether or not vertex 
+        format will have a float for rotate
+
+        **do_color** (BooleanProperty): Determines whether or not vertex 
+        format will have 4 floats for rgba color
+
+        **do_scale** (BooleanProperty): Determines whether or not vertex 
+        format will have a float for scale
+
+        **mesh** (ObjectProperty): reference to the active CMesh instruction 
+        for the Renderer
+
+        **atlas_dir** (StringProperty): Path to the directory containing the 
+        .atlas this renderer will lookup texture data from.
+
+        **atlas** (StringProperty): Name of the .atlas to be used, do not 
+        include the '.atlas' in the name.
+
+        **shader_source** (StringProperty): Path to the .glsl to be used, do 
+        include '.glsl' in the name. You must ensure that your shader matches 
+        your vertex format or you will have problems
+
+        **redraw** (Clock Trigger): A trigger that can be used to request a 
+        redraw of canvas next frame, will never be called more than once a 
+        frame. 
+
+        **vertex_format** (dict): describes format of data sent to shaders,
+        generated automatically based on do_rotate, do_scale, do_color
+
+        **redraw_mesh** (bool): Used internally to determine whether or not to 
+        recreate mesh
+
+        **crenderer** (object): cython renderer used internally to hold c data
+
+        **uv_dict** (dict): dictionary containing information about texture 
+        uv information
+
+        **on_screen_last_frame** (list): Used to cache data about what was on 
+        screen last frame. Only used for DynamicRenderer at the moment
+    '''
     system_id = StringProperty('renderer')
     updateable = BooleanProperty(True)
     renderable = BooleanProperty(True)
     do_rotate = BooleanProperty(False)
-    '''Determines whether or not vertex format will have a float for rotate'''
     do_color = BooleanProperty(False)
-    '''Determines whether or not vertex format will have 4 floats for rgba 
-    color'''
     do_scale = BooleanProperty(False)
-    '''Determines whether or not vertex format will have a float for scale'''
     mesh = ObjectProperty(None, allownone=True)
-    '''The CMesh instruction for the Renderer'''
     atlas_dir = StringProperty(None)
-    '''String path for directory containing .atlas'''
     atlas = StringProperty(None)
-    '''name of the .atlas to be used'''
     shader_source = StringProperty('positionshader.glsl')
-    '''source for the shader that the renderer will use, you must ensure
-    that your shader matches your vertex format or you will have problems.'''
+
 
     def __init__(self, **kwargs):
         self.canvas = RenderContext(
@@ -101,19 +135,11 @@ class Renderer(GameSystem):
             self.canvas.shader.source = kwargs.get('shader_source')
         super(Renderer, self).__init__(**kwargs)
         self.redraw = Clock.create_trigger(self.trigger_redraw)
-        '''A trigger that can be used to request a redraw of canvas next frame,
-        will never be called more than once a frame'''
         self.vertex_format = self.calculate_vertex_format()
-        '''vertex_format is a dict describing format of data sent to shaders'''
         self.redraw_mesh = True
-        '''Used internally to determine whether or not to recreate mesh'''
         self.crenderer = CRenderer()
-        '''cython renderer used internally to manipulate c data'''
         self.uv_dict = {}
-        '''dictionary containing information about texture uv information'''
         self.on_screen_last_frame = []
-        '''Used to cache data about what was on screen last frame for 
-        DynamicRenderer at the moment'''
 
     def on_shader_source(self, instance, value):
         self.canvas.shader.source = value
@@ -138,7 +164,7 @@ class Renderer(GameSystem):
         self.vertex_format = self.calculate_vertex_format()
 
     def return_uv_coordinates(self, atlas_name, atlas_page, atlas_dir):
-        '''function used internally to load the uv_dict informations
+        '''Function used internally to load the uv_dict informations
         will return a list of [u0, v0, u1, v1, texture_width, texture_height] 
         for key of texture_name'''
         uv_dict = {}
@@ -159,7 +185,7 @@ class Renderer(GameSystem):
         return uv_dict
 
     def calculate_vertex_format(self):
-        '''function used internally to calculate the vertex_format'''
+        '''Function used internally to calculate the vertex_format'''
         vertex_format = [
             ('vPosition', 2, 'float'),
             ('vTexCoords0', 2, 'float'),
@@ -180,7 +206,7 @@ class Renderer(GameSystem):
         self.draw_mesh(entity_ids)
 
     def draw_mesh(self, list entities_to_draw):
-        '''Function used internally to draw'''
+        '''Function used internally to draw mesh'''
         cdef object gameworld = self.gameworld
         cdef list entities = gameworld.entities
         cdef str system_id = self.system_id
@@ -387,11 +413,17 @@ class DynamicRenderer(Renderer):
     and used queries of the physics to determine which entities to draw
     rather than drawing everything. If you query your RenderComponent
     for a DynamicRenderer the on_screen property will return True only if
-    that entity is currently within the Window bounds.'''
+    that entity is currently within the Window bounds.
+
+    **Attributes:**
+        **physics_system** (StringProperty): You must provide the system_id 
+        for your physics system.
+
+    '''
     system_id = StringProperty('dynamic_renderer')
     do_rotate = BooleanProperty(True)
     physics_system = StringProperty('cymunk_physics')
-    '''You must provide the system_id for your physics system'''
+
 
 
     def update_render_state(self):
@@ -446,6 +478,7 @@ class StaticQuadRenderer(Renderer):
     '''The StaticQuadRenderer has no update function, and does not render
     except for when entities are added or removed from the System. This is 
     perfect for static objects.'''
+    
     system_id = StringProperty('static_renderer')
     shader_source = StringProperty('positionshader.glsl')
     updateable = BooleanProperty(False)

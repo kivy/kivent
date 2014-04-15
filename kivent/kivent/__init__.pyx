@@ -1,4 +1,6 @@
 # cython: profile=False
+# cython: embedsignature=True
+
 include "cmesh.pyx"
 include "gamesystems.pyx"
 include "gameworld.pyx"

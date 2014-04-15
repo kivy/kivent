@@ -9,9 +9,21 @@ from kivy.graphics import RenderContext
 
 
 class Entity(object):
-    '''Entity is pretty much just a python object. It has an entity_id assigned 
-    to it by the GameWorld that will never be changed. load_order is a list
-    of components in the order in which they must be initialized.'''
+    '''Entity is a python object that will hold all of the components
+    attached to that particular entity. GameWorld is responsible for creating
+    and recycling entities. You should never create an Entity directly or 
+    modify an entity_id.
+    
+    **Attributes:**
+        **entity_id** (int): The entity_id will be assigned on creation by the
+        GameWorld. You will use this number to refer to the entity throughout
+        your Game. 
+
+        **load_order** (list): The load order is the order in which GameSystem
+        components should be initialized.
+
+
+    '''
 
     def __init__(self, entity_id):
         self.entity_id = entity_id
@@ -21,36 +33,55 @@ class Entity(object):
 class GameWorld(Widget):
     '''GameWorld is the manager of all Entities and GameSystems in your Game.
     It will be responsible for initializing and removing entities, as well as
-    managing which GameSystems are added, removed, and paused.'''
+    managing which GameSystems are added, removed, and paused.
+
+    **Attributes:**
+        **state** (StringProperty): State is a string property that corresponds 
+        to the current state for your application in the states dict. It will 
+        control the current screen of the gamescreenmanager, as well as which 
+        systems are currently added or removed from canvas or paused.
+
+        **number_entities** (NumericProperty): This is the current number of 
+        entities in the system. Do not modify directly, used to generate 
+        entity_ids.
+
+        **gamescreenmanager** (ObjectProperty): Reference to the 
+        GameScreenManager your game will use for UI screens.
+
+        **currentmap** (ObjectProperty): Reference to the current GameMap 
+        object
+
+        **viewport** (ObjectProperty): system_id of the current GameView
+
+        **entities** (list): entities is a list of all entity objects, 
+        entity_id corresponds to position in this list.
+
+        **states** (dict): states is a dict of lists of system_ids with keys 
+        'systems_added','systems_removed', 'systems_paused', 'systems_unpaused'
+
+        **deactivated_entities** (list): list that contains all entity_ids not 
+        currently in use
+
+        **entities_to_remove** (list): list of entity_ids that will be cleaned 
+        up in the next cleanup update tick
+
+        **systems** (dict): dict with keys system_id, can be used to access 
+        your gamesystems
+
+    '''
     state = StringProperty('initial')
-    '''State is a string property that corresponds to the current state for
-    your application in the states dict. It will control the current screen
-    of the gamescreenmanager, as well as which systems are currently added or
-    removed from canvas or paused.'''
     number_entities = NumericProperty(1)
-    '''This is the current number of entities in the system. Do not modify 
-    directly, used to generate entity_ids'''
     gamescreenmanager = ObjectProperty(None)
-    '''Reference to the GameScreenManager your game will use for UI screens.'''
     currentmap = ObjectProperty(None, allownone = True)
-    '''Reference to the current GameMap object'''
     viewport = StringProperty('default_gameview')
-    '''system_id of the current GameView'''
+ 
     
     def __init__(self, **kwargs):
         cdef list entities
-        '''entities is a list of all entity objects, entity_id corresponds
-        to position in this list.'''
         cdef dict states
-        '''states is a dict of lists of system_ids with keys 'systems_added',
-        'systems_removed', 'systems_paused', 'systems_unpaused'''
         cdef list deactivated_entities
-        '''list that contains all entity_ids not currently in use'''
         cdef list entities_to_remove
-        '''list of entity_ids that will be cleaned up in the next cleanup
-        tick'''
         cdef dict systems
-        '''dict with keys system_id, can be used to access your gamesystems'''
         self.canvas = RenderContext()
         super(GameWorld, self).__init__(**kwargs)
         self.entities = []
@@ -63,10 +94,30 @@ class GameWorld(Widget):
 
     def add_state(self, state_name, systems_added, systems_removed, 
         systems_paused, systems_unpaused, screenmanager_screen):
-        '''This function takes in lists of system_ids for systems_added,
-        systems_removed, systems_paused, and systems_unpaused. state_name, and 
-        screenmanager_screen are strings corresponding to the name of this 
-        state and the name of the screen for gamescreenmanager to use.
+        '''
+        Args:
+            state_name (str): Name for this state, should be unique.
+
+            systems_added (list): List of system_id that should be added
+            to the GameWorld canvas when this state is transitioned into.
+
+            systems_removed (list): List of system_id that should be removed
+            from the GameWorld canvas when this state is transitioned into.
+
+            systems_paused (list): List of system_id that will be paused
+            when this state is transitioned into.
+
+            systems_unpaused (list): List of system_id that will be unpaused 
+            when this state is transitioned into.
+
+            screenmanager_screen (str): Name of the screen for 
+            GameScreenManager to make current when this state is transitioned
+            into.
+
+        This function adds a new state for your GameWorld that will help you
+        organize which systems are active in canvas, paused, or unpaused,
+        and help you link that up to a Screen for the GameScreenManager
+        so that you can sync your UI and game logic.
         '''
         self.states[state_name] = {'systems_added': systems_added, 
             'systems_removed': systems_removed, 
@@ -78,7 +129,7 @@ class GameWorld(Widget):
         '''State change is handled here, systems will be added or removed
         in the order that they are listed. This allows control over the 
         arrangement of rendering layers. Later systems will be rendered on top
-        of early.'''
+        of earlier.'''
         state_dict = self.states[value]
         gamescreenmanager = self.gamescreenmanager
         gamescreenmanager.state = value
@@ -106,7 +157,17 @@ class GameWorld(Widget):
         return entity
 
     def init_entity(self, dict components_to_use, list component_order):
-        '''This is the function used to create a new entity. It returns the 
+        '''
+        Args:
+            components_to_use (dict): A dict where keys are the system_id and
+            values correspond to the component creation args for that 
+            GameSystem.
+
+            component_order (list): Should contain all system_id in
+            components_to_use arg, ordered in the order you want component
+            initialization to happen.
+
+        This is the function used to create a new entity. It returns the 
         entity_id of the created entity. components_to_use is a dict of 
         system_id, args to generate_component function. component_order is
         the order in which the components should be initialized'''
@@ -123,13 +184,26 @@ class GameWorld(Widget):
         return entity.entity_id
 
     def timed_remove_entity(self, int entity_id, dt):
-        '''This function can be used to schedule the destruction of an entity
+        '''
+        Args:
+            entity_id (int): The entity_id of the Entity to be removed from
+            the GameWorld
+
+            dt (float): Time argument passed by Kivy's Clock.schedule
+
+        This function can be used to schedule the destruction of an entity
         for a time in the future using partial and kivy's Clock.schedule_once
         '''
         self.entities_to_remove.append(entity_id)
 
     def remove_entity(self, int entity_id):
-        '''This function immediately removes an entity from the gameworld.'''
+        '''
+        Args:
+            entity_id (int): The entity_id of the Entity to be removed from
+            the GameWorld
+
+        This function immediately removes an entity from the gameworld.
+        '''
         cdef object entity = self.entities[entity_id]
         cdef list components_to_delete = []
         cdef dict systems = self.systems
@@ -152,7 +226,12 @@ class GameWorld(Widget):
         self.deactivated_entities.append(entity_id)
 
     def update(self, dt):
-        '''Call the update function in order to advance time in your gameworld.
+        '''
+        Args:
+            dt (float): Time argument, usually passed in automatically 
+            by Kivy's Clock.
+
+        Call the update function in order to advance time in your gameworld.
         Any GameSystem that is updateable and not paused will be updated. 
         Typically you will call this function using either Clock.schedule_once
         or Clock.schedule_interval
@@ -166,7 +245,13 @@ class GameWorld(Widget):
         Clock.schedule_once(self.remove_entities)
 
     def update_render_state(self, object viewport):
-        '''Used internally by gameview to update GameWorld canvas, this 
+        '''
+        Args:
+            viewport (object): A reference to the GameView calling this
+            update
+
+        **Messy: Will probably change in the future** 
+        Used internally by gameview to update GameWorld canvas, this 
         needs a better architecture in the future as this info should be 
         contained inside GameView instead'''
         camera_pos = viewport.camera_pos
@@ -194,7 +279,12 @@ class GameWorld(Widget):
             er(entity['id'])
 
     def delete_system(self, system_id):
-        '''Used to delete a GameSystem from the GameWorld'''
+        '''
+        Args:
+            system_id (str): The system_id of the GameSystem to be deleted
+            from GameWorld.
+
+        Used to delete a GameSystem from the GameWorld'''
         systems = self.systems
         systems[system_id].on_delete_system()
         self.remove_widget(systems[system_id])

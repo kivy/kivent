@@ -1,0 +1,31 @@
+#:kivy 1.8.0
+
+TestGame:
+
+<TestGame>:
+	gameworld: gameworld
+	GameWorld:
+		id: gameworld
+		gamescreenmanager: gamescreenmanager
+		PositionSystem:
+            system_id: 'position'
+            gameworld: gameworld
+        GameView:
+            system_id: 'gameview'
+            focus_entity: False
+            updateable: False
+            gameworld: gameworld
+            pos: root.pos
+            do_scroll: False
+            size: root.size
+        GameMap:
+            system_id: 'map'
+            map_size: root.size
+            gameworld: gameworld
+    GameScreenManager:
+        id: gamescreenmanager
+        size: root.size
+        pos: root.pos
+        gameworld: gameworld
+        GameScreen:
+        	name: 'main'

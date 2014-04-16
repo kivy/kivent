@@ -1,8 +1,8 @@
+import kivy
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.clock import Clock
-from kivy.core.window import Window
 import kivent
+from kivy.clock import Clock
 
 
 class TestGame(Widget):
@@ -14,37 +14,26 @@ class TestGame(Widget):
         self.setup_map()
         self.setup_states()
         self.set_state()
-        self.draw_some_stuff()
-        Clock.schedule_interval(self.update, 0)
-
-    def draw_some_stuff(self):
-        create_dict = {
-            'position': (200, 200),
-            'renderer': {'texture': 'asteroid1', 'size': (64, 64)},
-        }
-        self.gameworld.init_entity(create_dict, ['position', 'renderer'])
 
     def setup_map(self):
         gameworld = self.gameworld
         gameworld.currentmap = gameworld.systems['map']
 
-    def update(self, dt):
-        self.gameworld.update(dt)
-
     def setup_states(self):
         self.gameworld.add_state(state_name='main', 
-            systems_added=['renderer'],
+            systems_added=[],
             systems_removed=[], systems_paused=[],
-            systems_unpaused=['renderer'],
+            systems_unpaused=[],
             screenmanager_screen='main')
-
+   
     def set_state(self):
         self.gameworld.state = 'main'
 
 
+
 class YourAppNameApp(App):
     def build(self):
-        Window.clearcolor = (0, 0, 0, 1.)
+        pass
 
 
 if __name__ == '__main__':

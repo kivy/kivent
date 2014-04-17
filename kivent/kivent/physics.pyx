@@ -246,8 +246,8 @@ class CymunkPhysics(GameSystem):
         elif shape['shape_type'] == 'box':
             moment = cymunk.moment_for_box(
                 shape['shape_info']['mass'], 
-                shape['shape_info']['height'], 
-                shape['shape_info']['width'])
+                shape['shape_info']['width'], 
+                shape['shape_info']['height'])
         else:
             print 'error: shape ', shape['shape_type'], 'not supported'
         if entity_component_dict['mass'] == 0:
@@ -275,11 +275,8 @@ class CymunkPhysics(GameSystem):
                 new_shape = Circle(body, shape_info['outer_radius']) 
                 new_shape.friction = shape['friction']
             elif shape['shape_type'] == 'box':
-                #we need to switch the width and height of our objects 
-                #because kivy's drawing is
-                #oriented at a 90 degree angle to chipmunk
                 new_shape = BoxShape(
-                    body, shape_info['height'], shape_info['width'])
+                    body, shape_info['width'], shape_info['height'])
                 new_shape.friction = shape['friction']
             elif shape['shape_type'] == 'poly':
                 new_shape = Poly(body, shape_info['vertices'], 

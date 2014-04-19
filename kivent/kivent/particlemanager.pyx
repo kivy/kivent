@@ -270,7 +270,7 @@ class ParticleManager(GameSystem):
                         particle_emitter.y = new_pos[1]
                         rotate_comp = parent_entity.rotate
                         particle_emitter.emit_angle = (
-                            rotate_comp._r + 3. * M_PI_2)
+                            rotate_comp._r + M_PI_2)
                     else:
                         if not paused:
                             particle_emitter.paused = True

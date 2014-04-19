@@ -336,7 +336,7 @@ class ShipSystem(GameSystem):
             'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
             'hard_points': [(46, 59), (-46, 59)], 
             'total_rocket_ammo': 40, 'total_bullet_ammo': 200,
-            'texture_size': (128, 104)}
+            'texture_size': (104, 128)}
         ship_dicts['ship_2'] = {
             'name': 'Falcon','health': 150, 'mass': 175,'max_speed': 190, 
             'max_turn_speed': 100, 'accel': 20000,'angular_accel': 75, 
@@ -349,7 +349,7 @@ class ShipSystem(GameSystem):
             'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
             'hard_points': [(38, 30), (-38, 30), (52, 30), (-52, 30)], 
             'total_rocket_ammo': 60, 'total_bullet_ammo': 400,
-            'texture_size': (128, 86)}
+            'texture_size': (86, 128)}
         ship_dicts['ship_3'] = {
             'name': 'Monarch','health': 165, 'mass': 220,'max_speed': 180, 
             'max_turn_speed': 130, 'accel': 25000,
@@ -375,7 +375,7 @@ class ShipSystem(GameSystem):
             'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
             'hard_points': [(18, 63)], 'total_rocket_ammo': 15, 
             'total_bullet_ammo': 150,
-            'texture_size': (72, 112)}
+            'texture_size': (112, 72)}
         ship_dicts['ship_5'] = {
             'name': 'Cavalier','health': 110, 'mass': 120,'max_speed': 220, 
             'max_turn_speed': 125, 'accel': 22000,'angular_accel': 45, 
@@ -388,7 +388,7 @@ class ShipSystem(GameSystem):
             'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
             'hard_points': [(0, 47)], 'total_rocket_ammo': 12, 
             'total_bullet_ammo': 200,
-            'texture_size': (80, 96)}
+            'texture_size': (96, 80)}
         ship_dicts['ship_6'] = {
             'name': 'Shield','health': 150, 'mass': 160,'max_speed': 180, 
             'max_turn_speed': 150, 'accel': 25000,
@@ -401,7 +401,7 @@ class ShipSystem(GameSystem):
             'explosion_effect': 'assets/pexfiles/ship_explosion1.pex',
             'hard_points': [(-6, 47), (6, 47)], 'total_rocket_ammo': 30, 
             'total_bullet_ammo': 200,
-            'texture_size': (88, 96)}
+            'texture_size': (96, 88)}
         
     def get_ship_values(self, ship_name):
         if ship_name in self.ship_dicts:

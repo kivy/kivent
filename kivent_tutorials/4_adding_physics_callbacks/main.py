@@ -17,13 +17,25 @@ class BoundarySystem(GameSystem):
         ent2_id = arbiter.shapes[1].body.data
         return False
 
-    def separate_from_boundary(self, space, arbiter):
+    def catch_boundary_callback(self, space, arbiter):
         gameworld = self.gameworld
-        t = 0
         entities = gameworld.entities
         ent1_id = arbiter.shapes[0].body.data
         ent2_id = arbiter.shapes[1].body.data
-        print arbiter.shapes[1].body.position
+        map_pos = gameworld.pos
+        map_size = gameworld.currentmap.map_size
+        asteroid = entities[ent1_id]
+        body = asteroid.physics.body
+        Clock.schedule_once(partial(self.handle_replacing_asteroid,
+            body, space, 
+            (map_pos[0]+map_size[0]*.5, map_pos[1]+map_size[1]*.5)))
+
+    def separate_from_boundary(self, space, arbiter):
+        ###This algorithm is in the works!
+        gameworld = self.gameworld
+        entities = gameworld.entities
+        ent1_id = arbiter.shapes[0].body.data
+        ent2_id = arbiter.shapes[1].body.data
         map_pos = gameworld.pos
         map_size = gameworld.currentmap.map_size
         asteroid = entities[ent1_id]
@@ -31,27 +43,55 @@ class BoundarySystem(GameSystem):
         x, y = pos_system.x, pos_system.y
         body = asteroid.physics.body
         new_x, new_y = x, y
-        if x - t < map_pos[0]:
+        if x <= map_pos[0]:
             new_x = map_size[0] + map_pos[0] + 32
-        elif x + t >= map_pos[0] + map_size[0]:
+        elif x >= map_pos[0] + map_size[0]:
             new_x = map_pos[0] - 32
-        if y - t < map_pos[1]:
+        if y <= map_pos[1]:
             new_y = map_size[1] + map_pos[1] + 32
-        elif y + t >= map_size[1] + map_pos[1]:
+        elif y >= map_size[1] + map_pos[1]:
             new_y = map_pos[1] - 32
-        body.position = (new_x, new_y)
-        print map_pos, map_size
-        print ent1_id, (x, y), body.position
+        Clock.schedule_once(partial(self.handle_replacing_asteroid, 
+            body, space, (new_x, new_y)))
         return False
+
+    def handle_replacing_asteroid(self, body, space, position, dt):
+        space.remove(body)
+        body.position = position
+        space.add(body)
 
     def generate_boundaries(self):
         gameworld = self.gameworld
         map_pos = gameworld.pos
         map_size = gameworld.currentmap.map_size
         center_of_map = (map_pos[0] + .5*map_size[0], map_pos[1] + .5*map_size[1])
-        expanded_size = map_size[0]*1.1, map_size[1]*1.1
+        expanded_size = map_size[0]*1.5, map_size[1]*1.5
         self.generate_boundary(map_size, center_of_map)
-        #self.generate_boundary(expanded_size, center_of_map)
+        self.generate_catch_boundary(expanded_size, center_of_map)
+
+    def generate_catch_boundary(self, boundary_size, boundary_pos):
+        gameworld = self.gameworld
+        shape_dict = {'width': boundary_size[0], 
+            'height': boundary_size[1], 'mass': 0}
+        col_shape_dict = {'shape_type': 'box', 
+            'elasticity': 0.0, 'collision_type': 3, 
+            'shape_info': shape_dict, 'friction': 0.0}
+        physics_component_dict = {'main_shape': 'box', 'velocity': (0, 0), 
+            'position': boundary_pos, 'angle':0, 'angular_velocity': 0,
+            'mass': 0, 'vel_limit': 0, 'ang_vel_limit': 0, 
+            'col_shapes': [col_shape_dict]}
+        boundary_system = {}
+        create_component_dict = {
+            'position': boundary_pos,
+            'rotate': 0.,
+            'color': (0.0, 0.0, 1.0, .75),
+            'physics': physics_component_dict, 
+            'boundary': boundary_system,
+            'debug_renderer': {'size': boundary_size}}
+        component_order = ['position', 'rotate',  'color',
+            'physics', 'boundary', 'debug_renderer']
+        self.gameworld.init_entity(create_component_dict, component_order)
+
 
     def generate_boundary(self, boundary_size, boundary_pos):
         gameworld = self.gameworld
@@ -111,10 +151,16 @@ class TestGame(Widget):
             separate_func=boundary_system.separate_from_boundary)
         physics_system.add_collision_handler(2, 2,
             begin_func=boundary_system.begin_collide_with_boundary)
+        physics_system.add_collision_handler(
+            1, 3, 
+            begin_func=boundary_system.begin_collide_with_boundary,
+            separate_func=boundary_system.catch_boundary_callback)
+        physics_system.add_collision_handler(2, 3,
+            begin_func=boundary_system.begin_collide_with_boundary)
 
     def draw_some_stuff(self):
         size = self.gameworld.currentmap.map_size
-        for x in range(1):
+        for x in range(20):
             pos = (randint(0, size[0]), randint(0, size[1]))
             self.create_asteroid(pos)
 

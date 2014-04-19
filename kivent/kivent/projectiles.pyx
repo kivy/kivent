@@ -211,19 +211,19 @@ class ProjectileSystem(GameSystem):
             'accel': 25000, 'texture': 'bullet-6px', 
             'type': 'bullet'}
         projectiles_dict['14px_rocket'] = {
-            'width': 14, 'height': 28, 'mass': 75, 
+            'width': 28, 'height': 14, 'mass': 75, 
             'vel_limit': 260, 'ang_vel_limit': 60, 
             'damage': 25, 'cooldown': 1.0,
             'accel': 40000, 'texture': 'rocket-14px', 
             'type': 'rocket'}
         projectiles_dict['8px_rocket'] = {
-            'width': 8, 'height': 20, 'mass': 60, 
+            'width': 20, 'height': 8, 'mass': 60, 
             'vel_limit': 260, 'ang_vel_limit': 60, 
             'damage': 18, 'cooldown': .9,
             'accel': 25000, 'texture': 'rocket-8px', 
             'type': 'rocket'}
         projectiles_dict['6px_rocket'] = {
-            'width': 6, 'height': 14, 'mass': 50, 
+            'width': 14, 'height': 6, 'mass': 50, 
             'vel_limit': 260, 'ang_vel_limit': 60, 
             'damage': 11, 'cooldown': .8,
             'accel': 25000, 'texture': 'rocket-6px', 

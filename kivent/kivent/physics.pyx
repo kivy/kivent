@@ -342,7 +342,7 @@ class CymunkPhysics(GameSystem):
             body = system_data._body
             position = entity.position
             rotate = entity.rotate
-            rotate._r = body.angle - M_PI_2
+            rotate._r = body.angle
             p_position = body.position
             position._x = p_position.x
             position._y = p_position.y

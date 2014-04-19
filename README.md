@@ -7,6 +7,8 @@ Documentation: http://www.kivent.org/docs
 Warning Tutorials Out Dated! Will Fix Soon.
 Update: 2_basic_app tutorial and sample_application up to date. 04/10/14
 
+Tutorial 3 now function, tutorial 4 partially finished. 04/17/14
+
 KivEnt is an Entity Based Game Engine for Kivy
 https://github.com/Kovak/KivEnt/wiki/An-Introduction-to-KivEnt
 

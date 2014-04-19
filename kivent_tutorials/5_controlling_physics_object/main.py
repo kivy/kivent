@@ -39,9 +39,9 @@ class ControlSystem(GameSystem):
             (0, 0))
         gear = GearJoint(control_body, parent_body,
             0.0, 1.0)
-        gear.max_bias = .8
-        gear.max_force = 50000.0
-        gear.error_bias = 0
+        gear.max_bias = 10.0 #Controls turning speed
+        gear.max_force = 750000.0#stronger force needed for faster turning stability
+        gear.error_bias = 0.
         pivot.max_force = 10000.0
         pivot.max_bias = 0.0
         pivot.error_bias = 0
@@ -71,18 +71,19 @@ class ControlSystem(GameSystem):
             ad = degrees(parent_angle)
             v2 = target_delta = Vector(target_pos) - Vector(parent_pos)
             turn = v1[0]*v2[0] + v1[1]*v2[1], v1[1]*v2[0] - v1[0]*v2[1]
-            ent_body.angle = parent_angle - atan2(turn[1], turn[0])
-            
+            amount_to_turn = atan2(turn[1], turn[0])
+            difference = parent_angle - amount_to_turn
+            ent_body.angle = difference
+            print amount_to_turn
             if Vector(target_pos).distance(parent_pos) <= 30.0:
-                print 'here'
+                velocity_rot = (0, 0)
+            elif amount_to_turn <= -1.3 or amount_to_turn >= 1.3:
                 velocity_rot = (0, 0)
             else:
-                direction =  Vector(target_pos).dot(v1)
 
-
-                velocity_rot = self.rotate_vector(v1, (90, 0))
+                velocity_rot = self.rotate_vector(v1, (250, 0)) # Controls the speed of object
             ent_body.velocity = velocity_rot
-            print velocity_rot
+
 
     def rotate_vector(self, v1, v2):
         return (v1[0]*v2[0] - v1[1]*v2[1], v1[0]*v2[1] + v1[1]*v2[0])
@@ -142,8 +143,8 @@ class TestGame(Widget):
             'velocity': (x_vel, y_vel), 
             'position': pos, 'angle': angle, 
             'angular_velocity': angular_velocity, 
-            'vel_limit': 250, 
-            'ang_vel_limit': radians(200), 
+            'vel_limit': 750, 
+            'ang_vel_limit': radians(900), 
             'mass': 50, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component, 
             'physics_renderer': {'texture': 'ship7', 'size': (96 , 88)}, 

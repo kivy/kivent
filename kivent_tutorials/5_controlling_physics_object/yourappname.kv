@@ -21,12 +21,6 @@ TestGame:
             pos: root.pos
             do_scroll: False
             size: root.size
-        ControlSystem:
-            system_id: 'control'
-            gameworld: gameworld
-            pos: root.pos
-            size: root.size
-            updateable: True
         GameMap:
             system_id: 'map'
             map_size: root.size
@@ -45,9 +39,13 @@ TestGame:
             atlas: 'foreground_objects'
             physics_system: 'physics'
         CymunkPhysics:
-            gameworld: root.gameworld
+            gameworld: gameworld
             system_id: 'physics'
             viewport: 'gameview'
+        SteeringSystem:
+            physics_system: 'physics'
+            system_id: 'steering'
+            gameworld: gameworld
     GameScreenManager:
         id: gamescreenmanager
         size: root.size

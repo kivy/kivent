@@ -1,15 +1,8 @@
 
 from cymunk cimport (GearJoint, PivotJoint, Vec2d, cpVect, cpv,
-    cpFloat, cpBool)
+    cpFloat, cpBool, cpvunrotate, cpvrotate, cpvdot, cpvsub, cpvnear)
 
 from libc.math cimport atan2
-
-cdef extern from "chipmunk/chipmunk.h":
-    cpVect cpvunrotate(const cpVect v1, const cpVect v2)
-    cpVect cpvrotate(const cpVect v1, const cpVect v2)
-    cpFloat cpvdot(const cpVect v1, const cpVect v2)
-    cpVect cpvsub(const cpVect v1, const cpVect v2)
-    cpBool cpvnear(const cpVect v1, const cpVect v2, const cpFloat dist)
 
 
 cdef class SteeringComponent: 

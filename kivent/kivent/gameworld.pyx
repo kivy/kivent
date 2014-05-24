@@ -130,7 +130,12 @@ class GameWorld(Widget):
         in the order that they are listed. This allows control over the 
         arrangement of rendering layers. Later systems will be rendered on top
         of earlier.'''
-        state_dict = self.states[value]
+        try:
+            state_dict = self.states[value]
+        except KeyError: 
+            self.state = 'initial'
+            print('State does not exist, resetting to initial')
+            return
         gamescreenmanager = self.gamescreenmanager
         gamescreenmanager.state = value
         systems = self.systems

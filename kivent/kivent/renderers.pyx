@@ -110,7 +110,7 @@ class StaticVertMeshRenderer(GameSystem):
         cmesh.flag_update()
         vert_comp._cmesh = cmesh
 
-    def remove_vert_mesh(Self, VertMeshComponent vert_comp):
+    def remove_vert_mesh(self, VertMeshComponent vert_comp):
         cdef CMesh cmesh = vert_comp._cmesh
         self.canvas.remove(cmesh)
         vert_comp._cmesh = None

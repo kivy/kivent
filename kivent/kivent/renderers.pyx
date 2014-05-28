@@ -10,6 +10,123 @@ from kivy.graphics.transformation import Matrix
 import json
 
 
+cdef class VertMeshComponent:
+    cdef bool _do_texture
+    cdef str _texture
+    cdef VertMesh _vert_mesh
+    cdef CMesh _cmesh
+
+    def __cinit__(self, int vert_data_count, int vert_count, list vertices,
+        int tri_count, list triangles, bool do_texture, str texture):
+        self._do_texture = do_texture
+        self._texture = texture
+        self._vert_mesh = VertMesh(vert_data_count, vert_count, vertices,
+            tri_count, triangles)
+
+class StaticVertMeshRenderer(GameSystem):
+    vertex_data_count = NumericProperty(4)
+
+    def __init__(self, **kwargs):
+        self.canvas = RenderContext(use_parent_projection=True)
+        if 'shader_source' in kwargs:
+            self.canvas.shader.source = kwargs.get('shader_source')
+        super(StaticVertMeshRenderer, self).__init__(**kwargs)
+        #self.redraw = Clock.create_trigger(self.trigger_redraw)
+        self.vertex_format = self.calculate_vertex_format()
+
+    def on_vertex_data_count(self, instance, value):
+        self.vertex_format = self.calculate_vertex_format()
+
+    def calculate_vertex_format(self):
+        '''Function used internally to calculate the vertex_format'''
+        cdef int vertex_data_count = self.vertex_data_count
+        vertex_format = [
+            ('v0', 1, 'float'),
+            ('v1', 1, 'float'),
+            ('v2', 1, 'float'),
+            ('v3', 1, 'float'),
+            ]
+        ve = vertex_format.extend
+        if vertex_data_count > 4:
+            ve([
+                ('v4', 1, 'float'),
+                ('v5', 1, 'float'),
+                ('v6', 1, 'float'),
+                ('v7', 1, 'float'),
+                ])
+        if vertex_data_count > 8:
+            ve([
+                ('v8', 1, 'float'),
+                ('v9', 1, 'float'),
+                ('v10', 1, 'float'),
+                ('v11', 1, 'float'),
+                ])
+        if vertex_data_count > 12:
+            ve([
+                ('v12', 1, 'float'),
+                ('v13', 1, 'float'),
+                ('v14', 1, 'float'),
+                ('v15', 1, 'float'),
+                ])
+
+        return vertex_format
+
+    def create_component(self, object entity, args):
+        super(StaticVertMeshRenderer, self).create_component(
+            entity, args)
+
+    def generate_component(self, dict entity_component_dict):
+        cdef int vert_data_count = entity_component_dict['vert_data_count']
+        cdef int vert_count = entity_component_dict['vert_count']
+        cdef list vertices = entity_component_dict['vertices']
+        cdef int tri_count = entity_component_dict['tri_count']
+        cdef list triangles = entity_component_dict['triangles']
+        cdef bool do_texture = entity_component_dict['do_texture']
+        cdef str texture = entity_component_dict['texture']
+        cdef VertMeshComponent new_component
+        texture = entity_component_dict['texture']
+        size = entity_component_dict['size']
+        new_component = VertMeshComponent.__new__(VertMeshComponent, 
+            vert_data_count, vert_count, vertices,
+            tri_count, triangles, do_texture, texture)
+        
+        self.draw_vert_mesh(new_component)
+        return new_component
+
+    def draw_vert_mesh(self, VertMeshComponent vert_comp):
+        cdef CMesh cmesh
+        cdef VertMesh vert_mesh = vert_comp._vert_mesh
+        vert_mesh.generate_gl_verts()
+        vert_mesh.generate_gl_indices()
+        with self.canvas:
+            cmesh = CMesh(fmt=self.vertex_format,
+                mode='triangles')
+        if vert_comp._do_texture:
+            cmesh.texture = vert_comp._texture
+        cmesh._vertices = vert_mesh._gl_verts
+        cmesh._indices = vert_mesh._gl_indices
+        cmesh.vcount = vert_mesh.vert_count
+        cmesh.icount = vert_mesh.tri_count * 3
+        cmesh.flag_update()
+        vert_comp._cmesh = cmesh
+
+    def remove_vert_mesh(Self, VertMeshComponent vert_comp):
+        cdef CMesh cmesh = vert_comp._cmesh
+        self.canvas.remove(cmesh)
+        vert_comp._cmesh = None
+
+    def remove_entity(self, int entity_id):
+        cdef object gameworld = self.gameworld
+        cdef list entities = gameworld.entities
+        cdef str system_id = self.system_id
+        cdef object entity = entities[entity_id]
+        cdef VertMeshComponent vert_comp = getattr(entity, system_id)
+        self.remove_vert_mesh(vert_comp)
+        super(StaticVertMeshRenderer, self).remove_entity(entity_id)
+
+
+
+
 cdef class RenderComponent:
     cdef bool _render
     cdef bool _on_screen

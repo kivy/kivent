@@ -72,7 +72,6 @@ class StaticVertMeshRenderer(GameSystem):
                 ('v14', 1, 'float'),
                 ('v15', 1, 'float'),
                 ])
-        print vertex_format
         return vertex_format
 
     def create_component(self, object entity, args):
@@ -91,7 +90,6 @@ class StaticVertMeshRenderer(GameSystem):
         new_component = VertMeshComponent.__new__(VertMeshComponent, 
             vert_data_count, vert_count, vertices,
             tri_count, triangles, do_texture, texture)
-        print new_component
         self.draw_vert_mesh(new_component)
         return new_component
 
@@ -107,7 +105,6 @@ class StaticVertMeshRenderer(GameSystem):
             cmesh.texture = vert_comp._texture
         cmesh._vertices = vert_mesh._gl_verts
         cmesh._indices = vert_mesh._gl_indices
-        print vert_mesh.vert_count, vert_mesh.tri_count
         cmesh.vcount = vert_mesh.vert_count * vert_mesh._real_count
         cmesh.icount = vert_mesh.tri_count * 3
         cmesh.flag_update()

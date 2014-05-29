@@ -22,7 +22,6 @@ cdef struct Vertex16:
 
 cdef inline Triangle triangle_from_tuple(tuple triangle_data):
     cdef Triangle tri
-    print triangle_data
     tri.a = triangle_data[0]
     tri.b = triangle_data[1]
     tri.c = triangle_data[2]
@@ -215,11 +214,7 @@ cdef class VertMesh:
             i = a * 3
             gl_indices[i] = tri.a
             gl_indices[i+1] = tri.b
-            gl_indices[i+2] = tri.c
-        cdef int x
-        print 'IN GET TRIANLGE INDICES'
-        for x in range(tri_count*3):
-            print gl_indices[x]
+            gl_indices[i+2] = tri.cg
         return gl_indices
 
     cdef float* get_vert4_float_array(self):

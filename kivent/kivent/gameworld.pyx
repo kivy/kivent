@@ -209,6 +209,8 @@ class GameWorld(Widget):
 
         This function immediately removes an entity from the gameworld.
         '''
+        if entity_id in self.deactivated_entities:
+            return
         cdef object entity = self.entities[entity_id]
         cdef list components_to_delete = []
         cdef dict systems = self.systems

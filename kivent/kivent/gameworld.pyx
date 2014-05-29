@@ -261,6 +261,7 @@ class GameWorld(Widget):
         contained inside GameView instead'''
         camera_pos = viewport.camera_pos
         camera_size = viewport.size
+        print camera_pos, camera_size
         proj = self.matrix.view_clip(
             -camera_pos[0], camera_size[0] + -camera_pos[0], 
             -camera_pos[1], camera_size[1] + -camera_pos[1], 0., 100, 0)

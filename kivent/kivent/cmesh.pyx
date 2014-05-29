@@ -34,6 +34,9 @@ cdef class CMesh(VertexInstruction):
         cdef long vcount = self.vcount
         cdef vsize = batch.vbo.vertex_format.vsize
         cdef long icount = self.icount
+        print('CMESH DATA')
+        for i in range(icount):
+            print indices[i]
         batch.set_data(vertices, <int>(vcount / vsize), indices, <int>icount)
 
 

@@ -1,0 +1,46 @@
+#:kivy 1.8.0
+
+TestGame:
+
+<TestGame>:
+    gameworld: gameworld
+    GameWorld:
+        id: gameworld
+        gamescreenmanager: gamescreenmanager
+        PositionSystem:
+            system_id: 'position'
+            gameworld: gameworld
+        GameView:
+            system_id: 'gameview'
+            focus_entity: False
+            updateable: False
+            gameworld: gameworld
+            pos: root.pos
+            size: root.size
+        GameMap:
+            system_id: 'map'
+            map_size: root.size
+            gameworld: gameworld
+        StaticVertMeshRenderer:
+            gameworld: gameworld
+            system_id: 'renderer'
+            shader_source: 'assets/shaders/poscolorshader.glsl'
+            vertex_data_count: 6
+        BackgroundGenerator:
+            system_id: 'backgrounds'
+            gameworld: gameworld
+            updateable: False
+    GameScreenManager:
+        id: gamescreenmanager
+        size: root.size
+        pos: root.pos
+        gameworld: gameworld
+
+<GameScreenManager>:
+    MainScreen:
+        id: main_screen
+
+<MainScreen@GameScreen>:
+    name: 'main'
+    FloatLayout:
+

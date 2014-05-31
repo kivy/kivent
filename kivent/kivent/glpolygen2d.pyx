@@ -124,8 +124,7 @@ cdef class VertMesh:
         def __get__(self):
             return self.load_verts
 
-    def __cinit__(self, int vert_data_count, int vert_count, list vertices, 
-        int tri_count, list triangles):
+    def __cinit__(self, int vert_data_count, int vert_count, int tri_count):
         cdef void* vert_ptr
         cdef Triangle* triangles_ptr
         if vert_data_count <= 4:
@@ -155,8 +154,7 @@ cdef class VertMesh:
         self.tri_count = tri_count
         self._triangles = triangles_ptr = <Triangle*>calloc(
             tri_count, sizeof(Triangle))
-        self._load_verts(vertices, vert_count)
-        self.load_triangles(triangles, tri_count)
+        
 
         if not vert_ptr or not triangles_ptr:
             raise MemoryError()
@@ -178,6 +176,91 @@ cdef class VertMesh:
         if gl_indices != NULL:
             free(gl_indices)
             gl_indices = NULL
+
+    cdef copy_from_existing(self, VertMesh vert_mesh):
+        self.copy_verts(vert_mesh)
+        self.copy_indices(vert_mesh)
+
+    cdef copy_indices(self, VertMesh vert_mesh):
+        cdef void* triangles = <void*>self._triangles
+        cdef void* triangles_to_copy = <void*>vert_mesh._triangles
+        memcpy(triangles, triangles_to_copy, sizeof(Triangle)*self.tri_count)
+
+    cdef copy_verts(self, VertMesh vert_mesh):
+        cdef void* verts = self._vertices
+        cdef void* to_copy_verts = vert_mesh._vertices
+        cdef int data_count = self._real_count
+        if data_count == 4:
+            memcpy(verts, to_copy_verts, sizeof(Vertex4)*self.vert_count)
+        elif data_count == 8:
+            memcpy(verts, to_copy_verts, sizeof(Vertex8)*self.vert_count)
+        elif data_count == 12:
+            memcpy(verts, to_copy_verts, sizeof(Vertex12)*self.vert_count)
+        elif data_count == 16:
+            memcpy(verts, to_copy_verts, sizeof(Vertex16)*self.vert_count)
+
+    def offset_mesh(self, tuple offset):
+        cdef float x = offset[0]
+        cdef float y = offset[1]
+        cdef int vert_data_count = self.vert_data_count
+        if vert_data_count <= 4:
+            self.offset_mesh_vert4(x, y)
+        elif vert_data_count <= 8:
+            self.offset_mesh_vert8(x, y)
+        elif vert_data_count <= 12:
+            self.offset_mesh_vert12(x, y)
+        else:
+            self.offset_mesh_vert16(x, y)
+
+
+    cdef offset_mesh_vert4(self, float x, float y):
+        cdef Vertex4* verts = <Vertex4*>self._vertices
+        cdef int vert_count = self.vert_count
+        cdef int i
+        cdef Vertex4 vert
+        for i in range(vert_count):
+            vert = verts[i]
+            vert.v0 = vert.v0 + x
+            vert.v1 = vert.v1 + y
+            verts[i] = vert
+
+    cdef offset_mesh_vert8(self, float x, float y):
+        cdef Vertex8* verts = <Vertex8*>self._vertices
+        cdef int vert_count = self.vert_count
+        cdef int i
+        cdef Vertex8 vert
+        for i in range(vert_count):
+            vert = verts[i]
+            vert.v0 = vert.v0 + x
+            vert.v1 = vert.v1 + y
+            verts[i] = vert
+
+    cdef offset_mesh_vert12(self, float x, float y):
+        cdef Vertex12* verts = <Vertex12*>self._vertices
+        cdef int vert_count = self.vert_count
+        cdef int i
+        cdef Vertex12 vert
+        for i in range(vert_count):
+            vert = verts[i]
+            vert.v0 = vert.v0 + x
+            vert.v1 = vert.v1 + y
+            verts[i] = vert
+
+    cdef offset_mesh_vert16(self, float x, float y):
+        cdef Vertex16* verts = <Vertex16*>self._vertices
+        cdef int vert_count = self.vert_count
+        cdef int i
+        cdef Vertex16 vert
+        for i in range(vert_count):
+            vert = verts[i]
+            vert.v0 = vert.v0 + x
+            vert.v1 = vert.v1 + y
+            verts[i] = vert
+
+
+    def load_from_python(self, list vertices, list triangles):
+        self._load_verts(vertices, self.vert_count)
+        self.load_triangles(triangles, self.tri_count)
 
     def generate_gl_verts(self):
         cdef int vert_data_count = self.vert_data_count
@@ -214,7 +297,7 @@ cdef class VertMesh:
             i = a * 3
             gl_indices[i] = tri.a
             gl_indices[i+1] = tri.b
-            gl_indices[i+2] = tri.cg
+            gl_indices[i+2] = tri.c
         return gl_indices
 
     cdef float* get_vert4_float_array(self):
@@ -240,7 +323,6 @@ cdef class VertMesh:
         cdef float* gl_verts = <float*>calloc(vert_count*8, sizeof(float))
         cdef int a
         cdef int i
-        cdef int x
         for a in range(vert_count):
             i = a * 8
             vert = vert_data[a]

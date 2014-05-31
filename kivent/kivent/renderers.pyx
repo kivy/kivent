@@ -16,12 +16,32 @@ cdef class VertMeshComponent:
     cdef VertMesh _vert_mesh
     cdef CMesh _cmesh
 
-    def __cinit__(self, int vert_data_count, int vert_count, list vertices,
-        int tri_count, list triangles, bool do_texture, str texture):
+    def __cinit__(self, int vert_data_count, int vert_count, 
+        int tri_count, VertMesh vert_mesh=None, list vertices=None, 
+        list triangles=None, bool do_texture=False, str texture=None,
+        tuple offset=None):
         self._do_texture = do_texture
         self._texture = texture
-        self._vert_mesh = VertMesh(vert_data_count, vert_count, vertices,
-            tri_count, triangles)
+        self._vert_mesh = vertm = VertMesh(
+            vert_data_count, vert_count, tri_count)
+        if vert_mesh is not None:
+            vertm.copy_from_existing(vert_mesh)
+        elif triangles is not None and vertices is not None:
+            vertm.load_from_python(vertices, triangles)
+        if offset is not None:
+            vertm.offset_mesh(offset)
+
+    property vert_mesh:
+        def __get__(self):
+            return self._vert_mesh
+
+    property tri_count:
+        def __get__(self):
+            return self._vert_mesh.tri_count
+
+    property vert_count:
+        def __get__(self):
+            return self._vert_mesh.vert_count
 
 class StaticVertMeshRenderer(GameSystem):
     vertex_data_count = NumericProperty(4)
@@ -81,17 +101,47 @@ class StaticVertMeshRenderer(GameSystem):
     def generate_component(self, dict entity_component_dict):
         cdef int vert_data_count = entity_component_dict['vert_data_count']
         cdef int vert_count = entity_component_dict['vert_count']
-        cdef list vertices = entity_component_dict['vertices']
         cdef int tri_count = entity_component_dict['tri_count']
-        cdef list triangles = entity_component_dict['triangles']
-        cdef bool do_texture = entity_component_dict['do_texture']
-        cdef str texture = entity_component_dict['texture']
+        cdef list vertices 
+        cdef list triangles
+        cdef bool do_texture
+        cdef str texture
+        cdef tuple offset
+        cdef dict kwargs = {}
+        cdef VertMesh vert_mesh
+        if 'triangles' in entity_component_dict and (
+            'vertices' in entity_component_dict):
+            triangles = entity_component_dict['triangles']
+            vertices = entity_component_dict['vertices']
+            kwargs['vertices'] = vertices
+            kwargs['triangles'] = triangles
+        elif 'vert_mesh' in entity_component_dict:
+            vert_mesh = entity_component_dict['vert_mesh']
+            kwargs['vert_mesh'] = vert_mesh
+        if 'do_texture' in entity_component_dict:
+            do_texture = entity_component_dict['do_texture']
+            kwargs['do_texture'] = do_texture
+        if 'texture' in entity_component_dict:
+            texture = entity_component_dict['texture']
+            kwargs['texture'] = texture
+        if 'offset' in entity_component_dict:
+            offset = entity_component_dict['offset']
+            kwargs['offset'] = offset
         cdef VertMeshComponent new_component
         new_component = VertMeshComponent.__new__(VertMeshComponent, 
-            vert_data_count, vert_count, vertices,
-            tri_count, triangles, do_texture, texture)
+            vert_data_count, vert_count, tri_count, **kwargs)
+        
         self.draw_vert_mesh(new_component)
         return new_component
+
+    def redraw_entity(self, int entity_id):
+        cdef object gameworld = self.gameworld
+        cdef list entities = gameworld.entities
+        cdef str system_id = self.system_id
+        cdef object entity = entities[entity_id]
+        cdef VertMeshComponent vert_comp = getattr(entity, system_id)
+        self.remove_vert_mesh(vert_comp)
+        self.draw_vert_mesh(vert_comp)
 
     def draw_vert_mesh(self, VertMeshComponent vert_comp):
         cdef CMesh cmesh

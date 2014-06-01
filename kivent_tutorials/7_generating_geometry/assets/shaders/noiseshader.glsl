@@ -79,8 +79,14 @@ float snoise(vec2 v)
 varying vec4 frag_color;
 
 /* vertex attributes */
-attribute vec2     vPosition;
-attribute vec4     vColor;
+attribute float     v0;
+attribute float     v1;
+attribute float     v2;
+attribute float     v3;
+attribute float     v4;
+attribute float     v5;
+attribute float     v6;
+attribute float     v7;
 
 /* uniform variables */
 uniform mat4       modelview_mat;
@@ -115,12 +121,10 @@ vec4 getcolor(float n) {
 
 void main (void) {
   
-  float r = vColor.r;
-  if (r == -1.)
-    frag_color = getcolor(sumnoiseoctaves(vPosition.xy, 6, .1, .0002));
-  else
-    frag_color = vColor;
-  gl_Position = projection_mat * modelview_mat * vec4(vPosition.xy, 0.0, 1.0);
+
+  frag_color = getcolor(sumnoiseoctaves(vec2(v0, v1), int(v2), v3, v4));
+
+  gl_Position = projection_mat * modelview_mat * vec4(v0, v1, 0.0, 1.0);
 
 }
 

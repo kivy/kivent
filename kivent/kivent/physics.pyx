@@ -237,7 +237,6 @@ class CymunkPhysics(GameSystem):
         cdef list shapes
         cdef Shape new_shape
         space = self.space
-        print('polylen')
         moment = 0
         for a_shape in cshapes:
             if a_shape['shape_type'] == 'circle':

@@ -230,26 +230,31 @@ class CymunkPhysics(GameSystem):
 
         '''
         cdef dict shape = entity_component_dict['col_shapes'][0]
+        cdef list cshapes = entity_component_dict['col_shapes']
         cdef float moment
         cdef Body body
         cdef Space space
         cdef list shapes
         cdef Shape new_shape
         space = self.space
-
-        if shape['shape_type'] == 'circle':
-            moment = cymunk.moment_for_circle(
-                shape['shape_info']['mass'], 
-                shape['shape_info']['inner_radius'], 
-                shape['shape_info']['outer_radius'], 
-                shape['shape_info']['offset'])
-        elif shape['shape_type'] == 'box':
-            moment = cymunk.moment_for_box(
-                shape['shape_info']['mass'], 
-                shape['shape_info']['width'], 
-                shape['shape_info']['height'])
-        else:
-            print 'error: shape ', shape['shape_type'], 'not supported'
+        print('polylen')
+        moment = 0
+        for a_shape in cshapes:
+            if a_shape['shape_type'] == 'circle':
+                moment += cymunk.moment_for_circle(
+                    a_shape['shape_info']['mass'], 
+                    a_shape['shape_info']['inner_radius'], 
+                    a_shape['shape_info']['outer_radius'], 
+                    a_shape['shape_info']['offset'])
+            elif a_shape['shape_type'] == 'box':
+                moment += cymunk.moment_for_box(
+                    a_shape['shape_info']['mass'], 
+                    a_shape['shape_info']['width'], 
+                    a_shape['shape_info']['height'])
+            elif a_shape['shape_type'] == 'poly':
+                moment += 10 #TODO add moment for poly to cymunk?
+            else:
+                print 'error: shape ', a_shape['shape_type'], 'not supported'
         if entity_component_dict['mass'] == 0:
             body = Body(None, None)
         else:

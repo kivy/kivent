@@ -239,19 +239,24 @@ class CymunkPhysics(GameSystem):
         space = self.space
         moment = 0
         for a_shape in cshapes:
+            shape_info = a_shape['shape_info']
             if a_shape['shape_type'] == 'circle':
                 moment += cymunk.moment_for_circle(
-                    a_shape['shape_info']['mass'], 
-                    a_shape['shape_info']['inner_radius'], 
-                    a_shape['shape_info']['outer_radius'], 
-                    a_shape['shape_info']['offset'])
+                    shape_info['mass'], 
+                    shape_info['inner_radius'], 
+                    shape_info['outer_radius'], 
+                    shape_info['offset'])
             elif a_shape['shape_type'] == 'box':
                 moment += cymunk.moment_for_box(
-                    a_shape['shape_info']['mass'], 
-                    a_shape['shape_info']['width'], 
-                    a_shape['shape_info']['height'])
+                    shape_info['mass'], 
+                    shape_info['width'], 
+                    shape_info['height'])
             elif a_shape['shape_type'] == 'poly':
-                moment += 10 #TODO add moment for poly to cymunk?
+                moment += cymunk.moment_for_poly(
+                    shape_info['mass'], 
+                    shape_info['vertices'], 
+                    shape_info['offset'])
+                    
             else:
                 print 'error: shape ', a_shape['shape_type'], 'not supported'
         if entity_component_dict['mass'] == 0:

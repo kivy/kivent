@@ -12,7 +12,8 @@ import json
 
 cdef class VertMeshComponent:
     cdef bool _do_texture
-    cdef str _texture
+    cdef object _texture
+    cdef str _tex_name
     cdef VertMesh _vert_mesh
     cdef CMesh _cmesh
 
@@ -21,7 +22,11 @@ cdef class VertMeshComponent:
         list triangles=None, bool do_texture=False, str texture=None,
         tuple offset=None):
         self._do_texture = do_texture
-        self._texture = texture
+        self._tex_name = texture
+        if texture is not None:
+            self._texture = CoreImage(texture).texture
+        else:
+            self._texture = None
         self._vert_mesh = vertm = VertMesh(
             vert_data_count, vert_count, tri_count)
         if vert_mesh is not None:
@@ -30,6 +35,17 @@ cdef class VertMeshComponent:
             vertm.load_from_python(vertices, triangles)
         if offset is not None:
             vertm.offset_mesh(offset)
+
+    property texture_name:
+        def __get__(self):
+            return self._tex_name
+        def __set__(self, str name):
+            self._tex_name = name
+            if name is not None:
+                self._texture = CoreImage(name).texture
+            else:
+                self._texture = None
+
 
     property vert_mesh:
         def __get__(self):
@@ -52,7 +68,7 @@ class StaticVertMeshRenderer(GameSystem):
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
         super(StaticVertMeshRenderer, self).__init__(**kwargs)
-        #self.redraw = Clock.create_trigger(self.trigger_redraw)
+        self.redraw = Clock.create_trigger(self.trigger_redraw)
         self.vertex_format = self.calculate_vertex_format()
 
     def on_shader_source(self, instance, value):
@@ -60,6 +76,13 @@ class StaticVertMeshRenderer(GameSystem):
 
     def on_vertex_data_count(self, instance, value):
         self.vertex_format = self.calculate_vertex_format()
+
+    def trigger_redraw(self, dt):
+        cdef list entity_ids = self.entity_ids
+        cdef int entity_id
+        cdef object redraw_entity = self.redraw_entity
+        for entity_id in entity_ids:
+            self.redraw_entity(entity_id)
 
     def calculate_vertex_format(self):
         '''Function used internally to calculate the vertex_format'''
@@ -152,7 +175,7 @@ class StaticVertMeshRenderer(GameSystem):
             cmesh = CMesh(fmt=self.vertex_format,
                 mode='triangles')
         if vert_comp._do_texture:
-            cmesh.texture = vert_comp._texture
+            cmesh.source = vert_comp._texture
         cmesh._vertices = vert_mesh._gl_verts
         cmesh._indices = vert_mesh._gl_indices
         cmesh.vcount = vert_mesh.vert_count * vert_mesh._real_count

@@ -12,8 +12,7 @@ import json
 
 cdef class VertMeshComponent:
     cdef bool _do_texture
-    cdef object _texture
-    cdef str _tex_name
+    cdef str _texture
     cdef VertMesh _vert_mesh
     cdef CMesh _cmesh
 
@@ -22,11 +21,8 @@ cdef class VertMeshComponent:
         list triangles=None, bool do_texture=False, str texture=None,
         tuple offset=None):
         self._do_texture = do_texture
-        self._tex_name = texture
-        if texture is not None:
-            self._texture = CoreImage(texture).texture
-        else:
-            self._texture = None
+        self._texture = texture
+
         self._vert_mesh = vertm = VertMesh(
             vert_data_count, vert_count, tri_count)
         if vert_mesh is not None:
@@ -36,16 +32,17 @@ cdef class VertMeshComponent:
         if offset is not None:
             vertm.offset_mesh(offset)
 
-    property texture_name:
+    property texture:
         def __get__(self):
-            return self._tex_name
+            return self._texture
         def __set__(self, str name):
-            self._tex_name = name
-            if name is not None:
-                self._texture = CoreImage(name).texture
-            else:
-                self._texture = None
+            self._texture = name
 
+    property do_texture:
+        def __get__(self):
+            return self._do_texture
+        def __set__(self, bool value):
+            self._do_texture = value
 
     property vert_mesh:
         def __get__(self):

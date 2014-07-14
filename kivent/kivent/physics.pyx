@@ -282,16 +282,15 @@ class CymunkPhysics(GameSystem):
             shape_info = shape['shape_info']
             if shape['shape_type'] == 'circle':
                 new_shape = Circle(body, shape_info['outer_radius']) 
-                new_shape.friction = shape['friction']
             elif shape['shape_type'] == 'box':
                 new_shape = BoxShape(
                     body, shape_info['width'], shape_info['height'])
-                new_shape.friction = shape['friction']
             elif shape['shape_type'] == 'poly':
                 new_shape = Poly(body, shape_info['vertices'], 
                     offset=shape_info['offset'])
             else:
                 print 'shape not created'
+            new_shape.friction = shape['friction']
             new_shape.elasticity = shape['elasticity']
             new_shape.collision_type = shape['collision_type']
             shapes.append(new_shape)

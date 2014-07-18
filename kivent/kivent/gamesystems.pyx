@@ -115,7 +115,7 @@ class GameSystem(Widget):
         **gameworld** (ObjectProperty): Reference to the gameworld object, 
         usually bound in kv
 
-        **viewport** (StringProperty): Name of the GameView this system will 
+        **gameview** (StringProperty): Name of the GameView this system will 
         be rendered too.
 
         **update_time** (NumericProperty): The 'tick' rate of this system's 
@@ -130,7 +130,7 @@ class GameSystem(Widget):
     updateable = BooleanProperty(False)
     paused = BooleanProperty(False)
     gameworld = ObjectProperty(None)
-    viewport = StringProperty('default_gameview')
+    gameview = StringProperty(None, allownone=True)
     update_time = NumericProperty(1./60.)
 
 
@@ -387,6 +387,41 @@ class GameView(GameSystem):
     updateable = BooleanProperty(True)
     camera_speed_multiplier = NumericProperty(1.0)
 
+    def __init__(self, **kwargs):
+        super(GameView, self).__init__(**kwargs)
+        self.matrix = Matrix()
+
+    def update_render_state(self):
+        '''
+        Args:
+            viewport (object): A reference to the GameView calling this
+            update
+
+        **Messy: Will probably change in the future** 
+        Used internally by gameview to update GameWorld canvas, this 
+        needs a better architecture in the future as this info should be 
+        contained inside GameView instead'''
+        camera_pos = self.camera_pos
+        camera_size = self.size
+        proj = self.matrix.view_clip(
+            -camera_pos[0], camera_size[0] + -camera_pos[0], 
+            -camera_pos[1], camera_size[1] + -camera_pos[1], 0., 100, 0)
+        self.canvas['projection_mat'] = proj
+
+    def add_widget(self, widget):
+        gameworld = self.gameworld
+        systems = gameworld.systems
+        if isinstance(widget, GameSystem):
+            if widget.system_id not in systems:
+                Clock.schedule_once(partial(gameworld.add_system, widget))
+        super(GameView, self).add_widget(widget)
+
+    def remove_widget(self, widget):
+        if isinstance(widget, GameSystem):
+            widget.on_remove_system()
+        super(GameView, self).remove_widget(widget)
+
+
     def on_entity_to_focus(self, instance, value):
         if value ==  None:
             self.focus_entity = False
@@ -414,7 +449,7 @@ class GameView(GameSystem):
                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
             self.camera_pos[0] += dist_x*camera_speed_multiplier*dt
             self.camera_pos[1] += dist_y*camera_speed_multiplier*dt
-        gameworld.update_render_state(self)
+        self.update_render_state()
 
     def on_size(self, instance, value):
         if self.do_scroll_lock and self.gameworld.currentmap:

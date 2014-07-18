@@ -51,8 +51,6 @@ class GameWorld(Widget):
         **currentmap** (ObjectProperty): Reference to the current GameMap 
         object
 
-        **viewport** (ObjectProperty): system_id of the current GameView
-
         **entities** (list): entities is a list of all entity objects, 
         entity_id corresponds to position in this list.
 
@@ -73,7 +71,6 @@ class GameWorld(Widget):
     number_entities = NumericProperty(1)
     gamescreenmanager = ObjectProperty(None)
     currentmap = ObjectProperty(None, allownone = True)
-    viewport = StringProperty('default_gameview')
  
     
     def __init__(self, **kwargs):
@@ -90,7 +87,7 @@ class GameWorld(Widget):
         self.deactivated_entities = []
         self.entities_to_remove = []
         self.systems = {}
-        self.matrix = Matrix()
+
 
     def add_state(self, state_name, systems_added, systems_removed, 
         systems_paused, systems_unpaused, screenmanager_screen):
@@ -251,22 +248,6 @@ class GameWorld(Widget):
                 system._update(dt)
         Clock.schedule_once(self.remove_entities)
 
-    def update_render_state(self, object viewport):
-        '''
-        Args:
-            viewport (object): A reference to the GameView calling this
-            update
-
-        **Messy: Will probably change in the future** 
-        Used internally by gameview to update GameWorld canvas, this 
-        needs a better architecture in the future as this info should be 
-        contained inside GameView instead'''
-        camera_pos = viewport.camera_pos
-        camera_size = viewport.size
-        proj = self.matrix.view_clip(
-            -camera_pos[0], camera_size[0] + -camera_pos[0], 
-            -camera_pos[1], camera_size[1] + -camera_pos[1], 0., 100, 0)
-        self.canvas['projection_mat'] = proj
 
     def remove_entities(self, dt):
         '''Used internally to remove entities as part of the update tick'''
@@ -303,11 +284,21 @@ class GameWorld(Widget):
         widget.on_add_system()
 
     def add_widget(self, widget):
-        if isinstance(widget, GameSystem) and widget.system_id not in self.systems:
-            Clock.schedule_once(partial(self.add_system, widget))
+        systems = self.systems
+        if isinstance(widget, GameSystem):
+            if widget.system_id not in systems:
+                Clock.schedule_once(partial(self.add_system, widget))
+            if widget.gameview is not None:
+                gameview = systems[widget.gameview]
+                gameview.add_widget(widget)
+                return
         super(GameWorld, self).add_widget(widget)
         
     def remove_widget(self, widget):
         if isinstance(widget, GameSystem):
+            if widget.gameview is not None:
+                gameview = self.systems[widget.gameview]
+                gameview.remove_widget(widget)
+                return
             widget.on_remove_system()
         super(GameWorld, self).remove_widget(widget)

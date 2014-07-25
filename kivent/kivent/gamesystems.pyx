@@ -364,6 +364,8 @@ class GameView(GameSystem):
         locked to the bounds of the GameWorld's currentmap.
 
         **camera_pos** (ListProperty): Current position of the camera
+        
+        **camera_scale** (ListProperty): Current scale of the camera
 
         **focus_entity** (BooleanProperty): If True the camera will follow the 
         entity set in entity_to_focus
@@ -381,6 +383,7 @@ class GameView(GameSystem):
     system_id = StringProperty('default_gameview')
     do_scroll_lock = BooleanProperty(True)
     camera_pos = ListProperty((0, 0))
+    camera_scale = NumericProperty(1.0)
     focus_entity = BooleanProperty(False)
     do_scroll = BooleanProperty(True)
     entity_to_focus = NumericProperty(None, allownone=True)
@@ -390,6 +393,7 @@ class GameView(GameSystem):
     def __init__(self, **kwargs):
         super(GameView, self).__init__(**kwargs)
         self.matrix = Matrix()
+        self.canvas = RenderContext()
 
     def update_render_state(self):
         '''
@@ -403,9 +407,10 @@ class GameView(GameSystem):
         contained inside GameView instead'''
         camera_pos = self.camera_pos
         camera_size = self.size
+        camera_scale = 1.0;#self.camera_scale
         proj = self.matrix.view_clip(
-            -camera_pos[0], camera_size[0] + -camera_pos[0], 
-            -camera_pos[1], camera_size[1] + -camera_pos[1], 0., 100, 0)
+            -camera_pos[0], camera_size[0]*camera_scale + -camera_pos[0], 
+            -camera_pos[1], camera_size[1]*camera_scale + -camera_pos[1], 0., 100, 0)
         self.canvas['projection_mat'] = proj
 
     def add_widget(self, widget):
@@ -456,7 +461,7 @@ class GameView(GameSystem):
             dist_x, dist_y = self.lock_scroll(0, 0)
             self.camera_pos[0] += dist_x
             self.camera_pos[1] += dist_y
-        self.gameworld.update_render_state(self)
+        self.update_render_state()
 
 
     def on_touch_move(self, touch):

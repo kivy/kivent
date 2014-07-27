@@ -407,7 +407,7 @@ class GameView(GameSystem):
         contained inside GameView instead'''
         camera_pos = self.camera_pos
         camera_size = self.size
-        camera_scale = 1.0;#self.camera_scale
+        camera_scale = self.camera_scale
         proj = self.matrix.view_clip(
             -camera_pos[0], camera_size[0]*camera_scale + -camera_pos[0], 
             -camera_pos[1], camera_size[1]*camera_scale + -camera_pos[1], 0., 100, 0)
@@ -447,7 +447,9 @@ class GameView(GameSystem):
             position_data = entity.position
             camera_pos = self.camera_pos
             camera_speed_multiplier = self.camera_speed_multiplier
-            size = self.size
+            camera_size = self.size
+            camera_scale = self.camera_scale
+            size = camera_size[0] * camera_scale, camera_size[1] * camera_scale 
             dist_x = -camera_pos[0] - position_data._x + size[0]*.5
             dist_y = -camera_pos[1] - position_data._y + size[1]*.5
             if self.do_scroll_lock:
@@ -476,8 +478,10 @@ class GameView(GameSystem):
 
     def lock_scroll(self, float distance_x, float distance_y):
         currentmap = self.gameworld.currentmap
-        size = self.size
+        camera_size = self.size
         pos = self.pos
+        scale = self.camera_scale
+        size = camera_size[0]*scale, camera_size[1]*scale
         map_size = currentmap.map_size
         margins = currentmap.margins
         camera_pos = self.camera_pos

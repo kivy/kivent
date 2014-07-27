@@ -161,7 +161,7 @@ class CymunkPhysics(GameSystem):
         '''Used internally to query entities on screen for a frame. Prefer to
         use on_screen_result to get this information as it caches this 
         information for performance'''
-        cdef object viewport = self.gameworld.systems[self.viewport]
+        cdef object viewport = self.gameworld.systems[self.gameview]
         camera_pos = viewport.camera_pos#TODO take this from gameview??
         camera_scale = viewport.camera_scale
         size = viewport.size

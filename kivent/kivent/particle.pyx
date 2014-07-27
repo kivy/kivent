@@ -157,6 +157,11 @@ cdef class keParticleManager:
         cdef unsigned short offset
         cdef int indice_offset
         cdef int index
+        cdef float w, h
+        cdef float x0, y0
+        cdef float x, y
+        cdef float rotate
+        cdef float scale
         for i in range(number_of_particles):
             offset = 4 * i
             indice_offset = i*6

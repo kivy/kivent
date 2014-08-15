@@ -157,8 +157,14 @@ cdef class NVertMesh:
         cdef float* from_data = vert_mesh._data
         self.vertex_count = vert_mesh._vert_count
         self.attribute_count = vert_mesh._attrib_count
+        self.index_count = vert_mesh._index_count
         cdef float* data = self._data
+        cdef unsigned short* indices = self._indices
+        cdef unsigned short* from_indices = vert_mesh._indices
+        memcpy(<char *>indices, <void *>from_indices, self._index_count*sizeof(
+            unsigned short))
         memcpy(<char *>data, <void *>from_data, len(self) * sizeof(float))
+
 
     def set_vertex_attribute(self, int vertex_n, int attribute_n, float value):
         if not vertex_n < self._vert_count:

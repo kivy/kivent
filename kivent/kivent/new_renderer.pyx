@@ -1,6 +1,67 @@
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+from kivy.core.image import Image as CoreImage
+from os import path
 cdef extern from "string.h":
     void *memcpy(void *dest, void *src, size_t n)
+
+
+
+cdef class TextureManager:
+    cdef dict _textures
+    cdef dict _keys
+    cdef dict _uvs
+    cdef dict _groups
+
+    def load_image(self, source):
+        texture = CoreImage(source).texture
+        name = path.splitext(path.basename(source))[0]
+        if name not in self._textures:
+            self._textures[name] = texture
+            self._keys[name] = name
+            self._uvs[name] = [0., 0., 1., 1.]
+            self._groups[name] = [name]
+
+    def del_texture(self, name):
+        if name not in self._textures:
+            raise KeyError()
+        else:
+            texture_keys = self._groups[name]
+            for key in texture_keys:
+                del self._uvs[key]
+                del self._keys[key]
+            del self._groups[name]
+            del self._textures[name]
+
+    def get_uvs(self, tex_key):
+        return self._uvs[tex_key]
+
+    def get_texkey_in_group(self, tex_key, atlas_name):
+        return tex_key in self._groups[atlas_name]
+
+    def load_atlas(self, source):
+        texture = CoreImage(path.splitext(source)[0]+'-0.png')
+        name = path.splitext(path.basename(source))[0]
+        cdef float w, h = texture.size
+        with open(source, 'r') as data:
+             atlas_data = json.load(data)
+        cdef dict keys = self._keys
+        cdef dict uvs = self._uvs
+        cdef list group_list = []
+        group_list_a = group_list.append
+        atlas_content = atlas_data[name+'-0.png']
+        cdef float x1, y2, x2, y2
+        if name not in self._textures:
+            self._textures[name] = texture
+            for key in atlas_content:
+                uv_data = atlas_content[key]
+                self._keys[key] = name
+                x1, y1 = uv_data[0], uv_data[1]
+                x2, y2 = x1 + uv_data[2], y1 + data[3]
+                self._uvs[key] = [x1/w, 1.-y1/h, x2/w, 1.-y2/h] 
+                group_list_a(key)
+            self._groups[name] = group_list
+
+cdef TextureManager texture_manager = TextureManager()
 
 
 cdef class RenderBatch:
@@ -345,7 +406,7 @@ cdef class NVertMesh:
             index = start + attribute_n
             data[index] = data[index] * value
 
-    def set_rectangle_mesh(self, float width, float height, list uvs):
+    def set_textured_rectangle(self, float width, float height, list uvs):
         self.vertex_count = 4
         self.index_count = 6
         self.indices = [0, 1, 2, 2, 3, 0]

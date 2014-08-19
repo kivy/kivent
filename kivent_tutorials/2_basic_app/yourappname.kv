@@ -22,12 +22,11 @@ TestGame:
             system_id: 'map'
             map_size: root.size
             gameworld: gameworld
-        Renderer:
+        NRenderer:
             gameworld: gameworld
             system_id: 'renderer'
             shader_source: 'assets/shaders/positionshader.glsl'
-            atlas_dir: 'assets/'
-            atlas: 'background_objects'
+
     GameScreenManager:
         id: gamescreenmanager
         size: root.size

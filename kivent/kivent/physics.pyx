@@ -354,5 +354,5 @@ class CymunkPhysics(GameSystem):
             p_position = body.position
             position._x = p_position.x
             position._y = p_position.y
-        self.on_screen_result = self.query_on_screen()
+        #self.on_screen_result = self.query_on_screen()
 

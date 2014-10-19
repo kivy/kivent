@@ -189,6 +189,14 @@ class NRenderer(GameSystem):
         super(NRenderer, self).__init__(**kwargs)
         self.vertex_format = self.calculate_vertex_format()
         self.batches = []
+        self._do_r_index = -1
+        self._do_g_index = -1
+        self._do_b_index = -1
+        self._do_a_index = -1
+        self._do_rot_index = -1
+        self._do_scale_index = -1
+        self._do_center_x = 4
+        self._do_center_y = 5
 
     def on_shader_source(self, instance, value):
         self.canvas.shader.source = value
@@ -207,15 +215,22 @@ class NRenderer(GameSystem):
         vertex_format = [
             ('vPosition', 2, 'float'),
             ('vTexCoords0', 2, 'float'),
+            ('vCenter', 2, 'float'),
             ]
-        attribute_count = 4
+        attribute_count = 6
         if self.do_rotate:
             vertex_format.append(('vRotation', 1, 'float'))
+            self._do_rot_index = attribute_count
             attribute_count += 1
         if self.do_color:
             vertex_format.append(('vColor', 4, 'float'))
+            self._do_r_index = attribute_count
+            self._do_g_index = attribute_count + 1
+            self._do_b_index = attribute_count + 2
+            self._do_a_index = attribute_count + 3
             attribute_count += 4
         if self.do_scale:
+            self._do_scale_index = attribute_count
             vertex_format.append(('vScale', 1, 'float'))
             attribute_count += 1
         self.attribute_count = attribute_count
@@ -232,6 +247,9 @@ class NRenderer(GameSystem):
         cdef list entity_ids
         cdef NRenderComponent render_comp
         cdef PositionComponent pos_comp
+        cdef RotateComponent rot_comp
+        cdef ScaleComponent scale_comp
+        cdef ColorComponent color_comp
         cdef int vert_offset
         cdef int attribute_count = self.attribute_count
         cdef int vertex_count
@@ -239,8 +257,25 @@ class NRenderer(GameSystem):
         cdef int index_offset
         cdef int mesh_index_offset
         cdef int n
-        cdef int a
+        cdef int attr_ind
         cdef int i
+        cdef float rot
+        cdef float s
+        cdef float r
+        cdef float g
+        cdef float b
+        cdef float a
+        cdef bool do_rotate = self.do_rotate
+        cdef bool do_scale = self.do_scale
+        cdef bool do_color = self.do_color
+        cdef int center_x_index = self._do_center_x
+        cdef int center_y_index = self._do_center_y
+        cdef int rot_index = self._do_rot_index
+        cdef int r_index = self._do_r_index
+        cdef int g_index = self._do_g_index
+        cdef int b_index = self._do_b_index
+        cdef int a_index = self._do_a_index
+        cdef int scale_index = self._do_scale_index
         cdef float x, y
         cdef NVertMesh vert_mesh
         cdef float* batch_data
@@ -263,6 +298,18 @@ class NRenderer(GameSystem):
                 pos_comp = entity.position
                 x = pos_comp._x
                 y = pos_comp._y
+                if do_rotate:
+                    rot_comp = entity.rotate
+                    rot = rot_comp._r
+                if do_scale:
+                    scale_comp = entity.scale
+                    s = scale_comp._s
+                if do_color:
+                    color_comp = entity.color
+                    r = color_comp._r
+                    g = color_comp._g
+                    b = color_comp._b
+                    a = color_comp._a
                 vertex_count = render_comp.vertex_count
                 index_count = render_comp.index_count
                 vert_mesh = render_comp._vert_mesh
@@ -272,13 +319,25 @@ class NRenderer(GameSystem):
                     batch_indices[i+index_offset] = (
                         mesh_indices[i] + mesh_index_offset)
                 for n from 0 <= n < vertex_count:
-                    for a from 0 <= a < attribute_count:
-                        mesh_index = n*attribute_count + a
+                    for attr_ind from 0 <= attr_ind < attribute_count:
+                        mesh_index = n*attribute_count + attr_ind
                         data_index = mesh_index + vert_offset
-                        if a == 0:
-                            batch_data[data_index] = mesh_data[mesh_index] + x
-                        elif a == 1:
-                            batch_data[data_index] = mesh_data[mesh_index] + y
+                        if attr_ind == center_x_index:
+                            batch_data[data_index] = x
+                        elif attr_ind == center_y_index:
+                            batch_data[data_index] = y
+                        elif attr_ind == rot_index:
+                            batch_data[data_index] = rot
+                        elif attr_ind == r_index:
+                            batch_data[data_index] = r
+                        elif attr_ind == b_index:
+                            batch_data[data_index] = b
+                        elif attr_ind == g_index:
+                            batch_data[data_index] = g
+                        elif attr_ind == a_index:
+                            batch_data[data_index] = a
+                        elif attr_ind == scale_index:
+                            batch_data[data_index] = s
                         else:
                             batch_data[data_index] = mesh_data[mesh_index]
                 vert_offset += vertex_count * attribute_count

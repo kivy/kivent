@@ -13,6 +13,12 @@ TestGame:
         RotateSystem:
             system_id: 'rotate'
             gameworld: gameworld
+        ColorSystem:
+            system_id: 'color'
+            gameworld: gameworld
+        ScaleSystem:
+            system_id: 'scale'
+            gameworld: gameworld
         GameView:
             system_id: 'gameview'
             focus_entity: False
@@ -25,23 +31,17 @@ TestGame:
             system_id: 'map'
             map_size: root.size
             gameworld: gameworld
-        Renderer:
+        NRenderer:
             gameworld: gameworld
             system_id: 'renderer'
-            shader_source: 'assets/glsl/positionshader.glsl'
-            atlas_dir: 'assets/'
-            atlas: 'background_objects'
-        DynamicRenderer:
-            gameworld: gameworld
-            system_id: 'physics_renderer'
-            shader_source: 'assets/glsl/positionrotateshader.glsl'
-            atlas_dir: 'assets/'
-            atlas: 'background_objects'
-            physics_system: 'physics'
+            gameview: 'gameview'
+            do_rotate: True
+            do_color: True
+            do_scale: True
+            shader_source: 'assets/glsl/positioncolorrotatescaleshader.glsl'
         CymunkPhysics:
             gameworld: root.gameworld
             system_id: 'physics'
-            viewport: 'gameview'
     GameScreenManager:
         id: gamescreenmanager
         size: root.size

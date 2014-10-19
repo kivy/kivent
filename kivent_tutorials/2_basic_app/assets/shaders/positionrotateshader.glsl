@@ -10,7 +10,6 @@ varying vec2 tex_coord0;
 /* vertex attributes */
 attribute vec2     vPosition;
 attribute vec2     vTexCoords0;
-attribute vec2     vCenter;
 attribute float    vRotation;
 
 /* uniform variables */
@@ -34,7 +33,7 @@ void main (void) {
               0.0, 0.0, 0.0, 1.0);
   vec4 pos = vec4(vPosition.xy, 0.0, 1.0);
   vec4 trans_pos = pos * rot_mat * trans_mat;
-  gl_Position = projection_mat * modelview_mat * trans_pos;
+  gl_Position = projection_mat * modelview_mat * rot_pos;
 
 }
 

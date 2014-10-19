@@ -15,7 +15,6 @@ class TestGame(Widget):
         Clock.schedule_once(self.init_game, 1.0)
 
     def init_game(self, dt):
-        
         self.setup_map()
         self.setup_states()
         self.set_state()

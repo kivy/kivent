@@ -5,23 +5,36 @@ from kivy.core.window import Window
 import kivent
 from random import randint
 from math import radians
+from kivent import texture_manager
 
+texture_manager.load_atlas('assets/background_objects.atlas')
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         Clock.schedule_once(self.init_game)
 
+    def ensure_startup(self):
+        systems_to_check = ['map', 'physics', 'renderer', 'rotate', 'position']
+        systems = self.gameworld.systems
+        for each in systems_to_check:
+            if each not in systems:
+                return False
+        return True
+
     def init_game(self, dt):
-        self.setup_map()
-        self.setup_states()
-        self.set_state()
-        self.draw_some_stuff()
-        Clock.schedule_interval(self.update, 0)
+        if self.ensure_startup():
+            self.setup_map()
+            self.setup_states()
+            self.set_state()
+            self.draw_some_stuff()
+            Clock.schedule_interval(self.update, 0)
+        else:
+            Clock.schedule_once(self.init_game)
 
     def draw_some_stuff(self):
         size = Window.size
-        for x in range(50):
+        for x in range(100):
             pos = (randint(0, size[0]), randint(0, size[1]))
             self.create_asteroid(pos)
 
@@ -43,14 +56,16 @@ class TestGame(Widget):
             'ang_vel_limit': radians(200), 
             'mass': 50, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component, 
-            'physics_renderer': {'texture': 'asteroid1', 'size': (64 , 64)}, 
-            'position': pos, 'rotate': 0}
-        component_order = ['position', 'rotate', 
-            'physics', 'physics_renderer']
+            'renderer': {'texture': 'asteroid1', 'size': (64 , 64)}, 
+            'position': pos, 'rotate': 0, 'color': (1., 0., 0., 1.),
+            'scale': .5}
+        component_order = ['position', 'rotate', 'color',
+            'physics', 'renderer', 'scale']
         return self.gameworld.init_entity(create_component_dict, component_order)
 
     def setup_map(self):
         gameworld = self.gameworld
+        print(gameworld.systems)
         gameworld.currentmap = gameworld.systems['map']
 
     def update(self, dt):
@@ -58,9 +73,9 @@ class TestGame(Widget):
 
     def setup_states(self):
         self.gameworld.add_state(state_name='main', 
-            systems_added=['renderer', 'physics_renderer'],
+            systems_added=['renderer'],
             systems_removed=[], systems_paused=[],
-            systems_unpaused=['renderer', 'physics_renderer'],
+            systems_unpaused=['renderer'],
             screenmanager_screen='main')
 
     def set_state(self):

@@ -281,7 +281,6 @@ class NRenderer(GameSystem):
                             batch_data[data_index] = mesh_data[mesh_index] + y
                         else:
                             batch_data[data_index] = mesh_data[mesh_index]
-                        print(batch_data[mesh_index])
                 vert_offset += vertex_count * attribute_count
                 mesh_index_offset += vertex_count
                 index_offset += index_count
@@ -327,8 +326,6 @@ class NRenderer(GameSystem):
         if not added:
             raise Exception(
                 'Entity: ' + str(entity_id) + ' not added to batch')
-        
-        
 
     def add_to_existing_batch(self, int entity_id, int vertex_count, 
         int index_count, str texture_key):

@@ -18,15 +18,15 @@ TestGame:
             pos: root.pos
             do_scroll: False
             size: root.size
+        NRenderer:
+            gameworld: gameworld
+            system_id: 'renderer'
+            gameview: 'gameview'
+            shader_source: 'assets/shaders/positionshader.glsl'
         GameMap:
             system_id: 'map'
             map_size: root.size
             gameworld: gameworld
-        NRenderer:
-            gameworld: gameworld
-            system_id: 'renderer'
-            shader_source: 'assets/shaders/positionshader.glsl'
-
     GameScreenManager:
         id: gamescreenmanager
         size: root.size

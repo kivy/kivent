@@ -281,6 +281,7 @@ class NRenderer(GameSystem):
                             batch_data[data_index] = mesh_data[mesh_index] + y
                         else:
                             batch_data[data_index] = mesh_data[mesh_index]
+                        print(batch_data[mesh_index])
                 vert_offset += vertex_count * attribute_count
                 mesh_index_offset += vertex_count
                 index_offset += index_count

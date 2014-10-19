@@ -25,6 +25,19 @@
 
 typedef struct cpShapeClass cpShapeClass;
 
+/// Nearest point query info struct.
+typedef struct cpNearestPointQueryInfo {
+	/// The nearest shape, NULL if no shape was within range.
+	cpShape *shape;
+	/// The closest point on the shape's surface. (in world space coordinates)
+	cpVect p;
+	/// The distance to the point. The distance is negative if the point is inside the shape.
+	cpFloat d;
+	/// The gradient of the signed distance function.
+	/// The same as info.p/info.d, but accurate even for very small values of info.d.
+	cpVect g;
+} cpNearestPointQueryInfo;
+
 /// Segment query info struct.
 typedef struct cpSegmentQueryInfo {
 	/// The shape that was hit, NULL if no collision occured.
@@ -45,7 +58,7 @@ typedef enum cpShapeType{
 
 typedef cpBB (*cpShapeCacheDataImpl)(cpShape *shape, cpVect p, cpVect rot);
 typedef void (*cpShapeDestroyImpl)(cpShape *shape);
-typedef cpBool (*cpShapePointQueryImpl)(cpShape *shape, cpVect p);
+typedef void (*cpShapeNearestPointQueryImpl)(cpShape *shape, cpVect p, cpNearestPointQueryInfo *info);
 typedef void (*cpShapeSegmentQueryImpl)(cpShape *shape, cpVect a, cpVect b, cpSegmentQueryInfo *info);
 
 /// @private
@@ -54,7 +67,7 @@ struct cpShapeClass {
 	
 	cpShapeCacheDataImpl cacheData;
 	cpShapeDestroyImpl destroy;
-	cpShapePointQueryImpl pointQuery;
+	cpShapeNearestPointQueryImpl nearestPointQuery;
 	cpShapeSegmentQueryImpl segmentQuery;
 };
 
@@ -112,38 +125,9 @@ cpBB cpShapeUpdate(cpShape *shape, cpVect pos, cpVect rot);
 /// Test if a point lies within a shape.
 cpBool cpShapePointQuery(cpShape *shape, cpVect p);
 
-#define CP_DefineShapeStructGetter(type, member, name) \
-static inline type cpShapeGet##name(const cpShape *shape){return shape->member;}
-
-#define CP_DefineShapeStructSetter(type, member, name, activates) \
-static inline void cpShapeSet##name(cpShape *shape, type value){ \
-	if(activates && shape->body) cpBodyActivate(shape->body); \
-	shape->member = value; \
-}
-
-#define CP_DefineShapeStructProperty(type, member, name, activates) \
-CP_DefineShapeStructGetter(type, member, name) \
-CP_DefineShapeStructSetter(type, member, name, activates)
-
-CP_DefineShapeStructGetter(cpSpace*, CP_PRIVATE(space), Space);
-
-CP_DefineShapeStructGetter(cpBody*, body, Body);
-void cpShapeSetBody(cpShape *shape, cpBody *body);
-
-CP_DefineShapeStructGetter(cpBB, bb, BB);
-CP_DefineShapeStructProperty(cpBool, sensor, Sensor, cpTrue);
-CP_DefineShapeStructProperty(cpFloat, e, Elasticity, cpFalse);
-CP_DefineShapeStructProperty(cpFloat, u, Friction, cpTrue);
-CP_DefineShapeStructProperty(cpVect, surface_v, SurfaceVelocity, cpTrue);
-CP_DefineShapeStructProperty(cpDataPointer, data, UserData, cpFalse);
-CP_DefineShapeStructProperty(cpCollisionType, collision_type, CollisionType, cpTrue);
-CP_DefineShapeStructProperty(cpGroup, group, Group, cpTrue);
-CP_DefineShapeStructProperty(cpLayers, layers, Layers, cpTrue);
-
-/// When initializing a shape, it's hash value comes from a counter.
-/// Because the hash value may affect iteration order, you can reset the shape ID counter
-/// when recreating a space. This will make the simulation be deterministic.
-void cpResetShapeIdCounter(void);
+/// Perform a nearest point query. It finds the closest point on the surface of shape to a specific point.
+/// The value returned is the distance between the points. A negative distance means the point is inside the shape.
+cpFloat cpShapeNearestPointQuery(cpShape *shape, cpVect p, cpNearestPointQueryInfo *out);
 
 /// Perform a segment query against a shape. @c info must be a pointer to a valid cpSegmentQueryInfo structure.
 cpBool cpShapeSegmentQuery(cpShape *shape, cpVect a, cpVect b, cpSegmentQueryInfo *info);
@@ -159,6 +143,39 @@ static inline cpFloat cpSegmentQueryHitDist(const cpVect start, const cpVect end
 {
 	return cpvdist(start, end)*info.t;
 }
+
+#define CP_DefineShapeStructGetter(type, member, name) \
+static inline type cpShapeGet##name(const cpShape *shape){return shape->member;}
+
+#define CP_DefineShapeStructSetter(type, member, name, activates) \
+static inline void cpShapeSet##name(cpShape *shape, type value){ \
+	if(activates && shape->body) cpBodyActivate(shape->body); \
+	shape->member = value; \
+}
+
+#define CP_DefineShapeStructProperty(type, member, name, activates) \
+CP_DefineShapeStructGetter(type, member, name) \
+CP_DefineShapeStructSetter(type, member, name, activates)
+
+CP_DefineShapeStructGetter(cpSpace*, CP_PRIVATE(space), Space)
+
+CP_DefineShapeStructGetter(cpBody*, body, Body)
+void cpShapeSetBody(cpShape *shape, cpBody *body);
+
+CP_DefineShapeStructGetter(cpBB, bb, BB)
+CP_DefineShapeStructProperty(cpBool, sensor, Sensor, cpTrue)
+CP_DefineShapeStructProperty(cpFloat, e, Elasticity, cpFalse)
+CP_DefineShapeStructProperty(cpFloat, u, Friction, cpTrue)
+CP_DefineShapeStructProperty(cpVect, surface_v, SurfaceVelocity, cpTrue)
+CP_DefineShapeStructProperty(cpDataPointer, data, UserData, cpFalse)
+CP_DefineShapeStructProperty(cpCollisionType, collision_type, CollisionType, cpTrue)
+CP_DefineShapeStructProperty(cpGroup, group, Group, cpTrue)
+CP_DefineShapeStructProperty(cpLayers, layers, Layers, cpTrue)
+
+/// When initializing a shape, it's hash value comes from a counter.
+/// Because the hash value may affect iteration order, you can reset the shape ID counter
+/// when recreating a space. This will make the simulation be deterministic.
+void cpResetShapeIdCounter(void);
 
 #define CP_DeclareShapeGetter(struct, type, name) type struct##Get##name(const cpShape *shape)
 
@@ -204,6 +221,7 @@ cpSegmentShape* cpSegmentShapeInit(cpSegmentShape *seg, cpBody *body, cpVect a, 
 /// Allocate and initialize a segment shape.
 cpShape* cpSegmentShapeNew(cpBody *body, cpVect a, cpVect b, cpFloat radius);
 
+/// Let Chipmunk know about the geometry of adjacent segments to avoid colliding with endcaps.
 void cpSegmentShapeSetNeighbors(cpShape *shape, cpVect prev, cpVect next);
 
 CP_DeclareShapeGetter(cpSegmentShape, cpVect, A);

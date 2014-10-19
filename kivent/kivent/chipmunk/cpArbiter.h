@@ -50,7 +50,7 @@ struct cpCollisionHandler {
 
 typedef struct cpContact cpContact;
 
-#define CP_MAX_CONTACTS_PER_ARBITER 4
+#define CP_MAX_CONTACTS_PER_ARBITER 2
 
 /// @private
 typedef enum cpArbiterState {
@@ -83,6 +83,11 @@ struct cpArbiter {
 	/// Override in a pre-solve collision handler for custom behavior.
 	cpVect surface_vr;
 	
+	/// User definable data pointer.
+	/// The value will persist for the pair of shapes until the separate() callback is called.
+	/// NOTE: If you need to clean up this pointer, you should implement the separate() callback to do it.
+	cpDataPointer data;
+	
 	CP_PRIVATE(cpShape *a);
 	CP_PRIVATE(cpShape *b);
 	CP_PRIVATE(cpBody *body_a);
@@ -110,9 +115,18 @@ static inline void cpArbiterSet##name(cpArbiter *arb, type value){arb->member = 
 CP_DefineArbiterStructGetter(type, member, name) \
 CP_DefineArbiterStructSetter(type, member, name)
 
-CP_DefineArbiterStructProperty(cpFloat, e, Elasticity);
-CP_DefineArbiterStructProperty(cpFloat, u, Friction);
-CP_DefineArbiterStructProperty(cpVect, surface_vr, SurfaceVelocity);
+CP_DefineArbiterStructProperty(cpFloat, e, Elasticity)
+CP_DefineArbiterStructProperty(cpFloat, u, Friction)
+
+// Get the relative surface velocity of the two shapes in contact.
+cpVect cpArbiterGetSurfaceVelocity(cpArbiter *arb);
+
+// Override the relative surface velocity of the two shapes in contact.
+// By default this is calculated to be the difference of the two
+// surface velocities clamped to the tangent plane.
+void cpArbiterSetSurfaceVelocity(cpArbiter *arb, cpVect vr);
+
+CP_DefineArbiterStructProperty(cpDataPointer, data, UserData)
 
 /// Calculate the total impulse that was applied by this arbiter.
 /// This function should only be called from a post-solve, post-step or cpBodyEachArbiter callback.
@@ -142,7 +156,7 @@ static inline void cpArbiterGetShapes(const cpArbiter *arb, cpShape **a, cpShape
 	}
 }
 /// A macro shortcut for defining and retrieving the shapes from an arbiter.
-#define CP_ARBITER_GET_SHAPES(arb, a, b) cpShape *a, *b; cpArbiterGetShapes(arb, &a, &b);
+#define CP_ARBITER_GET_SHAPES(__arb__, __a__, __b__) cpShape *__a__, *__b__; cpArbiterGetShapes(__arb__, &__a__, &__b__);
 
 /// Return the colliding bodies involved for this arbiter.
 /// The order of the cpSpace.collision_type the bodies are associated with values will match
@@ -154,19 +168,7 @@ static inline void cpArbiterGetBodies(const cpArbiter *arb, cpBody **a, cpBody *
 	(*b) = shape_b->body;
 }
 /// A macro shortcut for defining and retrieving the bodies from an arbiter.
-#define CP_ARBITER_GET_BODIES(arb, a, b) cpBody *a, *b; cpArbiterGetBodies(arb, &a, &b);
-
-/// Returns true if this is the first step a pair of objects started colliding.
-static inline cpBool cpArbiterIsFirstContact(const cpArbiter *arb)
-{
-	return arb->CP_PRIVATE(state) == cpArbiterStateFirstColl;
-}
-
-/// Get the number of contact points for this arbiter.
-static inline int cpArbiterGetCount(const cpArbiter *arb)
-{
-	return arb->CP_PRIVATE(numContacts);
-}
+#define CP_ARBITER_GET_BODIES(__arb__, __a__, __b__) cpBody *__a__, *__b__; cpArbiterGetBodies(__arb__, &__a__, &__b__);
 
 /// A struct that wraps up the important collision data for an arbiter.
 typedef struct cpContactPointSet {
@@ -183,9 +185,18 @@ typedef struct cpContactPointSet {
 		cpFloat dist;
 	} points[CP_MAX_CONTACTS_PER_ARBITER];
 } cpContactPointSet;
+
 /// Return a contact set from an arbiter.
 cpContactPointSet cpArbiterGetContactPointSet(const cpArbiter *arb);
 
+/// Replace the contact point set for an arbiter.
+/// This can be a very powerful feature, but use it with caution!
+void cpArbiterSetContactPointSet(cpArbiter *arb, cpContactPointSet *set);
+
+/// Returns true if this is the first step a pair of objects started colliding.
+cpBool cpArbiterIsFirstContact(const cpArbiter *arb);
+/// Get the number of contact points for this arbiter.
+int cpArbiterGetCount(const cpArbiter *arb);
 /// Get the normal of the @c ith contact point.
 cpVect cpArbiterGetNormal(const cpArbiter *arb, int i);
 /// Get the position of the @c ith contact point.

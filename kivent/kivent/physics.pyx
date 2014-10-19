@@ -1,8 +1,7 @@
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk
-from cymunk import Poly
-from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape, Vec2d
+from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape, Vec2d, Poly
 from libc.math cimport M_PI_2
 
 

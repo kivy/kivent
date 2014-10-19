@@ -22,6 +22,20 @@
 #ifndef CHIPMUNK_HEADER
 #define CHIPMUNK_HEADER
 
+#ifdef _MSC_VER
+    #define _USE_MATH_DEFINES
+#endif
+
+#include <stdlib.h>
+#include <math.h>
+
+#ifdef __WIN32__
+// For alloca().
+	#include <malloc.h>
+#else
+	#include <alloca.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,26 +45,26 @@ extern "C" {
 #endif
 
 #if CP_ALLOW_PRIVATE_ACCESS == 1
-	#define CP_PRIVATE(symbol) symbol
+	#define CP_PRIVATE(__symbol__) __symbol__
 #else
-	#define CP_PRIVATE(symbol) symbol##_private
+	#define CP_PRIVATE(__symbol__) __symbol__##_private
 #endif
 
 void cpMessage(const char *condition, const char *file, int line, int isError, int isHardError, const char *message, ...);
 #ifdef NDEBUG
-	#define	cpAssertWarn(condition, ...)
+	#define	cpAssertWarn(__condition__, ...)
 #else
-	#define cpAssertWarn(condition, ...) if(!(condition)) cpMessage(#condition, __FILE__, __LINE__, 0, 0, __VA_ARGS__)
+	#define cpAssertWarn(__condition__, ...) if(!(__condition__)) cpMessage(#__condition__, __FILE__, __LINE__, 0, 0, __VA_ARGS__)
 #endif
 
 #ifdef NDEBUG
-	#define	cpAssertSoft(condition, ...)
+	#define	cpAssertSoft(__condition__, ...)
 #else
-	#define cpAssertSoft(condition, ...) if(!(condition)) cpMessage(#condition, __FILE__, __LINE__, 1, 0, __VA_ARGS__)
+	#define cpAssertSoft(__condition__, ...) if(!(__condition__)) cpMessage(#__condition__, __FILE__, __LINE__, 1, 0, __VA_ARGS__)
 #endif
 
 // Hard assertions are important and cheap to execute. They are not disabled by compiling as debug.
-#define cpAssertHard(condition, ...) if(!(condition)) cpMessage(#condition, __FILE__, __LINE__, 1, 1, __VA_ARGS__)
+#define cpAssertHard(__condition__, ...) if(!(__condition__)) cpMessage(#__condition__, __FILE__, __LINE__, 1, 1, __VA_ARGS__)
 
 
 #include "chipmunk_types.h"
@@ -103,16 +117,20 @@ typedef struct cpSpace cpSpace;
 
 #include "cpSpace.h"
 
-// Chipmunk 6.0.3
+// Chipmunk 6.2.1
 #define CP_VERSION_MAJOR 6
-#define CP_VERSION_MINOR 0
-#define CP_VERSION_RELEASE 3
+#define CP_VERSION_MINOR 2
+#define CP_VERSION_RELEASE 1
 
 /// Version string.
 extern const char *cpVersionString;
 
 /// @deprecated
 void cpInitChipmunk(void);
+
+/// Enables segment to segment shape collisions.
+void cpEnableSegmentToSegmentCollisions(void);
+
 
 /// Calculate the moment of inertia for a circle.
 /// @c r1 and @c r2 are the inner and outer diameters. A solid circle has an inner diameter of 0.
@@ -147,6 +165,55 @@ cpFloat cpMomentForBox(cpFloat m, cpFloat width, cpFloat height);
 
 /// Calculate the moment of inertia for a solid box.
 cpFloat cpMomentForBox2(cpFloat m, cpBB box);
+
+/// Calculate the convex hull of a given set of points. Returns the count of points in the hull.
+/// @c result must be a pointer to a @c cpVect array with at least @c count elements. If @c result is @c NULL, then @c verts will be reduced instead.
+/// @c first is an optional pointer to an integer to store where the first vertex in the hull came from (i.e. verts[first] == result[0])
+/// @c tol is the allowed amount to shrink the hull when simplifying it. A tolerance of 0.0 creates an exact hull.
+int cpConvexHull(int count, cpVect *verts, cpVect *result, int *first, cpFloat tol);
+
+#ifdef _MSC_VER
+#include "malloc.h"
+#include "alloca.h"
+#endif
+
+/// Convenience macro to work with cpConvexHull.
+/// @c count and @c verts is the input array passed to cpConvexHull().
+/// @c count_var and @c verts_var are the names of the variables the macro creates to store the result.
+/// The output vertex array is allocated on the stack using alloca() so it will be freed automatically, but cannot be returned from the current scope.
+#define CP_CONVEX_HULL(__count__, __verts__, __count_var__, __verts_var__) \
+cpVect *__verts_var__ = (cpVect *)alloca(__count__*sizeof(cpVect)); \
+int __count_var__ = cpConvexHull(__count__, __verts__, __verts_var__, NULL, 0.0); \
+
+#if defined(__has_extension)
+#if __has_extension(blocks)
+// Define alternate block based alternatives for a few of the callback heavy functions.
+// Collision handlers are post-step callbacks are not included to avoid memory management issues.
+// If you want to use blocks for those and are aware of how to correctly manage the memory, the implementation is trivial. 
+
+void cpSpaceEachBody_b(cpSpace *space, void (^block)(cpBody *body));
+void cpSpaceEachShape_b(cpSpace *space, void (^block)(cpShape *shape));
+void cpSpaceEachConstraint_b(cpSpace *space, void (^block)(cpConstraint *constraint));
+
+void cpBodyEachShape_b(cpBody *body, void (^block)(cpShape *shape));
+void cpBodyEachConstraint_b(cpBody *body, void (^block)(cpConstraint *constraint));
+void cpBodyEachArbiter_b(cpBody *body, void (^block)(cpArbiter *arbiter));
+
+typedef void (^cpSpaceNearestPointQueryBlock)(cpShape *shape, cpFloat distance, cpVect point);
+void cpSpaceNearestPointQuery_b(cpSpace *space, cpVect point, cpFloat maxDistance, cpLayers layers, cpGroup group, cpSpaceNearestPointQueryBlock block);
+
+typedef void (^cpSpaceSegmentQueryBlock)(cpShape *shape, cpFloat t, cpVect n);
+void cpSpaceSegmentQuery_b(cpSpace *space, cpVect start, cpVect end, cpLayers layers, cpGroup group, cpSpaceSegmentQueryBlock block);
+
+typedef void (^cpSpaceBBQueryBlock)(cpShape *shape);
+void cpSpaceBBQuery_b(cpSpace *space, cpBB bb, cpLayers layers, cpGroup group, cpSpaceBBQueryBlock block);
+
+typedef void (^cpSpaceShapeQueryBlock)(cpShape *shape, cpContactPointSet *points);
+cpBool cpSpaceShapeQuery_b(cpSpace *space, cpShape *shape, cpSpaceShapeQueryBlock block);
+
+#endif
+#endif
+
 
 //@}
 

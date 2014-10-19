@@ -1,11 +1,11 @@
-#include <math.h>
 #include <stdint.h>
+#include <float.h>
 
 #ifdef __APPLE__
-   #import "TargetConditionals.h"
+   #include "TargetConditionals.h"
 #endif
 
-#if (TARGET_OS_IPHONE == 1) || (TARGET_OS_MAC == 1) && (!defined CP_USE_CGPOINTS)
+#if ((TARGET_OS_IPHONE == 1) || (TARGET_OS_MAC == 1)) && (!defined CP_USE_CGPOINTS)
 	#define CP_USE_CGPOINTS 1
 #endif
 
@@ -13,7 +13,7 @@
 	#if TARGET_OS_IPHONE
 		#import <CoreGraphics/CGGeometry.h>
 	#elif TARGET_OS_MAC
-		#import <ApplicationServices/ApplicationServices.h>
+		#include <ApplicationServices/ApplicationServices.h>
 	#endif
 	
 	#if defined(__LP64__) && __LP64__
@@ -46,6 +46,7 @@
 	#define cpfpow pow
 	#define cpffloor floor
 	#define cpfceil ceil
+	#define CPFLOAT_MIN DBL_MIN
 #else
 	typedef float cpFloat;
 	#define cpfsqrt sqrtf
@@ -58,10 +59,10 @@
 	#define cpfpow powf
 	#define cpffloor floorf
 	#define cpfceil ceilf
+	#define CPFLOAT_MIN FLT_MIN
 #endif
 
 #ifndef INFINITY
-	//TODO use C++ infinity
 	#ifdef _MSC_VER
 		union MSVC_EVIL_FLOAT_HACK
 		{
@@ -137,6 +138,10 @@ static inline cpFloat cpflerpconst(cpFloat f1, cpFloat f2, cpFloat d)
 /// Hash value type.
 typedef uintptr_t cpHashValue;
 
+/// Type used internally to cache colliding object info for cpCollideShapes().
+/// Should be at least 32 bits.
+typedef uint32_t cpCollisionID;
+
 // Oh C, how we love to define our own boolean types to get compiler compatibility
 /// Chipmunk's boolean type.
 #ifdef CP_BOOL_TYPE
@@ -203,7 +208,7 @@ typedef uintptr_t cpHashValue;
 
 // CGPoints are structurally the same, and allow
 // easy interoperability with other Cocoa libraries
-#ifdef CP_USE_CGPOINTS
+#if CP_USE_CGPOINTS
 	typedef CGPoint cpVect;
 #else
 /// Chipmunk's 2D vector type.
@@ -211,4 +216,7 @@ typedef uintptr_t cpHashValue;
 	typedef struct cpVect{cpFloat x,y;} cpVect;
 #endif
 
-
+typedef struct cpMat2x2 {
+	// Row major [[a, b][c d]]
+	cpFloat a, b, c, d;
+} cpMat2x2;

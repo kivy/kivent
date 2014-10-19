@@ -25,6 +25,9 @@
 #define CP_HASH_COEF (3344921057ul)
 #define CP_HASH_PAIR(A, B) ((cpHashValue)(A)*CP_HASH_COEF ^ (cpHashValue)(B)*CP_HASH_COEF)
 
+// TODO: Eww. Magic numbers.
+#define MAGIC_EPSILON 1e-5
+
 //MARK: cpArray
 
 struct cpArray {
@@ -42,6 +45,7 @@ void cpArrayDeleteObj(cpArray *arr, void *obj);
 cpBool cpArrayContains(cpArray *arr, void *ptr);
 
 void cpArrayFreeEach(cpArray *arr, void (freeFunc)(void*));
+
 
 //MARK: Foreach loops
 
@@ -69,6 +73,7 @@ cpArbiterNext(cpArbiter *node, cpBody *body)
 #define CP_BODY_FOREACH_COMPONENT(root, var)\
 	for(cpBody *var = root; var; var = var->node.next)
 
+
 //MARK: cpHashSet
 
 typedef cpBool (*cpHashSetEqlFunc)(void *ptr, void *elt);
@@ -90,6 +95,7 @@ void cpHashSetEach(cpHashSet *set, cpHashSetIteratorFunc func, void *data);
 typedef cpBool (*cpHashSetFilterFunc)(void *elt, void *data);
 void cpHashSetFilter(cpHashSet *set, cpHashSetFilterFunc func, void *data);
 
+
 //MARK: Body Functions
 
 void cpBodyAddShape(cpBody *body, cpShape *shape);
@@ -99,6 +105,15 @@ void cpBodyRemoveConstraint(cpBody *body, cpConstraint *constraint);
 
 //MARK: Shape/Collision Functions
 
+// TODO should move this to the cpVect API. It's pretty useful.
+static inline cpVect
+cpClosetPointOnSegment(const cpVect p, const cpVect a, const cpVect b)
+{
+	cpVect delta = cpvsub(a, b);
+	cpFloat t = cpfclamp01(cpvdot(delta, cpvsub(p, b))/cpvlengthsq(delta));
+	return cpvadd(b, cpvmult(delta, t));
+}
+
 cpShape* cpShapeInit(cpShape *shape, const cpShapeClass *klass, cpBody *body);
 
 static inline cpBool
@@ -107,51 +122,52 @@ cpShapeActive(cpShape *shape)
 	return shape->prev || (shape->body && shape->body->shapeList == shape);
 }
 
-int cpCollideShapes(const cpShape *a, const cpShape *b, cpContact *arr);
+int cpCollideShapes(const cpShape *a, const cpShape *b, cpCollisionID *id, cpContact *arr);
+
+static inline void
+CircleSegmentQuery(cpShape *shape, cpVect center, cpFloat r, cpVect a, cpVect b, cpSegmentQueryInfo *info)
+{
+	cpVect da = cpvsub(a, center);
+	cpVect db = cpvsub(b, center);
+	
+	cpFloat qa = cpvdot(da, da) - 2.0f*cpvdot(da, db) + cpvdot(db, db);
+	cpFloat qb = -2.0f*cpvdot(da, da) + 2.0f*cpvdot(da, db);
+	cpFloat qc = cpvdot(da, da) - r*r;
+	
+	cpFloat det = qb*qb - 4.0f*qa*qc;
+	
+	if(det >= 0.0f){
+		cpFloat t = (-qb - cpfsqrt(det))/(2.0f*qa);
+		if(0.0f<= t && t <= 1.0f){
+			info->shape = shape;
+			info->t = t;
+			info->n = cpvnormalize(cpvlerp(da, db, t));
+		}
+	}
+}
+
+// TODO doesn't really need to be inline, but need a better place to put this function
+static inline cpSplittingPlane
+cpSplittingPlaneNew(cpVect a, cpVect b)
+{
+	cpVect n = cpvnormalize(cpvperp(cpvsub(b, a)));
+	cpSplittingPlane plane = {n, cpvdot(n, a)};
+	return plane;
+}
 
 static inline cpFloat
-cpPolyShapeValueOnAxis(const cpPolyShape *poly, const cpVect n, const cpFloat d)
+cpSplittingPlaneCompare(cpSplittingPlane plane, cpVect v)
 {
-	cpVect *verts = poly->tVerts;
-	cpFloat min = cpvdot(n, verts[0]);
-	
-	for(int i=1; i<poly->numVerts; i++){
-		min = cpfmin(min, cpvdot(n, verts[i]));
-	}
-	
-	return min - d;
+	return cpvdot(plane.n, v) - plane.d;
 }
 
-static inline cpBool
-cpPolyShapeContainsVert(const cpPolyShape *poly, const cpVect v)
-{
-	cpPolyShapeAxis *axes = poly->tAxes;
-	
-	for(int i=0; i<poly->numVerts; i++){
-		cpFloat dist = cpvdot(axes[i].n, v) - axes[i].d;
-		if(dist > 0.0f) return cpFalse;
-	}
-	
-	return cpTrue;
-}
+void cpLoopIndexes(cpVect *verts, int count, int *start, int *end);
 
-static inline cpBool
-cpPolyShapeContainsVertPartial(const cpPolyShape *poly, const cpVect v, const cpVect n)
-{
-	cpPolyShapeAxis *axes = poly->tAxes;
-	
-	for(int i=0; i<poly->numVerts; i++){
-		if(cpvdot(axes[i].n, n) < 0.0f) continue;
-		cpFloat dist = cpvdot(axes[i].n, v) - axes[i].d;
-		if(dist > 0.0f) return cpFalse;
-	}
-	
-	return cpTrue;
-}
 
 //MARK: Spatial Index Functions
 
 cpSpatialIndex *cpSpatialIndexInit(cpSpatialIndex *index, cpSpatialIndexClass *klass, cpSpatialIndexBBFunc bbfunc, cpSpatialIndex *staticIndex);
+
 
 //MARK: Space Functions
 
@@ -162,7 +178,13 @@ void cpSpacePushFreshContactBuffer(cpSpace *space);
 cpContact *cpContactBufferGetArray(cpSpace *space);
 void cpSpacePushContacts(cpSpace *space, int count);
 
-void *cpSpaceGetPostStepData(cpSpace *space, void *obj);
+typedef struct cpPostStepCallback {
+	cpPostStepFunc func;
+	void *key;
+	void *data;
+} cpPostStepCallback;
+
+cpPostStepCallback *cpSpaceGetPostStepCallback(cpSpace *space, void *key);
 
 cpBool cpSpaceArbiterSetFilter(cpArbiter *arb, cpSpace *space);
 void cpSpaceFilterArbiters(cpSpace *space, cpBody *body, cpShape *filter);
@@ -189,8 +211,7 @@ cpSpaceUncacheArbiter(cpSpace *space, cpArbiter *arb)
 }
 
 void cpShapeUpdateFunc(cpShape *shape, void *unused);
-void cpSpaceCollideShapes(cpShape *a, cpShape *b, cpSpace *space);
-
+cpCollisionID cpSpaceCollideShapes(cpShape *a, cpShape *b, cpCollisionID id, cpSpace *space);
 
 
 //MARK: Arbiters

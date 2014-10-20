@@ -52,7 +52,10 @@ cdef class TextureManager:
         return self._keys[tex_key]
 
     def get_texkey_in_group(self, tex_key, atlas_name):
-        return tex_key in self._groups[atlas_name]
+        if tex_key is None and atlas_name is None:
+            return True
+        else:
+            return tex_key in self._groups[atlas_name]
 
     def load_atlas(self, source):
         texture = CoreImage(
@@ -121,6 +124,7 @@ cdef class NRenderComponent:
 
         def __set__(self, int value):
             self._attrib_count = value
+            self._vert_mesh.attribute_count = value
 
     property texture_key:
         def __get__(self):
@@ -138,9 +142,15 @@ cdef class NRenderComponent:
         def __get__(self):
             return self._vert_mesh._vert_count
 
+        def __set__(self, int value):
+            self._vert_mesh.vertex_count = value
+
     property index_count:
         def __get__(self):
             return self._vert_mesh._index_count
+
+        def __set__(self, int value):
+            self._vert_mesh.index_count = value
 
     property vert_mesh:
         def __get__(self):
@@ -151,7 +161,9 @@ cdef class NRenderComponent:
 
 
 class NRenderer(GameSystem):
-    '''The basic KivEnt renderer it draws every entity every frame.
+    '''The basic KivEnt renderer it draws every entity every frame. Entities 
+    will be batched into groups of up to **maximum_vertices**, if they can
+    share the source of texture. 
 
     **Attributes:**
         **do_rotate** (BooleanProperty): Determines whether or not vertex 
@@ -166,6 +178,12 @@ class NRenderer(GameSystem):
         **shader_source** (StringProperty): Path to the .glsl to be used, do 
         include '.glsl' in the name. You must ensure that your shader matches 
         your vertex format or you will have problems
+
+        **maximum_vertices** (NumericProperty): The maximum number of vertices
+         that will be placed in a batch. 
+
+        **attribute_count** (NumericProperty): The number of attributes each 
+        vertex will contain. Computed automatically inside calculate_vertex_format.
 
         **vertex_format** (dict): describes format of data sent to shaders,
         generated automatically based on do_rotate, do_scale, do_color
@@ -187,8 +205,9 @@ class NRenderer(GameSystem):
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
         super(NRenderer, self).__init__(**kwargs)
-        self.vertex_format = self.calculate_vertex_format()
         self.batches = []
+        self.vertex_format = self.calculate_vertex_format()
+        
         self._do_r_index = -1
         self._do_g_index = -1
         self._do_b_index = -1
@@ -211,7 +230,9 @@ class NRenderer(GameSystem):
         self.vertex_format = self.calculate_vertex_format()
 
     def calculate_vertex_format(self):
-        '''Function used internally to calculate the vertex_format'''
+        '''Function used internally to calculate the vertex_format.
+        Override this method if you would like to create a custom
+        vertex format.'''
         vertex_format = [
             ('vPosition', 2, 'float'),
             ('vTexCoords0', 2, 'float'),
@@ -237,6 +258,9 @@ class NRenderer(GameSystem):
         return vertex_format
 
     def update(self, dt):
+        '''Update function where all drawing of entities is performed. 
+        Override this method in combination with calculate_vertex_format
+        if you would like to create a renderer with customized behavior.'''
         cdef list batches = self.batches
         cdef str system_id = self.system_id
         cdef RenderBatch batch
@@ -295,64 +319,115 @@ class NRenderer(GameSystem):
             for entity_id in entity_ids:
                 entity = entities[entity_id]
                 render_comp = getattr(entity, system_id)
-                pos_comp = entity.position
-                x = pos_comp._x
-                y = pos_comp._y
-                if do_rotate:
-                    rot_comp = entity.rotate
-                    rot = rot_comp._r
-                if do_scale:
-                    scale_comp = entity.scale
-                    s = scale_comp._s
-                if do_color:
-                    color_comp = entity.color
-                    r = color_comp._r
-                    g = color_comp._g
-                    b = color_comp._b
-                    a = color_comp._a
                 vertex_count = render_comp.vertex_count
                 index_count = render_comp.index_count
-                vert_mesh = render_comp._vert_mesh
-                mesh_data = vert_mesh._data
-                mesh_indices = vert_mesh._indices
-                for i from 0 <= i < index_count:
-                    batch_indices[i+index_offset] = (
-                        mesh_indices[i] + mesh_index_offset)
-                for n from 0 <= n < vertex_count:
-                    for attr_ind from 0 <= attr_ind < attribute_count:
-                        mesh_index = n*attribute_count + attr_ind
-                        data_index = mesh_index + vert_offset
-                        if attr_ind == center_x_index:
-                            batch_data[data_index] = x
-                        elif attr_ind == center_y_index:
-                            batch_data[data_index] = y
-                        elif attr_ind == rot_index:
-                            batch_data[data_index] = rot
-                        elif attr_ind == r_index:
-                            batch_data[data_index] = r
-                        elif attr_ind == b_index:
-                            batch_data[data_index] = b
-                        elif attr_ind == g_index:
-                            batch_data[data_index] = g
-                        elif attr_ind == a_index:
-                            batch_data[data_index] = a
-                        elif attr_ind == scale_index:
-                            batch_data[data_index] = s
-                        else:
-                            batch_data[data_index] = mesh_data[mesh_index]
+                if render_comp._render:
+                    pos_comp = entity.position
+                    x = pos_comp._x
+                    y = pos_comp._y
+                    if do_rotate:
+                        rot_comp = entity.rotate
+                        rot = rot_comp._r
+                    if do_scale:
+                        scale_comp = entity.scale
+                        s = scale_comp._s
+                    if do_color:
+                        color_comp = entity.color
+                        r = color_comp._r
+                        g = color_comp._g
+                        b = color_comp._b
+                        a = color_comp._a
+                    vert_mesh = render_comp._vert_mesh
+                    mesh_data = vert_mesh._data
+                    mesh_indices = vert_mesh._indices
+                    for i from 0 <= i < index_count:
+                        batch_indices[i+index_offset] = (
+                            mesh_indices[i] + mesh_index_offset)
+                    for n from 0 <= n < vertex_count:
+                        for attr_ind from 0 <= attr_ind < attribute_count:
+                            mesh_index = n*attribute_count + attr_ind
+                            data_index = mesh_index + vert_offset
+                            if attr_ind == center_x_index:
+                                batch_data[data_index] = x
+                            elif attr_ind == center_y_index:
+                                batch_data[data_index] = y
+                            elif attr_ind == rot_index:
+                                batch_data[data_index] = rot
+                            elif attr_ind == r_index:
+                                batch_data[data_index] = r
+                            elif attr_ind == b_index:
+                                batch_data[data_index] = b
+                            elif attr_ind == g_index:
+                                batch_data[data_index] = g
+                            elif attr_ind == a_index:
+                                batch_data[data_index] = a
+                            elif attr_ind == scale_index:
+                                batch_data[data_index] = s
+                            else:
+                                batch_data[data_index] = mesh_data[mesh_index]
+                else:
+                    for i from 0 <= i < index_count:
+                        batch_indices[i+index_offset] = -1
                 vert_offset += vertex_count * attribute_count
                 mesh_index_offset += vertex_count
                 index_offset += index_count
             batch._cmesh.flag_update()
 
-
-    def clear_mesh(self):
-        '''Used internally when redraw is called'''
-        pass
-
     def remove_entity(self, int entity_id):
+        cdef list entities = self.gameworld.entities
+        cdef object entity = entities[entity_id]
+        cdef NRenderComponent render_comp = getattr(entity, self.system_id)
+        cdef int batch_id = render_comp._batch_id
+        cdef RenderBatch batch = self.batches[batch_id]
+        batch.remove_entity(entity_id)
         super(NRenderer, self).remove_entity(entity_id)
 
+    def on_attribute_count(self, instance, value):
+        cdef RenderBatch batch 
+        cdef list batches = self.batches
+        for batch in batches:
+            batch._attrib_count = value
+        self.rebatch_all()
+
+    def update_entity_batch_counts(self, int entity_id):
+        '''If you have changed the number of vertices or indices in your
+        entities VertMesh, call this function'''
+        cdef list entities = self.gameworld.entities
+        cdef list batches = self.batches
+        cdef object entity = entities[entity_id]
+        cdef NRenderComponent render_comp = getattr(entity, self.system_id)
+        cdef int batch_id = render_comp._batch_id
+        cdef RenderBatch batch = batches[batch_id]
+        batch.update_entity_counts(entity_id, render_comp.vertex_count, 
+            render_comp.index_count)
+
+    def rebatch_all(self):
+        cdef list entity_ids = self.entity_ids
+        cdef int entity_id
+        rebatch_entity = self.rebatch_entity
+        for entity_id in entity_ids:
+            rebatch_entity(entity_id)
+
+    def rebatch_entity(self, int entity_id):
+        cdef list entities = self.gameworld.entities
+        cdef object entity = entities[entity_id]
+        cdef list batches = self.batches
+        cdef NRenderComponent render_comp = getattr(entity, self.system_id)
+        cdef int batch_id = render_comp._batch_id
+        cdef RenderBatch batch = batches[batch_id]
+        render_comp._attrib_count = self.attribute_count
+        batch.remove_entity(entity_id)
+        self.batch_entity(entity_id, render_comp.vertex_count, 
+            render_comp.index_count, render_comp._texture_key, render_comp)
+
+    def batch_entity(self, int entity_id, int vertex_count, int index_count, 
+        str texture_key, NRenderComponent render_comp):
+        try_existing, batch_id = self.add_to_existing_batch(
+            entity_id, vertex_count, index_count, texture_key)
+        if not try_existing:
+            batch_id = self.create_new_batch(entity_id, self.maximum_vertices, 
+                self.attribute_count, vertex_count, index_count, texture_key)
+        render_comp._batch_id = batch_id
 
     def create_component(self, object entity, args):
         cdef NRenderComponent render_comp = self.generate_component(args)
@@ -362,38 +437,46 @@ class NRenderer(GameSystem):
         cdef int vertex_count = render_comp.vertex_count
         cdef int index_count = render_comp.index_count
         cdef str texture_key = render_comp._texture_key
-        if not self.add_to_existing_batch(entity_id, vertex_count, 
-            index_count, texture_key):
-            self.create_new_batch(entity_id, self.maximum_vertices, 
-                self.attribute_count, vertex_count, index_count, texture_key)
-
+        self.batch_entity(entity_id, vertex_count, index_count, texture_key,
+            render_comp)
 
     def create_new_batch(self, int entity_id, int max_verts, 
         int attribute_count, int vertex_count, int index_count, 
         str texture_key):
-        texture_name = texture_manager.get_texname_from_texkey(texture_key)
-        texture = texture_manager.get_texture(texture_name)
+        '''Used internally when no batch exists or has room for the 
+        entity being rendered'''
+        if texture_key is not None:
+            texture_name = texture_manager.get_texname_from_texkey(
+                texture_key)
+            texture = texture_manager.get_texture(texture_name)
+        else:
+            texture_name = None
+            texture = None
         cdef CMesh cmesh
         with self.canvas:
             cmesh = CMesh(fmt=self.vertex_format, mode='triangles',
                     texture=texture)
+        batch_id = len(self.batches)
         cdef RenderBatch new_batch = RenderBatch(max_verts, attribute_count, 
-            cmesh, texture_name)
+            cmesh, texture_name, batch_id)
         self.batches.append(new_batch)
         added = new_batch.add_entity(entity_id, vertex_count, index_count, 
             texture_key)
         if not added:
             raise Exception(
                 'Entity: ' + str(entity_id) + ' not added to batch')
+        return batch_id
 
     def add_to_existing_batch(self, int entity_id, int vertex_count, 
         int index_count, str texture_key):
+        '''Used internally when there is an available batch to fit entity in'''
         cdef list batches = self.batches
+        cdef RenderBatch batch
         for batch in batches:
             if batch.add_entity(entity_id, vertex_count, 
                 index_count, texture_key):
-                return True
-        return False
+                return True, batch._batch_id
+        return False, None
 
     def generate_component(self, dict entity_component_dict):
         '''Renderers take in a dict containing a string 'texture' corresponding
@@ -403,10 +486,29 @@ class NRenderer(GameSystem):
         on_screen returns True always for Renderer and StaticQuadRenderer.
         For DynamicRenderer, on_screen only returns True if that entity is
         within Window bounds.'''
-        cdef str texture = entity_component_dict['texture']
-        w, h = entity_component_dict['size']
-        new_component = NRenderComponent.__new__(NRenderComponent, True, 
-            texture, self.attribute_count, width=w, height=h)
+        if 'texture' in entity_component_dict:
+            texture = entity_component_dict['texture']
+        else:
+            texture = None
+        if 'size' in entity_component_dict:
+            w, h = entity_component_dict['size']
+        else:
+            w, h = None, None
+        if 'copy' in entity_component_dict:
+            copy = entity_component_dict['copy']
+        else:
+            copy = False
+        if 'render' in entity_component_dict:
+            render = entity_component_dict['render']
+        else:
+            render = True
+        if 'vert_mesh' in entity_component_dict:
+            vert_mesh = entity_component_dict['vert_mesh']
+        else:
+            vert_mesh = None
+        new_component = NRenderComponent.__new__(NRenderComponent, render, 
+            texture, self.attribute_count, width=w, height=h, copy=copy,
+            vert_mesh=vert_mesh)
         return new_component
 
 
@@ -421,12 +523,14 @@ cdef class RenderBatch:
     cdef int _r_index_count
     cdef int _r_vert_count
     cdef int _attrib_count
+    cdef int _r_attrib_count
     cdef str _texture
     cdef CMesh _cmesh
+    cdef int _batch_id
 
 
     def __cinit__(self, int maximum_verts, int attribute_count, CMesh cmesh,
-            str texture_name):
+            str texture_name, int batch_id):
         self._entity_ids = []
         self._entity_counts = {}
         self._maximum_verts = maximum_verts
@@ -434,23 +538,25 @@ cdef class RenderBatch:
         self._batch_indices = NULL
         self._r_index_count = 0
         self._r_vert_count = 0
+        self._r_attrib_count = 0
         self._vert_count = 0
         self._index_count = 0
         self._attrib_count = attribute_count
         self._cmesh = cmesh
         self._texture = texture_name
+        self._batch_id = batch_id
 
     def update_batch(self):
         cdef int vert_count = self._vert_count
         cdef int r_vert_count = self._r_vert_count
         cdef int index_count = self._index_count
         cdef int r_index_count = self._r_index_count
+        cdef int r_attrib_count = self._r_attrib_count
         cdef float* batch_data = self._batch_data
         cdef int attribute_count = self._attrib_count
         cdef CMesh cmesh = self._cmesh
         cdef unsigned short* batch_indices = self._batch_indices
-        something_updated = False
-        if vert_count != r_vert_count:
+        if vert_count != r_vert_count or attribute_count != r_attrib_count:
             if not batch_data:
                 batch_data = <float *>PyMem_Malloc(
                     vert_count * attribute_count * sizeof(float))
@@ -460,6 +566,7 @@ cdef class RenderBatch:
                 if not batch_data:
                     raise MemoryError()
             self._r_vert_count = vert_count
+            self._r_attrib_count = attribute_count
             self._batch_data = batch_data
             cmesh._vertices = batch_data
             cmesh.vcount = vert_count*attribute_count
@@ -516,6 +623,30 @@ cdef class RenderBatch:
 
 
 cdef class NVertMesh:
+    '''The VertMesh represents a collection of **vertex_count** vertices, 
+    all having **attribute_count** floating point data fields. The 
+    relationship between the vertices is kept in the form of a list of indices
+    **index_count** in length corresponding to the triangles our mesh is made 
+    up of. Typically you will want your vertex data to be centered around the
+    origin, as the default rendering behavior will then obey the 
+    PositionComponent of your entity.
+
+    **Attributes:**
+        **index_count** (int): Number of indices in the list of triangles.
+
+        **attribute_count** (int): Number of attributes per vertex.
+
+        **vertex_count** (int): Number of vertices in your mesh.
+
+        **data** (list): Returns a copy of the VertMesh's vertex data. When 
+        setting ensure your input list matches vertex_count * attribute_count 
+        in size. To work with individual vertices use __setitem__ and
+         __getitem__ or other helper functions. 
+
+        **indices** (list): Returns a copy of the VertMesh's index data. When 
+        setting ensure your input list matches index_count in size. 
+
+    '''
     cdef int _attrib_count
     cdef float* _data
     cdef int _vert_count
@@ -679,6 +810,8 @@ cdef class NVertMesh:
 
 
     def set_vertex_attribute(self, int vertex_n, int attribute_n, float value):
+        '''Set attribute number attribute_n of vertex number vertex_n to value.
+        '''
         if not vertex_n < self._vert_count:
             raise IndexError()
         cdef int attrib_count = self._attrib_count
@@ -690,6 +823,8 @@ cdef class NVertMesh:
 
     def add_vertex_attribute(self, int vertex_n, 
         int attribute_n, float value):
+        '''Add value to attribute number attribute_n of vertex number vertex_n.
+        '''
         if not vertex_n < self._vert_count:
             raise IndexError()
         cdef int attrib_count = self._attrib_count
@@ -702,6 +837,9 @@ cdef class NVertMesh:
 
     def mult_vertex_attribute(self, int vertex_n, 
         int attribute_n, float value):
+        '''Multiply the value of attribute number attribute_n of vertex number 
+        vertex_n by value.
+        '''
         if not vertex_n < self._vert_count:
             raise IndexError()
         cdef int attrib_count = self._attrib_count
@@ -713,6 +851,8 @@ cdef class NVertMesh:
         data[index] = data[index] * value
 
     def set_all_vertex_attribute(self, int attribute_n, float value):
+        '''Set attribute number attribute_n of all vertices to value.
+        '''
         cdef int attrib_count = self._attrib_count
         cdef int vert_count = self._vert_count
         if not attribute_n < attrib_count:
@@ -727,6 +867,8 @@ cdef class NVertMesh:
             data[index] = value
 
     def add_all_vertex_attribute(self, int attribute_n, float value):
+        '''Add value to attribute number attribute_n of all vertices.
+        '''
         cdef int attrib_count = self._attrib_count
         cdef int vert_count = self._vert_count
         if not attribute_n < attrib_count:
@@ -741,6 +883,9 @@ cdef class NVertMesh:
             data[index] = data[index] + value
 
     def mult_all_vertex_attribute(self, int attribute_n, float value):
+        '''Multiply the value of attribute number attribute_n of all vertices 
+        by value.
+        '''
         cdef int attrib_count = self._attrib_count
         cdef int vert_count = self._vert_count
         if not attribute_n < attrib_count:
@@ -755,6 +900,11 @@ cdef class NVertMesh:
             data[index] = data[index] * value
 
     def set_textured_rectangle(self, float width, float height, list uvs):
+        '''Prepared a 4 vertex_count, 6 index_count textured quad of size:
+        width x height. Normally called internally when creating a VertMesh 
+        using size and texture property. The first two attributes will be
+        used to store the coordinate of the quad offset from the origin, and 
+        the next two will store the UV coordinate data for each vertex.'''
         self.vertex_count = 4
         self.index_count = 6
         self.indices = [0, 1, 2, 2, 3, 0]

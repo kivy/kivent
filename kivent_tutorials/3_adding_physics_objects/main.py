@@ -15,7 +15,8 @@ class TestGame(Widget):
         Clock.schedule_once(self.init_game)
 
     def ensure_startup(self):
-        systems_to_check = ['map', 'physics', 'renderer', 'rotate', 'position']
+        systems_to_check = ['map', 'physics', 'renderer', 
+            'rotate', 'position', 'gameview']
         systems = self.gameworld.systems
         for each in systems_to_check:
             if each not in systems:

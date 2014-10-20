@@ -479,13 +479,15 @@ class NRenderer(GameSystem):
         return False, None
 
     def generate_component(self, dict entity_component_dict):
-        '''Renderers take in a dict containing a string 'texture' corresponding
-        to the name of the texture in the atlas, and a size tuple of width, 
-        height. NRenderComponent's have a texture string, a render boolean 
-        that controls whether or not they will be drawn, an on_screen boolean.
-        on_screen returns True always for Renderer and StaticQuadRenderer.
-        For DynamicRenderer, on_screen only returns True if that entity is
-        within Window bounds.'''
+        '''Renderers take in a dict containing a string 'texture' 
+        correspondingto the name of the texture in the atlas, and a size tuple 
+        of width, height if you would like to construct a textured quad. 
+        You may also create your own VertMesh and supply it for direct use or 
+        to be copied internally. In this case do not provide size, instead 
+        provide 'copy' and 'vert_mesh' fields in the creation args dict 
+        for your RenderComponent. You may also set 'render' at creation to 
+        determine whether entity should be drawn.
+        R'''
         if 'texture' in entity_component_dict:
             texture = entity_component_dict['texture']
         else:
@@ -630,6 +632,13 @@ cdef class NVertMesh:
     up of. Typically you will want your vertex data to be centered around the
     origin, as the default rendering behavior will then obey the 
     PositionComponent of your entity.
+
+    To work with an individual vertex you can:
+
+    vert_mesh[vertex_number] = [1., 1., 1., 1.] #New vertex data 
+
+    This will replace the first n attributes with the contents of the assigned
+    list. Do not have length of assigned list exceed attribute_count.
 
     **Attributes:**
         **index_count** (int): Number of indices in the list of triangles.

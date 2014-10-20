@@ -29,19 +29,16 @@ TestGame:
             gameworld: gameworld
             system_id: 'renderer'
             shader_source: 'assets/glsl/positionshader.glsl'
-            atlas_dir: 'assets/'
-            atlas: 'background_objects'
-        DynamicRenderer:
+            gameview: 'gameview'
+        Renderer:
             gameworld: gameworld
             system_id: 'physics_renderer'
+            do_rotate: True
             shader_source: 'assets/glsl/positionrotateshader.glsl'
-            atlas_dir: 'assets/'
-            atlas: 'foreground_objects'
-            physics_system: 'physics'
+            gameview: 'gameview'
         CymunkPhysics:
             gameworld: gameworld
             system_id: 'physics'
-            viewport: 'gameview'
         SteeringSystem:
             physics_system: 'physics'
             system_id: 'steering'

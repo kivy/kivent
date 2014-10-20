@@ -1,222 +1,140 @@
-from kivy.uix.widget import Widget
-from kivy.properties import (StringProperty, ListProperty, NumericProperty, 
-DictProperty, BooleanProperty, ObjectProperty)
-from kivy.graphics import (PushMatrix, PopMatrix, Translate, Quad, Instruction, 
-Rotate, Color, Scale, Point, Callback, RenderContext)
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from kivy.core.image import Image as CoreImage
-from kivy.atlas import Atlas
-from kivy.clock import Clock
-from kivy.graphics.transformation import Matrix
-import json
+from cpython cimport bool
+from os import path
+cdef extern from "string.h":
+    void *memcpy(void *dest, void *src, size_t n)
+
+cdef class TextureManager:
+    cdef dict _textures
+    cdef dict _keys
+    cdef dict _uvs
+    cdef dict _groups
+
+    def __init__(self):
+        self._textures = {}
+        self._keys = {}
+        self._uvs = {}
+        self._groups = {}
+
+    def load_image(self, source):
+        texture = CoreImage(source, nocache=True).texture
+        name = path.splitext(path.basename(source))[0]
+        if name not in self._textures:
+            self._textures[name] = texture
+            self._keys[name] = name
+            self._uvs[name] = [0., 0., 1., 1.]
+            self._groups[name] = [name]
+        else:
+            raise KeyError()
+
+    def unload_texture(self, name):
+        if name not in self._textures:
+            raise KeyError()
+        else:
+            texture_keys = self._groups[name]
+            for key in texture_keys:
+                del self._uvs[key]
+                del self._keys[key]
+            del self._groups[name]
+            del self._textures[name]
 
 
-cdef class VertMeshComponent:
-    cdef bool _do_texture
-    cdef str _texture
-    cdef VertMesh _vert_mesh
-    cdef CMesh _cmesh
+    def get_uvs(self, tex_key):
+        try:
+            return self._uvs[tex_key]
+        except:
+            return [0., 0., 1., 1.]
 
-    def __cinit__(self, int vert_data_count, int vert_count, 
-        int tri_count, VertMesh vert_mesh=None, list vertices=None, 
-        list triangles=None, bool do_texture=False, str texture=None,
-        tuple offset=None):
-        self._do_texture = do_texture
-        self._texture = texture
+    def get_texture(self, tex_name):
+        return self._textures[tex_name]
 
-        self._vert_mesh = vertm = VertMesh(
-            vert_data_count, vert_count, tri_count)
-        if vert_mesh is not None:
-            vertm.copy_from_existing(vert_mesh)
-        elif triangles is not None and vertices is not None:
-            vertm.load_from_python(vertices, triangles)
-        if offset is not None:
-            vertm.offset_mesh(offset)
+    def get_texture_from_key(self, tex_key):
+        return self._textures[self._keys[tex_key]]
 
-    property texture:
-        def __get__(self):
-            return self._texture
-        def __set__(self, str name):
-            self._texture = name
+    def get_texname_from_texkey(self, tex_key):
+        return self._keys[tex_key]
 
-    property do_texture:
-        def __get__(self):
-            return self._do_texture
-        def __set__(self, bool value):
-            self._do_texture = value
+    def get_texkey_in_group(self, tex_key, atlas_name):
+        if tex_key is None and atlas_name is None:
+            return True
+        else:
+            return tex_key in self._groups[atlas_name]
 
-    property vert_mesh:
-        def __get__(self):
-            return self._vert_mesh
+    def load_atlas(self, source):
+        texture = CoreImage(
+            path.splitext(source)[0]+'-0.png', nocache=True).texture
+        name = path.splitext(path.basename(source))[0]
+        size = texture.size
+        cdef float w = <float>size[0]
+        cdef float h = <float>size[1]
+        with open(source, 'r') as data:
+             atlas_data = json.load(data)
+        cdef dict keys = self._keys
+        cdef dict uvs = self._uvs
+        cdef list group_list = []
+        group_list_a = group_list.append
+        atlas_content = atlas_data[name+'-0.png']
+        cdef float x1, y1, x2, y2
+        if name not in self._textures:
+            self._textures[name] = texture
+            for key in atlas_content:
+                key = <str>key
+                uv_data = atlas_content[key]
+                self._keys[key] = name
+                x1, y1 = uv_data[0], uv_data[1]
+                x2, y2 = x1 + uv_data[2], y1 + uv_data[3]
+                self._uvs[key] = [x1/w, 1.-y1/h, x2/w, 1.-y2/h] 
+                group_list_a(str(key))
+            self._groups[name] = group_list
+        else:
+            raise KeyError()
 
-    property tri_count:
-        def __get__(self):
-            return self._vert_mesh.tri_count
-
-    property vert_count:
-        def __get__(self):
-            return self._vert_mesh.vert_count
-
-class StaticVertMeshRenderer(GameSystem):
-    vertex_data_count = NumericProperty(4)
-    shader_source = StringProperty('positionshader.glsl')
-
-    def __init__(self, **kwargs):
-        self.canvas = RenderContext(use_parent_projection=True)
-        if 'shader_source' in kwargs:
-            self.canvas.shader.source = kwargs.get('shader_source')
-        super(StaticVertMeshRenderer, self).__init__(**kwargs)
-        self.redraw = Clock.create_trigger(self.trigger_redraw)
-        self.vertex_format = self.calculate_vertex_format()
-
-    def on_shader_source(self, instance, value):
-        self.canvas.shader.source = value
-
-    def on_vertex_data_count(self, instance, value):
-        self.vertex_format = self.calculate_vertex_format()
-
-    def trigger_redraw(self, dt):
-        cdef list entity_ids = self.entity_ids
-        cdef int entity_id
-        cdef object redraw_entity = self.redraw_entity
-        for entity_id in entity_ids:
-            self.redraw_entity(entity_id)
-
-    def calculate_vertex_format(self):
-        '''Function used internally to calculate the vertex_format'''
-        cdef int vertex_data_count = self.vertex_data_count
-        vertex_format = [
-            ('v0', 1, 'float'),
-            ('v1', 1, 'float'),
-            ('v2', 1, 'float'),
-            ('v3', 1, 'float'),
-            ]
-        ve = vertex_format.extend
-        if vertex_data_count > 4:
-            ve([
-                ('v4', 1, 'float'),
-                ('v5', 1, 'float'),
-                ('v6', 1, 'float'),
-                ('v7', 1, 'float'),
-                ])
-        if vertex_data_count > 8:
-            ve([
-                ('v8', 1, 'float'),
-                ('v9', 1, 'float'),
-                ('v10', 1, 'float'),
-                ('v11', 1, 'float'),
-                ])
-        if vertex_data_count > 12:
-            ve([
-                ('v12', 1, 'float'),
-                ('v13', 1, 'float'),
-                ('v14', 1, 'float'),
-                ('v15', 1, 'float'),
-                ])
-        return vertex_format
-
-    def create_component(self, object entity, args):
-        super(StaticVertMeshRenderer, self).create_component(
-            entity, args)
-
-    def generate_component(self, dict entity_component_dict):
-        cdef int vert_data_count = entity_component_dict['vert_data_count']
-        cdef int vert_count = entity_component_dict['vert_count']
-        cdef int tri_count = entity_component_dict['tri_count']
-        cdef list vertices 
-        cdef list triangles
-        cdef bool do_texture
-        cdef str texture
-        cdef tuple offset
-        cdef dict kwargs = {}
-        cdef VertMesh vert_mesh
-        if 'triangles' in entity_component_dict and (
-            'vertices' in entity_component_dict):
-            triangles = entity_component_dict['triangles']
-            vertices = entity_component_dict['vertices']
-            kwargs['vertices'] = vertices
-            kwargs['triangles'] = triangles
-        elif 'vert_mesh' in entity_component_dict:
-            vert_mesh = entity_component_dict['vert_mesh']
-            kwargs['vert_mesh'] = vert_mesh
-        if 'do_texture' in entity_component_dict:
-            do_texture = entity_component_dict['do_texture']
-            kwargs['do_texture'] = do_texture
-        if 'texture' in entity_component_dict:
-            texture = entity_component_dict['texture']
-            kwargs['texture'] = texture
-        if 'offset' in entity_component_dict:
-            offset = entity_component_dict['offset']
-            kwargs['offset'] = offset
-        cdef VertMeshComponent new_component
-        new_component = VertMeshComponent.__new__(VertMeshComponent, 
-            vert_data_count, vert_count, tri_count, **kwargs)
-        
-        self.draw_vert_mesh(new_component)
-        return new_component
-
-    def redraw_entity(self, int entity_id):
-        cdef object gameworld = self.gameworld
-        cdef list entities = gameworld.entities
-        cdef str system_id = self.system_id
-        cdef object entity = entities[entity_id]
-        cdef VertMeshComponent vert_comp = getattr(entity, system_id)
-        self.remove_vert_mesh(vert_comp)
-        self.draw_vert_mesh(vert_comp)
-
-    def draw_vert_mesh(self, VertMeshComponent vert_comp):
-        cdef CMesh cmesh
-        cdef VertMesh vert_mesh = vert_comp._vert_mesh
-        vert_mesh.generate_gl_verts()
-        vert_mesh.generate_gl_indices()
-        with self.canvas:
-            cmesh = CMesh(fmt=self.vertex_format,
-                mode='triangles')
-        if vert_comp._do_texture:
-            cmesh.source = vert_comp._texture
-        cmesh._vertices = vert_mesh._gl_verts
-        cmesh._indices = vert_mesh._gl_indices
-        cmesh.vcount = vert_mesh.vert_count * vert_mesh._real_count
-        cmesh.icount = vert_mesh.tri_count * 3
-        cmesh.flag_update()
-        vert_comp._cmesh = cmesh
-
-    def remove_vert_mesh(self, VertMeshComponent vert_comp):
-        cdef CMesh cmesh = vert_comp._cmesh
-        self.canvas.remove(cmesh)
-        vert_comp._cmesh = None
-
-    def remove_entity(self, int entity_id):
-        cdef object gameworld = self.gameworld
-        cdef list entities = gameworld.entities
-        cdef str system_id = self.system_id
-        cdef object entity = entities[entity_id]
-        cdef VertMeshComponent vert_comp = getattr(entity, system_id)
-        self.remove_vert_mesh(vert_comp)
-        super(StaticVertMeshRenderer, self).remove_entity(entity_id)
-
-
+texture_manager = TextureManager()
 
 
 cdef class RenderComponent:
     cdef bool _render
-    cdef bool _on_screen
-    cdef str _texture
-    cdef float _width
-    cdef float _height
+    cdef str _texture_key
+    cdef VertMesh _vert_mesh
+    cdef int _attrib_count
+    cdef int _batch_id
 
-    def __cinit__(self, bool render, bool on_screen, str texture, 
-        float width, float height):
+    def __cinit__(self, bool render, str texture_key, 
+        int attribute_count, width=None, height=None, 
+        vert_mesh=None, copy=False):
         self._render = render
-        self._on_screen = on_screen
-        self._texture = texture
-        self._width = width
-        self._height = height
+        self._texture_key = texture_key
+        self._attrib_count = attribute_count
+        if width is not None and height is not None:
+            self._vert_mesh = vert_mesh = VertMesh(attribute_count, 4, 6)
+            vert_mesh.set_textured_rectangle(width, height, 
+                texture_manager.get_uvs(texture_key))
+        elif vert_mesh != None:
+            if not copy:
+                self._vert_mesh = vert_mesh
+            else:
+                self._vert_mesh = new_vert_mesh = VertMesh(attribute_count, 
+                    vert_mesh._vert_count, vert_mesh._index_count)
+                new_vert_mesh.copy_vert_mesh(vert_mesh)
 
-    property texture:
+    property batch_id:
         def __get__(self):
-            return self._texture
+            return self._batch_id
+
+    property attribute_count:
+        def __get__(self):
+            return self._attrib_count
+
+        def __set__(self, int value):
+            self._attrib_count = value
+            self._vert_mesh.attribute_count = value
+
+    property texture_key:
+        def __get__(self):
+            return self._texture_key
         def __set__(self, str value):
-            self._texture = value
+            self._texture_key = value
 
     property render:
         def __get__(self):
@@ -224,43 +142,32 @@ cdef class RenderComponent:
         def __set__(self, bool value):
             self._render = value
 
-    property on_screen:
+    property vertex_count:
         def __get__(self):
-            return self._on_screen
-        def __set__(self, bool value):
-            self._on_screen = value
+            return self._vert_mesh._vert_count
 
-    property width:
+        def __set__(self, int value):
+            self._vert_mesh.vertex_count = value
+
+    property index_count:
         def __get__(self):
-            return self._width
-        def __set__(self, float value):
-            self._width = value
+            return self._vert_mesh._index_count
 
-    property height:
+        def __set__(self, int value):
+            self._vert_mesh.index_count = value
+
+    property vert_mesh:
         def __get__(self):
-            return self._height
-        def __set__(self, float value):
-            self._height = value
+            return self._vert_mesh
 
-cdef class CRenderer:
-    cdef void* frame_info_ptr
-    cdef void* indice_info_ptr
-    cdef long i_count
-    cdef long v_count
-
-    def __dealloc__(self):
-        frame_info = <float *>self.frame_info_ptr
-        if frame_info != NULL:
-            free(frame_info)
-            frame_info = NULL
-        indice_info = <unsigned short *>self.indice_info_ptr
-        if indice_info != NULL:
-            free(indice_info)
-            indice_info = NULL
+        def __set__(self, VertMesh vert_mesh):
+            self._vert_mesh = vert_mesh
 
 
 class Renderer(GameSystem):
-    '''The basic KivEnt renderer it draws every entity every frame.
+    '''The basic KivEnt renderer it draws every entity every frame. Entities 
+    will be batched into groups of up to **maximum_vertices**, if they can
+    share the source of texture. 
 
     **Attributes:**
         **do_rotate** (BooleanProperty): Determines whether or not vertex 
@@ -272,36 +179,19 @@ class Renderer(GameSystem):
         **do_scale** (BooleanProperty): Determines whether or not vertex 
         format will have a float for scale
 
-        **mesh** (ObjectProperty): reference to the active CMesh instruction 
-        for the Renderer
-
-        **atlas_dir** (StringProperty): Path to the directory containing the 
-        .atlas this renderer will lookup texture data from.
-
-        **atlas** (StringProperty): Name of the .atlas to be used, do not 
-        include the '.atlas' in the name.
-
         **shader_source** (StringProperty): Path to the .glsl to be used, do 
         include '.glsl' in the name. You must ensure that your shader matches 
         your vertex format or you will have problems
 
-        **redraw** (Clock Trigger): A trigger that can be used to request a 
-        redraw of canvas next frame, will never be called more than once a 
-        frame. 
+        **maximum_vertices** (NumericProperty): The maximum number of vertices
+         that will be placed in a batch. 
+
+        **attribute_count** (NumericProperty): The number of attributes each 
+        vertex will contain. Computed automatically inside calculate_vertex_format.
 
         **vertex_format** (dict): describes format of data sent to shaders,
         generated automatically based on do_rotate, do_scale, do_color
 
-        **redraw_mesh** (bool): Used internally to determine whether or not to 
-        recreate mesh
-
-        **crenderer** (object): cython renderer used internally to hold c data
-
-        **uv_dict** (dict): dictionary containing information about texture 
-        uv information
-
-        **on_screen_last_frame** (list): Used to cache data about what was on 
-        screen last frame. Only used for DynamicRenderer at the moment
     '''
     system_id = StringProperty('renderer')
     updateable = BooleanProperty(True)
@@ -309,37 +199,30 @@ class Renderer(GameSystem):
     do_rotate = BooleanProperty(False)
     do_color = BooleanProperty(False)
     do_scale = BooleanProperty(False)
-    mesh = ObjectProperty(None, allownone=True)
-    atlas_dir = StringProperty(None)
-    atlas = StringProperty(None)
+    attribute_count = NumericProperty(4)
+    maximum_vertices = NumericProperty(20000)
     shader_source = StringProperty('positionshader.glsl')
 
 
     def __init__(self, **kwargs):
-        self.canvas = RenderContext(
-            use_parent_projection=True)
+        self.canvas = RenderContext(use_parent_projection=True)
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
         super(Renderer, self).__init__(**kwargs)
-        self.redraw = Clock.create_trigger(self.trigger_redraw)
+        self.batches = []
         self.vertex_format = self.calculate_vertex_format()
-        self.redraw_mesh = True
-        self.crenderer = CRenderer()
-        self.uv_dict = {}
-        self.on_screen_last_frame = []
+        
+        self._do_r_index = -1
+        self._do_g_index = -1
+        self._do_b_index = -1
+        self._do_a_index = -1
+        self._do_rot_index = -1
+        self._do_scale_index = -1
+        self._do_center_x = 4
+        self._do_center_y = 5
 
     def on_shader_source(self, instance, value):
         self.canvas.shader.source = value
-
-    def on_atlas(self, instance, value):
-        if value and self.atlas_dir:
-            self.uv_dict = self.return_uv_coordinates(
-                value + '.atlas', value + '-0.png', self.atlas_dir)
-
-    def on_atlas_dir(self, instance, value):
-        if value and self.atlas:
-            self.uv_dict = self.return_uv_coordinates(
-                self.atlas + '.atlas', self.atlas + '-0.png', value)
 
     def on_do_rotate(self, instance, value):
         self.vertex_format = self.calculate_vertex_format()
@@ -350,462 +233,701 @@ class Renderer(GameSystem):
     def on_do_color(self, instance, value):
         self.vertex_format = self.calculate_vertex_format()
 
-    def return_uv_coordinates(self, atlas_name, atlas_page, atlas_dir):
-        '''Function used internally to load the uv_dict informations
-        will return a list of [u0, v0, u1, v1, texture_width, texture_height] 
-        for key of texture_name'''
-        uv_dict = {}
-        uv_dict['main_texture'] = atlas = CoreImage(
-            atlas_dir + atlas_page).texture
-        size = atlas.size
-        uv_dict['atlas_size'] = atlas_size = (float(size[0]), float(size[1]))
-        w, h = atlas_size
-        with open(atlas_dir + atlas_name, 'r') as fd:
-            atlas_data = json.load(fd)
-        atlas_content = atlas_data[atlas_page]
-        for texture_name in atlas_content:
-            data = atlas_content[texture_name]
-            x1, y1 = data[0], data[1]
-            x2, y2 = x1 + data[2], y1 + data[3]
-            uv_dict[
-                texture_name] = x1/w, 1.-y1/h, x2/w, 1.-y2/h, data[2], data[3]
-        return uv_dict
-
     def calculate_vertex_format(self):
-        '''Function used internally to calculate the vertex_format'''
+        '''Function used internally to calculate the vertex_format.
+        Override this method if you would like to create a custom
+        vertex format.'''
         vertex_format = [
             ('vPosition', 2, 'float'),
             ('vTexCoords0', 2, 'float'),
-            ('vCenter', 2, 'float')
+            ('vCenter', 2, 'float'),
             ]
+        attribute_count = 6
         if self.do_rotate:
             vertex_format.append(('vRotation', 1, 'float'))
+            self._do_rot_index = attribute_count
+            attribute_count += 1
         if self.do_color:
             vertex_format.append(('vColor', 4, 'float'))
+            self._do_r_index = attribute_count
+            self._do_g_index = attribute_count + 1
+            self._do_b_index = attribute_count + 2
+            self._do_a_index = attribute_count + 3
+            attribute_count += 4
         if self.do_scale:
+            self._do_scale_index = attribute_count
             vertex_format.append(('vScale', 1, 'float'))
-        self.redraw()
+            attribute_count += 1
+        self.attribute_count = attribute_count
         return vertex_format
 
-    def trigger_redraw(self, dt):
-        self.clear_mesh()
-        cdef list entity_ids = self.update_render_state()
-        self.draw_mesh(entity_ids)
-
-    def draw_mesh(self, list entities_to_draw):
-        '''Function used internally to draw mesh'''
-        cdef object gameworld = self.gameworld
-        cdef list entities = gameworld.entities
-        cdef str system_id = self.system_id
-        cdef list entity_ids = entities_to_draw
-        cdef CRenderer cr = self.crenderer
-        cdef CMesh cmesh
-        cdef bool do_color = self.do_color
-        cdef bool do_scale = self.do_scale
-        cdef bool do_rotate = self.do_rotate
-        cdef object entity
-        cdef RenderComponent system_data
-        vertex_format = self.vertex_format
-        cdef int vert_data_count = 6
-        if do_scale:
-            vert_data_count += 1
-        if do_rotate:
-            vert_data_count += 1
-        if do_color:
-            vert_data_count += 4
-        cdef int num_elements = len(entity_ids)
-        cdef int i
-        cdef int entity_id
-        cdef void* indices_ptr
-        cdef float* frame_info
-        cdef unsigned short * indice_info
-        frame_info = <float *>cr.frame_info_ptr
-        if frame_info != NULL:
-            free(frame_info)
-            frame_info = NULL
-        indice_info = <unsigned short *>cr.indice_info_ptr
-        if indice_info != NULL:
-            free(indice_info)
-            indice_info = NULL
-        cr.indice_info_ptr = indices_ptr = <void *>malloc(
-            sizeof(unsigned short) * num_elements * 6)
-        cdef void* frame_ptr
-        cr.frame_info_ptr = frame_ptr = <void *>malloc(sizeof(float) * 
-            num_elements * 4 * vert_data_count)
-        if not frame_ptr or not indices_ptr:
-            raise MemoryError()
-        cdef unsigned short * indices_info = <unsigned short *>indices_ptr
-        frame_info = <float *>frame_ptr
-        cdef dict uv_dict = self.uv_dict
-        cdef int offset 
-        cdef int indice_offset
-        cr.v_count = <long>num_elements * 4 * vert_data_count
-        cr.i_count = <long>num_elements * 6
-        cdef int index
-        cdef float rotate
-        cdef float x, y
-        cdef float x0, y0, x1, y1
-        cdef float w, h
-        cdef int fr_index
-        cdef ColorComponent color_comp
-        cdef PositionComponent pos_comp
-        cdef ScaleComponent scale_comp
-        cdef RotateComponent rot_comp
-        cdef float scale
-        cdef float r, g, b, a
-        for i in range(num_elements):
-            entity_id = entity_ids[i]
-            entity = entities[entity_id]
-            offset = 4 * i
-            indice_offset = i*6
-            index = 4 * vert_data_count * i
-            indices_info[indice_offset] = 0 + offset
-            indices_info[indice_offset+1] = 1 + offset
-            indices_info[indice_offset+2] = 2 + offset
-            indices_info[indice_offset+3] = 2 + offset
-            indices_info[indice_offset+4] = 3 + offset
-            indices_info[indice_offset+5] = 0 + offset
-            system_data = getattr(entity, system_id)
-            if system_data._render:
-                pos_comp = entity.position
-                tex_choice = system_data._texture
-                uv = uv_dict[tex_choice]
-                w = system_data._width
-                h = system_data._height
-                x0, y0 = uv[0], uv[1]
-                x1, y1 = uv[2], uv[3]
-                x, y = pos_comp._x, pos_comp._y
-                frame_info[index] = -w
-                frame_info[index+1] = -h
-                frame_info[index+2] = x0
-                frame_info[index+3] = y0
-                frame_info[index+4] = x
-                frame_info[index+5] = y
-                frame_info[index+vert_data_count] = w
-                frame_info[index+vert_data_count+1] = -h
-                frame_info[index+vert_data_count+2] = x1
-                frame_info[index+vert_data_count+3] = y0
-                frame_info[index+vert_data_count+4] = x
-                frame_info[index+vert_data_count+5] = y
-                frame_info[index+2*vert_data_count] = w
-                frame_info[index+2*vert_data_count+1] = h
-                frame_info[index+2*vert_data_count+2] = x1
-                frame_info[index+2*vert_data_count+3] = y1
-                frame_info[index+2*vert_data_count+4] = x
-                frame_info[index+2*vert_data_count+5] = y
-                frame_info[index+3*vert_data_count] = -w
-                frame_info[index+3*vert_data_count+1] = h
-                frame_info[index+3*vert_data_count+2] = x0
-                frame_info[index+3*vert_data_count+3] = y1
-                frame_info[index+3*vert_data_count+4] = x
-                frame_info[index+3*vert_data_count+5] = y
-                fr_index = 6
-                if do_rotate:
-                    rot_comp = entity.rotate
-                    rotate = rot_comp._r
-                    frame_info[index+fr_index] = rotate
-                    frame_info[index+vert_data_count+fr_index] = rotate
-                    frame_info[index+2*vert_data_count+fr_index] = rotate
-                    frame_info[index+3*vert_data_count+fr_index] = rotate
-                    fr_index += 1
-                if do_color:
-                    color_comp = entity.color
-                    r = color_comp._r
-                    g = color_comp._g
-                    b = color_comp._b
-                    a = color_comp._a
-                    frame_info[index+fr_index] = r
-                    frame_info[index+vert_data_count+fr_index] = r
-                    frame_info[index+2*vert_data_count+fr_index] = r
-                    frame_info[index+3*vert_data_count+fr_index] = r
-                    fr_index += 1
-                    frame_info[index+fr_index] = g
-                    frame_info[index+vert_data_count+fr_index] = g
-                    frame_info[index+2*vert_data_count+fr_index] = g
-                    frame_info[index+3*vert_data_count+fr_index] = g
-                    fr_index += 1
-                    frame_info[index+fr_index] = b
-                    frame_info[index+vert_data_count+fr_index] = b
-                    frame_info[index+2*vert_data_count+fr_index] = b
-                    frame_info[index+3*vert_data_count+fr_index] = b
-                    fr_index += 1
-                    frame_info[index+fr_index] = a
-                    frame_info[index+vert_data_count+fr_index] = a
-                    frame_info[index+2*vert_data_count+fr_index] = a
-                    frame_info[index+3*vert_data_count+fr_index] = a
-                    fr_index += 1
-                if do_scale:
-                    scale_comp = entity.scale
-                    scale = scale_comp._s
-                    frame_info[index+fr_index] = scale
-                    frame_info[index+vert_data_count+fr_index] = scale
-                    frame_info[index+2*vert_data_count+fr_index] = scale
-                    frame_info[index+3*vert_data_count+fr_index] = scale
-                    fr_index += 1
-        if self.redraw_mesh:
-            with self.canvas:
-                cmesh = CMesh(fmt=vertex_format,
-                    mode='triangles',
-                    texture=uv_dict['main_texture'])
-                self.mesh = cmesh
-                self.redraw_mesh = False
-        cmesh = self.mesh
-        cmesh._vertices = cr.frame_info_ptr
-        cmesh._indices = cr.indice_info_ptr
-        cmesh.vcount = cr.v_count
-        cmesh.icount = cr.i_count
-        cmesh.flag_update()
-
     def update(self, dt):
-        cdef list entity_ids = self.update_render_state()
-        self.draw_mesh(entity_ids)
-
-    def update_render_state(self):
-        '''Returns a list of entity_ids to draw for the current screen'''
-        cdef list entity_ids = self.entity_ids
-        return entity_ids
-
-    def clear_mesh(self):
-        '''Used internally when redraw is called'''
-        if self.mesh is not None and not self.redraw_mesh:
-            self.canvas.remove(self.mesh)
-            self.redraw_mesh = True
+        '''Update function where all drawing of entities is performed. 
+        Override this method in combination with calculate_vertex_format
+        if you would like to create a renderer with customized behavior.'''
+        cdef list batches = self.batches
+        cdef str system_id = self.system_id
+        cdef RenderBatch batch
+        cdef object gameworld = self.gameworld
+        cdef object entity
+        cdef int entity_id
+        cdef list entities = gameworld.entities
+        cdef list entity_ids
+        cdef RenderComponent render_comp
+        cdef PositionComponent pos_comp
+        cdef RotateComponent rot_comp
+        cdef ScaleComponent scale_comp
+        cdef ColorComponent color_comp
+        cdef int vert_offset
+        cdef int attribute_count = self.attribute_count
+        cdef int vertex_count
+        cdef int index_count
+        cdef int index_offset
+        cdef int mesh_index_offset
+        cdef int n
+        cdef int attr_ind
+        cdef int i
+        cdef float rot
+        cdef float s
+        cdef float r
+        cdef float g
+        cdef float b
+        cdef float a
+        cdef bool do_rotate = self.do_rotate
+        cdef bool do_scale = self.do_scale
+        cdef bool do_color = self.do_color
+        cdef int center_x_index = self._do_center_x
+        cdef int center_y_index = self._do_center_y
+        cdef int rot_index = self._do_rot_index
+        cdef int r_index = self._do_r_index
+        cdef int g_index = self._do_g_index
+        cdef int b_index = self._do_b_index
+        cdef int a_index = self._do_a_index
+        cdef int scale_index = self._do_scale_index
+        cdef float x, y
+        cdef VertMesh vert_mesh
+        cdef float* batch_data
+        cdef float* mesh_data
+        cdef unsigned short* batch_indices
+        cdef unsigned short* mesh_indices
+        cdef int data_index
+        cdef int mesh_index
+        for batch in batches:
+            batch.update_batch()
+            batch_data = batch._batch_data
+            batch_indices = batch._batch_indices
+            entity_ids = batch._entity_ids
+            index_offset = 0
+            vert_offset = 0
+            mesh_index_offset = 0
+            for entity_id in entity_ids:
+                entity = entities[entity_id]
+                render_comp = getattr(entity, system_id)
+                vertex_count = render_comp.vertex_count
+                index_count = render_comp.index_count
+                if render_comp._render:
+                    pos_comp = entity.position
+                    x = pos_comp._x
+                    y = pos_comp._y
+                    if do_rotate:
+                        rot_comp = entity.rotate
+                        rot = rot_comp._r
+                    if do_scale:
+                        scale_comp = entity.scale
+                        s = scale_comp._s
+                    if do_color:
+                        color_comp = entity.color
+                        r = color_comp._r
+                        g = color_comp._g
+                        b = color_comp._b
+                        a = color_comp._a
+                    vert_mesh = render_comp._vert_mesh
+                    mesh_data = vert_mesh._data
+                    mesh_indices = vert_mesh._indices
+                    for i from 0 <= i < index_count:
+                        batch_indices[i+index_offset] = (
+                            mesh_indices[i] + mesh_index_offset)
+                    for n from 0 <= n < vertex_count:
+                        for attr_ind from 0 <= attr_ind < attribute_count:
+                            mesh_index = n*attribute_count + attr_ind
+                            data_index = mesh_index + vert_offset
+                            if attr_ind == center_x_index:
+                                batch_data[data_index] = x
+                            elif attr_ind == center_y_index:
+                                batch_data[data_index] = y
+                            elif attr_ind == rot_index:
+                                batch_data[data_index] = rot
+                            elif attr_ind == r_index:
+                                batch_data[data_index] = r
+                            elif attr_ind == b_index:
+                                batch_data[data_index] = b
+                            elif attr_ind == g_index:
+                                batch_data[data_index] = g
+                            elif attr_ind == a_index:
+                                batch_data[data_index] = a
+                            elif attr_ind == scale_index:
+                                batch_data[data_index] = s
+                            else:
+                                batch_data[data_index] = mesh_data[mesh_index]
+                else:
+                    for i from 0 <= i < index_count:
+                        batch_indices[i+index_offset] = -1
+                vert_offset += vertex_count * attribute_count
+                mesh_index_offset += vertex_count
+                index_offset += index_count
+            batch._cmesh.flag_update()
 
     def remove_entity(self, int entity_id):
+        cdef list entities = self.gameworld.entities
+        cdef object entity = entities[entity_id]
+        cdef RenderComponent render_comp = getattr(entity, self.system_id)
+        cdef int batch_id = render_comp._batch_id
+        cdef RenderBatch batch = self.batches[batch_id]
+        batch.remove_entity(entity_id)
         super(Renderer, self).remove_entity(entity_id)
-        self.redraw()
+
+    def on_attribute_count(self, instance, value):
+        cdef RenderBatch batch 
+        cdef list batches = self.batches
+        for batch in batches:
+            batch._attrib_count = value
+        self.rebatch_all()
+
+    def update_entity_batch_counts(self, int entity_id):
+        '''If you have changed the number of vertices or indices in your
+        entities VertMesh, call this function'''
+        cdef list entities = self.gameworld.entities
+        cdef list batches = self.batches
+        cdef object entity = entities[entity_id]
+        cdef RenderComponent render_comp = getattr(entity, self.system_id)
+        cdef int batch_id = render_comp._batch_id
+        cdef RenderBatch batch = batches[batch_id]
+        batch.update_entity_counts(entity_id, render_comp.vertex_count, 
+            render_comp.index_count)
+
+    def rebatch_all(self):
+        cdef list entity_ids = self.entity_ids
+        cdef int entity_id
+        rebatch_entity = self.rebatch_entity
+        for entity_id in entity_ids:
+            rebatch_entity(entity_id)
+
+    def rebatch_entity(self, int entity_id):
+        cdef list entities = self.gameworld.entities
+        cdef object entity = entities[entity_id]
+        cdef list batches = self.batches
+        cdef RenderComponent render_comp = getattr(entity, self.system_id)
+        cdef int batch_id = render_comp._batch_id
+        cdef RenderBatch batch = batches[batch_id]
+        render_comp._attrib_count = self.attribute_count
+        batch.remove_entity(entity_id)
+        self.batch_entity(entity_id, render_comp.vertex_count, 
+            render_comp.index_count, render_comp._texture_key, render_comp)
+
+    def batch_entity(self, int entity_id, int vertex_count, int index_count, 
+        str texture_key, RenderComponent render_comp):
+        try_existing, batch_id = self.add_to_existing_batch(
+            entity_id, vertex_count, index_count, texture_key)
+        if not try_existing:
+            batch_id = self.create_new_batch(entity_id, self.maximum_vertices, 
+                self.attribute_count, vertex_count, index_count, texture_key)
+        render_comp._batch_id = batch_id
 
     def create_component(self, object entity, args):
-        super(Renderer, self).create_component(
-            entity, args)
-        self.redraw()
+        cdef RenderComponent render_comp = self.generate_component(args)
+        setattr(entity, self.system_id, render_comp)
+        cdef int entity_id = entity.entity_id
+        self.entity_ids.append(entity_id)
+        cdef int vertex_count = render_comp.vertex_count
+        cdef int index_count = render_comp.index_count
+        cdef str texture_key = render_comp._texture_key
+        self.batch_entity(entity_id, vertex_count, index_count, texture_key,
+            render_comp)
+
+    def create_new_batch(self, int entity_id, int max_verts, 
+        int attribute_count, int vertex_count, int index_count, 
+        str texture_key):
+        '''Used internally when no batch exists or has room for the 
+        entity being rendered'''
+        if texture_key is not None:
+            texture_name = texture_manager.get_texname_from_texkey(
+                texture_key)
+            texture = texture_manager.get_texture(texture_name)
+        else:
+            texture_name = None
+            texture = None
+        cdef CMesh cmesh
+        with self.canvas:
+            cmesh = CMesh(fmt=self.vertex_format, mode='triangles',
+                    texture=texture)
+        batch_id = len(self.batches)
+        cdef RenderBatch new_batch = RenderBatch(max_verts, attribute_count, 
+            cmesh, texture_name, batch_id)
+        self.batches.append(new_batch)
+        added = new_batch.add_entity(entity_id, vertex_count, index_count, 
+            texture_key)
+        if not added:
+            raise Exception(
+                'Entity: ' + str(entity_id) + ' not added to batch')
+        return batch_id
+
+    def add_to_existing_batch(self, int entity_id, int vertex_count, 
+        int index_count, str texture_key):
+        '''Used internally when there is an available batch to fit entity in'''
+        cdef list batches = self.batches
+        cdef RenderBatch batch
+        for batch in batches:
+            if batch.add_entity(entity_id, vertex_count, 
+                index_count, texture_key):
+                return True, batch._batch_id
+        return False, None
 
     def generate_component(self, dict entity_component_dict):
-        '''Renderers take in a dict containing a string 'texture' corresponding
-        to the name of the texture in the atlas, and a size tuple of width, 
-        height. RenderComponent's have a texture string, a render boolean 
-        that controls whether or not they will be drawn, an on_screen boolean.
-        on_screen returns True always for Renderer and StaticQuadRenderer.
-        For DynamicRenderer, on_screen only returns True if that entity is
-        within Window bounds.'''
-        texture = entity_component_dict['texture']
-        size = entity_component_dict['size']
-        new_component = RenderComponent.__new__(RenderComponent, True, True, 
-            texture, size[0], size[1])
+        '''Renderers take in a dict containing a string 'texture' 
+        correspondingto the name of the texture in the atlas, and a size tuple 
+        of width, height if you would like to construct a textured quad. 
+        You may also create your own VertMesh and supply it for direct use or 
+        to be copied internally. In this case do not provide size, instead 
+        provide 'copy' and 'vert_mesh' fields in the creation args dict 
+        for your RenderComponent. You may also set 'render' at creation to 
+        determine whether entity should be drawn.
+        R'''
+        if 'texture' in entity_component_dict:
+            texture = entity_component_dict['texture']
+        else:
+            texture = None
+        if 'size' in entity_component_dict:
+            w, h = entity_component_dict['size']
+        else:
+            w, h = None, None
+        if 'copy' in entity_component_dict:
+            copy = entity_component_dict['copy']
+        else:
+            copy = False
+        if 'render' in entity_component_dict:
+            render = entity_component_dict['render']
+        else:
+            render = True
+        if 'vert_mesh' in entity_component_dict:
+            vert_mesh = entity_component_dict['vert_mesh']
+        else:
+            vert_mesh = None
+        new_component = RenderComponent.__new__(RenderComponent, render, 
+            texture, self.attribute_count, width=w, height=h, copy=copy,
+            vert_mesh=vert_mesh)
         return new_component
 
 
-class DynamicRenderer(Renderer):
-    '''DynamicRenderer is designed to work with the cymunk_physics system,
-    and used queries of the physics to determine which entities to draw
-    rather than drawing everything. If you query your RenderComponent
-    for a DynamicRenderer the on_screen property will return True only if
-    that entity is currently within the Window bounds.
+cdef class RenderBatch:
+    cdef list _entity_ids
+    cdef int _vert_count
+    cdef dict _entity_counts
+    cdef int _maximum_verts
+    cdef float* _batch_data
+    cdef unsigned short* _batch_indices
+    cdef int _index_count
+    cdef int _r_index_count
+    cdef int _r_vert_count
+    cdef int _attrib_count
+    cdef int _r_attrib_count
+    cdef str _texture
+    cdef CMesh _cmesh
+    cdef int _batch_id
+
+
+    def __cinit__(self, int maximum_verts, int attribute_count, CMesh cmesh,
+            str texture_name, int batch_id):
+        self._entity_ids = []
+        self._entity_counts = {}
+        self._maximum_verts = maximum_verts
+        self._batch_data = NULL
+        self._batch_indices = NULL
+        self._r_index_count = 0
+        self._r_vert_count = 0
+        self._r_attrib_count = 0
+        self._vert_count = 0
+        self._index_count = 0
+        self._attrib_count = attribute_count
+        self._cmesh = cmesh
+        self._texture = texture_name
+        self._batch_id = batch_id
+
+    def update_batch(self):
+        cdef int vert_count = self._vert_count
+        cdef int r_vert_count = self._r_vert_count
+        cdef int index_count = self._index_count
+        cdef int r_index_count = self._r_index_count
+        cdef int r_attrib_count = self._r_attrib_count
+        cdef float* batch_data = self._batch_data
+        cdef int attribute_count = self._attrib_count
+        cdef CMesh cmesh = self._cmesh
+        cdef unsigned short* batch_indices = self._batch_indices
+        if vert_count != r_vert_count or attribute_count != r_attrib_count:
+            if not batch_data:
+                batch_data = <float *>PyMem_Malloc(
+                    vert_count * attribute_count * sizeof(float))
+            else:
+                batch_data = <float *>PyMem_Realloc(batch_data, 
+                    attribute_count * vert_count * sizeof(float))
+                if not batch_data:
+                    raise MemoryError()
+            self._r_vert_count = vert_count
+            self._r_attrib_count = attribute_count
+            self._batch_data = batch_data
+            cmesh._vertices = batch_data
+            cmesh.vcount = vert_count*attribute_count
+        if index_count != r_index_count:
+            if not batch_indices:
+                batch_indices = <unsigned short*>PyMem_Malloc(
+                    index_count * sizeof(unsigned short))
+            else:
+                batch_indices = <unsigned short*>PyMem_Realloc(
+                    batch_indices, index_count * sizeof(unsigned short))
+                if not batch_indices:
+                    raise MemoryError()
+            self._r_index_count = index_count
+            self._batch_indices = batch_indices
+            cmesh._indices = batch_indices
+            cmesh.icount = index_count
+
+
+    def __dealloc__(self):
+        if self._batch_data != NULL:
+            PyMem_Free(self._batch_data)
+        if self._batch_indices != NULL:
+            PyMem_Free(self._batch_indices)
+
+    def add_entity(self, int entity_id, int num_verts, int num_indices,
+        str texture_key):
+        if num_verts + self._vert_count > self._maximum_verts or not (
+            texture_manager.get_texkey_in_group(texture_key, self._texture)):
+            return False
+        else:
+            self._vert_count += num_verts
+            self._index_count += num_indices
+            self._entity_ids.append(entity_id)
+            self._entity_counts[entity_id] = (num_verts, num_indices)
+            return True
+
+    def remove_entity(self, int entity_id):
+        self._entity_ids.remove(entity_id)
+        entity_counts = self._entity_counts
+        num_verts, num_indices = entity_counts[entity_id]
+        self._vert_count -= num_verts
+        self._index_count -= num_indices
+        del entity_counts[entity_id]
+
+    def update_entity_counts(self, int entity_id, int new_vert_count, 
+        int new_indices_count):
+        entity_counts = self._entity_counts
+        num_verts, num_indices = entity_counts[entity_id]
+        vert_change = new_vert_count - num_verts
+        index_change = new_indices_count - num_indices
+        self._vert_count += vert_change
+        self._index_count += index_change
+        entity_counts[entity_id] = (new_vert_count, new_indices_count)
+
+
+cdef class VertMesh:
+    '''The VertMesh represents a collection of **vertex_count** vertices, 
+    all having **attribute_count** floating point data fields. The 
+    relationship between the vertices is kept in the form of a list of indices
+    **index_count** in length corresponding to the triangles our mesh is made 
+    up of. Typically you will want your vertex data to be centered around the
+    origin, as the default rendering behavior will then obey the 
+    PositionComponent of your entity.
+
+    To work with an individual vertex you can:
+
+    vert_mesh[vertex_number] = [1., 1., 1., 1.] #New vertex data 
+
+    This will replace the first n attributes with the contents of the assigned
+    list. Do not have length of assigned list exceed attribute_count.
 
     **Attributes:**
-        **physics_system** (StringProperty): You must provide the system_id 
-        for your physics system.
+        **index_count** (int): Number of indices in the list of triangles.
+
+        **attribute_count** (int): Number of attributes per vertex.
+
+        **vertex_count** (int): Number of vertices in your mesh.
+
+        **data** (list): Returns a copy of the VertMesh's vertex data. When 
+        setting ensure your input list matches vertex_count * attribute_count 
+        in size. To work with individual vertices use __setitem__ and
+         __getitem__ or other helper functions. 
+
+        **indices** (list): Returns a copy of the VertMesh's index data. When 
+        setting ensure your input list matches index_count in size. 
 
     '''
-    system_id = StringProperty('dynamic_renderer')
-    do_rotate = BooleanProperty(True)
-    physics_system = StringProperty('cymunk_physics')
+    cdef int _attrib_count
+    cdef float* _data
+    cdef int _vert_count
+    cdef int _index_count
+    cdef unsigned short* _indices
 
 
-
-    def update_render_state(self):
-        cdef object parent = self.gameworld
-        cdef dict systems = parent.systems
-        cdef list entities = parent.entities
-        cdef str system_id = self.system_id
-        cdef list entity_ids = self.entity_ids
-        cdef object physics_system
-        cdef list on_screen
-        cdef set last_on_screen
-        last_on_screen = set(self.on_screen_last_frame)
-        if self.physics_system in systems:
-            physics_system = systems[self.physics_system]
-            on_screen = [x for x in physics_system.on_screen_result]
-        else:
-            on_screen = []
-        set_on_screen = set(on_screen)
-        new_to_screen = set_on_screen - last_on_screen
-        left_screen = last_on_screen - set_on_screen
-        cdef object entity
-        cdef RenderComponent system_data
-        cdef list to_render = []
-        tr_a = to_render.append
-        for entity_id in new_to_screen:
-            entity = entities[entity_id]
-            try:
-                system_data = getattr(entity, system_id)
-                system_data._on_screen = True
-            except:
-                continue
-        for entity_id in left_screen:
-            entity = entities[entity_id]
-            try:
-                system_data = getattr(entity, system_id)
-                system_data._on_screen = False
-            except:
-                continue
-        for entity_id in on_screen:
-            entity = entities[entity_id]
-            try:
-                system_data = getattr(entity, system_id)
-                if system_data._render:
-                    tr_a(entity_id)
-            except:
-                continue
-        self.on_screen_last_frame = on_screen
-        return to_render
-
-
-class StaticQuadRenderer(Renderer):
-    '''The StaticQuadRenderer has no update function, and does not render
-    except for when entities are added or removed from the System. This is 
-    perfect for static objects.'''
-    
-    system_id = StringProperty('static_renderer')
-    shader_source = StringProperty('positionshader.glsl')
-    updateable = BooleanProperty(False)
-
-    def update(self, dt):
-        pass
-
-
-class QuadRendererNoTextures(Renderer):
-    '''This renderer renders colored quads without textures.'''
-
-    def calculate_vertex_format(self):
-        vertex_format = [
-            ('vPosition', 2, 'float'),
-            ('vCenter', 2, 'float'),
-            ('vColor', 4, 'float')
-            ]
-        self.redraw()
-        return vertex_format
-
-    def generate_component(self, dict entity_component_dict):
-        size = entity_component_dict['size']
-        new_component = RenderComponent.__new__(RenderComponent, True, True, None,
-            size[0], size[1])
-        return new_component
-
-    def draw_mesh(self, list entities_to_draw):
-        cdef object gameworld = self.gameworld
-        cdef list entities = gameworld.entities
-        cdef str system_id = self.system_id
-        cdef list entity_ids = entities_to_draw
-        cdef CRenderer cr = self.crenderer
-        cdef CMesh cmesh
-        cdef object entity
-        cdef RenderComponent system_data
-        vertex_format = self.vertex_format
-        cdef int vert_data_count = 8
-        cdef int num_elements = len(entity_ids)
-        cdef int i
-        cdef int entity_id
-        cdef void* indices_ptr
-        cdef float* frame_info
-        cdef unsigned short * indice_info
-        frame_info = <float *>cr.frame_info_ptr
-        if frame_info != NULL:
-            free(frame_info)
-            frame_info = NULL
-        indice_info = <unsigned short *>cr.indice_info_ptr
-        if indice_info != NULL:
-            free(indice_info)
-            indice_info = NULL
-        cr.indice_info_ptr = indices_ptr = <void *>malloc(
-            sizeof(unsigned short) * num_elements * 6)
-        cdef void* frame_ptr
-        cr.frame_info_ptr = frame_ptr = <void *>malloc(sizeof(float) * 
-            num_elements * 4 * vert_data_count)
-        if not frame_ptr or not indices_ptr:
+    def __cinit__(self, int attribute_count, int vert_count, int index_count):
+        self._attrib_count = attribute_count
+        self._vert_count = vert_count
+        self._index_count = index_count
+        self._data = data = <float *>PyMem_Malloc(
+            vert_count * attribute_count * sizeof(float))
+        if not data:
             raise MemoryError()
-        cdef unsigned short * indices_info = <unsigned short *>indices_ptr
-        frame_info = <float *>frame_ptr
-        cdef int offset 
-        cdef int indice_offset
-        cr.v_count = <long>num_elements * 4 * vert_data_count
-        cr.i_count = <long>num_elements * 6
+        cdef unsigned short* indices = <unsigned short*>PyMem_Malloc(
+                index_count * sizeof(unsigned short))
+        if not indices:
+            raise MemoryError()
+        self._indices = indices
+        
+    def __dealloc__(self):
+        if self._data != NULL:
+            PyMem_Free(self._data)
+        if self._indices != NULL:
+            PyMem_Free(self._indices)
+
+    property index_count:
+        def __set__(self, int new_count):
+            if new_count == self._index_count:
+                return
+            cdef unsigned short* new_indices = <unsigned short*>PyMem_Realloc(
+                self._indices, new_count * sizeof(unsigned short))
+            if not new_indices:
+                raise MemoryError()
+            self._indices = new_indices
+            self._index_count = new_count
+
+        def __get__(self):
+            return self._index_count
+
+    property attribute_count:
+
+        def __set__(self, int new_count):
+            if new_count == self._attrib_count:
+                return
+            new_data = <float *>PyMem_Realloc(self._data, 
+                new_count * self._vert_count * sizeof(float))
+            if not new_data:
+                raise MemoryError()
+            self._data = new_data
+            self._attrib_count = new_count
+
+        def __get__(self):
+            return self._attrib_count
+
+    property vertex_count:
+
+        def __set__(self, int new_count):
+            if new_count == self._vert_count:
+                return
+            new_data = <float *>PyMem_Realloc(self._data, 
+                new_count * self._attrib_count * sizeof(float))
+            if not new_data:
+                raise MemoryError()
+            self._data = new_data
+            self._vert_count = new_count
+
+        def __get__(self):
+            return self._vert_count
+
+    property data:
+
+        def __get__(self):
+            cdef float* data = self._data
+            cdef list return_list = []
+            cdef int length = len(self)
+            r_append = return_list.append
+            cdef int i
+            for i from 0 <= i < length:
+                r_append(data[i])
+            return return_list
+
+        def __set__(self, list new_data):
+            cdef int vert_count = self._vert_count
+            cdef int attrib_count = self._attrib_count
+            if len(new_data) != len(self):
+                raise Exception("Provided data doesn't match internal size")
+            cdef float* data = self._data
+            for i from 0 <= i < attrib_count * vert_count:
+                data[i] = new_data[i]
+
+    property indices:
+
+        def __get__(self):
+            cdef unsigned short* indices = self._indices
+            cdef list return_list = []
+            cdef int index_count = self._index_count
+            r_append = return_list.append
+            cdef int i
+            cdef int index
+            for i from 0 <= i < index_count:
+                index = indices[i]
+                r_append(index)
+            return return_list
+
+        def __set__(self, list new_indices):
+            cdef int index_count = self._index_count
+            if len(new_indices) != index_count:
+                raise Exception("Provided data doesn't match internal size")
+            cdef unsigned short* indices = self._indices
+            for i from 0 <= i < index_count:
+                indices[i] = new_indices[i]
+
+    def __setitem__(self, int index, list values):
+        cdef int vert_count = self._vert_count
+        if not index < vert_count:
+            raise IndexError()
+        cdef int attrib_count = self._attrib_count
+        cdef int start = attrib_count * index
+        cdef int set_count = len(values)
+        if not set_count <= attrib_count:
+            raise Exception("Provided data doesn't match internal size")
+        cdef int i
+        cdef float* data = self._data
+        cdef int vert_offset
+        for i from 0 <= i < set_count:
+            vert_offset = start + i
+            data[vert_offset] = values[i]
+
+    def __getitem__(self, int index):
+        cdef int vert_count = self._vert_count
+        if not index < vert_count:
+            raise IndexError()
+        cdef float* data = self._data
+        cdef int attrib_count = self._attrib_count
+        cdef int start = attrib_count * index
+        cdef int i
+        cdef return_list = []
+        r_append = return_list.append
+        for i from start <= i < start + attrib_count:
+            r_append(data[i])
+        return return_list
+
+    def __len__(self):
+        cdef int vert_count = self._vert_count
+        cdef int attrib_count = self._attrib_count
+        return vert_count * attrib_count
+
+    def copy_vert_mesh(self, VertMesh vert_mesh):
+        cdef float* from_data = vert_mesh._data
+        self.vertex_count = vert_mesh._vert_count
+        self.attribute_count = vert_mesh._attrib_count
+        self.index_count = vert_mesh._index_count
+        cdef float* data = self._data
+        cdef unsigned short* indices = self._indices
+        cdef unsigned short* from_indices = vert_mesh._indices
+        memcpy(<char *>indices, <void *>from_indices, self._index_count*sizeof(
+            unsigned short))
+        memcpy(<char *>data, <void *>from_data, len(self) * sizeof(float))
+
+
+    def set_vertex_attribute(self, int vertex_n, int attribute_n, float value):
+        '''Set attribute number attribute_n of vertex number vertex_n to value.
+        '''
+        if not vertex_n < self._vert_count:
+            raise IndexError()
+        cdef int attrib_count = self._attrib_count
+        if not attribute_n < attrib_count:
+            raise Exception('Attribute out of bounds')
+        cdef int start = attrib_count * vertex_n
+        cdef float* data = self._data
+        data[start + attribute_n] = value
+
+    def add_vertex_attribute(self, int vertex_n, 
+        int attribute_n, float value):
+        '''Add value to attribute number attribute_n of vertex number vertex_n.
+        '''
+        if not vertex_n < self._vert_count:
+            raise IndexError()
+        cdef int attrib_count = self._attrib_count
+        if not attribute_n < attrib_count:
+            raise Exception('Attribute out of bounds')
+        cdef int start = attrib_count * vertex_n
+        cdef float* data = self._data
+        cdef index = start + attribute_n
+        data[index] = data[index] + value
+
+    def mult_vertex_attribute(self, int vertex_n, 
+        int attribute_n, float value):
+        '''Multiply the value of attribute number attribute_n of vertex number 
+        vertex_n by value.
+        '''
+        if not vertex_n < self._vert_count:
+            raise IndexError()
+        cdef int attrib_count = self._attrib_count
+        if not attribute_n < attrib_count:
+            raise Exception('Attribute out of bounds')
+        cdef int start = attrib_count * vertex_n
+        cdef float* data = self._data
+        cdef int index = start + attribute_n
+        data[index] = data[index] * value
+
+    def set_all_vertex_attribute(self, int attribute_n, float value):
+        '''Set attribute number attribute_n of all vertices to value.
+        '''
+        cdef int attrib_count = self._attrib_count
+        cdef int vert_count = self._vert_count
+        if not attribute_n < attrib_count:
+            raise Exception('Attribute out of bounds')
+        cdef int start
+        cdef float* data = self._data
+        cdef int i
         cdef int index
-        cdef float rotate
-        cdef float x, y
-        cdef float w, h
-        cdef int fr_index
-        cdef PositionComponent position
-        cdef ColorComponent color
-        cdef float r, g, b, a
-        for i in range(num_elements):
-            entity_id = entity_ids[i]
-            entity = entities[entity_id]
-            offset = 4 * i
-            indice_offset = i*6
-            index = 4 * vert_data_count * i
-            indices_info[indice_offset] = 0 + offset
-            indices_info[indice_offset+1] = 1 + offset
-            indices_info[indice_offset+2] = 2 + offset
-            indices_info[indice_offset+3] = 2 + offset
-            indices_info[indice_offset+4] = 3 + offset
-            indices_info[indice_offset+5] = 0 + offset
-            system_data = getattr(entity, system_id)
-            if system_data._render:
-                position = entity.position
-                w, h = system_data._width, system_data._height
-                x, y = position._x, position._y
-                frame_info[index] = -w
-                frame_info[index+1] = -h
-                frame_info[index+2] = x
-                frame_info[index+3] = y
-                frame_info[index+vert_data_count] = w
-                frame_info[index+vert_data_count+1] = -h
-                frame_info[index+vert_data_count+2] = x
-                frame_info[index+vert_data_count+3] = y
-                frame_info[index+2*vert_data_count] = w
-                frame_info[index+2*vert_data_count+1] = h
-                frame_info[index+2*vert_data_count+2] = x
-                frame_info[index+2*vert_data_count+3] = y
-                frame_info[index+3*vert_data_count] = -w
-                frame_info[index+3*vert_data_count+1] = h
-                frame_info[index+3*vert_data_count+2] = x
-                frame_info[index+3*vert_data_count+3] = y
-                fr_index = 4
-                color = entity.color
-                r = color._r
-                g = color._g
-                b = color._b
-                a = color._a
-                frame_info[index+fr_index] = r
-                frame_info[index+vert_data_count+fr_index] = r
-                frame_info[index+2*vert_data_count+fr_index] = r
-                frame_info[index+3*vert_data_count+fr_index] = r
-                fr_index += 1
-                frame_info[index+fr_index] = g
-                frame_info[index+vert_data_count+fr_index] = g
-                frame_info[index+2*vert_data_count+fr_index] = g
-                frame_info[index+3*vert_data_count+fr_index] = g
-                fr_index += 1
-                frame_info[index+fr_index] = b
-                frame_info[index+vert_data_count+fr_index] = b
-                frame_info[index+2*vert_data_count+fr_index] = b
-                frame_info[index+3*vert_data_count+fr_index] = b
-                fr_index += 1
-                frame_info[index+fr_index] = a
-                frame_info[index+vert_data_count+fr_index] = a
-                frame_info[index+2*vert_data_count+fr_index] = a
-                frame_info[index+3*vert_data_count+fr_index] = a
-                fr_index += 1
-        mesh = self.mesh
-        if mesh == None:
-            with self.canvas:
-                cmesh = CMesh(fmt=vertex_format,
-                    mode='triangles')
-                self.mesh = cmesh
-        cmesh = self.mesh
-        cmesh._vertices = cr.frame_info_ptr
-        cmesh._indices = cr.indice_info_ptr
-        cmesh.vcount = cr.v_count
-        cmesh.icount = cr.i_count
-        cmesh.flag_update()
+        for i from 0 <= i < vert_count:
+            start = attrib_count * i
+            index = start + attribute_n
+            data[index] = value
+
+    def add_all_vertex_attribute(self, int attribute_n, float value):
+        '''Add value to attribute number attribute_n of all vertices.
+        '''
+        cdef int attrib_count = self._attrib_count
+        cdef int vert_count = self._vert_count
+        if not attribute_n < attrib_count:
+            raise Exception('Attribute out of bounds')
+        cdef int start
+        cdef float* data = self._data
+        cdef int i
+        cdef int index
+        for i from 0 <= i < vert_count:
+            start = attrib_count * i
+            index = start + attribute_n
+            data[index] = data[index] + value
+
+    def mult_all_vertex_attribute(self, int attribute_n, float value):
+        '''Multiply the value of attribute number attribute_n of all vertices 
+        by value.
+        '''
+        cdef int attrib_count = self._attrib_count
+        cdef int vert_count = self._vert_count
+        if not attribute_n < attrib_count:
+            raise Exception('Attribute out of bounds')
+        cdef int start
+        cdef float* data = self._data
+        cdef int i
+        cdef int index
+        for i from 0 <= i < vert_count:
+            start = attrib_count * i
+            index = start + attribute_n
+            data[index] = data[index] * value
+
+    def set_textured_rectangle(self, float width, float height, list uvs):
+        '''Prepare a 4 vertex_count, 6 index_count textured quad of size:
+        width x height. Normally called internally when creating a VertMesh 
+        using size and texture property. The first two attributes will be
+        used to store the coordinate of the quad offset from the origin, and 
+        the next two will store the UV coordinate data for each vertex.'''
+        self.vertex_count = 4
+        self.index_count = 6
+        self.indices = [0, 1, 2, 2, 3, 0]
+        w = .5*width
+        h = .5*height
+        u0, v0, u1, v1 = uvs
+        self[0] = [-w, -h, u0, v0]
+        self[1] = [-w, h, u0, v1]
+        self[2] = [w, h, u1, v1]
+        self[3] = [w, -h, u1, v0]
+
+
+

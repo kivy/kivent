@@ -36,21 +36,22 @@ TestGame:
             gameworld: gameworld
         Renderer:
             gameworld: gameworld
-            system_id: 'renderer'
-            shader_source: 'assets/glsl/positionshader.glsl'
-            atlas_dir: 'assets/'
-            atlas: 'background_objects'
-        QuadRendererNoTextures:
+            system_id: 'physics_renderer'
+            gameview: 'gameview'
+            do_rotate: True
+            shader_source: 'assets/glsl/positionrotateshader.glsl'
+        Renderer:
             gameworld: gameworld
             system_id: 'debug_renderer'
+            gameview: 'gameview'
+            do_color: True
             shader_source: 'assets/glsl/positioncolorshader.glsl'
-        DynamicRenderer:
+        Renderer:
             gameworld: gameworld
-            system_id: 'physics_renderer'
-            shader_source: 'assets/glsl/positionrotateshader.glsl'
-            atlas_dir: 'assets/'
-            atlas: 'background_objects'
-            physics_system: 'physics'
+            system_id: 'renderer'
+            gameview: 'gameview'
+            shader_source: 'assets/glsl/positionshader.glsl'
+
 
         CymunkPhysics:
             gameworld: root.gameworld

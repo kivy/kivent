@@ -6,12 +6,13 @@ import cymunk
 import kivent
 from random import randint
 from math import radians, atan2, degrees
-from kivent import GameSystem
+from kivent import GameSystem, texture_manager
 from cymunk import PivotJoint, GearJoint, Body
 from kivy.properties import NumericProperty, ListProperty
 from kivy.vector import Vector
 
-
+texture_manager.load_atlas('assets/background_objects.atlas')
+texture_manager.load_atlas('assets/foreground_objects.atlas')
 
 class TestGame(Widget):
     current_entity = NumericProperty(None)
@@ -20,13 +21,24 @@ class TestGame(Widget):
         super(TestGame, self).__init__(**kwargs)
         Clock.schedule_once(self.init_game)
 
+    def ensure_startup(self):
+        systems_to_check = ['map', 'physics', 'renderer', 'rotate', 'position']
+        systems = self.gameworld.systems
+        for each in systems_to_check:
+            if each not in systems:
+                return False
+        return True
+
     def init_game(self, dt):
-        self.setup_map()
-        self.setup_states()
-        self.set_state()
-        self.setup_collision_callbacks()
-        self.draw_some_stuff()
-        Clock.schedule_interval(self.update, 0)
+        if self.ensure_startup():
+            self.setup_map()
+            self.setup_states()
+            self.set_state()
+            self.setup_collision_callbacks()
+            self.draw_some_stuff()
+            Clock.schedule_interval(self.update, 0)
+        else:
+            Clock.schedule_once(self.init_game)
 
     def on_touch_down(self, touch):
         gameworld = self.gameworld

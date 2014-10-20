@@ -3,7 +3,7 @@ from math import radians
 from xml.dom.minidom import parse as parse_xml
 from kivy.core.image import Image as CoreImage
 from libc.math cimport trunc, M_PI_2
-from kivy.graphics import Fbo, Rectangle, Color, RenderContext, Mesh
+from kivy.graphics import Fbo, Rectangle, Color, RenderContext, Mesh, Callback
 from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE, 
 GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
 GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,

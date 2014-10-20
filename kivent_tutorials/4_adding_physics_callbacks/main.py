@@ -3,11 +3,12 @@ from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
 import kivent
-from kivent import GameSystem
+from kivent import GameSystem, texture_manager
 from random import randint
 from math import radians
 from functools import partial
 
+texture_manager.load_atlas('assets/background_objects.atlas')
 
 class BoundarySystem(GameSystem):
 
@@ -87,7 +88,7 @@ class BoundarySystem(GameSystem):
             'color': (0.0, 0.0, 1.0, .75),
             'physics': physics_component_dict, 
             'boundary': boundary_system,
-            'debug_renderer': {'size': boundary_size}}
+            'debug_renderer': {'size': boundary_size, 'texture': None}}
         component_order = ['position', 'rotate',  'color',
             'physics', 'boundary', 'debug_renderer']
         self.gameworld.init_entity(create_component_dict, component_order)
@@ -108,10 +109,10 @@ class BoundarySystem(GameSystem):
         create_component_dict = {
             'position': boundary_pos,
             'rotate': 0.,
-            'color': (1.0, 0.0, 0.0, .75),
+            'color': (1.0, 0.0, 0.0, .5),
             'physics': physics_component_dict, 
             'boundary': boundary_system,
-            'debug_renderer': {'size': boundary_size}}
+            'debug_renderer': {'size': boundary_size, 'texture': None},}
         component_order = ['position', 'rotate',  'color',
             'physics', 'boundary', 'debug_renderer']
         self.gameworld.init_entity(create_component_dict, component_order)
@@ -128,14 +129,25 @@ class TestGame(Widget):
         super(TestGame, self).__init__(**kwargs)
         Clock.schedule_once(self.init_game)
 
+    def ensure_startup(self):
+        systems_to_check = ['map', 'physics', 'renderer', 'rotate', 'position']
+        systems = self.gameworld.systems
+        for each in systems_to_check:
+            if each not in systems:
+                return False
+        return True
+
     def init_game(self, dt):
-        self.setup_map()
-        self.setup_states()
-        self.set_state()
-        self.setup_boundary()
-        self.setup_collision_callbacks()
-        self.draw_some_stuff()
-        Clock.schedule_interval(self.update, 0)
+        if self.ensure_startup():
+            self.setup_map()
+            self.setup_states()
+            self.set_state()
+            self.setup_boundary()
+            self.setup_collision_callbacks()
+            self.draw_some_stuff()
+            Clock.schedule_interval(self.update, 0)
+        else:
+            Clock.schedule_once(self.init_game)
 
     def setup_boundary(self):
         boundary_system = self.gameworld.systems['boundary']

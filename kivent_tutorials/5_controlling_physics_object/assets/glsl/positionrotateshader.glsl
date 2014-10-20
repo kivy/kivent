@@ -20,7 +20,7 @@ uniform vec4       color;
 uniform float      opacity;
 
 void main (void) {
-  frag_color = color * vec4(1.0, 1.0, 1.0, opacity);
+  frag_color = color * vec4(1.0, 1., 1.0, opacity);
   tex_coord0 = vTexCoords0;
   float a_sin = sin(vRotation);
   float a_cos = cos(vRotation);
@@ -32,7 +32,7 @@ void main (void) {
               0.0, 1.0, 0.0, vCenter.y,
               0.0, 0.0, 1.0, 0.0,
               0.0, 0.0, 0.0, 1.0);
-  vec4 pos = vec4(vPosition.xy*.5, 0.0, 1.0);
+  vec4 pos = vec4(vPosition.xy, 0.0, 1.0);
   vec4 trans_pos = pos * rot_mat * trans_mat;
   gl_Position = projection_mat * modelview_mat * trans_pos;
 

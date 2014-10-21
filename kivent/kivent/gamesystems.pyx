@@ -484,13 +484,14 @@ class GameView(GameSystem):
 
     def on_touch_move(self, touch):
         if not self.focus_entity and self.do_scroll:
-            dist_x = touch.dx
-            dist_y = touch.dy
-            if fabs(dist_x) + fabs(dist_y) > 2:
-                if self.do_scroll_lock and self.gameworld.currentmap:
-                    dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
-                self.camera_pos[0] += dist_x
-                self.camera_pos[1] += dist_y
+            camera_scale = self.camera_scale
+            dist_x = touch.dx * camera_scale
+            dist_y = touch.dy * camera_scale
+        
+            if self.do_scroll_lock and self.gameworld.currentmap:
+                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
+            self.camera_pos[0] += dist_x
+            self.camera_pos[1] += dist_y
 
     def lock_scroll(self, float distance_x, float distance_y):
         currentmap = self.gameworld.currentmap

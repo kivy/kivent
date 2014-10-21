@@ -99,6 +99,8 @@ cdef class RenderComponent:
     cdef VertMesh _vert_mesh
     cdef int _attrib_count
     cdef int _batch_id
+    cdef float _width
+    cdef float _height
 
     def __cinit__(self, bool render, str texture_key, 
         int attribute_count, width=None, height=None, 
@@ -107,17 +109,55 @@ cdef class RenderComponent:
         self._texture_key = texture_key
         self._attrib_count = attribute_count
         if width is not None and height is not None:
+            self._width = width
+            self._height = height
             self._vert_mesh = vert_mesh = VertMesh(attribute_count, 4, 6)
             vert_mesh.set_textured_rectangle(width, height, 
                 texture_manager.get_uvs(texture_key))
         elif vert_mesh != None:
+            self._width = 0
+            self._height = 0
             if not copy:
                 self._vert_mesh = vert_mesh
             else:
                 self._vert_mesh = new_vert_mesh = VertMesh(attribute_count, 
                     vert_mesh._vert_count, vert_mesh._index_count)
                 new_vert_mesh.copy_vert_mesh(vert_mesh)
+    property width:
+        def __get__(self):
+            return self._width
 
+        def __set__(self, float value):
+            width = value
+            height = self._height
+            if width != 0 and height != 0:
+                w = .5*width
+                self._width = width
+                set_vertex_attribute=self._vert_mesh.set_vertex_attribute
+                set_vertex_attribute(0,0,-w)
+                set_vertex_attribute(1,0,-w)
+                set_vertex_attribute(2,0,w)
+                set_vertex_attribute(3,0,w)
+                #self._vert_mesh.set_textured_rectangle(width, height, 
+                #    texture_manager.get_uvs(self._texture_key))
+
+    property height:
+        def __get__(self):
+            return self._height
+
+        def __set__(self, float value):
+            width = self._width
+            height = value
+            if width != 0 and height != 0:
+                h = .5*height
+                self._height = height
+                set_vertex_attribute=self._vert_mesh.set_vertex_attribute
+                set_vertex_attribute(0,1,-h)
+                set_vertex_attribute(1,1,h)
+                set_vertex_attribute(2,1,h)
+                set_vertex_attribute(3,1,-h)
+                #self._vert_mesh.set_textured_rectangle(width, height, 
+                #    texture_manager.get_uvs(self._texture_key))
     property batch_id:
         def __get__(self):
             return self._batch_id

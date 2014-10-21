@@ -145,17 +145,17 @@ cdef class RenderComponent:
         def __get__(self):
             return self._height
 
-        def __set__(self, int value):
+        def __set__(self, float value):
             width = self._width
             height = value
             if width != 0 and height != 0:
                 h = .5*height
                 self._height = height
                 set_vertex_attribute=self._vert_mesh.set_vertex_attribute
-                set_vertex_attribute(0,0,-h)
-                set_vertex_attribute(1,0,h)
-                set_vertex_attribute(2,0,h)
-                set_vertex_attribute(3,0,-h)
+                set_vertex_attribute(0,1,-h)
+                set_vertex_attribute(1,1,h)
+                set_vertex_attribute(2,1,h)
+                set_vertex_attribute(3,1,-h)
                 #self._vert_mesh.set_textured_rectangle(width, height, 
                 #    texture_manager.get_uvs(self._texture_key))
     property batch_id:

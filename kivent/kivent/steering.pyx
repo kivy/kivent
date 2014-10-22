@@ -1,9 +1,202 @@
 
 from cymunk cimport (GearJoint, PivotJoint, Vec2d, cpVect, cpv,
-    cpFloat, cpBool, cpvunrotate, cpvrotate, cpvdot, cpvsub, cpvnear)
+    cpFloat, cpBool, cpvunrotate, cpvrotate, cpvdot, cpvsub, cpvnear,
+    cpBody, cpvmult, cpvlerp)
 
-from libc.math cimport atan2
+from libc.math cimport atan2, pow as cpow
 
+cdef class CymunkTouchComponent:
+    cdef Body _touch_body
+    cdef PivotJoint _pivot
+
+    def __cinit__(self, Body touch_body, PivotJoint pivot):
+        self._touch_body = touch_body
+        self._pivot = pivot
+
+    property max_force:
+        def __get__(self):
+            return self._pivot.max_force
+        def __set__(self, float force):
+            self._pivot.max_force = force
+
+    property error_bias:
+        def __get__(self):
+            return self._pivot.error_bias
+        def __set__(self, float error_bias):
+            self._pivot.error_bias = error_bias
+
+    property touch_body:
+        def __get__(self):
+            return self._touch_body
+        def __set__(self, Body body):
+            self._touch_body = body
+
+    property pivot:
+        def __get__(self):
+            return self._pivot
+        def __set__(self, PivotJoint pivot):
+            self._pivot = pivot
+
+class CymunkTouchSystem(GameSystem):
+    physics_system = StringProperty(None)
+    updateable = BooleanProperty(True)
+    gameview_name = StringProperty(None)
+    touch_radius = NumericProperty(10.)
+    max_force = NumericProperty(2000000.)
+    def generate_component(self, dict args):
+        cdef Body body = args['body']
+        cdef PivotJoint pivot = args['pivot']
+        new_component = CymunkTouchComponent.__new__(CymunkTouchComponent, 
+            body, pivot)
+        return new_component
+
+    def convert_from_screen_to_world(self, tuple touch_pos, tuple camera_pos,
+        float camera_scale):
+        cdef float x, y, cx, cy, new_x, new_y
+        x,y = touch_pos
+        cx, cy = camera_pos
+        new_x = (x - cx) * camera_scale
+        new_y = (y - cy) * camera_scale
+        return new_x, new_y
+
+    def on_touch_down(self, touch):
+        cdef object gameworld = self.gameworld
+        cdef dict systems = gameworld.systems
+        cdef object physics_system = systems[self.physics_system]
+        cdef object gameview = systems[self.gameview_name]
+        cpos = gameview.camera_pos
+        cdef tuple camera_pos = (cpos[0], cpos[1])
+        cdef tuple touch_pos = (touch.x, touch.y)
+        cdef float camera_scale = gameview.camera_scale
+        cdef tuple converted_pos = self.convert_from_screen_to_world(touch_pos,
+            camera_pos, camera_scale)
+        cdef float cx, cy
+        cx = converted_pos[0]
+        cy = converted_pos[1]
+        cdef str system_id = self.system_id
+        cdef float max_force = self.max_force
+        cdef float radius = self.touch_radius
+        cdef list touch_box = [cx-radius, cy-radius, cx-radius, cy+radius, 
+            cx+radius, cy+radius, cx+radius, cy-radius]
+        cdef list touched_ids = physics_system.query_bb(touch_box)
+        if len(touched_ids) > 0:
+            entity_id = touched_ids[0]
+            
+            creation_dict = {system_id: 
+                {'entity_id': entity_id, 'touch_pos': converted_pos,
+                'max_force': max_force}, 'position': converted_pos}
+            touch_ent = gameworld.init_entity(creation_dict, ['position', 
+                system_id])
+            touch.ud['ent_id'] = touch_ent
+
+    def on_touch_move(self, touch):
+        cdef object gameworld 
+        cdef dict systems 
+        cdef object gameview
+        cdef list entities
+        cdef tuple camera_pos
+        cdef tuple touch_pos = (touch.x, touch.y)
+        cdef float camera_scale 
+        cdef tuple converted_pos 
+        cdef int entity_id
+        cdef object entity
+        cdef PositionComponent pos_comp
+        if 'ent_id' in touch.ud:
+            gameworld = self.gameworld
+            systems = gameworld.systems
+            entities = gameworld.entities
+            entity_id = touch.ud['ent_id']
+            gameview = systems[self.gameview_name]
+            entity = entities[entity_id]
+            pos_comp = entity.position
+            cpos = gameview.camera_pos
+            camera_pos = (cpos[0], cpos[1])
+            camera_scale = gameview.camera_scale
+            converted_pos = self.convert_from_screen_to_world(touch_pos,
+                camera_pos, camera_scale)
+
+            pos_comp._x = converted_pos[0]
+            pos_comp._y = converted_pos[1]
+        
+
+    def on_touch_up(self, touch):
+        if 'ent_id' in touch.ud:
+            self.gameworld.remove_entity(touch.ud['ent_id'])
+
+    def update(self, float dt):
+        cdef object gameworld = self.gameworld
+        cdef list entities = gameworld.entities
+        cdef list entity_ids = self.entity_ids
+        cdef int ent_count = len(entity_ids)
+        cdef int entity_id
+        cdef object entity
+        cdef int entity_index
+        cdef PositionComponent position_comp
+        cdef float x, y
+        cdef str system_id = self.system_id
+        cdef CymunkTouchComponent system_component 
+        cdef Body body
+        cdef cpVect body_pos
+        cdef cpBody* cbody
+        cdef cpVect new_vel
+        cdef cpVect new_point
+        for entity_index in range(ent_count):
+            entity_id = entity_ids[entity_index]
+            entity = entities[entity_id]
+            position_comp = entity.position
+            system_component = getattr(entity, system_id)
+            x = position_comp._x
+            y = position_comp._y
+            body = system_component._touch_body
+            cbody = body._body
+            body_pos = cbody.p
+            new_point = cpvlerp(body_pos, cpv(x, y), .25)
+            new_vel = cpvmult(cpvsub(new_point, body_pos),  60.)
+            cbody.v = new_vel
+            cbody.p = new_point
+
+
+
+
+    def create_component(self, object entity, dict args):
+        cdef object gameworld = self.gameworld
+        cdef dict systems = gameworld.systems
+        cdef str physics_id = self.physics_system
+        cdef object physics_system = systems[physics_id]
+        cdef Body touch_body = Body(None, None)
+        cdef list entities = gameworld.entities
+        cdef int entity_id = args['entity_id']
+        cdef tuple touch_pos = args['touch_pos']
+        cdef object touched_entity = entities[entity_id]
+        cdef PhysicsComponent physics_data = getattr(
+            touched_entity, physics_id)
+        cdef Body body = physics_data.body
+        cdef cpVect body_local = body.world_to_local(touch_pos)
+        cdef tuple body_pos = (body_local.x, body_local.y)
+        cdef PivotJoint pivot = PivotJoint(touch_body, body, (0., 0.), 
+            body_pos)
+        touch_body._body.p = cpv(touch_pos[0], touch_pos[1])
+        pivot.max_bias = 0.0
+        pivot.error_bias = cpow(1.0 - 0.15, 60.0)
+        pivot.max_force = args['max_force']
+        cdef Space space = physics_system.space
+        space.add(pivot)
+        new_args = {'body': touch_body, 'pivot': pivot, 
+            'linked_entity': touched_entity}
+        super(CymunkTouchSystem, self).create_component(entity, new_args)
+
+    def remove_entity(self, int entity_id):
+        cdef str system_id = self.system_id
+        cdef object gameworld = self.gameworld
+        cdef list entities = gameworld.entities
+        cdef object entity = entities[entity_id]
+        cdef CymunkTouchComponent system_data = getattr(entity, system_id)
+        cdef str physics_id = self.physics_system
+        cdef object physics_system = gameworld.systems[physics_id]
+        cdef Space space = physics_system.space
+        space.remove(system_data._pivot)
+        super(CymunkTouchSystem, self).remove_entity(entity_id)
+            
 
 cdef class SteeringComponent: 
     cdef Body _steering_body

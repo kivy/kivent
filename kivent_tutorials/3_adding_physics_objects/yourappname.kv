@@ -22,15 +22,25 @@ TestGame:
         GameView:
             system_id: 'gameview'
             focus_entity: False
-            updateable: False
+            updateable: True
             gameworld: gameworld
             pos: root.pos
             do_scroll: False
+            do_scroll_lock: False
             size: root.size
+            camera_scale: 1.0
         GameMap:
             system_id: 'map'
             map_size: root.size
             gameworld: gameworld
+        CymunkTouchSystem:
+            system_id: 'touch_system'
+            gameworld: gameworld
+            size: root.size
+            pos: root.pos
+            max_force: 300000.
+            gameview_name: 'gameview'
+            physics_system: 'physics'
         Renderer:
             gameworld: gameworld
             system_id: 'renderer'

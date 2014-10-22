@@ -306,6 +306,7 @@ class Renderer(GameSystem):
         Override this method in combination with calculate_vertex_format
         if you would like to create a renderer with customized behavior.'''
         cdef list batches = self.batches
+        cdef int num_batches = len(batches)
         cdef str system_id = self.system_id
         cdef RenderBatch batch
         cdef object gameworld = self.gameworld
@@ -352,15 +353,21 @@ class Renderer(GameSystem):
         cdef unsigned short* mesh_indices
         cdef int data_index
         cdef int mesh_index
-        for batch in batches:
+        cdef int num_entities
+        cdef int batch_ind
+        cdef int ent_ind
+        for batch_ind in range(num_batches):
+            batch = batches[batch_ind]
             batch.update_batch()
             batch_data = batch._batch_data
             batch_indices = batch._batch_indices
             entity_ids = batch._entity_ids
+            num_entities = len(entity_ids)
             index_offset = 0
             vert_offset = 0
             mesh_index_offset = 0
-            for entity_id in entity_ids:
+            for ent_ind in range(num_entities):
+                entity_id = entity_ids[ent_ind]
                 entity = entities[entity_id]
                 render_comp = getattr(entity, system_id)
                 vertex_count = render_comp.vertex_count
@@ -384,11 +391,11 @@ class Renderer(GameSystem):
                     vert_mesh = render_comp._vert_mesh
                     mesh_data = vert_mesh._data
                     mesh_indices = vert_mesh._indices
-                    for i from 0 <= i < index_count:
+                    for i in range(index_count):
                         batch_indices[i+index_offset] = (
                             mesh_indices[i] + mesh_index_offset)
-                    for n from 0 <= n < vertex_count:
-                        for attr_ind from 0 <= attr_ind < attribute_count:
+                    for n in range(vertex_count):
+                        for attr_ind in range(attribute_count):
                             mesh_index = n*attribute_count + attr_ind
                             data_index = mesh_index + vert_offset
                             if attr_ind == center_x_index:
@@ -410,7 +417,7 @@ class Renderer(GameSystem):
                             else:
                                 batch_data[data_index] = mesh_data[mesh_index]
                 else:
-                    for i from 0 <= i < index_count:
+                    for i in range(index_count):
                         batch_indices[i+index_offset] = -1
                 vert_offset += vertex_count * attribute_count
                 mesh_index_offset += vertex_count

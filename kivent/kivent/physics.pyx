@@ -1,7 +1,7 @@
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk
-from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape, Vec2d, Poly
+from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape, Vec2d, Poly, Segment
 from libc.math cimport M_PI_2
 
 
@@ -256,7 +256,11 @@ class CymunkPhysics(GameSystem):
                     shape_info['mass'], 
                     shape_info['vertices'], 
                     shape_info['offset'])
-                    
+            elif a_shape['shape_type'] == 'segment':
+                moment += cymunk.moment_for_segment(
+                    shape_info['mass'], 
+                    shape_info['a'], 
+                    shape_info['b'])
             else:
                 print 'error: shape ', a_shape['shape_type'], 'not supported'
         if entity_component_dict['mass'] == 0:
@@ -288,6 +292,9 @@ class CymunkPhysics(GameSystem):
             elif shape['shape_type'] == 'poly':
                 new_shape = Poly(body, shape_info['vertices'], 
                     offset=shape_info['offset'])
+            elif shape['shape_type'] == 'segment':
+                new_shape = Segment(body, shape_info['a'], 
+                    shape_info['b'], shape_info['radius'])
             else:
                 print 'shape not created'
             new_shape.friction = shape['friction']

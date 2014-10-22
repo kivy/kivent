@@ -1,0 +1,67 @@
+#:kivy 1.8.0
+
+TestGame:
+
+<TestGame>:
+    gameworld: gameworld
+    GameWorld:
+        id: gameworld
+        gamescreenmanager: gamescreenmanager
+        PositionSystem:
+            system_id: 'position'
+            gameworld: gameworld
+        RotateSystem:
+            system_id: 'rotate'
+            gameworld: gameworld
+        ColorSystem:
+            system_id: 'color'
+            gameworld: gameworld
+        ScaleSystem:
+            system_id: 'scale'
+            gameworld: gameworld
+        GameView:
+            system_id: 'gameview'
+            focus_entity: False
+            updateable: True
+            gameworld: gameworld
+            pos: root.pos
+            do_scroll: False
+            camera_pos: (0., 0.)
+            do_scroll_lock: False
+            size: root.size
+            camera_scale: max(map.map_size[0]/self.size[0], map.map_size[1]/self.size[1])
+        GameMap:
+            system_id: 'map'
+            id: map
+            map_size: (1920., 1080.)
+            gameworld: gameworld
+        Renderer:
+            gameworld: gameworld
+            system_id: 'renderer'
+            gameview: 'gameview'
+            do_rotate: True
+            do_color: True
+            shader_source: 'assets/glsl/positioncolorrotateshader.glsl'
+        CymunkPhysics:
+            gameworld: root.gameworld
+            system_id: 'physics'
+        CymunkTouchSystem:
+            physics_system: 'physics'
+            gameview_name: 'gameview'
+            gameworld: gameworld
+            system_id: 'cymunk_touch'
+            max_force: 3000000.
+    GameScreenManager:
+        id: gamescreenmanager
+        size: root.size
+        pos: root.pos
+        gameworld: gameworld
+
+<GameScreenManager>:
+    MainScreen:
+        id: main_screen
+
+<MainScreen@GameScreen>:
+    name: 'main'
+    FloatLayout:
+

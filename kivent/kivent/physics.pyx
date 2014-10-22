@@ -285,7 +285,7 @@ class CymunkPhysics(GameSystem):
         for shape in entity_component_dict['col_shapes']:
             shape_info = shape['shape_info']
             if shape['shape_type'] == 'circle':
-                new_shape = Circle(body, shape_info['outer_radius']) 
+                new_shape = Circle(body, shape_info['outer_radius'], shape_info['offset']) 
             elif shape['shape_type'] == 'box':
                 new_shape = BoxShape(
                     body, shape_info['width'], shape_info['height'])

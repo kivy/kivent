@@ -26,7 +26,7 @@ TestGame:
             gameworld: gameworld
             pos: root.pos
             do_scroll: False
-            camera_pos: (0., 0.)
+            camera_pos: self.get_camera_centered(map.map_size, self.size, self.camera_scale)
             do_scroll_lock: False
             size: root.size
             camera_scale: max(map.map_size[0]/self.size[0], map.map_size[1]/self.size[1])

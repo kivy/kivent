@@ -56,8 +56,8 @@ class CymunkTouchSystem(GameSystem):
         cdef float x, y, cx, cy, new_x, new_y
         x,y = touch_pos
         cx, cy = camera_pos
-        new_x = (x - cx) * camera_scale
-        new_y = (y - cy) * camera_scale
+        new_x = (x * camera_scale) - cx
+        new_y = (y * camera_scale) - cy
         return new_x, new_y
 
     def on_touch_down(self, touch):
@@ -72,8 +72,10 @@ class CymunkTouchSystem(GameSystem):
         cdef tuple converted_pos = self.convert_from_screen_to_world(touch_pos,
             camera_pos, camera_scale)
         cdef float cx, cy
+
         cx = converted_pos[0]
         cy = converted_pos[1]
+        print(touch_pos, camera_pos, cx, cy, camera_scale)
         cdef str system_id = self.system_id
         cdef float max_force = self.max_force
         cdef float radius = self.touch_radius

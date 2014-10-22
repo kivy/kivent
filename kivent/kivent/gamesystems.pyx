@@ -585,6 +585,12 @@ class GameView(GameSystem):
         self.matrix = Matrix()
         self.canvas = RenderContext()
 
+    def get_camera_centered(self, map_size, camera_size, camera_scale):
+        x = max((camera_size[0]*camera_scale - map_size[0])/2., 0.)
+        y = max((camera_size[1]*camera_scale - map_size[1])/2., 0.)
+        print(x, y)
+        return (x, y)
+
     def update_render_state(self):
         '''
         Args:

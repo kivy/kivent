@@ -5,6 +5,7 @@ from kivy.properties import (StringProperty, ListProperty,
 from kivy.clock import Clock
 from math import fabs
 from kivy.core.window import Window
+from kivy.uix.effectwidget import EffectWidget
 
 
 class Component(object):
@@ -569,6 +570,9 @@ class GameView(GameSystem):
         to reach focused entity, Speed will be 1.0/camera_speed_multiplier 
         seconds to close the distance
 
+        **render_system_order** (ListProperty): List of system_id in desired 
+        order of rendering last to first. 
+
     '''
     system_id = StringProperty('default_gameview')
     do_scroll_lock = BooleanProperty(True)
@@ -579,6 +583,7 @@ class GameView(GameSystem):
     entity_to_focus = NumericProperty(None, allownone=True)
     updateable = BooleanProperty(True)
     camera_speed_multiplier = NumericProperty(1.0)
+    render_system_order = ListProperty([])
 
     def __init__(self, **kwargs):
         super(GameView, self).__init__(**kwargs)
@@ -588,7 +593,6 @@ class GameView(GameSystem):
     def get_camera_centered(self, map_size, camera_size, camera_scale):
         x = max((camera_size[0]*camera_scale - map_size[0])/2., 0.)
         y = max((camera_size[1]*camera_scale - map_size[1])/2., 0.)
-        print(x, y)
         return (x, y)
 
     def update_render_state(self):
@@ -612,7 +616,14 @@ class GameView(GameSystem):
 
     def add_widget(self, widget):
         gameworld = self.gameworld
-        super(GameView, self).add_widget(widget)
+        render_system_order = self.render_system_order
+        cdef str system_id = widget.system_id
+        if system_id in render_system_order:
+            index=render_system_order.index(system_id)
+        else:
+            index=0
+        print(index)
+        super(GameView, self).add_widget(widget, index=index)
         systems = gameworld.systems
         if isinstance(widget, GameSystem):
             if widget.system_id not in systems:

@@ -43,6 +43,7 @@ class CymunkTouchSystem(GameSystem):
     gameview_name = StringProperty(None)
     touch_radius = NumericProperty(10.)
     max_force = NumericProperty(2000000.)
+    ignore_groups = ListProperty([])
     
     def generate_component(self, dict args):
         cdef Body body = args['body']
@@ -75,13 +76,13 @@ class CymunkTouchSystem(GameSystem):
 
         cx = converted_pos[0]
         cy = converted_pos[1]
-        print(touch_pos, camera_pos, cx, cy, camera_scale)
         cdef str system_id = self.system_id
         cdef float max_force = self.max_force
         cdef float radius = self.touch_radius
         cdef list touch_box = [cx-radius, cy-radius, cx-radius, cy+radius, 
             cx+radius, cy+radius, cx+radius, cy-radius]
-        cdef list touched_ids = physics_system.query_bb(touch_box)
+        cdef list touched_ids = physics_system.query_bb(touch_box,
+            ignore_groups=self.ignore_groups)
         if len(touched_ids) > 0:
             entity_id = touched_ids[0]
             

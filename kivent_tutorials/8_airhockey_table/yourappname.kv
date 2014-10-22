@@ -1,4 +1,5 @@
 #:kivy 1.8.0
+#:import HorizontalBlurEffect kivy.uix.effectwidget.HorizontalBlurEffect
 
 TestGame:
 
@@ -27,14 +28,17 @@ TestGame:
             pos: root.pos
             do_scroll: False
             camera_pos: self.get_camera_centered(map.map_size, self.size, self.camera_scale)
+            render_system_order: ['puck_renderer', 'renderer', ]
             do_scroll_lock: False
             size: root.size
+            effects: [HorizontalBlurEffect(size=2.0)]
             camera_scale: max(map.map_size[0]/self.size[0], map.map_size[1]/self.size[1])
         GameMap:
             system_id: 'map'
             id: map
             map_size: (1920., 1080.)
             gameworld: gameworld
+
         Renderer:
             gameworld: gameworld
             system_id: 'renderer'
@@ -42,6 +46,14 @@ TestGame:
             do_rotate: True
             do_color: True
             shader_source: 'assets/glsl/positioncolorrotateshader.glsl'
+        Renderer:
+            gameworld: gameworld
+            system_id: 'puck_renderer'
+            gameview: 'gameview'
+            do_rotate: True
+            do_color: True
+            shader_source: 'assets/glsl/positioncolorrotateshader.glsl'
+
         CymunkPhysics:
             gameworld: root.gameworld
             system_id: 'physics'
@@ -50,6 +62,7 @@ TestGame:
             gameview_name: 'gameview'
             gameworld: gameworld
             system_id: 'cymunk_touch'
+            ignore_groups: [3, 2]
             max_force: 3000000.
         LerpSystem:
             gameworld: gameworld

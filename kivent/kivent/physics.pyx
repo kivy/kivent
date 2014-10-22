@@ -300,6 +300,7 @@ class CymunkPhysics(GameSystem):
             new_shape.friction = shape['friction']
             new_shape.elasticity = shape['elasticity']
             new_shape.collision_type = shape['collision_type']
+            if 'group' in shape: new_shape.group = shape['group']
             shapes.append(new_shape)
             space.add(new_shape)
             space.reindex_shape(new_shape)

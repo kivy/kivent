@@ -43,6 +43,7 @@ class CymunkTouchSystem(GameSystem):
     gameview_name = StringProperty(None)
     touch_radius = NumericProperty(10.)
     max_force = NumericProperty(2000000.)
+    
     def generate_component(self, dict args):
         cdef Body body = args['body']
         cdef PivotJoint pivot = args['pivot']

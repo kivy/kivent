@@ -366,6 +366,182 @@ class GameMap(GameSystem):
         if self.gameworld.currentmap == self:
             self.gameworld.currentmap = None
 
+cdef class LerpObject:
+    cdef str _component
+    cdef str _property
+    cdef float _current_time
+    cdef float _max_time
+    cdef list _start_vals
+    cdef list _end_vals
+    cdef str _lerp_mode
+    cdef object _callback
+
+    def __cinit__(self, str component_name, str property_name, float max_time,
+        list start_vals, list end_vals, str lerp_mode, callback=None):
+        self._component = component_name
+        self._property = property_name
+        self._max_time = max_time
+        self._current_time = 0.
+        self._start_vals = start_vals
+        self._end_vals = end_vals
+        self._lerp_mode = lerp_mode
+        self._callback = callback
+
+    property lerp_mode:
+        def __get__(self):
+            return self._lerp_mode
+        def __set__(self, str value):
+            self._lerp_mode = value
+
+    property component:
+        def __get__(self):
+            return self._component
+        def __set__(self, str value):
+            self._component = value
+
+    property property_name:
+        def __get__(self):
+            return self._property
+        def __set__(self, str value):
+            self._property = value
+
+    property current_time:
+        def __get__(self):
+            return self._current_time
+        def __set__(self, float value):
+            self._current_time = value
+
+    property max_time:
+        def __get__(self):
+            return self._max_time
+        def __set__(self, float value):
+            self._max_time = value
+
+    property end_val:
+        def __get__(self):
+            return self._end_val
+        def __set__(self, list value):
+            self._end_vals = value
+
+    property start_val:
+        def __get__(self):
+            return self._start_val
+        def __set__(self, list value):
+            self._start_vals = value
+
+cdef float lerp(float v0, float v1, float t):
+    return (1. - t) * v0 + t * v1
+
+cdef class LerpComponent:
+    cdef list _lerp_objects
+
+    def __cinit__(self):
+        self._lerp_objects = []
+
+class LerpSystem(GameSystem):
+
+    def add_lerp_to_entity(self, int entity_id, str component_name, 
+        str property_name, object end_value, float lerp_time, str lerp_mode,
+        callback=None):
+        cdef object gameworld = self.gameworld
+        cdef list entities = gameworld.entities
+        cdef object entity = entities[entity_id]
+        cdef object component = getattr(entity, component_name)
+        cdef list end_vals, start_vals
+        cdef LerpComponent lerp_comp = getattr(entity, self.system_id)
+        if lerp_mode == 'float':
+            end_vals = [end_value]
+            start_vals = [getattr(component, property_name)]
+        else:
+            end_vals = [val for val in end_value]
+            start_vals = [val for val in getattr(component, property_name)]
+        cdef lerp_object = LerpObject(component_name, property_name, lerp_time,
+            start_vals, end_vals, lerp_mode, callback=callback)
+        cdef list lerp_objects = lerp_comp._lerp_objects
+        lerp_objects.append(lerp_object)
+
+    def generate_component(self, args):
+        new_component = LerpComponent.__new__(LerpComponent)
+        return new_component
+    
+    def update(self, dt):
+        cdef object gameworld = self.gameworld
+        cdef list entities = gameworld.entities
+        cdef dict systems = gameworld.systems
+        cdef str system_id = self.system_id
+        cdef int entity_id
+        cdef object entity
+        cdef LerpComponent lerp_comp
+        cdef list entity_ids = self.entity_ids
+        cdef int ent_ind
+        cdef list lerp_objects
+        cdef LerpObject lerp_object
+        cdef LerpObject object_to_remove
+        cdef int lerp_ind
+        cdef int lerp_num
+        cdef object to_lerp_comp
+        cdef float tot_time, current_time, t_val
+        cdef list objects_to_remove
+        cdef int remove_ind, remove_len
+        cdef int num_entities = len(entity_ids)
+        cdef list end_vals, start_vals
+        cdef list new_list
+        cdef tuple new_tuple
+        cdef int new_tuple_int
+        cdef int new_tuple_len
+        cdef int new_list_ind
+        cdef int new_list_len
+        cdef str lerp_mode
+        for ent_ind in range(num_entities):
+            entity_id = entity_ids[ent_ind]
+            entity = entities[entity_id]
+            lerp_comp = getattr(entity, system_id)
+            lerp_objects = lerp_comp._lerp_objects
+            objects_to_remove = []
+            objects_a = objects_to_remove.append
+            lerp_num = len(lerp_objects)
+            for lerp_ind in range(lerp_num):
+                lerp_object = lerp_objects[lerp_ind]
+                lerp_object._current_time += dt
+                tot_time = lerp_object._max_time
+                current_time = lerp_object._current_time
+                to_lerp_comp = getattr(entity, lerp_object._component)
+                if current_time >= tot_time:
+                    objects_a(lerp_object)
+                    callback = lerp_object._callback
+                    if callback is not None:
+                        callback(entity_id, lerp_object._component,
+                            lerp_object._property, getattr(to_lerp_comp, 
+                                lerp_object._property))
+                t_val = current_time/tot_time
+                end_vals = lerp_object._end_vals
+                start_vals = lerp_object._start_vals
+                
+                lerp_mode = lerp_object._lerp_mode
+                if lerp_mode == 'float':
+                    setattr(to_lerp_comp, lerp_object._property, 
+                        lerp(start_vals[0], end_vals[0], t_val))
+                elif lerp_mode == 'tuple':
+                    new_tuple = tuple()
+                    new_tuple_len = len(start_vals)
+                    for new_tuple_ind in range(new_tuple_len):
+                        new_tuple[new_tuple_ind] = lerp(
+                            start_vals[new_tuple_ind],
+                            end_vals[new_tuple_ind], t_val)
+                else:
+                    new_list = []
+                    new_list_len = len(start_vals)
+                    for new_list_ind in range(new_list_len):
+                        new_list[new_list_ind] = lerp(start_vals[new_list_ind], 
+                            end_vals[new_list_ind], t_val)
+                    setattr(to_lerp_comp, lerp_object._property, new_list)
+            remove_len = len(objects_to_remove)
+            for remove_ind in range(remove_len):
+                object_to_remove = objects_to_remove[remove_ind]
+                lerp_objects.remove(object_to_remove)
+
+
+
 
 class GameView(GameSystem):
     '''GameView is another entity-less system. It is intended to work with

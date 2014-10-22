@@ -37,11 +37,25 @@ class TestGame(Widget):
         size = Window.size
         self.created_entities = created_entities = []
         entities = self.gameworld.entities
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
         puck_id = self.create_puck((100, 100))
+        lerp_system.add_lerp_to_entity(puck_id, 'color', 'r', .5, 5.,
+            'float', callback=self.lerp_callback)
         self.draw_wall(1920., 20., (1920./2., 10.), (0., 1., 0., 1.))
         self.draw_wall(1920., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.))
         self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
         self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
+
+    def lerp_callback(self, entity_id, component_name, property_name, final_value):
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        if final_value <= .5:
+            lerp_system.add_lerp_to_entity(entity_id, 'color', 'r', 1., 5.,
+                'float', callback=self.lerp_callback)
+        else:
+            lerp_system.add_lerp_to_entity(entity_id, 'color', 'r', .4, 5.,
+                'float', callback=self.lerp_callback)
 
     def draw_wall(self, width, height, pos, color):
         x_vel = 0 #randint(-100, 100)
@@ -123,9 +137,10 @@ class TestGame(Widget):
             'vert_mesh': vert_mesh, 
             #'size': (64, 64),
             'render': True}, 
-            'position': pos, 'rotate': 0, 'color': (1., 0., 0., 1.),}
+            'position': pos, 'rotate': 0, 'color': (1., 0., 0., 1.),
+            'lerp_system': {}}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'renderer',]
+            'physics', 'renderer', 'lerp_system']
         return self.gameworld.init_entity(create_component_dict, component_order)
 
     def setup_map(self):

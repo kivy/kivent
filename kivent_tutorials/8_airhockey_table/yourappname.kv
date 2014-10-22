@@ -31,7 +31,6 @@ TestGame:
             render_system_order: ['puck_renderer', 'renderer', ]
             do_scroll_lock: False
             size: root.size
-            effects: [HorizontalBlurEffect(size=2.0)]
             camera_scale: max(map.map_size[0]/self.size[0], map.map_size[1]/self.size[1])
         GameMap:
             system_id: 'map'
@@ -62,7 +61,7 @@ TestGame:
             gameview_name: 'gameview'
             gameworld: gameworld
             system_id: 'cymunk_touch'
-            ignore_groups: [3, 2]
+            ignore_groups: [3, 2, 4, 5]
             max_force: 3000000.
         LerpSystem:
             gameworld: gameworld

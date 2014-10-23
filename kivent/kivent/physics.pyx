@@ -1,7 +1,7 @@
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk
-from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape, Vec2d, Poly
+from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape, Vec2d, Poly, Segment
 from libc.math cimport M_PI_2
 
 
@@ -256,7 +256,11 @@ class CymunkPhysics(GameSystem):
                     shape_info['mass'], 
                     shape_info['vertices'], 
                     shape_info['offset'])
-                    
+            elif a_shape['shape_type'] == 'segment':
+                moment += cymunk.moment_for_segment(
+                    shape_info['mass'], 
+                    shape_info['a'], 
+                    shape_info['b'])
             else:
                 print 'error: shape ', a_shape['shape_type'], 'not supported'
         if entity_component_dict['mass'] == 0:
@@ -281,18 +285,22 @@ class CymunkPhysics(GameSystem):
         for shape in entity_component_dict['col_shapes']:
             shape_info = shape['shape_info']
             if shape['shape_type'] == 'circle':
-                new_shape = Circle(body, shape_info['outer_radius']) 
+                new_shape = Circle(body, shape_info['outer_radius'], shape_info['offset']) 
             elif shape['shape_type'] == 'box':
                 new_shape = BoxShape(
                     body, shape_info['width'], shape_info['height'])
             elif shape['shape_type'] == 'poly':
                 new_shape = Poly(body, shape_info['vertices'], 
                     offset=shape_info['offset'])
+            elif shape['shape_type'] == 'segment':
+                new_shape = Segment(body, shape_info['a'], 
+                    shape_info['b'], shape_info['radius'])
             else:
                 print 'shape not created'
             new_shape.friction = shape['friction']
             new_shape.elasticity = shape['elasticity']
             new_shape.collision_type = shape['collision_type']
+            if 'group' in shape: new_shape.group = shape['group']
             shapes.append(new_shape)
             space.add(new_shape)
             space.reindex_shape(new_shape)

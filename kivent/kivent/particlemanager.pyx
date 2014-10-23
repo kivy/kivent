@@ -260,23 +260,22 @@ class ParticleManager(GameSystem):
             paused = particle_emitter.paused
             parent_entity = entities[particle_comp._parent]
             render_comp = getattr(parent_entity, render_information_from)
-            if render_comp._on_screen:
-                if particle_comp._system_on:
-                    if paused:
-                        particle_emitter.paused = False
-                        new_pos = calculate_particle_offset(
-                            parent_entity, particle_comp._offset)
-                        particle_emitter.x = new_pos[0]
-                        particle_emitter.y = new_pos[1]
-                        rotate_comp = parent_entity.rotate
-                        particle_emitter.emit_angle = (
-                            rotate_comp._r + M_PI_2)
-                    else:
-                        if not paused:
-                            particle_emitter.paused = True
+            if particle_comp._system_on:
+                if paused:
+                    particle_emitter.paused = False
+                    new_pos = calculate_particle_offset(
+                        parent_entity, particle_comp._offset)
+                    particle_emitter.x = new_pos[0]
+                    particle_emitter.y = new_pos[1]
+                    rotate_comp = parent_entity.rotate
+                    particle_emitter.emit_angle = (
+                        rotate_comp._r + M_PI_2)
                 else:
                     if not paused:
                         particle_emitter.paused = True
+            else:
+                if not paused:
+                    particle_emitter.paused = True
         pm.update(dt)
         self.draw_mesh()
 

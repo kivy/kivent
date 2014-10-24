@@ -1,8 +1,8 @@
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk
-from kivent.gamesystems import GameSystem
-from kivent.gamesystems cimport PositionComponent, RotateComponent
+from kivent_core.gamesystems import GameSystem
+from kivent_core.gamesystems cimport PositionComponent, RotateComponent
 from cymunk cimport (Space, BB, Body, Shape, Circle, BoxShape, 
     Vec2d, Poly, Segment)
 from libc.math cimport M_PI_2

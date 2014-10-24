@@ -12,19 +12,19 @@ except ImportError:
 do_clear_existing = True
 
 core_modules = {
-    'kivent.cmesh': ['kivent/cmesh.pyx',],
-    'kivent.gamesystems': ['kivent/gamesystems.pyx',],
-    'kivent.gameworld': ['kivent/gameworld.pyx'],
-    'kivent.renderers': ['kivent/renderers.pyx',],
-    'kivent.gamescreens': ['kivent/gamescreens.pyx']
+    'kivent_core.cmesh': ['kivent_core/cmesh.pyx',],
+    'kivent_core.gamesystems': ['kivent_core/gamesystems.pyx',],
+    'kivent_core.gameworld': ['kivent_core/gameworld.pyx'],
+    'kivent_core.renderers': ['kivent_core/renderers.pyx',],
+    'kivent_core.gamescreens': ['kivent_core/gamescreens.pyx']
     }
 
 core_modules_c = {
-    'kivent.cmesh': ['kivent/cmesh.c',],
-    'kivent.gamesystems': ['kivent/gamesystems.c',],
-    'kivent.gameworld': ['kivent/gameworld.c'],
-    'kivent.renderers': ['kivent/renderers.c',],
-    'kivent.gamescreens': ['kivent/gamescreens.c']
+    'kivent_core.cmesh': ['kivent_core/cmesh.c',],
+    'kivent_core.gamesystems': ['kivent_core/gamesystems.c',],
+    'kivent_core.gameworld': ['kivent_core/gameworld.c'],
+    'kivent_core.renderers': ['kivent_core/renderers.c',],
+    'kivent_core.gamescreens': ['kivent_core/gamescreens.c']
     }
 
 do_cymunk = True 
@@ -40,11 +40,11 @@ cymunk_modules_c = {
 }
 
 check_for_removal = [
-    'kivent/cmesh.c',
-    'kivent/gamesystems.c',
-    'kivent/gameworld.c',
-    'kivent/gamescreens.c',
-    'kivent/renderers.c',
+    'kivent_core/cmesh.c',
+    'kivent_core/gamesystems.c',
+    'kivent_core/gameworld.c',
+    'kivent_core/gamescreens.c',
+    'kivent_core/renderers.c',
     'kivent_cymunk/physics.c',
     'kivent_cymunk/interaction.c',
 
@@ -94,7 +94,7 @@ else:
             cymunk_modules_c)
 
 setup(
-    name='KivEnt',
+    name='KivEnt Core',
     description='''A game engine for the Kivy Framework. 
         https://github.com/Kovak/KivEnt for more info.''',
     author='Jacob Kovac',

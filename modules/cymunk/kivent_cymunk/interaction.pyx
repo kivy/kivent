@@ -4,8 +4,8 @@ from cymunk cimport (GearJoint, PivotJoint, Vec2d, cpVect, cpv,
 from kivy.properties import (ListProperty, NumericProperty, BooleanProperty,
     StringProperty)
 from physics cimport PhysicsComponent
-from kivent.kivent_core.gamesystems import GameSystem
-from kivent.kivent_core.gamesystems cimport PositionComponent, RotateComponent
+from kivent_core.gamesystems import GameSystem
+from kivent_core.gamesystems cimport PositionComponent, RotateComponent
 cimport cython
 from libc.math cimport atan2, pow as cpow
 

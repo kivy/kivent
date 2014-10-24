@@ -78,7 +78,5 @@ setup(
     cmdclass=cmdclass,
     packages=[
         'kivent_cymunk',
-        'kivent_cymunk.physics',
-        'kivent_cymunk.interaction',
         ],
     package_dir={'kivent_cymunk': 'kivent_cymunk'})

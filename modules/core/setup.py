@@ -83,10 +83,5 @@ setup(
     cmdclass=cmdclass,
     packages=[
         'kivent_core',
-        'kivent_core.cmesh',
-        'kivent_core.gamesystems',
-        'kivent_core.gameworld',
-        'kivent_core.renderers',
-        'kivent_core.gamescreens',
         ],
     package_dir={'kivent_core': 'kivent_core'})

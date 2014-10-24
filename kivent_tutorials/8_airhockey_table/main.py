@@ -2,10 +2,13 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
-import kivent
 from random import randint, choice
 from math import radians, pi, sin, cos
-from kivent import texture_manager, VertMesh
+import kivent_core
+import kivent_cymunk
+
+from kivent_core.renderers import texture_manager, VertMesh
+from kivent_cymunk.physics import CymunkPhysics
 from functools import partial
 
 
@@ -117,7 +120,8 @@ class TestGame(Widget):
                 property_name, .90, .5, 'float', 
                 callback=self.lerp_callback_goal_score)
         else:
-            print('how we get here')
+            lerp_system.add_lerp_to_entity(entity_id, component_name, 
+                property_name, 0., 1., 'float', )
         
 
     def lerp_callback_airhole(self, entity_id, component_name, property_name, 
@@ -140,19 +144,19 @@ class TestGame(Widget):
         self.draw_wall(1920., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.))
         self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
         self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
-        self.draw_goal((20.+150./2., (1080.-600.)/2. + 600./2.), (150., 600.), 
+        self.draw_goal((20.+150./2., (1080.-540.)/2. + 540./2.), (150., 540.), 
             (0., 1., 0., 1.0))
         self.draw_goal((20.+100./2., (1080.-450.)/2. + 450./2.), (100., 450.), 
             (1., 0., 0., .25), collision_type=5)
-        self.draw_goal((1920. - (20.+150./2.), (1080.-600.)/2. + 600./2.), 
-            (150., 600.), (0., 1., 0., 1.0))
+        self.draw_goal((1920. - (20.+150./2.), (1080.-540.)/2. + 540./2.), 
+            (150., 540.), (0., 1., 0., 1.0))
         self.draw_goal((1920. - (20.+100./2.), (1080.-450.)/2. + 450./2.), 
             (100., 450.), (1., 0., 0., .25), collision_type=5)
-        x1 = 210
-        y1 = 60
-        for x in range(26):
-            for y in range(17):
-                pos = (x1 + 60 *x, y1 + 60*y)
+        x1 = 225
+        y1 = 95
+        for x in range(15):
+            for y in range(10):
+                pos = (x1 + 104. *x, y1 + 100*y)
                 self.create_air_hole(pos)
 
     def draw_goal(self, pos, size, color, collision_type=4):
@@ -225,12 +229,12 @@ class TestGame(Widget):
         y_vel = 0 #randint(-100, 100)
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
-        shape_dict = {'inner_radius': 0, 'outer_radius': 20., 
+        shape_dict = {'inner_radius': 0, 'outer_radius': 40., 
             'mass': 0, 'offset': (0, 0)}
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
             'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
-        vert_mesh = self.draw_regular_polygon(30, 20., (0., 0., .25, 1.))
+        vert_mesh = self.draw_regular_polygon(30, 40., (0., 0., .25, 1.))
         physics_component = {'main_shape': 'circle', 
             'velocity': (x_vel, y_vel), 
             'position': pos, 'angle': angle, 
@@ -289,7 +293,7 @@ class TestGame(Widget):
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
         shape_dict = {'inner_radius': 0, 'outer_radius': 75., 
-            'mass': 50, 'offset': (0, 0)}
+            'mass': 50, 'offset': (0., 0.)}
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
             'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]

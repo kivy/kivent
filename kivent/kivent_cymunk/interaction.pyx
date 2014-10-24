@@ -1,13 +1,16 @@
-
+from kivent.gamesystems import GameSystem
 from cymunk cimport (GearJoint, PivotJoint, Vec2d, cpVect, cpv,
     cpFloat, cpBool, cpvunrotate, cpvrotate, cpvdot, cpvsub, cpvnear,
-    cpBody, cpvmult, cpvlerp)
-
+    cpBody, cpvmult, cpvlerp, Space)
+from kivy.properties import (ListProperty, NumericProperty, BooleanProperty,
+    StringProperty)
+from physics cimport PhysicsComponent
+from kivent.gamesystems cimport PositionComponent, RotateComponent
+cimport cython
 from libc.math cimport atan2, pow as cpow
 
+@cython.freelist(100)
 cdef class CymunkTouchComponent:
-    cdef Body _touch_body
-    cdef PivotJoint _pivot
 
     def __cinit__(self, Body touch_body, PivotJoint pivot):
         self._touch_body = touch_body
@@ -159,9 +162,6 @@ class CymunkTouchSystem(GameSystem):
             cbody.v = new_vel
             cbody.p = new_point
 
-
-
-
     def create_component(self, object entity, dict args):
         cdef object gameworld = self.gameworld
         cdef dict systems = gameworld.systems
@@ -201,14 +201,8 @@ class CymunkTouchSystem(GameSystem):
         space.remove(system_data._pivot)
         super(CymunkTouchSystem, self).remove_entity(entity_id)
             
-
+@cython.freelist(100)
 cdef class SteeringComponent: 
-    cdef Body _steering_body
-    cdef PivotJoint _pivot
-    cdef GearJoint _gear
-    cdef tuple _target
-    cdef float _speed
-    cdef bool _active
 
     def __cinit__(self, Body body, PivotJoint pivot, GearJoint gear,
         float speed):

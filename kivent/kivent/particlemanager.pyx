@@ -8,6 +8,10 @@ from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE,
 GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
 GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
 glDisable)
+from cmesh cimport CMesh
+from gamesystem import GameSystem
+from renderers cimport RenderComponent
+from gamesystem cimport RotateComponent, PositionComponent
 
 BLEND_FUNC = {
             0: GL_ZERO,
@@ -113,8 +117,7 @@ class ParticleManager(GameSystem):
 
 
     def __init__(self, **kwargs):
-        self.canvas = RenderContext(use_parent_projection=True, 
-            nocompiler=True)
+        self.canvas = RenderContext(use_parent_projection=True)
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
         super(ParticleManager, self).__init__(**kwargs)

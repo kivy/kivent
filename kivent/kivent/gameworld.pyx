@@ -1,12 +1,12 @@
-
 from kivy.uix.widget import Widget
 from kivy.properties import (StringProperty, ListProperty, NumericProperty, 
 DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 from functools import partial
-from kivy.graphics.transformation import Matrix
 from kivy.graphics import RenderContext
+from gamesystems import GameSystem
 
+cdef float test = 0
 
 class Entity(object):
     '''Entity is a python object that will hold all of the components

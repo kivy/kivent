@@ -1,14 +1,15 @@
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk
-from cymunk cimport Space, BB, Body, Shape, Circle, BoxShape, Vec2d, Poly, Segment
+from kivent.gamesystems import GameSystem
+from kivent.gamesystems cimport PositionComponent, RotateComponent
+from cymunk cimport (Space, BB, Body, Shape, Circle, BoxShape, 
+    Vec2d, Poly, Segment)
 from libc.math cimport M_PI_2
+cimport cython
 
-
+@cython.freelist(100)
 cdef class PhysicsComponent:
-    cdef Body _body
-    cdef list _shapes
-    cdef str _shape_type
 
     def __cinit__(self, Body body, list shapes, str shape_type):
         self._body = body
@@ -164,8 +165,11 @@ class CymunkPhysics(GameSystem):
         camera_pos = viewport.camera_pos#TODO take this from gameview??
         camera_scale = viewport.camera_scale
         size = viewport.size
-        cdef list bb_list = [-camera_pos[0], -camera_pos[1], 
-            -camera_pos[0] + size[0]*camera_scale, -camera_pos[1] + size[1]*camera_scale]
+        cdef list bb_list = [
+            -camera_pos[0], -camera_pos[1], 
+            -camera_pos[0] + size[0]*camera_scale, 
+            -camera_pos[1] + size[1]*camera_scale
+            ]
         current_on_screen = self.query_bb(bb_list)
         return current_on_screen
 
@@ -285,7 +289,8 @@ class CymunkPhysics(GameSystem):
         for shape in entity_component_dict['col_shapes']:
             shape_info = shape['shape_info']
             if shape['shape_type'] == 'circle':
-                new_shape = Circle(body, shape_info['outer_radius'], shape_info['offset']) 
+                new_shape = Circle(body, shape_info['outer_radius'], 
+                    shape_info['offset']) 
             elif shape['shape_type'] == 'box':
                 new_shape = BoxShape(
                     body, shape_info['width'], shape_info['height'])
@@ -306,7 +311,8 @@ class CymunkPhysics(GameSystem):
             space.reindex_shape(new_shape)
             
         shape_type = entity_component_dict['col_shapes'][0]['shape_type']
-        new_component = PhysicsComponent.__new__(PhysicsComponent, body, shapes, shape_type)
+        new_component = PhysicsComponent.__new__(PhysicsComponent, body, 
+            shapes, shape_type)
         return new_component
 
     def create_component(self, object entity, args):

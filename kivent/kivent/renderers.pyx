@@ -1,15 +1,29 @@
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from kivy.core.image import Image as CoreImage
 from cpython cimport bool
+from kivy.properties import (BooleanProperty, StringProperty, NumericProperty)
 from os import path
 cdef extern from "string.h":
     void *memcpy(void *dest, void *src, size_t n)
+from gamesystems cimport (PositionComponent, RotateComponent, ScaleComponent,
+    ColorComponent)
+from kivy.graphics import RenderContext, Callback
+from gamesystems import GameSystem
+from cmesh cimport CMesh
+import json
+from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE, 
+    GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
+    GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
+    glDisable)
+cimport cython
+
 
 cdef class TextureManager:
-    cdef dict _textures
-    cdef dict _keys
-    cdef dict _uvs
-    cdef dict _groups
+    '''The TextureManager handles the loading of all image resources into our
+    game engine. Use **load_image** for image files and **load_atlas** for
+    .atlas files. Do not load 2 images with the same name even in different
+    atlas files. Prefer to access kivent.renderers.texture_manager than
+    making your own instance.'''
 
     def __init__(self):
         self._textures = {}
@@ -92,15 +106,8 @@ cdef class TextureManager:
 
 texture_manager = TextureManager()
 
-
+@cython.freelist(100)
 cdef class RenderComponent:
-    cdef bool _render
-    cdef str _texture_key
-    cdef VertMesh _vert_mesh
-    cdef int _attrib_count
-    cdef int _batch_id
-    cdef float _width
-    cdef float _height
 
     def __cinit__(self, bool render, str texture_key, 
         int attribute_count, width=None, height=None, 
@@ -123,6 +130,7 @@ cdef class RenderComponent:
                 self._vert_mesh = new_vert_mesh = VertMesh(attribute_count, 
                     vert_mesh._vert_count, vert_mesh._index_count)
                 new_vert_mesh.copy_vert_mesh(vert_mesh)
+
     property width:
         def __get__(self):
             return self._width
@@ -130,16 +138,17 @@ cdef class RenderComponent:
         def __set__(self, float value):
             width = value
             height = self._height
+            cdef VertMesh vert_mesh = self._vert_mesh
+
             if width != 0 and height != 0:
                 w = .5*width
                 self._width = width
-                set_vertex_attribute=self._vert_mesh.set_vertex_attribute
+                set_vertex_attribute=vert_mesh.set_vertex_attribute
                 set_vertex_attribute(0,0,-w)
                 set_vertex_attribute(1,0,-w)
                 set_vertex_attribute(2,0,w)
                 set_vertex_attribute(3,0,w)
-                #self._vert_mesh.set_textured_rectangle(width, height, 
-                #    texture_manager.get_uvs(self._texture_key))
+        
 
     property height:
         def __get__(self):
@@ -156,8 +165,7 @@ cdef class RenderComponent:
                 set_vertex_attribute(1,1,h)
                 set_vertex_attribute(2,1,h)
                 set_vertex_attribute(3,1,-h)
-                #self._vert_mesh.set_textured_rectangle(width, height, 
-                #    texture_manager.get_uvs(self._texture_key))
+
     property batch_id:
         def __get__(self):
             return self._batch_id
@@ -227,10 +235,31 @@ class Renderer(GameSystem):
          that will be placed in a batch. 
 
         **attribute_count** (NumericProperty): The number of attributes each 
-        vertex will contain. Computed automatically inside calculate_vertex_format.
+        vertex will contain. Computed automatically inside 
+        calculate_vertex_format.
 
         **vertex_format** (dict): describes format of data sent to shaders,
         generated automatically based on do_rotate, do_scale, do_color
+
+        **blend_factor_source** (NumericProperty): Sets the Blend Source. for
+        a visual exploration of this concept visit : 
+        http://www.andersriggelsen.dk/glblendfunc.php
+        Options Include:
+        GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, 
+        GL_ONE_MINUS_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, 
+        GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR
+
+        **blend_factor_dest** (NumericProperty): Sets the Blend Dest. 
+        See blend_factor_sourc for more details.
+
+        **reset_blend_factor_source** (NumericProperty): The blend source
+        will be reset to this after drawing this canvas. 
+        See blend_factor_source for more details.
+
+        **reset_blend_factor_dest** (NumericProperty): The blend dest
+        will be reset to this after drawing this canvas. 
+        See blend_factor_source for more details.
+
 
     '''
     system_id = StringProperty('renderer')
@@ -242,6 +271,10 @@ class Renderer(GameSystem):
     attribute_count = NumericProperty(4)
     maximum_vertices = NumericProperty(20000)
     shader_source = StringProperty('positionshader.glsl')
+    blend_factor_source = NumericProperty(GL_SRC_ALPHA)
+    blend_factor_dest = NumericProperty(GL_ONE_MINUS_SRC_ALPHA)
+    reset_blend_factor_source = NumericProperty(GL_SRC_ALPHA)
+    reset_blend_factor_dest = NumericProperty(GL_ONE_MINUS_SRC_ALPHA)
 
 
     def __init__(self, **kwargs):
@@ -251,7 +284,6 @@ class Renderer(GameSystem):
         super(Renderer, self).__init__(**kwargs)
         self.batches = []
         self.vertex_format = self.calculate_vertex_format()
-        
         self._do_r_index = -1
         self._do_g_index = -1
         self._do_b_index = -1
@@ -260,6 +292,17 @@ class Renderer(GameSystem):
         self._do_scale_index = -1
         self._do_center_x = 4
         self._do_center_y = 5
+        with self.canvas.before:
+            Callback(self._set_blend_func)
+        with self.canvas.after:
+            Callback(self._reset_blend_func)
+
+    def _set_blend_func(self, instruction):
+        glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
+
+    def _reset_blend_func(self, instruction):
+        glBlendFunc(self.reset_blend_factor_source, 
+            self.reset_blend_factor_dest)
 
     def on_shader_source(self, instance, value):
         self.canvas.shader.source = value
@@ -564,23 +607,8 @@ class Renderer(GameSystem):
             vert_mesh=vert_mesh)
         return new_component
 
-
+@cython.freelist(20)
 cdef class RenderBatch:
-    cdef list _entity_ids
-    cdef int _vert_count
-    cdef dict _entity_counts
-    cdef int _maximum_verts
-    cdef float* _batch_data
-    cdef unsigned short* _batch_indices
-    cdef int _index_count
-    cdef int _r_index_count
-    cdef int _r_vert_count
-    cdef int _attrib_count
-    cdef int _r_attrib_count
-    cdef str _texture
-    cdef CMesh _cmesh
-    cdef int _batch_id
-
 
     def __cinit__(self, int maximum_verts, int attribute_count, CMesh cmesh,
             str texture_name, int batch_id):
@@ -674,7 +702,7 @@ cdef class RenderBatch:
         self._index_count += index_change
         entity_counts[entity_id] = (new_vert_count, new_indices_count)
 
-
+@cython.freelist(100)
 cdef class VertMesh:
     '''The VertMesh represents a collection of **vertex_count** vertices, 
     all having **attribute_count** floating point data fields. The 
@@ -707,12 +735,6 @@ cdef class VertMesh:
         setting ensure your input list matches index_count in size. 
 
     '''
-    cdef int _attrib_count
-    cdef float* _data
-    cdef int _vert_count
-    cdef int _index_count
-    cdef unsigned short* _indices
-
 
     def __cinit__(self, int attribute_count, int vert_count, int index_count):
         self._attrib_count = attribute_count

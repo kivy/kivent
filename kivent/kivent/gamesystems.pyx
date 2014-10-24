@@ -1,4 +1,3 @@
-
 from kivy.uix.widget import Widget
 from kivy.properties import (StringProperty, ListProperty, 
     NumericProperty, DictProperty, BooleanProperty, ObjectProperty)
@@ -6,14 +5,18 @@ from kivy.clock import Clock
 from math import fabs
 from kivy.core.window import Window
 from kivy.uix.effectwidget import EffectWidget
+from functools import partial
+from kivy.graphics import RenderContext
+from kivy.graphics.transformation import Matrix
+cimport cython
 
 
 class Component(object):
     pass
 
 
+@cython.freelist(100)
 cdef class RotateComponent:
-    cdef float _r
 
     def __cinit__(self, float r):
         self._r = r
@@ -24,9 +27,8 @@ cdef class RotateComponent:
         def __set__(self, float value):
             self._r = value
 
-
+@cython.freelist(100)
 cdef class ScaleComponent:
-    cdef float _s
 
     def __cinit__(self, float s):
         self._s = s
@@ -37,10 +39,8 @@ cdef class ScaleComponent:
         def __set__(self, float value):
             self._s = value
 
-
+@cython.freelist(100)
 cdef class PositionComponent:
-    cdef float _x
-    cdef float _y
     
     def __cinit__(self, float x, float y):
         self._x = x
@@ -58,12 +58,8 @@ cdef class PositionComponent:
         def __set__(self, float value):
             self._y = value
 
-
+@cython.freelist(100)
 cdef class ColorComponent:
-    cdef float _r
-    cdef float _g
-    cdef float _b
-    cdef float _a
     
     def __cinit__(self, float r, float g, float b, float a):
         self._r = r
@@ -367,15 +363,8 @@ class GameMap(GameSystem):
         if self.gameworld.currentmap == self:
             self.gameworld.currentmap = None
 
+@cython.freelist(100)
 cdef class LerpObject:
-    cdef str _component
-    cdef str _property
-    cdef float _current_time
-    cdef float _max_time
-    cdef list _start_vals
-    cdef list _end_vals
-    cdef str _lerp_mode
-    cdef object _callback
 
     def __cinit__(self, str component_name, str property_name, float max_time,
         list start_vals, list end_vals, str lerp_mode, callback=None):
@@ -433,17 +422,28 @@ cdef class LerpObject:
 cdef float lerp(float v0, float v1, float t):
     return (1. - t) * v0 + t * v1
 
+@cython.freelist(100)
 cdef class LerpComponent:
-    cdef list _lerp_objects
 
     def __cinit__(self):
         self._lerp_objects = []
 
 class LerpSystem(GameSystem):
+    '''The LerpSystem can be used to automatically lerp the python value 
+    of a component attribute to a set value over time. To start with the
+    LerpComponent of your entity will do nothing, you must call 
+    **add_lerp_to_entity** to cause behavior to occur.'''
 
     def add_lerp_to_entity(self, int entity_id, str component_name, 
         str property_name, object end_value, float lerp_time, str lerp_mode,
         callback=None):
+        '''Adds a LerpObject to the LerpComponent of Entity entity_id. This 
+        will lerp the attribute: property_name of that entity's component_name
+        component between its current value and end_value over the time
+        lerp_time provided. lerp_mode can be float, tuple, or list. You can
+        provide optional callback arg to bind a function that will be called 
+        when this lerp completes. The callback will receive args: entity_id, 
+        component_name, property_name, final_value'''
         cdef object gameworld = self.gameworld
         cdef list entities = gameworld.entities
         cdef object entity = entities[entity_id]
@@ -491,6 +491,7 @@ class LerpSystem(GameSystem):
         cdef int new_tuple_int
         cdef int new_tuple_len
         cdef int new_list_ind
+        cdef str component
         cdef int new_list_len
         cdef str lerp_mode
         for ent_ind in range(num_entities):
@@ -506,6 +507,7 @@ class LerpSystem(GameSystem):
                 lerp_object._current_time += dt
                 tot_time = lerp_object._max_time
                 current_time = lerp_object._current_time
+                component = lerp_object._component
                 to_lerp_comp = getattr(entity, lerp_object._component)
                 if current_time >= tot_time:
                     objects_a(lerp_object)

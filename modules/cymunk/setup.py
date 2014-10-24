@@ -75,4 +75,10 @@ setup(
     author='Jacob Kovac',
     author_email='kovac1066@gmail.com',
     ext_modules=cymunk_extensions,
-    cmdclass=cmdclass)
+    cmdclass=cmdclass,
+    packages=[
+        'kivent_cymunk',
+        'kivent_cymunk.physics',
+        'kivent_cymunk.interaction',
+        ],
+    package_dir={'kivent_cymunk': 'kivent_cymunk'})

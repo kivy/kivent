@@ -80,4 +80,13 @@ setup(
     author='Jacob Kovac',
     author_email='kovac1066@gmail.com',
     ext_modules=core_extensions,
-    cmdclass=cmdclass)
+    cmdclass=cmdclass,
+    packages=[
+        'kivent_core',
+        'kivent_core.cmesh',
+        'kivent_core.gamesystems',
+        'kivent_core.gameworld',
+        'kivent_core.renderers',
+        'kivent_core.gamescreens',
+        ],
+    package_dir={'kivent_core': 'kivent_core'})

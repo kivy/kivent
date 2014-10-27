@@ -183,6 +183,21 @@ cdef class RenderComponent:
             return self._texture_key
         def __set__(self, str value):
             self._texture_key = value
+            cdef float u0, v0, u1, v1
+            cdef list uv_list = texture_manager.get_uvs(texture_key)
+            u0 = uv_list[0]
+            v0 = uv_list[1]
+            u1 = uv_list[2]
+            v1 = uv_list[3]
+            set_vertex_attribute=self._vert_mesh.set_vertex_attribute
+            set_vertex_attribute(0, 2, u0)
+            set_vertex_attribute(0, 3, v0)
+            set_vertex_attribute(1, 2, u0)
+            set_vertex_attribute(1, 3, v1)
+            set_vertex_attribute(2, 2, u1)
+            set_vertex_attribute(2, 3, v1)
+            set_vertex_attribute(3, 2, u1)
+            set_vertex_attribute(3, 3, v0)
 
     property render:
         def __get__(self):
@@ -501,6 +516,15 @@ class Renderer(GameSystem):
         rebatch_entity = self.rebatch_entity
         for entity_id in entity_ids:
             rebatch_entity(entity_id)
+
+    def remove_entity_from_batch(self, int entity_id):
+        cdef list entities = self.gameworld.entities
+        cdef object entity = entities[entity_id]
+        cdef list batches = self.batches
+        cdef RenderComponent render_comp = getattr(entity, self.system_id)
+        cdef int batch_id = render_comp._batch_id
+        cdef RenderBatch batch = batches[batch_id]
+        batch.remove_entity(entity_id)
 
     def rebatch_entity(self, int entity_id):
         cdef list entities = self.gameworld.entities

@@ -2,10 +2,11 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
-import kivent
 from random import randint, choice
 from math import radians, pi, sin, cos
-from kivent import texture_manager, VertMesh
+import kivent_core
+import kivent_cymunk
+from kivent_core.renderers import texture_manager, VertMesh
 
 texture_manager.load_atlas('assets/background_objects.atlas')
 

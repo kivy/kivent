@@ -461,6 +461,15 @@ class LerpSystem(GameSystem):
         cdef list lerp_objects = lerp_comp._lerp_objects
         lerp_objects.append(lerp_object)
 
+    def clear_lerps_from_entity(self, int entity_id):
+        '''Removes all LerpObjects from the LerpComponent of Entity entity_id.'''
+        cdef object gameworld = self.gameworld
+        cdef list entities = gameworld.entities
+        cdef object entity = entities[entity_id]
+        cdef LerpComponent lerp_comp = getattr(entity, self.system_id)
+        cdef list lerp_objects = lerp_comp._lerp_objects
+        del lerp_objects[:]
+
     def generate_component(self, args):
         new_component = LerpComponent.__new__(LerpComponent)
         return new_component

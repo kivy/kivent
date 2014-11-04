@@ -1,3 +1,4 @@
+# cython: profile=True
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk

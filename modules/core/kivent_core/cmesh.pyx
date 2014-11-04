@@ -1,3 +1,4 @@
+# cython: profile=True
 from kivy.graphics.vertex cimport VertexFormat
 from kivy.graphics.instructions cimport VertexInstruction
 # from kivy.graphics.c_opengl cimport *

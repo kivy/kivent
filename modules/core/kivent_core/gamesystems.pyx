@@ -1,3 +1,4 @@
+# cython: profile=True
 from kivy.uix.widget import Widget
 from kivy.properties import (StringProperty, ListProperty, 
     NumericProperty, DictProperty, BooleanProperty, ObjectProperty)

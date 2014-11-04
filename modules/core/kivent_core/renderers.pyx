@@ -1,3 +1,4 @@
+# cython: profile=True
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from kivy.core.image import Image as CoreImage
 from cpython cimport bool
@@ -184,7 +185,7 @@ cdef class RenderComponent:
         def __set__(self, str value):
             self._texture_key = value
             cdef float u0, v0, u1, v1
-            cdef list uv_list = texture_manager.get_uvs(texture_key)
+            cdef list uv_list = texture_manager.get_uvs(value)
             u0 = uv_list[0]
             v0 = uv_list[1]
             u1 = uv_list[2]
@@ -318,6 +319,14 @@ class Renderer(GameSystem):
     def _reset_blend_func(self, instruction):
         glBlendFunc(self.reset_blend_factor_source, 
             self.reset_blend_factor_dest)
+
+    def _update(self, dt):
+        '''
+        We only want to update renderer once per frame, so we will override
+        the basic GameSystem logic here which accounts appropriately for
+        dt.
+        '''
+        self.update(dt)
 
     def on_shader_source(self, instance, value):
         self.canvas.shader.source = value

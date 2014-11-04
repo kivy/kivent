@@ -1,3 +1,4 @@
+# cython: profile=True
 from cymunk cimport (GearJoint, PivotJoint, Vec2d, cpVect, cpv,
     cpFloat, cpBool, cpvunrotate, cpvrotate, cpvdot, cpvsub, cpvnear,
     cpBody, cpvmult, cpvlerp, Space)

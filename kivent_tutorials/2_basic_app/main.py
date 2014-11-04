@@ -2,9 +2,9 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
-import cymunk
-import kivent
-from kivent import texture_manager
+
+import kivent_core
+from kivent_core.renderers import texture_manager
 
 texture_manager.load_atlas('assets/background_objects.atlas')
 texture_manager.load_image('assets/ship7.png')

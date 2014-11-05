@@ -144,6 +144,7 @@ cdef class OrphaningVertexBatch:
         cdef int count = self._data_size * sizeof(unsigned short)
         cdef int last_frame_count = self._size_last_frame
         cdef unsigned short* data_ptr = self._data_pointer
+        print('drawing vbo', count)
         if count == 0:
             return
 

@@ -49,13 +49,11 @@ cdef class OrphaningVBO:
             glGenBuffers(1, &self.id)
             self.flags &= ~V_NEEDGEN
             self.flags |= V_HAVEID
-        print(self.format_size / 4)
         cdef int data_size = self._data_size * self.format_size
         cdef void* data_ptr = self._data_pointer
         cdef int size_last_frame = self._size_last_frame
         # if the size doesn't match, we need to reupload the whole data
         if data_size != size_last_frame:
-            print('new buffer')
             glBindBuffer(GL_ARRAY_BUFFER, self.id)
             glBufferData(GL_ARRAY_BUFFER, data_size, data_ptr, self.usage)
             self.flags &= ~V_NEEDUPLOAD
@@ -63,7 +61,6 @@ cdef class OrphaningVBO:
 
         # if size match, update only what is needed
         elif self.flags & V_NEEDUPLOAD:
-            print('updating buffer', self.id)
             glBindBuffer(GL_ARRAY_BUFFER, self.id)
             glBufferData(GL_ARRAY_BUFFER, data_size, NULL, self.usage)
             glBufferData(GL_ARRAY_BUFFER, data_size, data_ptr, self.usage)
@@ -94,7 +91,6 @@ cdef class OrphaningVBO:
             glVertexAttribPointer(attr.index, attr.size, attr.type,
                     GL_FALSE, <GLsizei>self.format_size, <GLvoid*><long>offset)
             offset += attr.bytesize
-            print(offset, attr.bytesize, attr.type, attr.index)
 
     cdef void unbind(self):
         glBindBuffer(GL_ARRAY_BUFFER, 0)
@@ -139,7 +135,6 @@ cdef class OrphaningVertexBatch:
 
     cdef void set_data(self, void *vertices, int vertices_count,
         unsigned short *indices, int indices_count):
-        print('setting data,', vertices_count, indices_count, self.id)
         self.vbo.set_data(vertices_count, vertices)
         self._data_size = indices_count
         self._data_pointer = indices
@@ -149,7 +144,6 @@ cdef class OrphaningVertexBatch:
         cdef int count = self._data_size * sizeof(unsigned short)
         cdef int last_frame_count = self._size_last_frame
         cdef unsigned short* data_ptr = self._data_pointer
-        print('drawing', count)
         if count == 0:
             return
 

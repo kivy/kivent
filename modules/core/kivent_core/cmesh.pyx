@@ -295,6 +295,8 @@ cdef class DoubleBufferingVertexBatch:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ids[current_ivbo_id])
         # draw the elements pointed by indices in ELEMENT ARRAY BUFFER.
         glDrawElements(self.mode, count, GL_UNSIGNED_SHORT, NULL)
+        vbo.unbind()
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
     cdef void set_mode(self, str mode):
         # most common case in top;

@@ -99,9 +99,8 @@ cdef class KEVBO:
         self._size_last_frame = 0
 
     def __repr__(self):
-        return '<VBO at %x id=%r count=%d size=%d>' % (
-                id(self), self.id if self.flags & V_HAVEID else None,
-                self.data.count(), self.data.size())
+        return '<VBO at %x id=%r>' % (
+                id(self), self.id if self.flags & V_HAVEID else None)
 
 cdef class OrphaningVBO:
     '''
@@ -168,7 +167,6 @@ cdef class OrphaningVBO:
         cdef Shader shader = getActiveContext()._shader
         cdef vertex_attr_t *attr
         cdef int offset = 0, i
-        self.update_buffer()
         glBindBuffer(GL_ARRAY_BUFFER, self.id)
         shader.bind_vertex_format(self.vertex_format)
         for i in xrange(self.format_count):
@@ -247,6 +245,7 @@ cdef class DoubleBufferingVertexBatch:
         unsigned short *indices, int indices_count):
         cdef KEVBO vbo = self.get_current_vbo()
         vbo.set_data(vertices_count, vertices)
+        vbo.update_buffer()
         self._data_size = indices_count
         self._data_pointer = indices
         self.flags |= V_NEEDUPLOAD
@@ -255,8 +254,8 @@ cdef class DoubleBufferingVertexBatch:
         cdef int count = self._data_size * sizeof(unsigned short)
         cdef int current_ivbo_id = self.get_current_ivbo()
         cdef unsigned short* data_ptr = self._data_pointer
-        cdef KEVBO vbo = self.get_current_vbo()
         cdef int last_frame_count
+
       
         if count == 0:
             return
@@ -264,12 +263,12 @@ cdef class DoubleBufferingVertexBatch:
             last_frame_count = self._ivbo_1_size_last_frame
         else:
             last_frame_count = self._ivbo_2_size_last_frame
+
         # create when needed
         if self.flags & V_NEEDGEN:
             glGenBuffers(2, self._ids)
             self.flags &= ~V_NEEDGEN
             self.flags |= V_HAVEID
-
         # bind to the current id
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ids[current_ivbo_id])
 
@@ -286,12 +285,15 @@ cdef class DoubleBufferingVertexBatch:
                 self._ivbo_1_size_last_frame = count
             else:
                 self._ivbo_2_size_last_frame = count
+        
 
+        self._last_vbo = not self._last_vbo
+        current_ivbo_id = self.get_current_ivbo()
+        cdef KEVBO vbo = self.get_current_vbo()
         vbo.bind()
-
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ids[current_ivbo_id])
         # draw the elements pointed by indices in ELEMENT ARRAY BUFFER.
         glDrawElements(self.mode, count, GL_UNSIGNED_SHORT, NULL)
-        self._last_vbo = not self._last_vbo
 
     cdef void set_mode(self, str mode):
         # most common case in top;

@@ -247,6 +247,7 @@ cdef class DoubleBufferingVertexBatch:
         vbo.set_data(vertices_count, vertices)
         vbo.update_buffer()
         vbo.unbind()
+        print('updated vbo', vbo)
         self._data_size = indices_count
         self._data_pointer = indices
         self.flags |= V_NEEDUPLOAD
@@ -271,6 +272,7 @@ cdef class DoubleBufferingVertexBatch:
             self.flags &= ~V_NEEDGEN
             self.flags |= V_HAVEID
         # bind to the current id
+        print('updating indices', self._ids[current_ivbo_id])
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ids[current_ivbo_id])
 
 
@@ -291,8 +293,11 @@ cdef class DoubleBufferingVertexBatch:
         self._last_vbo = not self._last_vbo
         current_ivbo_id = self.get_current_ivbo()
         cdef KEVBO vbo = self.get_current_vbo()
-        vbo.bind()
+        
+        print('drawing vbo', vbo)
+        print('drawing indices', self._ids[current_ivbo_id])
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self._ids[current_ivbo_id])
+        vbo.bind()
         # draw the elements pointed by indices in ELEMENT ARRAY BUFFER.
         glDrawElements(self.mode, count, GL_UNSIGNED_SHORT, NULL)
         vbo.unbind()

@@ -98,7 +98,7 @@ cdef class OrphaningVBO:
 
     cdef void reload(self):
         self.flags = V_NEEDUPLOAD | V_NEEDGEN
-        self.vbo_size = 0
+        self._size_last_frame = 0
 
     def __repr__(self):
         return '<VBO at %x id=%r count=%d size=%d>' % (

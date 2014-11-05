@@ -246,6 +246,7 @@ cdef class DoubleBufferingVertexBatch:
         cdef KEVBO vbo = self.get_current_vbo()
         vbo.set_data(vertices_count, vertices)
         vbo.update_buffer()
+        vbo.unbind()
         self._data_size = indices_count
         self._data_pointer = indices
         self.flags |= V_NEEDUPLOAD
@@ -285,7 +286,7 @@ cdef class DoubleBufferingVertexBatch:
                 self._ivbo_1_size_last_frame = count
             else:
                 self._ivbo_2_size_last_frame = count
-        
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 
         self._last_vbo = not self._last_vbo
         current_ivbo_id = self.get_current_ivbo()

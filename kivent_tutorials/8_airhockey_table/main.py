@@ -59,7 +59,8 @@ class TestGame(Widget):
              return False
         physics_system.add_collision_handler(
             1, 3, 
-            begin_func=self.begin_collide_with_airhole)
+            begin_func=self.begin_collide_with_airhole,
+            separate_func=self.begin_seperate_with_airhole)
         physics_system.add_collision_handler(
             1, 4, 
             begin_func=self.begin_collide_with_goal)
@@ -107,9 +108,9 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', 1., 1.,
-            'float', callback=self.lerp_callback_airhole)
+            'float')#, callback=self.lerp_callback_airhole)
         lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2, .3,
-            'float', callback=self.lerp_callback_airhole_scale)
+            'float')#, callback=self.lerp_callback_airhole_scale)
         return False
 
     def lerp_callback_goal_score(self, entity_id, component_name, property_name,
@@ -164,6 +165,17 @@ class TestGame(Widget):
         lerp_system = systems['lerp_system']
         lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .5, 2.5,
             'float')
+
+    def begin_seperate_with_airhole(self, space, arbiter):
+        ent1_id = arbiter.shapes[0].body.data #puck
+        ent2_id = arbiter.shapes[1].body.data #airhole
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', .25, 2.5,
+            'float')
+        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', .5, 2.5,
+            'float')
+        return False
 
     def draw_some_stuff(self):
         size = Window.size

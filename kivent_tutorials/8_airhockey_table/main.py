@@ -256,7 +256,7 @@ class TestGame(Widget):
         angular_velocity = 0 #radians(randint(-150, -150))
         shape_dict = {'width': width, 'height': height, 
             'mass': 0, 'offset': (0, 0)}
-        col_shape = {'shape_type': 'box', 'elasticity': .5, 
+        col_shape = {'shape_type': 'box', 'elasticity': .8,
             'collision_type': 2, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         physics_component = {'main_shape': 'box', 
@@ -346,7 +346,7 @@ class TestGame(Widget):
         angular_velocity = 0 #radians(randint(-150, -150))
         shape_dict = {'inner_radius': 0, 'outer_radius': 75., 
             'mass': 50, 'offset': (0., 0.)}
-        col_shape = {'shape_type': 'circle', 'elasticity': .5, 
+        col_shape = {'shape_type': 'circle', 'elasticity': .8,
             'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         vert_mesh = self.draw_regular_polygon(30, 75., (1., 0., 0., 1.))
@@ -377,7 +377,7 @@ class TestGame(Widget):
         radius=55
         shape_dict = {'inner_radius': 0, 'outer_radius': radius,
             'mass': 50, 'offset': (0., 0.)}
-        col_shape = {'shape_type': 'circle', 'elasticity': .5,
+        col_shape = {'shape_type': 'circle', 'elasticity': .8,
             'collision_type': 6, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         vert_mesh = self.draw_regular_polygon(30, radius, (1., 0., 0., 1.))

@@ -108,7 +108,8 @@ class TestGame(Widget):
         ent2_id = arbiter.shapes[1].body.data #airhole
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', 1., .3,
+        lerp_system.clear_lerps_from_entity(ent2_id)
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', 1., .2,
             'float', callback=self.lerp_callback_airhole)
         lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2, .3,
             'float')#, callback=self.lerp_callback_airhole_scale)

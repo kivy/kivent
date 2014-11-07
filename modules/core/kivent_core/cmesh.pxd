@@ -1,6 +1,7 @@
 from kivy.graphics.vertex cimport VertexFormat, vertex_attr_t
 from kivy.graphics.instructions cimport VertexInstruction
 from kivy.graphics.c_opengl cimport *
+from kivy.graphics.vbo cimport VBO, VertexBatch
 from cpython cimport bool
 
 cdef class KEVBO:
@@ -99,4 +100,4 @@ cdef class CMesh(VertexInstruction):
     cdef VertexFormat vertex_format
     cdef long vcount
     cdef long icount
-    cdef DoubleBufferingVertexBatch _obatch
+    cdef VertexBatch _obatch

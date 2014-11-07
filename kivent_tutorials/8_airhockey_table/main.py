@@ -108,8 +108,8 @@ class TestGame(Widget):
         ent2_id = arbiter.shapes[1].body.data #airhole
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', 1., 1.,
-            'float')#, callback=self.lerp_callback_airhole)
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', 1., .3,
+            'float', callback=self.lerp_callback_airhole)
         lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2, .3,
             'float')#, callback=self.lerp_callback_airhole_scale)
         return False
@@ -158,14 +158,14 @@ class TestGame(Widget):
         final_value):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(entity_id, 'color', 'b', .25, 2.5,
+        lerp_system.add_lerp_to_entity(entity_id, 'color', 'b', .25, 5.5,
             'float')
-    def lerp_callback_airhole_scale(self, entity_id, component_name, property_name,
+        lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .5, 5.5,
+            'float')
+    '''def lerp_callback_airhole_scale(self, entity_id, component_name, property_name,
         final_value):
         systems = self.gameworld.systems
-        lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .5, 2.5,
-            'float')
+        lerp_system = systems['lerp_system']'''
 
     def begin_seperate_with_airhole(self, space, arbiter):
         ent1_id = arbiter.shapes[0].body.data #puck

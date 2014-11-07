@@ -36,10 +36,27 @@ class TestGame(Widget):
             Clock.schedule_interval(self.update, 0)
         else:
             Clock.schedule_once(self.init_game)
+    def getWorldPosFromTuple(self, tup):
 
+        viewport = self.gameworld.systems['gameview']
+        return tup[0]*viewport.camera_scale - viewport.camera_pos[0], tup[1]*viewport.camera_scale - viewport.camera_pos[1]
+    def on_touch_down(self, touch):
+        wp = self.getWorldPosFromTuple(touch.pos)
+        if 0.3<touch.spos[1]<0.7:
+            if touch.spos[0]<0.08:
+                touch.paddle_id = self.create_paddle(wp)
+            if touch.spos[0]>0.92:
+                touch.paddle_id = self.create_paddle(wp)
+        super(TestGame, self).on_touch_down(touch)
+    def on_touch_up(self, touch):
+        super(TestGame, self).on_touch_up(touch)
+        if hasattr(touch, 'paddle_id'):
+            self.gameworld.remove_entity(touch.paddle_id)
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems
         physics_system = systems['physics']
+        def rfalse(na,nb):
+             return False
         physics_system.add_collision_handler(
             1, 3, 
             begin_func=self.begin_collide_with_airhole)
@@ -49,6 +66,15 @@ class TestGame(Widget):
         physics_system.add_collision_handler(
             1, 5, 
             begin_func=self.begin_collide_with_real_goal)
+        physics_system.add_collision_handler(
+            6, 3,
+            begin_func=self.begin_collide_with_airhole)
+        physics_system.add_collision_handler(
+            6, 4,
+            begin_func=rfalse)
+        physics_system.add_collision_handler(
+            6, 5,
+            begin_func=rfalse)
 
     def begin_collide_with_goal(self, space, arbiter):
         systems = self.gameworld.systems
@@ -315,6 +341,36 @@ class TestGame(Widget):
         component_order = ['position', 'rotate', 'color',
             'physics', 'puck_renderer', 'lerp_system']
         return self.gameworld.init_entity(create_component_dict, 
+            component_order)
+
+
+    def create_paddle(self, pos, color=(1,1,1,0.5)):
+        angle = 0 #radians(randint(-360, 360))
+        angular_velocity = 0 #radians(randint(-150, -150))
+        radius=55
+        shape_dict = {'inner_radius': 0, 'outer_radius': radius,
+            'mass': 50, 'offset': (0., 0.)}
+        col_shape = {'shape_type': 'circle', 'elasticity': .5,
+            'collision_type': 6, 'shape_info': shape_dict, 'friction': 1.0}
+        col_shapes = [col_shape]
+        vert_mesh = self.draw_regular_polygon(30, radius, (1., 0., 0., 1.))
+        physics_component = {'main_shape': 'circle',
+            'velocity': (0,0),
+            'position': pos, 'angle': angle,
+            'angular_velocity': angular_velocity,
+            'vel_limit': 1500.,
+            'ang_vel_limit': radians(200),
+            'mass': 50, 'col_shapes': col_shapes}
+        create_component_dict = {'physics': physics_component,
+            'puck_renderer': {#'texture': 'asteroid1',
+            'vert_mesh': vert_mesh,
+            #'size': (64, 64),
+            'render': True},
+            'position': pos, 'rotate': 0, 'color': color,
+            'lerp_system': {}}
+        component_order = ['position', 'rotate', 'color',
+            'physics', 'puck_renderer', 'lerp_system']
+        return self.gameworld.init_entity(create_component_dict,
             component_order)
 
     def setup_map(self):

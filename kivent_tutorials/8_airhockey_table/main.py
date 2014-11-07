@@ -69,7 +69,8 @@ class TestGame(Widget):
             begin_func=self.begin_collide_with_real_goal)
         physics_system.add_collision_handler(
             6, 3,
-            begin_func=self.begin_collide_with_airhole)
+            begin_func=self.begin_collide_with_airhole,
+            separate_func=self.begin_seperate_with_airhole)
         physics_system.add_collision_handler(
             6, 4,
             begin_func=rfalse)
@@ -391,9 +392,10 @@ class TestGame(Widget):
             #'size': (64, 64),
             'render': True},
             'position': pos, 'rotate': 0, 'color': color,
-            'lerp_system': {}}
+            'lerp_system': {},
+            'scale':1.}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'puck_renderer', 'lerp_system']
+            'physics', 'puck_renderer', 'lerp_system','scale']
         return self.gameworld.init_entity(create_component_dict,
             component_order)
 

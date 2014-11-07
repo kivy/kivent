@@ -341,4 +341,9 @@ class YourAppNameApp(App):
 
 
 if __name__ == '__main__':
-    YourAppNameApp().run()
+    from kivy.utils import platform
+    if platform == 'android':pfile='/sdcard/kivocky.prof'
+    else:pfile='kivocky.prof'
+    import cProfile
+    cProfile.run('YourAppNameApp().run()', pfile)
+    #YourAppNameApp().run()

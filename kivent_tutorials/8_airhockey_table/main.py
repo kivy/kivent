@@ -19,7 +19,7 @@ class TestGame(Widget):
 
     def ensure_startup(self):
         systems_to_check = ['map', 'physics', 'renderer', 
-            'rotate', 'position', 'gameview']
+            'rotate', 'position', 'gameview', 'lerp_system']
         systems = self.gameworld.systems
         for each in systems_to_check:
             if each not in systems:
@@ -108,6 +108,8 @@ class TestGame(Widget):
         lerp_system = systems['lerp_system']
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', 1., 1.,
             'float', callback=self.lerp_callback_airhole)
+        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2, .3,
+            'float', callback=self.lerp_callback_airhole_scale)
         return False
 
     def lerp_callback_goal_score(self, entity_id, component_name, property_name,
@@ -155,6 +157,12 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         lerp_system.add_lerp_to_entity(entity_id, 'color', 'b', .25, 2.5,
+            'float')
+    def lerp_callback_airhole_scale(self, entity_id, component_name, property_name,
+        final_value):
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .5, 2.5,
             'float')
 
     def draw_some_stuff(self):
@@ -207,9 +215,10 @@ class TestGame(Widget):
         create_component_dict = {'physics': physics_component, 
             'renderer': {'size': (width, height),'render': True}, 
             'position': pos, 'rotate': 0, 'color': color,
-            'lerp_system': {}}
+            'lerp_system': {},
+            'scale':1}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'renderer', 'lerp_system']
+            'physics', 'renderer', 'lerp_system','scale']
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
 
@@ -244,9 +253,10 @@ class TestGame(Widget):
             'mass': 0, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component, 
             'renderer': {'size': (width, height),'render': True}, 
-            'position': pos, 'rotate': 0, 'color': color,}
+            'position': pos, 'rotate': 0, 'color': color,
+            'scale':1}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'renderer',]
+            'physics', 'renderer','scale']
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
 
@@ -274,9 +284,10 @@ class TestGame(Widget):
             #'size': (64, 64),
             'render': True}, 
             'position': pos, 'rotate': 0, 'color': (0., 0., .25, 1.),
-            'lerp_system': {}}
+            'lerp_system': {},
+            'scale':.5}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'renderer', 'lerp_system']
+            'physics', 'renderer', 'lerp_system', 'scale']
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
 

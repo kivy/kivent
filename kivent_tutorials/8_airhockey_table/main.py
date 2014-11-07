@@ -348,9 +348,10 @@ class TestGame(Widget):
             #'size': (64, 64),
             'render': True}, 
             'position': pos, 'rotate': 0, 'color': (1., 0., 0., 1.),
-            'lerp_system': {}}
+            'lerp_system': {},
+            'scale':1}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'puck_renderer', 'lerp_system']
+            'physics', 'puck_renderer', 'lerp_system','scale']
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
 

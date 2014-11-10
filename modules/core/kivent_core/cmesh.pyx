@@ -439,9 +439,8 @@ cdef class CMesh(VertexInstruction):
         fmt = kwargs.get('fmt')
         if fmt is not None:
             self.vertex_format = VertexFormat(*fmt)
-            self._obatch = DoubleBufferingVertexBatch(vbo_1=KEVBO(
-                self.vertex_format), vbo_2=KEVBO(
-                self.vertex_format))
+            self._obatch = VertexBatch(vbo=VBO(self.vertex_format))
+            #, vbo_2=VBO(                self.vertex_format))
         self.mode = kwargs.get('mode') or 'points'
 
     def __dealloc__(self):
@@ -450,12 +449,12 @@ cdef class CMesh(VertexInstruction):
 
     cdef void build(self):
         cdef float* vertices
-        cdef DoubleBufferingVertexBatch batch = self._obatch
+        cdef VertexBatch batch = self._obatch
         cdef unsigned short* indices
         vertices = <float *>self._vertices
         indices = <unsigned short*>self._indices
         cdef long vcount = self.vcount
-        cdef vsize = batch.get_current_vbo().vertex_format.vsize
+        cdef vsize = batch.vbo.vertex_format.vsize
         cdef long icount = self.icount
         batch.set_data(vertices, <int>(vcount / vsize), indices, <int>icount)
 

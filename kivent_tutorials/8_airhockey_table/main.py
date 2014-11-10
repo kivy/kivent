@@ -19,7 +19,7 @@ class TestGame(Widget):
 
     def ensure_startup(self):
         systems_to_check = ['map', 'physics', 'renderer', 
-            'rotate', 'position', 'gameview']
+            'rotate', 'position', 'gameview', 'lerp_system']
         systems = self.gameworld.systems
         for each in systems_to_check:
             if each not in systems:
@@ -36,19 +36,47 @@ class TestGame(Widget):
             Clock.schedule_interval(self.update, 0)
         else:
             Clock.schedule_once(self.init_game)
+    def getWorldPosFromTuple(self, tup):
 
+        viewport = self.gameworld.systems['gameview']
+        return tup[0]*viewport.camera_scale - viewport.camera_pos[0], tup[1]*viewport.camera_scale - viewport.camera_pos[1]
+    def on_touch_down(self, touch):
+        wp = self.getWorldPosFromTuple(touch.pos)
+        if 0.3<touch.spos[1]<0.7:
+            if touch.spos[0]<0.08:
+                touch.paddle_id = self.create_paddle(wp)
+            if touch.spos[0]>0.92:
+                touch.paddle_id = self.create_paddle(wp)
+        super(TestGame, self).on_touch_down(touch)
+    def on_touch_up(self, touch):
+        super(TestGame, self).on_touch_up(touch)
+        if hasattr(touch, 'paddle_id'):
+            self.gameworld.remove_entity(touch.paddle_id)
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems
         physics_system = systems['physics']
+        def rfalse(na,nb):
+             return False
         physics_system.add_collision_handler(
             1, 3, 
-            begin_func=self.begin_collide_with_airhole)
+            begin_func=self.begin_collide_with_airhole,
+            separate_func=self.begin_seperate_with_airhole)
         physics_system.add_collision_handler(
             1, 4, 
             begin_func=self.begin_collide_with_goal)
         physics_system.add_collision_handler(
             1, 5, 
             begin_func=self.begin_collide_with_real_goal)
+        physics_system.add_collision_handler(
+            6, 3,
+            begin_func=self.begin_collide_with_airhole,
+            separate_func=self.begin_seperate_with_airhole)
+        physics_system.add_collision_handler(
+            6, 4,
+            begin_func=rfalse)
+        physics_system.add_collision_handler(
+            6, 5,
+            begin_func=rfalse)
 
     def begin_collide_with_goal(self, space, arbiter):
         systems = self.gameworld.systems
@@ -80,8 +108,11 @@ class TestGame(Widget):
         ent2_id = arbiter.shapes[1].body.data #airhole
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', 1., 1.,
+        lerp_system.clear_lerps_from_entity(ent2_id)
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', 1., .2,
             'float', callback=self.lerp_callback_airhole)
+        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2, .3,
+            'float')#, callback=self.lerp_callback_airhole_scale)
         return False
 
     def lerp_callback_goal_score(self, entity_id, component_name, property_name,
@@ -128,8 +159,26 @@ class TestGame(Widget):
         final_value):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(entity_id, 'color', 'b', .25, 2.5,
+        lerp_system.add_lerp_to_entity(entity_id, 'color', 'b', .25, 5.5,
             'float')
+        lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .5, 5.5,
+            'float')
+    '''def lerp_callback_airhole_scale(self, entity_id, component_name, property_name,
+        final_value):
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']'''
+
+    def begin_seperate_with_airhole(self, space, arbiter):
+        ent1_id = arbiter.shapes[0].body.data #puck
+        ent2_id = arbiter.shapes[1].body.data #airhole
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        lerp_system.clear_lerps_from_entity(ent2_id)
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', .25, 2.5,
+            'float')
+        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', .5, 2.5,
+            'float')
+        return False
 
     def draw_some_stuff(self):
         size = Window.size
@@ -181,9 +230,10 @@ class TestGame(Widget):
         create_component_dict = {'physics': physics_component, 
             'renderer': {'size': (width, height),'render': True}, 
             'position': pos, 'rotate': 0, 'color': color,
-            'lerp_system': {}}
+            'lerp_system': {},
+            'scale':1}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'renderer', 'lerp_system']
+            'physics', 'renderer', 'lerp_system','scale']
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
 
@@ -206,7 +256,7 @@ class TestGame(Widget):
         angular_velocity = 0 #radians(randint(-150, -150))
         shape_dict = {'width': width, 'height': height, 
             'mass': 0, 'offset': (0, 0)}
-        col_shape = {'shape_type': 'box', 'elasticity': .5, 
+        col_shape = {'shape_type': 'box', 'elasticity': .8,
             'collision_type': 2, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         physics_component = {'main_shape': 'box', 
@@ -218,9 +268,10 @@ class TestGame(Widget):
             'mass': 0, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component, 
             'renderer': {'size': (width, height),'render': True}, 
-            'position': pos, 'rotate': 0, 'color': color,}
+            'position': pos, 'rotate': 0, 'color': color,
+            'scale':1}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'renderer',]
+            'physics', 'renderer','scale']
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
 
@@ -248,9 +299,10 @@ class TestGame(Widget):
             #'size': (64, 64),
             'render': True}, 
             'position': pos, 'rotate': 0, 'color': (0., 0., .25, 1.),
-            'lerp_system': {}}
+            'lerp_system': {},
+            'scale':.5}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'renderer', 'lerp_system']
+            'physics', 'renderer', 'lerp_system', 'scale']
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
 
@@ -294,7 +346,7 @@ class TestGame(Widget):
         angular_velocity = 0 #radians(randint(-150, -150))
         shape_dict = {'inner_radius': 0, 'outer_radius': 75., 
             'mass': 50, 'offset': (0., 0.)}
-        col_shape = {'shape_type': 'circle', 'elasticity': .5, 
+        col_shape = {'shape_type': 'circle', 'elasticity': .8,
             'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         vert_mesh = self.draw_regular_polygon(30, 75., (1., 0., 0., 1.))
@@ -311,10 +363,42 @@ class TestGame(Widget):
             #'size': (64, 64),
             'render': True}, 
             'position': pos, 'rotate': 0, 'color': (1., 0., 0., 1.),
-            'lerp_system': {}}
+            'lerp_system': {},
+            'scale':1}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'puck_renderer', 'lerp_system']
+            'physics', 'puck_renderer', 'lerp_system','scale']
         return self.gameworld.init_entity(create_component_dict, 
+            component_order)
+
+
+    def create_paddle(self, pos, color=(1,1,1,0.5)):
+        angle = 0 #radians(randint(-360, 360))
+        angular_velocity = 0 #radians(randint(-150, -150))
+        radius=55
+        shape_dict = {'inner_radius': 0, 'outer_radius': radius,
+            'mass': 50, 'offset': (0., 0.)}
+        col_shape = {'shape_type': 'circle', 'elasticity': .8,
+            'collision_type': 6, 'shape_info': shape_dict, 'friction': 1.0}
+        col_shapes = [col_shape]
+        vert_mesh = self.draw_regular_polygon(30, radius, (1., 0., 0., 1.))
+        physics_component = {'main_shape': 'circle',
+            'velocity': (0,0),
+            'position': pos, 'angle': angle,
+            'angular_velocity': angular_velocity,
+            'vel_limit': 1500.,
+            'ang_vel_limit': radians(200),
+            'mass': 50, 'col_shapes': col_shapes}
+        create_component_dict = {'physics': physics_component,
+            'puck_renderer': {#'texture': 'asteroid1',
+            'vert_mesh': vert_mesh,
+            #'size': (64, 64),
+            'render': True},
+            'position': pos, 'rotate': 0, 'color': color,
+            'lerp_system': {},
+            'scale':1.}
+        component_order = ['position', 'rotate', 'color',
+            'physics', 'puck_renderer', 'lerp_system','scale']
+        return self.gameworld.init_entity(create_component_dict,
             component_order)
 
     def setup_map(self):
@@ -341,4 +425,9 @@ class YourAppNameApp(App):
 
 
 if __name__ == '__main__':
-    YourAppNameApp().run()
+    from kivy.utils import platform
+    if platform == 'android':pfile='/sdcard/kivocky.prof'
+    else:pfile='kivocky.prof'
+    import cProfile
+    cProfile.run('YourAppNameApp().run()', pfile)
+    #YourAppNameApp().run()

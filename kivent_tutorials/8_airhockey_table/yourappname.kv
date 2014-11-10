@@ -44,14 +44,16 @@ TestGame:
             gameview: 'gameview'
             do_rotate: True
             do_color: True
-            shader_source: 'assets/glsl/positioncolorrotateshader.glsl'
+            do_scale: True
+            shader_source: 'assets/glsl/positioncolorrotatescaleshader.glsl'
         Renderer:
             gameworld: gameworld
             system_id: 'puck_renderer'
             gameview: 'gameview'
             do_rotate: True
             do_color: True
-            shader_source: 'assets/glsl/positioncolorrotateshader.glsl'
+            do_scale: True
+            shader_source: 'assets/glsl/positioncolorrotatescaleshader.glsl'
 
         CymunkPhysics:
             gameworld: root.gameworld

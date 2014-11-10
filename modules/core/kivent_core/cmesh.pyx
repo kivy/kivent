@@ -212,6 +212,8 @@ cdef class DoubleBufferingVertexBatch:
 
     def __dealloc__(self):
         get_context().dealloc_vertexbatch(self)
+        if self._ids != NULL:
+            PyMem_Free(self._ids)
 
     cdef int have_id(self):
         return self.flags & V_HAVEID

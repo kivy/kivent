@@ -296,7 +296,6 @@ class GameWorld(Widget):
 
     def add_widget(self, widget):
         systems = self.systems
-        print('in add widget', widget, widget.gameview)
         if isinstance(widget, GameSystem):
             if widget.system_id not in systems:
                 Clock.schedule_once(partial(self.add_system, widget))

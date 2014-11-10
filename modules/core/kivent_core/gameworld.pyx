@@ -80,7 +80,8 @@ class GameWorld(Widget):
         cdef list deactivated_entities
         cdef list entities_to_remove
         cdef dict systems
-        self.canvas = RenderContext()
+        self.canvas = RenderContext(use_parent_projection=True,
+            use_parent_modelview=True)
         super(GameWorld, self).__init__(**kwargs)
         self.entities = []
         self.entities.append(Entity(0))

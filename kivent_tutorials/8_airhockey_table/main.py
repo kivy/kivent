@@ -1,3 +1,6 @@
+import os
+os.environ['KIVY_AUDIO'] = 'pygame'
+
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
@@ -10,6 +13,8 @@ import kivent_cymunk
 from kivent_core.renderers import texture_manager, VertMesh
 from kivent_cymunk.physics import CymunkPhysics
 from functools import partial
+
+import sounds
 
 
 class TestGame(Widget):
@@ -65,11 +70,23 @@ class TestGame(Widget):
             begin_func=self.begin_collide_with_airhole,
             separate_func=self.begin_seperate_with_airhole)
         physics_system.add_collision_handler(
+            1, 2,
+            begin_func=self.begin_collide_with_paddle)
+        physics_system.add_collision_handler(
             1, 4, 
             begin_func=self.begin_collide_with_goal)
         physics_system.add_collision_handler(
             1, 5, 
             begin_func=self.begin_collide_with_real_goal)
+        physics_system.add_collision_handler(
+            1, 6,
+            begin_func=self.begin_collide_with_paddle)
+        physics_system.add_collision_handler(
+            6, 6,
+            begin_func=self.begin_collide_with_paddle)
+        physics_system.add_collision_handler(
+            6, 2,
+            begin_func=self.begin_collide_with_paddle)
         physics_system.add_collision_handler(
             6, 3,
             begin_func=self.begin_collide_with_airhole,
@@ -97,6 +114,7 @@ class TestGame(Widget):
         Clock.schedule_once(partial(
             self.gameworld.timed_remove_entity, ent1_id))
         Clock.schedule_once(self.spawn_new_puck, 2.5)
+        sounds.play_jingle()
         return False
 
     def spawn_new_puck(self, dt):
@@ -115,8 +133,14 @@ class TestGame(Widget):
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', 1., .2,
             'float', callback=self.lerp_callback_airhole)
         lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2, .3,
-            'float')#, callback=self.lerp_callback_airhole_scale)
+            'float')#, callback=self.lerp_callback_airhole_scale)#
+        if ent1_id not in self.paddleIDs: sounds.play_click(.2)
         return False
+    def begin_collide_with_paddle(self, space, arbiter):
+        #ent1_id = arbiter.shapes[0].body.data #puck
+        #ent2_id = arbiter.shapes[1].body.data #paddle
+        sounds.play_thack()
+        return True
 
     def lerp_callback_goal_score(self, entity_id, component_name, property_name,
         final_value):

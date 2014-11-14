@@ -71,7 +71,7 @@ class TestGame(Widget):
             separate_func=self.begin_seperate_with_airhole)
         physics_system.add_collision_handler(
             1, 2,
-            begin_func=self.begin_collide_with_paddle)
+            post_solve_func=self.postsolve_collide_sound)
         physics_system.add_collision_handler(
             1, 4, 
             begin_func=self.begin_collide_with_goal)
@@ -80,13 +80,13 @@ class TestGame(Widget):
             begin_func=self.begin_collide_with_real_goal)
         physics_system.add_collision_handler(
             1, 6,
-            begin_func=self.begin_collide_with_paddle)
+            post_solve_func=self.postsolve_collide_sound)
         physics_system.add_collision_handler(
             6, 6,
-            begin_func=self.begin_collide_with_paddle)
+            post_solve_func=self.postsolve_collide_sound)
         physics_system.add_collision_handler(
             6, 2,
-            begin_func=self.begin_collide_with_paddle)
+            post_solve_func=self.postsolve_collide_sound)
         physics_system.add_collision_handler(
             6, 3,
             begin_func=self.begin_collide_with_airhole,
@@ -136,10 +136,15 @@ class TestGame(Widget):
             'float')#, callback=self.lerp_callback_airhole_scale)#
         if ent1_id not in self.paddleIDs: sounds.play_click(.2)
         return False
-    def begin_collide_with_paddle(self, space, arbiter):
+    def postsolve_collide_sound(self, space, arbiter):
         #ent1_id = arbiter.shapes[0].body.data #puck
         #ent2_id = arbiter.shapes[1].body.data #paddle
-        sounds.play_thack()
+        crashforce =  arbiter.total_ke
+        vol = min(1,crashforce/50000000+.2)
+        if arbiter.is_first_contact:
+            sounds.play_thack(vol)
+        else:
+            sounds.vol_thack(vol)
         return True
 
     def lerp_callback_goal_score(self, entity_id, component_name, property_name,

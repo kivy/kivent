@@ -50,7 +50,11 @@ class TestGame(Widget):
         super(TestGame, self).on_touch_down(touch)
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
+        print touch.ud
+        if 'ent_id' in touch.ud:
+            self.gameworld.remove_entity(touch.ud['ent_id'])
         if hasattr(touch, 'paddle_id'):
+            print "touch.paddle_id=",touch.paddle_id
             self.gameworld.remove_entity(touch.paddle_id)
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems

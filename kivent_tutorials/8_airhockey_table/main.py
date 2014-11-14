@@ -50,7 +50,6 @@ class TestGame(Widget):
         if 0.3<touch.spos[1]<0.7:
             if touch.spos[0]<0.08 or touch.spos[0]>0.92:
                 paddleid = self.create_paddle(wp)
-                self.paddleIDs.add(paddleid)
         super(TestGame, self).on_touch_down(touch)
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
@@ -59,7 +58,8 @@ class TestGame(Widget):
             if touch.spos[0]<0.08 or touch.spos[0]>0.92:
                 touched_id = touch.ud['touched_ent_id']
                 if touched_id in self.paddleIDs:
-                    self.gameworld.remove_entity(touched_id)
+                    print "removing", touched_id
+                    self.remove_entity(touched_id)
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems
         physics_system = systems['physics']
@@ -114,8 +114,7 @@ class TestGame(Widget):
         puck = self.gameworld.entities[ent1_id]
         puckposition = puck.physics.body.position
         self.create_puck_fader((puckposition.x,puckposition.y))
-        Clock.schedule_once(partial(
-            self.gameworld.timed_remove_entity, ent1_id))
+        self.remove_entity(ent1_id)
         Clock.schedule_once(self.spawn_new_puck, 2.5)
         sounds.play_jingle()
         return False
@@ -218,15 +217,14 @@ class TestGame(Widget):
     def draw_some_stuff(self):
         size = Window.size
         self.paddleIDs = set()
+        self.puckIDs = set()
         self.created_entities = created_entities = []
         entities = self.gameworld.entities
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         puck_id = self.create_puck((1920.*.5, 1080.*.5))
         a_paddle_id = self.create_paddle((1920.*.25, 1080.*.5))
-        self.paddleIDs.add(a_paddle_id)
         a_paddle_id = self.create_paddle((1920.*.75, 1080.*.5))
-        self.paddleIDs.add(a_paddle_id)
         lerp_system.add_lerp_to_entity(puck_id, 'color', 'r', .4, 5.,
             'float', callback=self.lerp_callback)
         self.draw_wall(1920., 20., (1920./2., 10.), (0., 1., 0., 1.))
@@ -277,11 +275,20 @@ class TestGame(Widget):
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
 
-
+    def remove_entity(self, entity_id):
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        lerp_system.clear_lerps_from_entity(entity_id)
+        if entity_id in self.paddleIDs:
+            self.paddleIDs.remove(entity_id)
+        if entity_id in self.puckIDs:
+            self.puckIDs.remove(entity_id)
+        #self.gameworld.remove_entity(entity_id)
+        Clock.schedule_once(partial(
+            self.gameworld.timed_remove_entity, entity_id))
     def lerp_callback_remove_ent(self, entity_id, component_name, property_name,
         final_value):
-        systems = self.gameworld.systems
-        self.gameworld.remove_entity(entity_id)
+        self.remove_entity(entity_id)
     def lerp_callback(self, entity_id, component_name, property_name, 
         final_value):
         systems = self.gameworld.systems
@@ -411,8 +418,11 @@ class TestGame(Widget):
             'scale':1}
         component_order = ['position', 'rotate', 'color',
             'physics', 'puck_renderer', 'lerp_system','scale']
-        return self.gameworld.init_entity(create_component_dict, 
+        a_puck_id =  self.gameworld.init_entity(create_component_dict,
             component_order)
+
+        self.puckIDs.add(a_puck_id)
+        return a_puck_id
 
 
     def create_puck_fader(self, pos, start_alpha=.5,end_alpha=0.,start_scale=1.,end_scale=.1):
@@ -475,8 +485,11 @@ class TestGame(Widget):
             'scale':1.}
         component_order = ['position', 'rotate', 'color',
             'physics', 'puck_renderer', 'lerp_system','scale']
-        return self.gameworld.init_entity(create_component_dict,
+        a_paddle_id =  self.gameworld.init_entity(create_component_dict,
             component_order)
+
+        self.paddleIDs.add(a_paddle_id)
+        return a_paddle_id
 
     def setup_map(self):
         gameworld = self.gameworld

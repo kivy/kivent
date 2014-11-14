@@ -234,10 +234,29 @@ class TestGame(Widget):
         a_paddle_id = self.create_paddle((1920.*.75, 1080.*.5), color=(0.,0.,1.,0.65))
         lerp_system.add_lerp_to_entity(puck_id, 'color', 'g', .4, 5.,
             'float', callback=self.lerp_callback)
-        self.draw_wall(1920., 20., (1920./2., 10.), (0., 1., 0., 1.))
-        self.draw_wall(1920., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.))
-        self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
-        self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
+        goal_height=540
+        goal_thickness=150
+        wall_height=(1080/2-goal_height/2.)
+        wall_middle=wall_height/2.
+
+        #left goal walls
+        self.draw_wall(20., wall_height, (goal_thickness, wall_middle), (0., 1., 0., 1.))
+        self.draw_wall(20., wall_height, (goal_thickness, 1080-wall_middle), (0., 1., 0., 1.))
+        self.draw_wall(20., goal_height, (10, 1080/2), (0., 1., 0., 1.))
+        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.))
+        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.))
+
+        #right goal walls
+        self.draw_wall(20., wall_height, (1920-goal_thickness, wall_middle), (0., 1., 0., 1.))
+        self.draw_wall(20., wall_height, (1920-goal_thickness, 1080-wall_middle), (0., 1., 0., 1.))
+        self.draw_wall(20., goal_height, (1920-10, 1080/2), (0., 1., 0., 1.))
+        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.))
+        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.))
+
+        self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 10.), (0., 1., 0., 1.))
+        self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.))
+        #self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
+        #self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
         self.draw_goal((20.+150./2., (1080.-540.)/2. + 540./2.), (150., 540.), 
             (0., 1., 0., 1.0))
         self.draw_goal((20.+100./2., (1080.-450.)/2. + 450./2.), (100., 450.), 

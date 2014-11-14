@@ -48,8 +48,9 @@ class TestGame(Widget):
     def on_touch_down(self, touch):
         wp = self.getWorldPosFromTuple(touch.pos)
         if 0.3<touch.spos[1]<0.7:
-            if touch.spos[0]<0.08 or touch.spos[0]>0.92:
-                paddleid = self.create_paddle(wp)
+            xspos = touch.spos[0]
+            if xspos<0.08 or xspos>0.92:
+                paddleid = self.create_paddle(wp, color=(1.-xspos,0.,xspos,0.65))
         super(TestGame, self).on_touch_down(touch)
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
@@ -130,11 +131,18 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         lerp_system.clear_lerps_from_entity(ent2_id)
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', 1., .2,
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'a', .85, .2,
             'float', callback=self.lerp_callback_airhole)
         lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2, .3,
             'float')#, callback=self.lerp_callback_airhole_scale)#
         if ent1_id not in self.paddleIDs: sounds.play_click(.2)
+        #else:
+        ent = self.gameworld.entities[ent1_id]
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', ent.color.b, .2,
+            'float', callback=self.lerp_callback_airhole)
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'r', ent.color.r, .2,
+            'float', callback=self.lerp_callback_airhole)
+
         return False
     def postsolve_collide_sound(self, space, arbiter):
         #ent1_id = arbiter.shapes[0].body.data #puck
@@ -192,7 +200,7 @@ class TestGame(Widget):
         final_value):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(entity_id, 'color', 'b', .25, 5.5,
+        lerp_system.add_lerp_to_entity(entity_id, 'color', 'a', .25, 5.5,
             'float')
         lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .5, 5.5,
             'float')
@@ -207,7 +215,7 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         lerp_system.clear_lerps_from_entity(ent2_id)
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', .25, 2.5,
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'a', .25, 2.5,
             'float')
         lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', .5, 2.5,
             'float')
@@ -222,8 +230,8 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         puck_id = self.create_puck((1920.*.5, 1080.*.5))
-        a_paddle_id = self.create_paddle((1920.*.25, 1080.*.5))
-        a_paddle_id = self.create_paddle((1920.*.75, 1080.*.5))
+        a_paddle_id = self.create_paddle((1920.*.25, 1080.*.5), color=(1.,0.,0.,0.65))
+        a_paddle_id = self.create_paddle((1920.*.75, 1080.*.5), color=(0.,0.,1.,0.65))
         lerp_system.add_lerp_to_entity(puck_id, 'color', 'r', .4, 5.,
             'float', callback=self.lerp_callback)
         self.draw_wall(1920., 20., (1920./2., 10.), (0., 1., 0., 1.))
@@ -335,7 +343,8 @@ class TestGame(Widget):
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
             'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
-        vert_mesh = self.draw_regular_polygon(30, 40., (0., 0., .25, 1.))
+        color=(.25, .25, .25, .25)
+        vert_mesh = self.draw_regular_polygon(30, 40., color)
         physics_component = {'main_shape': 'circle', 
             'velocity': (x_vel, y_vel), 
             'position': pos, 'angle': angle, 
@@ -348,7 +357,7 @@ class TestGame(Widget):
             'vert_mesh': vert_mesh, 
             #'size': (64, 64),
             'render': True}, 
-            'position': pos, 'rotate': 0, 'color': (0., 0., .25, 1.),
+            'position': pos, 'rotate': 0, 'color': color,
             'lerp_system': {},
             'scale':.5}
         component_order = ['position', 'rotate', 'color',
@@ -399,7 +408,7 @@ class TestGame(Widget):
         col_shape = {'shape_type': 'circle', 'elasticity': .8,
             'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
-        vert_mesh = self.draw_regular_polygon(30, 75., (1., 0., 0., 1.))
+        vert_mesh = self.draw_regular_polygon(30, 75., (0., 1., 0., 1.))
         physics_component = {'main_shape': 'circle', 
             'velocity': (x_vel, y_vel), 
             'position': pos, 'angle': angle, 
@@ -412,7 +421,7 @@ class TestGame(Widget):
             'vert_mesh': vert_mesh, 
             #'size': (64, 64),
             'render': True}, 
-            'position': pos, 'rotate': 0, 'color': (1., 0., 0., 1.),
+            'position': pos, 'rotate': 0, 'color': (0., 1., 0., 1.),
             'lerp_system': {},
             'scale':1}
         component_order = ['position', 'rotate', 'color',
@@ -457,7 +466,7 @@ class TestGame(Widget):
             'float')
         return eid
 
-    def create_paddle(self, pos, color=(1,1,1,0.5)):
+    def create_paddle(self, pos, color=(1,1,1,0.65)):
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
         radius=55

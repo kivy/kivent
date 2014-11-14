@@ -111,6 +111,9 @@ class TestGame(Widget):
     def begin_collide_with_real_goal(self, space, arbiter):
         ent1_id = arbiter.shapes[0].body.data #puck
         ent2_id = arbiter.shapes[1].body.data #goal
+        puck = self.gameworld.entities[ent1_id]
+        puckposition = puck.physics.body.position
+        self.create_puck_fader((puckposition.x,puckposition.y))
         Clock.schedule_once(partial(
             self.gameworld.timed_remove_entity, ent1_id))
         Clock.schedule_once(self.spawn_new_puck, 2.5)
@@ -275,6 +278,10 @@ class TestGame(Widget):
             component_order)
 
 
+    def lerp_callback_remove_ent(self, entity_id, component_name, property_name,
+        final_value):
+        systems = self.gameworld.systems
+        self.gameworld.remove_entity(entity_id)
     def lerp_callback(self, entity_id, component_name, property_name, 
         final_value):
         systems = self.gameworld.systems
@@ -407,6 +414,39 @@ class TestGame(Widget):
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
 
+
+    def create_puck_fader(self, pos, start_alpha=.5,end_alpha=0.,start_scale=1.,end_scale=.1):
+        x_vel = randint(-100, 100)
+        y_vel = randint(-100, 100)
+        angle = 0 #radians(randint(-360, 360))
+        angular_velocity = 0 #radians(randint(-150, -150))
+        shape_dict = {'inner_radius': 0, 'outer_radius': 75.,
+            'mass': 50, 'offset': (0., 0.)}
+        col_shape = {'shape_type': 'circle', 'elasticity': .8,
+            'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
+        col_shapes = [col_shape]
+        vert_mesh = self.draw_regular_polygon(30, 75., (1., 0., 0., 1.))
+        create_component_dict = {
+            'puck_renderer': {#'texture': 'asteroid1',
+            'vert_mesh': vert_mesh,
+            #'size': (64, 64),
+            'render': True},
+            'position': pos, 'rotate': 0, 'color': (1., 0., 0., start_alpha),
+            'lerp_system': {},
+            'scale':start_scale}
+        component_order = ['position', 'rotate', 'color',
+            'puck_renderer', 'lerp_system','scale']
+        eid = self.gameworld.init_entity(create_component_dict,
+            component_order)
+
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        lerp_system.clear_lerps_from_entity(eid)
+        lerp_system.add_lerp_to_entity(eid, 'color', 'a', end_alpha, 2.5,
+            'float', callback=self.lerp_callback_remove_ent)
+        lerp_system.add_lerp_to_entity(eid, 'scale', 's', end_scale, 2.4,
+            'float')
+        return eid
 
     def create_paddle(self, pos, color=(1,1,1,0.5)):
         angle = 0 #radians(randint(-360, 360))

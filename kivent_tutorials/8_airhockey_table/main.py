@@ -122,7 +122,7 @@ class TestGame(Widget):
         puck_id = self.create_puck((1920.*.5, 1080.*.5))
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(puck_id, 'color', 'r', .4, 5.,
+        lerp_system.add_lerp_to_entity(puck_id, 'color', 'g', .4, 5.,
             'float', callback=self.lerp_callback)
 
     def begin_collide_with_airhole(self, space, arbiter):
@@ -232,7 +232,7 @@ class TestGame(Widget):
         puck_id = self.create_puck((1920.*.5, 1080.*.5))
         a_paddle_id = self.create_paddle((1920.*.25, 1080.*.5), color=(1.,0.,0.,0.65))
         a_paddle_id = self.create_paddle((1920.*.75, 1080.*.5), color=(0.,0.,1.,0.65))
-        lerp_system.add_lerp_to_entity(puck_id, 'color', 'r', .4, 5.,
+        lerp_system.add_lerp_to_entity(puck_id, 'color', 'g', .4, 5.,
             'float', callback=self.lerp_callback)
         self.draw_wall(1920., 20., (1920./2., 10.), (0., 1., 0., 1.))
         self.draw_wall(1920., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.))
@@ -305,7 +305,7 @@ class TestGame(Widget):
                 property_name, 1., 5., 'float', callback=self.lerp_callback)
         else:
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
-                property_name, .4, 5., 'float', callback=self.lerp_callback)
+                property_name, .1, 5., 'float', callback=self.lerp_callback)
 
     def draw_wall(self, width, height, pos, color):
         x_vel = 0 #randint(-100, 100)

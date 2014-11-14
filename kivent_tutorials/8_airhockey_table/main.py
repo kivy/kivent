@@ -113,7 +113,7 @@ class TestGame(Widget):
         ent2_id = arbiter.shapes[1].body.data #goal
         puck = self.gameworld.entities[ent1_id]
         puckposition = puck.physics.body.position
-        self.create_puck_fader((puckposition.x,puckposition.y))
+        #self.create_puck_fader((puckposition.x,puckposition.y))
         self.remove_entity(ent1_id)
         Clock.schedule_once(self.spawn_new_puck, 2.5)
         sounds.play_jingle()

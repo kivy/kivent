@@ -43,19 +43,18 @@ class TestGame(Widget):
     def on_touch_down(self, touch):
         wp = self.getWorldPosFromTuple(touch.pos)
         if 0.3<touch.spos[1]<0.7:
-            if touch.spos[0]<0.08:
-                touch.paddle_id = self.create_paddle(wp)
-            if touch.spos[0]>0.92:
-                touch.paddle_id = self.create_paddle(wp)
+            if touch.spos[0]<0.08 or touch.spos[0]>0.92:
+                paddleid = self.create_paddle(wp)
+                self.paddleIDs.add(paddleid)
         super(TestGame, self).on_touch_down(touch)
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
         print touch.ud
-        if 'ent_id' in touch.ud:
-            self.gameworld.remove_entity(touch.ud['ent_id'])
-        if hasattr(touch, 'paddle_id'):
-            print "touch.paddle_id=",touch.paddle_id
-            self.gameworld.remove_entity(touch.paddle_id)
+        if 0.3<touch.spos[1]<0.7 and 'touched_ent_id' in touch.ud:
+            if touch.spos[0]<0.08 or touch.spos[0]>0.92:
+                touched_id = touch.ud['touched_ent_id']
+                if touched_id in self.paddleIDs:
+                    self.gameworld.remove_entity(touched_id)
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems
         physics_system = systems['physics']
@@ -186,13 +185,16 @@ class TestGame(Widget):
 
     def draw_some_stuff(self):
         size = Window.size
+        self.paddleIDs = set()
         self.created_entities = created_entities = []
         entities = self.gameworld.entities
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         puck_id = self.create_puck((1920.*.5, 1080.*.5))
         a_paddle_id = self.create_paddle((1920.*.25, 1080.*.5))
+        self.paddleIDs.add(a_paddle_id)
         a_paddle_id = self.create_paddle((1920.*.75, 1080.*.5))
+        self.paddleIDs.add(a_paddle_id)
         lerp_system.add_lerp_to_entity(puck_id, 'color', 'r', .4, 5.,
             'float', callback=self.lerp_callback)
         self.draw_wall(1920., 20., (1920./2., 10.), (0., 1., 0., 1.))

@@ -47,6 +47,7 @@ class CymunkTouchSystem(GameSystem):
     gameview_name = StringProperty(None)
     touch_radius = NumericProperty(10.)
     max_force = NumericProperty(2000000.)
+    max_bias = NumericProperty(10000.)
     ignore_groups = ListProperty([])
     
     def generate_component(self, dict args):
@@ -82,6 +83,7 @@ class CymunkTouchSystem(GameSystem):
         cy = converted_pos[1]
         cdef str system_id = self.system_id
         cdef float max_force = self.max_force
+        cdef float max_bias = self.max_bias
         cdef float radius = self.touch_radius
         cdef list touch_box = [cx-radius, cy-radius, cx-radius, cy+radius, 
             cx+radius, cy+radius, cx+radius, cy-radius]
@@ -92,7 +94,7 @@ class CymunkTouchSystem(GameSystem):
             
             creation_dict = {system_id: 
                 {'entity_id': entity_id, 'touch_pos': converted_pos,
-                'max_force': max_force}, 'position': converted_pos}
+                'max_force': max_force, 'max_bias':max_bias}, 'position': converted_pos}
             touch_ent = gameworld.init_entity(creation_dict, ['position', 
                 system_id])
             touch.ud['ent_id'] = touch_ent
@@ -181,7 +183,7 @@ class CymunkTouchSystem(GameSystem):
         cdef PivotJoint pivot = PivotJoint(touch_body, body, (0., 0.), 
             body_pos)
         touch_body._body.p = cpv(touch_pos[0], touch_pos[1])
-        pivot.max_bias = 0.0
+        pivot.max_bias = args['max_bias']
         pivot.error_bias = cpow(1.0 - 0.15, 60.0)
         pivot.max_force = args['max_force']
         cdef Space space = physics_system.space

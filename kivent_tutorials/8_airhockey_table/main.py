@@ -53,12 +53,10 @@ class TestGame(Widget):
         super(TestGame, self).on_touch_down(touch)
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
-        print touch.ud
         if 0.3<touch.spos[1]<0.7 and 'touched_ent_id' in touch.ud:
             if touch.spos[0]<0.08 or touch.spos[0]>0.92:
                 touched_id = touch.ud['touched_ent_id']
                 if touched_id in self.paddleIDs:
-                    print "removing", touched_id
                     self.remove_entity(touched_id)
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems

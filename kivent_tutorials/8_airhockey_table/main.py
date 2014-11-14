@@ -140,7 +140,8 @@ class TestGame(Widget):
         #ent1_id = arbiter.shapes[0].body.data #puck
         #ent2_id = arbiter.shapes[1].body.data #paddle
         crashforce =  arbiter.total_ke
-        vol = min(1,crashforce/50000000+.2)
+        vol = min(1,crashforce/50000000)
+        if vol<0.1:return
         if arbiter.is_first_contact:
             sounds.play_thack(vol)
         else:

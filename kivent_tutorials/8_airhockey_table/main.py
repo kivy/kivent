@@ -234,8 +234,10 @@ class TestGame(Widget):
         a_paddle_id = self.create_paddle((1920.*.75, 1080.*.5), color=(0.,0.,1.,0.65))
         lerp_system.add_lerp_to_entity(puck_id, 'color', 'g', .4, 5.,
             'float', callback=self.lerp_callback)
-        goal_height=540
+        goal_height=560
         goal_thickness=150
+        real_goal_height=goal_height-90
+        real_goal_thickness=goal_thickness-50
         wall_height=(1080/2-goal_height/2.)
         wall_middle=wall_height/2.
 
@@ -257,14 +259,14 @@ class TestGame(Widget):
         self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.))
         #self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
         #self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
-        self.draw_goal((20.+150./2., (1080.-540.)/2. + 540./2.), (150., 540.), 
+        self.draw_goal((20.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height), 
             (0., 1., 0., 1.0))
-        self.draw_goal((20.+100./2., (1080.-450.)/2. + 450./2.), (100., 450.), 
+        self.draw_goal((20.+real_goal_thickness/2., (1080.-real_goal_height)/2. + real_goal_height/2.), (real_goal_thickness, real_goal_height), 
             (1., 0., 0., .25), collision_type=5)
-        self.draw_goal((1920. - (20.+150./2.), (1080.-540.)/2. + 540./2.), 
-            (150., 540.), (0., 1., 0., 1.0))
-        self.draw_goal((1920. - (20.+100./2.), (1080.-450.)/2. + 450./2.), 
-            (100., 450.), (1., 0., 0., .25), collision_type=5)
+        self.draw_goal((1920. - (20.+goal_thickness/2.), (1080.-goal_height)/2. + goal_height/2.), 
+            (goal_thickness, goal_height), (0., 1., 0., 1.0))
+        self.draw_goal((1920. - (20.+real_goal_thickness/2.), (1080.-450.)/2. + 450./2.), 
+            (real_goal_thickness, 450.), (1., 0., 0., .25), collision_type=5)
         x1 = 225
         y1 = 95
         for x in range(15):

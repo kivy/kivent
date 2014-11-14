@@ -187,6 +187,8 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         puck_id = self.create_puck((1920.*.5, 1080.*.5))
+        a_paddle_id = self.create_paddle((1920.*.25, 1080.*.5))
+        a_paddle_id = self.create_paddle((1920.*.75, 1080.*.5))
         lerp_system.add_lerp_to_entity(puck_id, 'color', 'r', .4, 5.,
             'float', callback=self.lerp_callback)
         self.draw_wall(1920., 20., (1920./2., 10.), (0., 1., 0., 1.))

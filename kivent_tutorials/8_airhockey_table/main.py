@@ -54,32 +54,46 @@ class TestGame(Widget):
         position = cy.Vec2d(xy[0],xy[1])
         space = self.gameworld.systems['physics'].space
         return space.point_query_first(position)
+    def getShapesAt(self, xy):
+        return self.getShapesAtVec(cy.Vec2d(xy[0],xy[1]))
+    def getShapesAtVec(self, position):
+        space = self.gameworld.systems['physics'].space
+        b = cy.Body()
+        b.position = position
+        shapeos = cy.Circle(b, 1)
+        return space.shape_query(shapeos)
     def on_touch_down(self, touch):
         wp = self.getWorldPosFromTuple(touch.pos)
         xspos = touch.spos[0]
         yspos = touch.spos[1]
-        if xspos<0.08 or xspos>0.92:
-            if 0.35<yspos<0.65:
+        if xspos<0.08 or xspos>0.92:#far left or right
+            if 0.35<yspos<0.65:#on a goal
                 paddleid = self.create_paddle(wp, color=(1.-xspos,0.,xspos,0.65), player=int(xspos+0.5))
                 super(TestGame, self).on_touch_down(touch)
-        elif 0.45<yspos<0.55 and 0.47<xspos<0.53:
+        elif 0.45<yspos<0.55 and 0.47<xspos<0.53:#clicked in middle
             self.setMenu(menus.PauseMenu(self))
-        elif xspos<0.4 or xspos>0.6:
+        elif xspos<0.4 or xspos>0.6:#general player area
             super(TestGame, self).on_touch_down(touch)
-        else:
-            touched_shape = self.getShapeAt(wp)
-            if touched_shape:
+        else:#middle area,for observers
+            touched_shapes = self.getShapesAt(wp)
+            for touched_shape in touched_shapes:
                 tbody = touched_shape.body
+                if tbody.data not in self.puckIDs:pass
                 tbodyvel = tbody.velocity
                 import math
                 tbodyspeed = math.sqrt(tbodyvel.x**2+tbodyvel.x**2)
-                multi=2
+                multi=2.
                 if tbodyspeed<50:
                     multi=5.
                 elif tbodyspeed<200:
                     multi=3.
-                #print "multi=", multi, " tshape=",touched_shape
+                print "multi=", multi, " tshape=",touched_shape
                 tbody.velocity=(tbodyvel.x*multi,tbodyvel.y*multi)
+                if yspos<0.5:
+                    self.bottom_points+=tbodyspeed
+                else:
+                    self.top_points+=tbodyspeed
+                self.observermenu.update_scores()
         if self.current_menu_ref:self.current_menu_ref.on_touch_down(touch)
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
@@ -94,6 +108,8 @@ class TestGame(Widget):
 
         self.scoreboard = scoreboard = menus.ScoreBoard(self)
         mainscreen.add_widget(scoreboard)
+        self.observermenu = observermenu = menus.ObserverMenu(self)
+        mainscreen.add_widget(observermenu)
     def setMenu(self, newMenu):
         mainscreen = self.ids['gamescreenmanager'].ids['main_screen']#.mainlayout
 
@@ -279,11 +295,14 @@ class TestGame(Widget):
     def clear_game(self):
         self.blue_score = 0
         self.red_score = 0
+        self.bottom_points = 0
+        self.top_points = 0
         for p in set(self.paddleIDs):
             self.remove_entity(p)
         for p in set(self.puckIDs):
             self.remove_entity(p)
         self.scoreboard.update_scores()
+        self.observermenu.update_scores()
     def new_game(self, puck_number=1, paddle_multiplier=1):
         self.clear_game()
         systems = self.gameworld.systems

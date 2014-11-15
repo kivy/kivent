@@ -153,3 +153,29 @@ class ScoreBoard(BoxLayout):
         gameref = self.gameref
         self.red_score.text=str(gameref.red_score)
         self.blue_score.text=str(gameref.blue_score)
+
+class ObserverMenu(BoxLayout):
+    def __init__(self, gameref, **kwargs):
+        super(ObserverMenu, self).__init__(**kwargs)
+        self.sname = 'pause'
+        self.orientation = 'vertical'
+        self.gameref = gameref
+        self.width = gameref.width
+        self.height = gameref.height
+
+        self. top_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
+        #l.size_hint = (.25,.25)
+        #l.pos_hint = {'y':.25+.125}
+        self.add_widget(l)
+        self.add_widget(BoxLayout())
+        self.add_widget(BoxLayout())
+        self.add_widget(BoxLayout())
+
+        self.bottom_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
+        #l.size_hint = (.25,.25)
+        #l.pos_hint = {'y':.25+.125}
+        self.add_widget(l)
+    def update_scores(self):
+        gameref = self.gameref
+        self.top_score.text=str(int(gameref.top_points))
+        self.bottom_score.text=str(int(gameref.bottom_points))

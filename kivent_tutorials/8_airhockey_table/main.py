@@ -297,8 +297,8 @@ class TestGame(Widget):
         wall_middle=wall_height/2.
 
         #player limit walls
-        self.draw_wall_decoration(20., 1080, (1920*0.6, 1080/2), (1., 1., 0., 0.3))
-        self.draw_wall_decoration(20., 1080, (1920*0.4, 1080/2), (0., 1., 1., 0.3))
+        self.draw_wall_decoration(20., 1080, (1920*0.4, 1080/2), (1., .5, 0., 0.3))
+        self.draw_wall_decoration(20., 1080, (1920*0.6, 1080/2), (0., .5, 1., 0.3))
 
         #left goal walls
         self.draw_wall(20., wall_height, (goal_thickness, wall_middle), (0., 1., 0., 1.))

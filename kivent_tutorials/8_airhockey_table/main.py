@@ -15,11 +15,13 @@ from kivent_cymunk.physics import CymunkPhysics
 from functools import partial
 
 import sounds
+import menus
 
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
+        self.current_menu_ref = None
         Clock.schedule_once(self.init_game)
 
     def ensure_startup(self):
@@ -38,6 +40,7 @@ class TestGame(Widget):
             self.set_state()
             self.draw_some_stuff()
             self.setup_collision_callbacks()
+            self.setMenu(menus.PauseMenu(self))
             Clock.schedule_interval(self.update, 0)
         else:
             Clock.schedule_once(self.init_game)
@@ -47,10 +50,13 @@ class TestGame(Widget):
         return tup[0]*viewport.camera_scale - viewport.camera_pos[0], tup[1]*viewport.camera_scale - viewport.camera_pos[1]
     def on_touch_down(self, touch):
         wp = self.getWorldPosFromTuple(touch.pos)
-        if 0.3<touch.spos[1]<0.7:
-            xspos = touch.spos[0]
+        xspos = touch.spos[0]
+        yspos = touch.spos[1]
+        if 0.3<yspos<0.7:
             if xspos<0.08 or xspos>0.92:
                 paddleid = self.create_paddle(wp, color=(1.-xspos,0.,xspos,0.65))
+            elif 0.45<yspos<0.55 and 0.47<xspos<0.53:
+                self.setMenu(menus.PauseMenu(self))
         super(TestGame, self).on_touch_down(touch)
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
@@ -59,6 +65,18 @@ class TestGame(Widget):
                 touched_id = touch.ud['touched_ent_id']
                 if touched_id in self.paddleIDs:
                     self.remove_entity(touched_id)
+
+    def setMenu(self, newMenu):
+        mainscreen = self.ids['gamescreenmanager'].ids['main_screen']#.mainlayout
+
+        if self.current_menu_ref:
+            print 'removing menu', self.current_menu_ref.sname,  str(self.current_menu_ref)
+            self.current_menu_ref.on_deactivate()
+            mainscreen.remove_widget(self.current_menu_ref)
+        mainscreen.add_widget(newMenu)
+        self.current_menu_ref = newMenu
+        print 'setting menu', self.current_menu_ref.sname,  str(self.current_menu_ref)
+        self.current_menu_ref.on_activate()
     def setup_collision_callbacks(self):
         systems = self.gameworld.systems
         physics_system = systems['physics']
@@ -220,6 +238,26 @@ class TestGame(Widget):
         lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', .5, 2.5,
             'float')
         return False
+    def clear_game(self):
+        for p in set(self.paddleIDs):
+            self.remove_entity(p)
+        for p in set(self.puckIDs):
+            self.remove_entity(p)
+    def new_game(self, puck_number=1, paddle_multiplier=1):
+        self.clear_game()
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+
+        for yposd in range(1,puck_number+1):
+            ypos = float(yposd)/float(puck_number+1)
+            puck_id = self.create_puck((1920.*.5, 1080.*ypos))
+            lerp_system.add_lerp_to_entity(puck_id, 'color', 'g', .4, 5.,
+                'float', callback=self.lerp_callback)
+
+        for yposd in range(1,paddle_multiplier+1):
+            ypos = float(yposd)/float(paddle_multiplier+1)
+            a_paddle_id = self.create_paddle((1920.*.25, 1080.*ypos), color=(1.,0.,0.,0.65))
+            a_paddle_id = self.create_paddle((1920.*.75, 1080.*ypos), color=(0.,0.,1.,0.65))
 
     def draw_some_stuff(self):
         size = Window.size
@@ -227,13 +265,8 @@ class TestGame(Widget):
         self.puckIDs = set()
         self.created_entities = created_entities = []
         entities = self.gameworld.entities
-        systems = self.gameworld.systems
-        lerp_system = systems['lerp_system']
-        puck_id = self.create_puck((1920.*.5, 1080.*.5))
-        a_paddle_id = self.create_paddle((1920.*.25, 1080.*.5), color=(1.,0.,0.,0.65))
-        a_paddle_id = self.create_paddle((1920.*.75, 1080.*.5), color=(0.,0.,1.,0.65))
-        lerp_system.add_lerp_to_entity(puck_id, 'color', 'g', .4, 5.,
-            'float', callback=self.lerp_callback)
+        self.new_game()
+        self.create_color_circle((1920.*.5, 1080.*.5), color=(0.5,0.5,0.5,0.5))
         goal_height=560
         goal_thickness=150
         real_goal_height=goal_height-90
@@ -454,16 +487,23 @@ class TestGame(Widget):
         return a_puck_id
 
 
+    def create_color_circle(self, pos, radius=50,color=(1., 1., 1., 1.)):
+        vert_mesh = self.draw_regular_polygon(30, radius, color)
+        create_component_dict = {
+            'puck_renderer': {#'texture': 'asteroid1',
+            'vert_mesh': vert_mesh,
+            #'size': (64, 64),
+            'render': True},
+            'position': pos, 'rotate': 0, 'color': color,
+            'lerp_system': {},
+            'scale':1}
+        component_order = ['position', 'rotate', 'color',
+            'puck_renderer', 'lerp_system','scale']
+        eid = self.gameworld.init_entity(create_component_dict,
+            component_order)
+        return eid
     def create_puck_fader(self, pos, start_alpha=.5,end_alpha=0.,start_scale=1.,end_scale=.1):
-        x_vel = randint(-100, 100)
-        y_vel = randint(-100, 100)
-        angle = 0 #radians(randint(-360, 360))
-        angular_velocity = 0 #radians(randint(-150, -150))
-        shape_dict = {'inner_radius': 0, 'outer_radius': 75.,
-            'mass': 50, 'offset': (0., 0.)}
-        col_shape = {'shape_type': 'circle', 'elasticity': .8,
-            'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
-        col_shapes = [col_shape]
+
         vert_mesh = self.draw_regular_polygon(30, 75., (1., 0., 0., 1.))
         create_component_dict = {
             'puck_renderer': {#'texture': 'asteroid1',

@@ -142,7 +142,7 @@ class TestGame(Widget):
             action, command = self.points_to_powerup(self.top_points)
             self.set_observer_action(0,command)
         self.observermenu.update_scores()
-    def action_paddle_storm(self,wp=None,yspos=None):
+    def action_puck_storm(self,wp=None,yspos=None):
         self.create_vortex(wp)#radius=points
         for i in range(10):
             self.create_puck((1920.*.5, 1080.*.5))

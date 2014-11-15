@@ -9,6 +9,7 @@ from random import randint, choice
 from math import radians, pi, sin, cos
 import kivent_core
 import kivent_cymunk
+import cymunk as cy
 
 from kivent_core.renderers import texture_manager, VertMesh
 from kivent_cymunk.physics import CymunkPhysics
@@ -55,7 +56,7 @@ class TestGame(Widget):
         yspos = touch.spos[1]
         if 0.3<yspos<0.7:
             if xspos<0.08 or xspos>0.92:
-                paddleid = self.create_paddle(wp, color=(1.-xspos,0.,xspos,0.65))
+                paddleid = self.create_paddle(wp, color=(1.-xspos,0.,xspos,0.65), player=int(xspos+0.5))
             elif 0.45<yspos<0.55 and 0.47<xspos<0.53:
                 self.setMenu(menus.PauseMenu(self))
         super(TestGame, self).on_touch_down(touch)
@@ -275,8 +276,8 @@ class TestGame(Widget):
 
         for yposd in range(1,paddle_multiplier+1):
             ypos = float(yposd)/float(paddle_multiplier+1)
-            a_paddle_id = self.create_paddle((1920.*.25, 1080.*ypos), color=(1.,0.,0.,0.65))
-            a_paddle_id = self.create_paddle((1920.*.75, 1080.*ypos), color=(0.,0.,1.,0.65))
+            a_paddle_id = self.create_paddle((1920.*.25, 1080.*ypos), color=(1.,0.,0.,0.65),player=0)
+            a_paddle_id = self.create_paddle((1920.*.75, 1080.*ypos), color=(0.,0.,1.,0.65),player=1)
 
     def draw_some_stuff(self):
         size = Window.size
@@ -284,7 +285,6 @@ class TestGame(Widget):
         self.puckIDs = set()
         self.created_entities = created_entities = []
         entities = self.gameworld.entities
-        self.new_game()
         self.create_color_circle((1920.*.5, 1080.*.5), color=(0.5,0.5,0.5,0.5))
         goal_height=560
         goal_thickness=150
@@ -311,13 +311,13 @@ class TestGame(Widget):
         self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.))
         #self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
         #self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
-        self.draw_goal((20.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height), 
+        self.draw_goal((20.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height),
             (0., 1., 0., 1.0))
-        self.draw_goal((20.+real_goal_thickness/2., (1080.-real_goal_height)/2. + real_goal_height/2.), (real_goal_thickness, real_goal_height), 
+        self.red_goal_id=self.draw_goal((20.+real_goal_thickness/2., (1080.-real_goal_height)/2. + real_goal_height/2.), (real_goal_thickness, real_goal_height),
             (1., 0., 0., .25), collision_type=5)
         self.draw_goal((1920. - (20.+goal_thickness/2.), (1080.-goal_height)/2. + goal_height/2.), 
             (goal_thickness, goal_height), (0., 1., 0., 1.0))
-        self.draw_goal((1920. - (20.+real_goal_thickness/2.), (1080.-450.)/2. + 450./2.), 
+        self.blue_goal_id = self.draw_goal((1920. - (20.+real_goal_thickness/2.), (1080.-450.)/2. + 450./2.),
             (real_goal_thickness, 450.), (1., 0., 0., .25), collision_type=5)
         x1 = 225
         y1 = 95
@@ -325,6 +325,7 @@ class TestGame(Widget):
             for y in range(10):
                 pos = (x1 + 104. *x, y1 + 100*y)
                 self.create_air_hole(pos)
+        self.new_game()
 
     def draw_goal(self, pos, size, color, collision_type=4):
         x_vel = 0 #randint(-100, 100)
@@ -546,7 +547,27 @@ class TestGame(Widget):
             'float')
         return eid
 
-    def create_paddle(self, pos, color=(1,1,1,0.65)):
+    def springjoint(self, aid,bid,posa=(0,0),posb=(0,0), stren=100, dmp=20):
+        ents = self.gameworld.entities
+        positiona = cy.Vec2d(posa[0], posa[1])
+        positionb = cy.Vec2d(posb[0], posb[1])
+        b1 = ents[aid].physics.body
+        b2 = ents[bid].physics.body
+        #localpos = b1.world_to_local(positiona)
+        #localpos = (localpos['x'], localpos['y'])
+        #localpos2 = b2.world_to_local(positionb)
+        #localpos2 = (localpos2['x'], localpos2['y'])
+
+        #xd = posa[0]-posb[0]
+        #yd = posa[1]-posb[1]
+        #import math
+        dist = 410#math.sqrt(xd*xd+yd*yd)*1.1
+
+        aj = cy.DampedSpring(b1, b2, posa, posb, dist,stren,dmp)
+        space = self.gameworld.systems['physics'].space
+        space.add(aj)
+        return aj
+    def create_paddle(self, pos, color=(1,1,1,0.65), player=0):
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
         radius=55
@@ -575,7 +596,10 @@ class TestGame(Widget):
             'physics', 'puck_renderer', 'lerp_system','scale']
         a_paddle_id =  self.gameworld.init_entity(create_component_dict,
             component_order)
-
+        if player==0:
+            self.springjoint(a_paddle_id,self.red_goal_id)
+        else:
+            self.springjoint(a_paddle_id,self.blue_goal_id)
         self.paddleIDs.add(a_paddle_id)
         return a_paddle_id
 

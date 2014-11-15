@@ -120,7 +120,7 @@ class TestGame(Widget):
                     self.top_points+=tbodyspeed
                 self.observermenu.update_scores()
     def action_vortex(self,wp=None,yspos=None):
-        #self.create_vortex(wp)#radius=points
+        self.create_floater(wp,mass=0,collision_type=7,radius=100)#radius=points
         if yspos<0.5:
             self.bottom_points-=1000
             action, command = self.points_to_powerup(self.bottom_points)
@@ -204,6 +204,15 @@ class TestGame(Widget):
             1, 4, 
             begin_func=self.begin_collide_with_goal)
         physics_system.add_collision_handler(
+            1, 7,
+            pre_solve_func=self.presolve_collide_with_vortex)
+        physics_system.add_collision_handler(
+            6, 7,
+            pre_solve_func=self.presolve_collide_with_vortex)
+        physics_system.add_collision_handler(
+            3, 7,
+            begin_func=rfalse)
+        physics_system.add_collision_handler(
             1, 5, 
             begin_func=self.begin_collide_with_real_goal)
         physics_system.add_collision_handler(
@@ -226,6 +235,21 @@ class TestGame(Widget):
             6, 5,
             begin_func=rfalse)
 
+    def presolve_collide_with_vortex(self, space, arbiter):
+        #systems = self.gameworld.systems
+        body1 = arbiter.shapes[0].body
+        body2 = arbiter.shapes[1].body
+        p1=body1.position
+        p2=body2.position
+        #ent1_id = body1.data #puck
+        #ent2_id = body2.data #goal
+        #ents= = self.gameworld.entities
+        # apos = entity.position
+        dvecx = (p2.x - p1.x) * body1.mass * 0.1
+        dvecy = (p2.y - p1.y) * body1.mass * 0.1
+        body1.apply_impulse((dvecx, dvecy))
+
+        return False
     def begin_collide_with_goal(self, space, arbiter):
         systems = self.gameworld.systems
         ent1_id = arbiter.shapes[0].body.data #puck
@@ -233,7 +257,7 @@ class TestGame(Widget):
         lerp_system = systems['lerp_system']
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'r', 1., .3,
             'float', callback=self.lerp_callback_goal_score)
-        
+
         return False
 
     def begin_collide_with_real_goal(self, space, arbiter):
@@ -362,8 +386,8 @@ class TestGame(Widget):
     def clear_game(self):
         self.blue_score = 0
         self.red_score = 0
-        self.bottom_points = 0
-        self.top_points = 0
+        self.bottom_points = 4000
+        self.top_points = 4000
         for p in set(self.paddleIDs):
             self.remove_entity(p)
         for p in set(self.puckIDs):
@@ -603,13 +627,13 @@ class TestGame(Widget):
         return vert_mesh
 
 
-    def create_floater(self, pos, radius=40,color=(0.9,0.9,0.9,0.3)):
+    def create_floater(self, pos, radius=40,color=(0.9,0.9,0.9,0.3),mass=150,collision_type=6):
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
         shape_dict = {'inner_radius': 0, 'outer_radius': radius,
-            'mass': 150, 'offset': (0., 0.)}
+            'mass': mass+0.1, 'offset': (0., 0.)}
         col_shape = {'shape_type': 'circle', 'elasticity': .8,
-            'collision_type': 6, 'shape_info': shape_dict, 'friction': 1.0}
+            'collision_type': collision_type, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         vert_mesh = self.draw_regular_polygon(30, radius, color)
         physics_component = {'main_shape': 'circle',
@@ -618,7 +642,7 @@ class TestGame(Widget):
             'angular_velocity': angular_velocity,
             'vel_limit': 1500.,
             'ang_vel_limit': radians(200),
-            'mass': 50, 'col_shapes': col_shapes}
+            'mass': mass, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component,
             'puck_renderer': {#'texture': 'asteroid1',
             'vert_mesh': vert_mesh,

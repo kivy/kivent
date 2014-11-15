@@ -62,6 +62,20 @@ class TestGame(Widget):
         b.position = position
         shapeos = cy.Circle(b, 1)
         return space.shape_query(shapeos)
+    def points_to_powerup(self, points):
+        if points>10000.:
+            action="Puck Storm"
+            command="puck_storm"
+        elif points>5000.:
+            action="Make Wall"
+            command="wall"
+        elif points>1000.:
+            action="Make Vortex"
+            command="vortex"
+        else:
+            action="Boost Puck"
+            command="speedup"
+        return action, command
     def on_touch_down(self, touch):
         wp = self.getWorldPosFromTuple(touch.pos)
         xspos = touch.spos[0]
@@ -75,25 +89,69 @@ class TestGame(Widget):
         elif xspos<0.4 or xspos>0.6:#general player area
             super(TestGame, self).on_touch_down(touch)
         else:#middle area,for observers
-            touched_shapes = self.getShapesAt(wp)
-            for touched_shape in touched_shapes:
-                tbody = touched_shape.body
-                if tbody.data in self.puckIDs:
-                    tbodyvel = tbody.velocity
-                    tbodyspeed = sqrt(tbodyvel.x**2.+tbodyvel.y**2.)
-                    multi=2.
-                    if tbodyspeed<50.:
-                        multi=5.
-                    elif tbodyspeed<200.:
-                        multi=3.
-                    #print "multi=", multi, " tshape=",touched_shape
-                    tbody.velocity=(tbodyvel.x*multi,tbodyvel.y*multi)
-                    if yspos<0.5:
-                        self.bottom_points+=tbodyspeed
-                    else:
-                        self.top_points+=tbodyspeed
-                    self.observermenu.update_scores()
+            if yspos<0.5:
+                self.bottom_action(wp,yspos)
+            else:
+                self.top_action(wp,yspos)
+            self.observermenu.on_touch_down(touch)
+
         if self.current_menu_ref:self.current_menu_ref.on_touch_down(touch)
+    def bottom_action(self,wp=None,yspos=None):
+        print "no action bottom"
+    def top_action(self,wp=None,yspos=None):
+        print "no action top"
+    def action_speedup(self,wp=None,yspos=None):
+        touched_shapes = self.getShapesAt(wp)
+        for touched_shape in touched_shapes:
+            tbody = touched_shape.body
+            if tbody.data in self.puckIDs:
+                tbodyvel = tbody.velocity
+                tbodyspeed = sqrt(tbodyvel.x**2.+tbodyvel.y**2.)
+                multi=2.
+                if tbodyspeed<50.:
+                    multi=5.
+                elif tbodyspeed<200.:
+                    multi=3.
+                #print "multi=", multi, " tshape=",touched_shape
+                tbody.velocity=(tbodyvel.x*multi,tbodyvel.y*multi)
+                if yspos<0.5:
+                    self.bottom_points+=tbodyspeed
+                else:
+                    self.top_points+=tbodyspeed
+                self.observermenu.update_scores()
+    def action_vortex(self,wp=None,yspos=None):
+        #self.create_vortex(wp)#radius=points
+        if yspos<0.5:
+            self.bottom_points-=1000
+            action, command = self.points_to_powerup(self.top_points)
+        else:
+            self.top_points-=1000
+            action, command = self.points_to_powerup(self.top_points)
+        self.set_observer_action(0,command)
+        self.observermenu.update_scores()
+    def action_wall(self,wp=None,yspos=None):
+        for i in range(10):
+            self.create_puck((1920.*.5, 1080.*.5))
+        if yspos<0.5:
+            self.bottom_points-=5000
+            action, command = self.points_to_powerup(self.top_points)
+        else:
+            self.top_points-=5000
+            action, command = self.points_to_powerup(self.top_points)
+        self.set_observer_action(0,command)
+        self.observermenu.update_scores()
+    def action_paddle_storm(self,wp=None,yspos=None):
+        self.create_vortex(wp)#radius=points
+        for i in range(10):
+            self.create_puck((1920.*.5, 1080.*.5))
+        if yspos<0.5:
+            self.bottom_points-=10000
+            action, command = self.points_to_powerup(self.top_points)
+        else:
+            self.top_points-=10000
+            action, command = self.points_to_powerup(self.top_points)
+        self.set_observer_action(0,command)
+        self.observermenu.update_scores()
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
         if 0.3<touch.spos[1]<0.7 and 'touched_ent_id' in touch.ud:
@@ -101,6 +159,15 @@ class TestGame(Widget):
                 touched_id = touch.ud['touched_ent_id']
                 if touched_id in self.paddleIDs:
                     self.remove_entity(touched_id)
+    def set_observer_action(self, isbottom, action="speedup"):
+        #if action=="speedup":
+        #actionref=self.action_speedup
+        actionref=getattr(self,"action_"+action)
+        if isbottom:
+            self.bottom_action = actionref
+        else:
+            self.top_action = actionref
+
 
     def create_scoreboard(self):
         mainscreen = self.ids['gamescreenmanager'].ids['main_screen']#.mainlayout
@@ -302,6 +369,8 @@ class TestGame(Widget):
             self.remove_entity(p)
         self.scoreboard.update_scores()
         self.observermenu.update_scores()
+        self.set_observer_action(0)
+        self.set_observer_action(1)
     def new_game(self, puck_number=1, paddle_multiplier=1):
         self.clear_game()
         systems = self.gameworld.systems

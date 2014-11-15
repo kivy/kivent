@@ -163,6 +163,11 @@ class ObserverMenu(BoxLayout):
         self.width = gameref.width
         self.height = gameref.height
 
+        self.top_button = l = BoButton(text="PowerUp", font_size=40)
+        l.observer_id=0
+        l.bind(on_press=self.power_pressed)
+        self.add_widget(l)
+
         self. top_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
         #l.size_hint = (.25,.25)
         #l.pos_hint = {'y':.25+.125}
@@ -175,7 +180,37 @@ class ObserverMenu(BoxLayout):
         #l.size_hint = (.25,.25)
         #l.pos_hint = {'y':.25+.125}
         self.add_widget(l)
+
+        self.bottom_button = l = BoButton(text="PowerUp", font_size=40)
+        l.observer_id=1
+        l.bind(on_press=self.power_pressed)
+        self.add_widget(l)
     def update_scores(self):
         gameref = self.gameref
         self.top_score.text=str(int(gameref.top_points))
+        self.set_powerup_text(gameref.top_points, self.top_button)
         self.bottom_score.text=str(int(gameref.bottom_points))
+        self.set_powerup_text(gameref.bottom_points, self.bottom_button)
+    def set_powerup_text(self, points, instance):
+        action, command = self.gameref.points_to_powerup(points)
+        if instance.text != action:
+            instance.text = action
+            instance.command = command
+    def power_pressed(self, instance=None):
+        gameref = self.gameref
+        isbottom = instance.observer_id
+        '''if isbottom:
+            points = gameref.bottom_points
+        else:
+            points = gameref.top_points
+
+        if points>10000.:
+            action="puck_storm"
+        elif points>5000.:
+            action="make_wall"
+        elif points>1000.:
+            action="make_vortex"
+        else:
+            action="speedup"'''
+
+        gameref.set_observer_action(isbottom,instance.command)

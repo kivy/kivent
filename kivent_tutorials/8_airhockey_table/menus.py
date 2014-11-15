@@ -108,13 +108,13 @@ class ScoreBoard(BoxLayout):
         self.width = gameref.width
         self.height = gameref.height
 
-        l = Label(text="0", font_size=30)
+        l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
         #l.size_hint = (.25,.25)
         #l.pos_hint = {'y':.25+.125}
         self.add_widget(l)
         self.red_score = l
 
-        l = Label(text="0", font_size=30)
+        l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
         #l.size_hint = (.25,.25)
         #l.pos_hint = {'y':.25+.125}
         self.add_widget(l)

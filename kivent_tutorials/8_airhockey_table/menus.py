@@ -63,6 +63,36 @@ class PauseMenu(BoxLayout, basemenu):
         pass
         #self.gameref.setMenu(GameUIMenu(self.gameref))
 
+class VictoryMenu(BoxLayout, basemenu):
+    def __init__(self, gameref, **kwargs):
+        super(VictoryMenu, self).__init__(**kwargs)
+        self.sname = 'pause'
+        self.orientation = 'vertical'
+        self.gameref = gameref
+        self.width = gameref.width
+        self.height = gameref.height
+        winner = kwargs.get("winner", 'No-One')
+        self.victory_label = l = Label(text=winner+" Wins!", font_size=40)
+
+        #l.size_hint = (.25,.25)
+        #l.pos_hint = {'y':.25+.125}
+        self.add_widget(l)
+        b = BoButton(text="New Game", font_size=30)
+        b.bind(on_press=self.quitpressed)
+        self.add_widget( BoxLayout() )
+        self.add_widget(b)
+        #b.size_hint = (.25,.25)
+        #b.pos_hint = {'y':.25+.125}
+        self.mainlabel = l
+    def quitpressed(self, instance=None):
+        gameref = self.gameref
+        gameref.setMenu(NewGameMenu(self.gameref))
+    def on_activate(self):
+        pass
+    def on_back(self):
+        pass
+        #self.gameref.setMenu(GameUIMenu(self.gameref))
+
 class NewGameMenu(BoxLayout, basemenu):
     def __init__(self, gameref, **kwargs):
         super(NewGameMenu, self).__init__(**kwargs)

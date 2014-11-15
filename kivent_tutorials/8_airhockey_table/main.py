@@ -173,7 +173,7 @@ class TestGame(Widget):
             'float', callback=self.lerp_callback_airhole)
         lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2, .3,
             'float')#, callback=self.lerp_callback_airhole_scale)#
-        if ent1_id not in self.paddleIDs: sounds.play_click(.2)
+        #if ent1_id not in self.paddleIDs: sounds.play_click(.2)
         #else:
         ent = self.gameworld.entities[ent1_id]
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', ent.color.b, .2,

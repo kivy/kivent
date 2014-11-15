@@ -163,7 +163,9 @@ class ObserverMenu(BoxLayout):
         self.width = gameref.width
         self.height = gameref.height
 
-        self.top_button = l = BoButton(text="PowerUp", font_size=40)
+        self.top_button = l = BoButton(text="PowerUp", font_size=20)
+        l.size_hint = (.25,1)
+        l.pos_hint = {'x':.25+.125}
         l.observer_id=0
         l.bind(on_press=self.power_pressed)
         self.add_widget(l)
@@ -181,7 +183,9 @@ class ObserverMenu(BoxLayout):
         #l.pos_hint = {'y':.25+.125}
         self.add_widget(l)
 
-        self.bottom_button = l = BoButton(text="PowerUp", font_size=40)
+        self.bottom_button = l = BoButton(text="PowerUp", font_size=20)
+        l.size_hint = (.25,1)
+        l.pos_hint = {'x':.25+.125}
         l.observer_id=1
         l.bind(on_press=self.power_pressed)
         self.add_widget(l)

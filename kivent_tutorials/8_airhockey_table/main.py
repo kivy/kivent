@@ -123,22 +123,24 @@ class TestGame(Widget):
         #self.create_vortex(wp)#radius=points
         if yspos<0.5:
             self.bottom_points-=1000
-            action, command = self.points_to_powerup(self.top_points)
+            action, command = self.points_to_powerup(self.bottom_points)
+            self.set_observer_action(1,command)
         else:
             self.top_points-=1000
             action, command = self.points_to_powerup(self.top_points)
-        self.set_observer_action(0,command)
+            self.set_observer_action(0,command)
         self.observermenu.update_scores()
     def action_wall(self,wp=None,yspos=None):
         for i in range(10):
             self.create_puck((1920.*.5, 1080.*.5))
         if yspos<0.5:
             self.bottom_points-=5000
-            action, command = self.points_to_powerup(self.top_points)
+            action, command = self.points_to_powerup(self.bottom_points)
+            self.set_observer_action(1,command)
         else:
             self.top_points-=5000
             action, command = self.points_to_powerup(self.top_points)
-        self.set_observer_action(0,command)
+            self.set_observer_action(0,command)
         self.observermenu.update_scores()
     def action_paddle_storm(self,wp=None,yspos=None):
         self.create_vortex(wp)#radius=points
@@ -146,11 +148,12 @@ class TestGame(Widget):
             self.create_puck((1920.*.5, 1080.*.5))
         if yspos<0.5:
             self.bottom_points-=10000
-            action, command = self.points_to_powerup(self.top_points)
+            action, command = self.points_to_powerup(self.bottom_points)
+            self.set_observer_action(1,command)
         else:
             self.top_points-=10000
             action, command = self.points_to_powerup(self.top_points)
-        self.set_observer_action(0,command)
+            self.set_observer_action(0,command)
         self.observermenu.update_scores()
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)

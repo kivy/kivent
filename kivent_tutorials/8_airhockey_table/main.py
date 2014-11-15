@@ -131,8 +131,7 @@ class TestGame(Widget):
             self.set_observer_action(0,command)
         self.observermenu.update_scores()
     def action_wall(self,wp=None,yspos=None):
-        for i in range(10):
-            self.create_puck((1920.*.5, 1080.*.5))
+        self.create_floater(wp)
         if yspos<0.5:
             self.bottom_points-=5000
             action, command = self.points_to_powerup(self.bottom_points)
@@ -143,7 +142,6 @@ class TestGame(Widget):
             self.set_observer_action(0,command)
         self.observermenu.update_scores()
     def action_puck_storm(self,wp=None,yspos=None):
-        self.create_vortex(wp)#radius=points
         for i in range(10):
             self.create_puck((1920.*.5, 1080.*.5))
         if yspos<0.5:
@@ -370,6 +368,8 @@ class TestGame(Widget):
             self.remove_entity(p)
         for p in set(self.puckIDs):
             self.remove_entity(p)
+        for p in set(self.miscIDs):
+            self.remove_entity(p)
         self.scoreboard.update_scores()
         self.observermenu.update_scores()
         self.set_observer_action(0)
@@ -394,6 +394,7 @@ class TestGame(Widget):
         size = Window.size
         self.paddleIDs = set()
         self.puckIDs = set()
+        self.miscIDs = set()
         self.created_entities = created_entities = []
         entities = self.gameworld.entities
         self.create_color_circle((1920.*.5, 1080.*.5), color=(0.5,0.5,0.5,0.5))
@@ -483,6 +484,8 @@ class TestGame(Widget):
             self.paddleIDs.remove(entity_id)
         if entity_id in self.puckIDs:
             self.puckIDs.remove(entity_id)
+        if entity_id in self.miscIDs:
+            self.miscIDs.remove(entity_id)
         #self.gameworld.remove_entity(entity_id)
         Clock.schedule_once(partial(
             self.gameworld.timed_remove_entity, entity_id))
@@ -600,6 +603,37 @@ class TestGame(Widget):
         return vert_mesh
 
 
+    def create_floater(self, pos, radius=40,color=(0.9,0.9,0.9,0.3)):
+        angle = 0 #radians(randint(-360, 360))
+        angular_velocity = 0 #radians(randint(-150, -150))
+        shape_dict = {'inner_radius': 0, 'outer_radius': radius,
+            'mass': 150, 'offset': (0., 0.)}
+        col_shape = {'shape_type': 'circle', 'elasticity': .8,
+            'collision_type': 6, 'shape_info': shape_dict, 'friction': 1.0}
+        col_shapes = [col_shape]
+        vert_mesh = self.draw_regular_polygon(30, radius, color)
+        physics_component = {'main_shape': 'circle',
+            'velocity': (0, 0),
+            'position': pos, 'angle': angle,
+            'angular_velocity': angular_velocity,
+            'vel_limit': 1500.,
+            'ang_vel_limit': radians(200),
+            'mass': 50, 'col_shapes': col_shapes}
+        create_component_dict = {'physics': physics_component,
+            'puck_renderer': {#'texture': 'asteroid1',
+            'vert_mesh': vert_mesh,
+            #'size': (64, 64),
+            'render': True},
+            'position': pos, 'rotate': 0, 'color': color,
+            'lerp_system': {},
+            'scale':1}
+        component_order = ['position', 'rotate', 'color',
+            'physics', 'puck_renderer', 'lerp_system','scale']
+        _id =  self.gameworld.init_entity(create_component_dict,
+            component_order)
+
+        self.miscIDs.add(_id)
+        return _id
     def create_puck(self, pos):
         x_vel = randint(-100, 100)
         y_vel = randint(-100, 100)

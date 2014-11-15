@@ -11,6 +11,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.base import stopTouchApp
+from kivy.uix.progressbar import ProgressBar
 
 from random import random
 
@@ -170,17 +171,19 @@ class ObserverMenu(BoxLayout):
         l.bind(on_press=self.power_pressed)
         self.add_widget(l)
 
-        self. top_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
-        #l.size_hint = (.25,.25)
-        #l.pos_hint = {'y':.25+.125}
+        #self. top_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
+        self.top_score = l = ProgressBar(max=10000)
+        l.size_hint = (.2,1)
+        l.pos_hint = {'x':.3+.1}
         self.add_widget(l)
         self.add_widget(BoxLayout())
         self.add_widget(BoxLayout())
         self.add_widget(BoxLayout())
 
-        self.bottom_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
-        #l.size_hint = (.25,.25)
-        #l.pos_hint = {'y':.25+.125}
+        #self.bottom_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
+        self.bottom_score = l = ProgressBar(max=10000)
+        l.size_hint = (.2,1)
+        l.pos_hint = {'x':.3+.1}
         self.add_widget(l)
 
         self.bottom_button = l = BoButton(text="PowerUp", font_size=20)
@@ -191,9 +194,11 @@ class ObserverMenu(BoxLayout):
         self.add_widget(l)
     def update_scores(self):
         gameref = self.gameref
-        self.top_score.text=str(int(gameref.top_points))
+        #self.top_score.text=str(int(gameref.top_points))
+        self.top_score.value=gameref.top_points
         self.set_powerup_text(gameref.top_points, self.top_button)
-        self.bottom_score.text=str(int(gameref.bottom_points))
+        #self.bottom_score.text=str(int(gameref.bottom_points))
+        self.bottom_score.value=gameref.bottom_points
         self.set_powerup_text(gameref.bottom_points, self.bottom_button)
     def set_powerup_text(self, points, instance):
         action, command = self.gameref.points_to_powerup(points)

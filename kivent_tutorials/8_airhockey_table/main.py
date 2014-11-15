@@ -321,9 +321,13 @@ class TestGame(Widget):
             (real_goal_thickness, 450.), (1., 0., 0., .25), collision_type=5)
         x1 = 225
         y1 = 95
-        for x in range(15):
-            for y in range(10):
-                pos = (x1 + 104. *x, y1 + 100*y)
+        xnum=15
+        ynum=10
+        xstep = (1920-x1*2)/float(xnum-1)
+        ystep = (1080-y1*2)/float(ynum-1)
+        for x in range(xnum):
+            for y in range(ynum):
+                pos = (x1 + xstep *x, y1 + ystep*y)
                 self.create_air_hole(pos)
         self.new_game()
 

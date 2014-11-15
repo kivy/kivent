@@ -6,7 +6,7 @@ from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
 from random import randint, choice
-from math import radians, pi, sin, cos
+from math import radians, pi, sin, cos, sqrt
 import kivent_core
 import kivent_cymunk
 import cymunk as cy
@@ -78,22 +78,21 @@ class TestGame(Widget):
             touched_shapes = self.getShapesAt(wp)
             for touched_shape in touched_shapes:
                 tbody = touched_shape.body
-                if tbody.data not in self.puckIDs:pass
-                tbodyvel = tbody.velocity
-                import math
-                tbodyspeed = math.sqrt(tbodyvel.x**2+tbodyvel.x**2)
-                multi=2.
-                if tbodyspeed<50:
-                    multi=5.
-                elif tbodyspeed<200:
-                    multi=3.
-                print "multi=", multi, " tshape=",touched_shape
-                tbody.velocity=(tbodyvel.x*multi,tbodyvel.y*multi)
-                if yspos<0.5:
-                    self.bottom_points+=tbodyspeed
-                else:
-                    self.top_points+=tbodyspeed
-                self.observermenu.update_scores()
+                if tbody.data in self.puckIDs:
+                    tbodyvel = tbody.velocity
+                    tbodyspeed = sqrt(tbodyvel.x**2.+tbodyvel.y**2.)
+                    multi=2.
+                    if tbodyspeed<50.:
+                        multi=5.
+                    elif tbodyspeed<200.:
+                        multi=3.
+                    #print "multi=", multi, " tshape=",touched_shape
+                    tbody.velocity=(tbodyvel.x*multi,tbodyvel.y*multi)
+                    if yspos<0.5:
+                        self.bottom_points+=tbodyspeed
+                    else:
+                        self.top_points+=tbodyspeed
+                    self.observermenu.update_scores()
         if self.current_menu_ref:self.current_menu_ref.on_touch_down(touch)
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)

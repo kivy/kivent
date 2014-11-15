@@ -50,6 +50,10 @@ class TestGame(Widget):
 
         viewport = self.gameworld.systems['gameview']
         return tup[0]*viewport.camera_scale - viewport.camera_pos[0], tup[1]*viewport.camera_scale - viewport.camera_pos[1]
+    def getShapeAt(self, xy):
+        position = cy.Vec2d(xy[0],xy[1])
+        space = self.gameworld.systems['physics'].space
+        return space.point_query_first(position)
     def on_touch_down(self, touch):
         wp = self.getWorldPosFromTuple(touch.pos)
         xspos = touch.spos[0]
@@ -62,6 +66,20 @@ class TestGame(Widget):
             self.setMenu(menus.PauseMenu(self))
         elif xspos<0.4 or xspos>0.6:
             super(TestGame, self).on_touch_down(touch)
+        else:
+            touched_shape = self.getShapeAt(wp)
+            if touched_shape:
+                tbody = touched_shape.body
+                tbodyvel = tbody.velocity
+                import math
+                tbodyspeed = math.sqrt(tbodyvel.x**2+tbodyvel.x**2)
+                multi=2
+                if tbodyspeed<50:
+                    multi=5.
+                elif tbodyspeed<200:
+                    multi=3.
+                #print "multi=", multi, " tshape=",touched_shape
+                tbody.velocity=(tbodyvel.x*multi,tbodyvel.y*multi)
         if self.current_menu_ref:self.current_menu_ref.on_touch_down(touch)
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)

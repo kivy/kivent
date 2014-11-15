@@ -97,3 +97,29 @@ class GameUIMenu(BoxLayout, basemenu):
         self.gameref = gameref
         self.width = gameref.width
         self.height = gameref.height
+
+
+class ScoreBoard(BoxLayout):
+    def __init__(self, gameref, **kwargs):
+        super(ScoreBoard, self).__init__(**kwargs)
+        self.sname = 'pause'
+        self.orientation = 'horizontal'
+        self.gameref = gameref
+        self.width = gameref.width
+        self.height = gameref.height
+
+        l = Label(text="0", font_size=30)
+        #l.size_hint = (.25,.25)
+        #l.pos_hint = {'y':.25+.125}
+        self.add_widget(l)
+        self.red_score = l
+
+        l = Label(text="0", font_size=30)
+        #l.size_hint = (.25,.25)
+        #l.pos_hint = {'y':.25+.125}
+        self.add_widget(l)
+        self.blue_score=l
+    def update_scores(self):
+        gameref = self.gameref
+        self.red_score.text=str(gameref.red_score)
+        self.blue_score.text=str(gameref.blue_score)

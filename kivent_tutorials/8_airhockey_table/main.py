@@ -35,12 +35,13 @@ class TestGame(Widget):
 
     def init_game(self, dt):
         if self.ensure_startup():
+            self.setMenu(menus.PauseMenu(self))
+            self.create_scoreboard()
             self.setup_map()
             self.setup_states()
             self.set_state()
             self.draw_some_stuff()
             self.setup_collision_callbacks()
-            self.setMenu(menus.PauseMenu(self))
             Clock.schedule_interval(self.update, 0)
         else:
             Clock.schedule_once(self.init_game)
@@ -66,6 +67,11 @@ class TestGame(Widget):
                 if touched_id in self.paddleIDs:
                     self.remove_entity(touched_id)
 
+    def create_scoreboard(self):
+        mainscreen = self.ids['gamescreenmanager'].ids['main_screen']#.mainlayout
+
+        self.scoreboard = scoreboard = menus.ScoreBoard(self)
+        mainscreen.add_widget(scoreboard)
     def setMenu(self, newMenu):
         mainscreen = self.ids['gamescreenmanager'].ids['main_screen']#.mainlayout
 
@@ -130,10 +136,16 @@ class TestGame(Widget):
         ent2_id = arbiter.shapes[1].body.data #goal
         puck = self.gameworld.entities[ent1_id]
         puckposition = puck.physics.body.position
+        ppx =  puckposition.x/1920.
         #self.create_puck_fader((puckposition.x,puckposition.y))
         self.remove_entity(ent1_id)
         Clock.schedule_once(self.spawn_new_puck, 2.5)
         sounds.play_jingle()
+        if ppx<0.5:
+            self.blue_score+=1
+        else:
+            self.red_score+=1
+        self.scoreboard.update_scores()
         return False
 
     def spawn_new_puck(self, dt):
@@ -239,10 +251,13 @@ class TestGame(Widget):
             'float')
         return False
     def clear_game(self):
+        self.blue_score = 0
+        self.red_score = 0
         for p in set(self.paddleIDs):
             self.remove_entity(p)
         for p in set(self.puckIDs):
             self.remove_entity(p)
+        self.scoreboard.update_scores()
     def new_game(self, puck_number=1, paddle_multiplier=1):
         self.clear_game()
         systems = self.gameworld.systems

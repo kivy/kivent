@@ -54,12 +54,15 @@ class TestGame(Widget):
         wp = self.getWorldPosFromTuple(touch.pos)
         xspos = touch.spos[0]
         yspos = touch.spos[1]
-        if 0.3<yspos<0.7:
-            if xspos<0.08 or xspos>0.92:
+        if xspos<0.08 or xspos>0.92:
+            if 0.35<yspos<0.65:
                 paddleid = self.create_paddle(wp, color=(1.-xspos,0.,xspos,0.65), player=int(xspos+0.5))
-            elif 0.45<yspos<0.55 and 0.47<xspos<0.53:
-                self.setMenu(menus.PauseMenu(self))
-        super(TestGame, self).on_touch_down(touch)
+                super(TestGame, self).on_touch_down(touch)
+        elif 0.45<yspos<0.55 and 0.47<xspos<0.53:
+            self.setMenu(menus.PauseMenu(self))
+        elif xspos<0.4 or xspos>0.6:
+            super(TestGame, self).on_touch_down(touch)
+        if self.current_menu_ref:self.current_menu_ref.on_touch_down(touch)
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
         if 0.3<touch.spos[1]<0.7 and 'touched_ent_id' in touch.ud:
@@ -293,6 +296,10 @@ class TestGame(Widget):
         wall_height=(1080/2-goal_height/2.)
         wall_middle=wall_height/2.
 
+        #player limit walls
+        self.draw_wall_decoration(20., 1080, (1920*0.6, 1080/2), (1., 1., 0., 0.3))
+        self.draw_wall_decoration(20., 1080, (1920*0.4, 1080/2), (0., 1., 1., 0.3))
+
         #left goal walls
         self.draw_wall(20., wall_height, (goal_thickness, wall_middle), (0., 1., 0., 1.))
         self.draw_wall(20., wall_height, (goal_thickness, 1080-wall_middle), (0., 1., 0., 1.))
@@ -409,6 +416,15 @@ class TestGame(Widget):
         component_order = ['position', 'rotate', 'color',
             'physics', 'renderer','scale']
         return self.gameworld.init_entity(create_component_dict, 
+            component_order)
+    def draw_wall_decoration(self, width, height, pos, color):
+        create_component_dict = {
+            'renderer': {'size': (width, height),'render': True},
+            'position': pos, 'rotate': 0, 'color': color,
+            'scale':1}
+        component_order = ['position', 'rotate', 'color',
+            'renderer','scale']
+        return self.gameworld.init_entity(create_component_dict,
             component_order)
 
     def create_air_hole(self, pos):

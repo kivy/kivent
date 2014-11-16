@@ -280,11 +280,11 @@ class TestGame(Widget):
         sounds.play_jingle()
         if ppx<0.5:
             self.blue_score+=1
-            if self.blue_score>9:
+            if self.blue_score>9 and self.current_menu_ref.sname=='ingame':
                 self.setMenu(menus.VictoryMenu(self,winner="Blue"))
         else:
             self.red_score+=1
-            if self.red_score>9:
+            if self.red_score>9 and self.current_menu_ref.sname=='ingame':
                 self.setMenu(menus.VictoryMenu(self,winner="Red"))
         self.scoreboard.update_scores()
         return False

@@ -121,8 +121,9 @@ class TestGame(Widget):
                 self.observermenu.update_scores()
     def action_vortex(self,wp=None,yspos=None):
         vortex_id = self.create_floater(wp,mass=0,collision_type=7,radius=100)#radius=points
-        Clock.schedule_once(partial(
-            self.gameworld.timed_remove_entity, vortex_id),5)
+        pfunc = partial( self.remove_entity, vortex_id,0.)
+        Clock.schedule_once(pfunc,5)
+        self.pfuncs[vortex_id]=pfunc
         if yspos<0.5:
             self.bottom_points-=1000
             action, command = self.points_to_powerup(self.bottom_points)
@@ -396,6 +397,7 @@ class TestGame(Widget):
             'float')
         return False
     def clear_game(self):
+        Clock.unschedule(self.spawn_new_puck)
         self.blue_score = 0
         self.red_score = 0
         self.bottom_points = 4000
@@ -428,6 +430,7 @@ class TestGame(Widget):
 
     def draw_some_stuff(self):
         size = Window.size
+        self.pfuncs = {}
         self.paddleIDs = set()
         self.puckIDs = set()
         self.miscIDs = set()
@@ -512,10 +515,18 @@ class TestGame(Widget):
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
 
-    def remove_entity(self, entity_id):
+    def remove_entity(self, entity_id, a=0,b=0):
         systems = self.gameworld.systems
-        lerp_system = systems['lerp_system']
-        lerp_system.clear_lerps_from_entity(entity_id)
+        ents = self.gameworld.entities
+        ent = ents[entity_id]
+        if entity_id in self.pfuncs:
+            Clock.unschedule(self.pfuncs[entity_id])
+            del self.pfuncs[entity_id]
+        if hasattr(ent, 'lerp_system'):
+            lerp_system = systems['lerp_system']
+            lerp_system.clear_lerps_from_entity(entity_id)
+        else:
+            print "WARNING! no lerp_system on ent:", entity_id
         if entity_id in self.paddleIDs:
             self.paddleIDs.remove(entity_id)
         if entity_id in self.puckIDs:

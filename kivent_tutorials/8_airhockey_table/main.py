@@ -62,20 +62,8 @@ class TestGame(Widget):
         b.position = position
         shapeos = cy.Circle(b, 1)
         return space.shape_query(shapeos)
-    def points_to_powerup(self, points):
-        if points>10000.:
-            action="Puck Storm"
-            command="puck_storm"
-        elif points>5000.:
-            action="Make Wall"
-            command="wall"
-        elif points>1000.:
-            action="Make Vortex"
-            command="vortex"
-        else:
-            action="Boost Puck"
-            command="speedup"
-        return action, command
+
+
     def on_touch_down(self, touch):
         wp = self.getWorldPosFromTuple(touch.pos)
         xspos = touch.spos[0]
@@ -161,6 +149,7 @@ class TestGame(Widget):
     def set_observer_action(self, isbottom, action="speedup"):
         #if action=="speedup":
         #actionref=self.action_speedup
+        self.observermenu.set_selector_pos(isbottom,action)
         actionref=getattr(self,"action_"+action)
         if isbottom:
             self.bottom_action = actionref

@@ -67,7 +67,7 @@ class PauseMenu(BoxLayout, basemenu):
 class VictoryMenu(BoxLayout, basemenu):
     def __init__(self, gameref, **kwargs):
         super(VictoryMenu, self).__init__(**kwargs)
-        self.sname = 'pause'
+        self.sname = 'victory'
         self.orientation = 'vertical'
         self.gameref = gameref
         self.width = gameref.width
@@ -97,7 +97,7 @@ class VictoryMenu(BoxLayout, basemenu):
 class NewGameMenu(BoxLayout, basemenu):
     def __init__(self, gameref, **kwargs):
         super(NewGameMenu, self).__init__(**kwargs)
-        self.sname = 'pause'
+        self.sname = 'new_game'
         self.orientation = 'vertical'
         self.gameref = gameref
         self.width = gameref.width
@@ -123,7 +123,7 @@ class NewGameMenu(BoxLayout, basemenu):
 class GameUIMenu(BoxLayout, basemenu):
     def __init__(self, gameref, **kwargs):
         super(GameUIMenu, self).__init__(**kwargs)
-        self.sname = 'pause'
+        self.sname = 'ingame'
         self.orientation = 'vertical'
         self.gameref = gameref
         self.width = gameref.width
@@ -133,7 +133,7 @@ class GameUIMenu(BoxLayout, basemenu):
 class ScoreBoard(BoxLayout):
     def __init__(self, gameref, **kwargs):
         super(ScoreBoard, self).__init__(**kwargs)
-        self.sname = 'pause'
+        self.sname = 'scoreboard'
         self.orientation = 'horizontal'
         self.gameref = gameref
         self.width = gameref.width
@@ -158,7 +158,7 @@ class ScoreBoard(BoxLayout):
 class ObserverMenu(BoxLayout):
     def __init__(self, gameref, **kwargs):
         super(ObserverMenu, self).__init__(**kwargs)
-        self.sname = 'pause'
+        self.sname = 'observer_menu'
         self.orientation = 'vertical'
         self.gameref = gameref
         self.width = gameref.width

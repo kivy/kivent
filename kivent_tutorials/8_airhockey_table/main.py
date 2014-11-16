@@ -105,6 +105,7 @@ class TestGame(Widget):
         for touched_shape in touched_shapes:
             tbody = touched_shape.body
             if tbody.data in self.puckIDs:
+                sounds.play_pitchraise(.5)
                 tbodyvel = tbody.velocity
                 tbodyspeed = sqrt(tbodyvel.x**2.+tbodyvel.y**2.)
                 multi=2.

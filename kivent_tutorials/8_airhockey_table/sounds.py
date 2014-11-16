@@ -5,7 +5,16 @@ from kivy.core.audio import SoundLoader, Sound
 click = SoundLoader.load('assets/wav/click.wav')
 thack = SoundLoader.load('assets/wav/thack.wav')
 jingle = SoundLoader.load('assets/wav/jingle.wav')
+pitchraise = SoundLoader.load('assets/wav/pitchraise.wav')
 
+
+def vol_pitchraise(vol=1.):
+	pitchraise.volume = vol
+def play_pitchraise(vol=1.):
+	pitchraise.volume = vol
+	#if pitchraise.status != 'play':pitchraise.play()
+	if pitchraise.status == 'play':pitchraise.stop()
+	pitchraise.play()
 
 def vol_click(vol=1.):
 	click.volume = vol

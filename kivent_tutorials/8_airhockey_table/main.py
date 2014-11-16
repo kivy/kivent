@@ -80,10 +80,10 @@ class TestGame(Widget):
             super(TestGame, self).on_touch_down(touch)
         else:#middle area,for observers
             if yspos<0.5:
-                do_super = self.bottom_action_name in ['wall']
+                do_super = self.bottom_action_name in ['wall', 'vortex']
                 self.bottom_action(wp,yspos)
             else:
-                do_super = self.top_action_name in ['wall']
+                do_super = self.top_action_name in ['wall', 'vortex']
                 self.top_action(wp,yspos)
             if do_super:super(TestGame, self).on_touch_down(touch)
             self.observermenu.on_touch_down(touch)
@@ -114,7 +114,7 @@ class TestGame(Widget):
                     self.top_points+=tbodyspeed
                 self.observermenu.update_scores()
     def action_vortex(self,wp=None,yspos=None):
-        vortex_id = self.create_floater(wp,mass=0,collision_type=7,radius=100)#radius=points
+        vortex_id = self.create_floater(wp,mass=1000,collision_type=7,radius=100,color=(0.1,.1,0.1,0.75))#radius=points
         pfunc = partial( self.remove_entity, vortex_id,0.)
         Clock.schedule_once(pfunc,5)
         self.pfuncs[vortex_id]=pfunc
@@ -127,7 +127,8 @@ class TestGame(Widget):
         self.observermenu.update_scores()
     def action_wall(self,wp=None,yspos=None):
         #self.create_floater(wp)
-        self.draw_wall(20,200,wp,(0,1,0,0.5),250,collision_type=6)
+        wallid = self.draw_wall(20,200,wp,(0,1,0,0.5),250,collision_type=6)
+        self.miscIDs.add(wallid)
         if yspos<0.5:
             self.bottom_points-=5000
             self.set_observer_action(1)
@@ -212,8 +213,9 @@ class TestGame(Widget):
             6, 7,
             pre_solve_func=self.presolve_collide_with_vortex)
         physics_system.add_collision_handler(
-            3, 7,
-            begin_func=rfalse)
+            7, 3,
+            begin_func=self.begin_collide_with_airhole,
+            separate_func=self.begin_seperate_with_airhole)
         physics_system.add_collision_handler(
             1, 5, 
             begin_func=self.begin_collide_with_real_goal)

@@ -3,6 +3,7 @@ __author__ = 'chozabu'
 from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.uix.label import Label
+from kivy.uix.scatterlayout import ScatterLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.popup import Popup
@@ -169,7 +170,11 @@ class ObserverMenu(BoxLayout):
         self.size_hint = (.2,1)
         self.pos_hint = {'x':.3+.1}
 
-        self.topfl = topfl = RelativeLayout()
+        sratio = self.width/1920.
+        ssize = 150*sratio
+
+        '''self.topfl = topfl = ScatterLayout(do_rotation=False, do_scale=False,do_translation_y=False)
+        topfl.rotation=180
         self.top_button = l = BoButton(text="PowerUp", font_size=20)
         #l.size_hint = (.2,1)
         #l.pos_hint = {'x':.3+.1}
@@ -182,64 +187,116 @@ class ObserverMenu(BoxLayout):
         l.size_hint = (1,.1)
         #l.pos_hint = {'x':.3+.1}
         topfl.add_widget(l)
+        self.add_widget(topfl)'''
+        
+        self.topfl = topfl = ScatterLayout(do_rotation=False, do_scale=False,do_translation_y=False)
+        topfl.rotation=180
+        #self.top_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
+        self.top_score = l = ProgressBar(max=10000)
+        l.size_hint = (1,.1)
+        #l.size_hint = (.2,1)
+        l.pos_hint = {'y':.1}
+        topfl.add_widget(l)
+
+        #self.top_button  =l= BoButton(text="PowerUp", font_size=20)
+        #l.size_hint = (.2,1)
+        #l.pos_hint = {'x':.3+.1}
+        #l.observer_id=1
+        #l.bind(on_press=self.power_pressed)
+        #topfl.add_widget(l)
+        l = Button(background_normal='assets/png/observer_speedup.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":-0.3,"y":0})
+        l.width=l.height=ssize
+        l.observer_id=0
+        l.bind(on_press=self.power_pressed)
+        l.command="speedup"
+        topfl.add_widget(l)
+        self.top_vortex = l = Button(background_normal='assets/png/observer_vortex.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":1000./10000.,"y":0})
+        l.width=l.height=ssize
+        l.observer_id=0
+        l.bind(on_press=self.power_pressed)
+        l.command="vortex"
+        topfl.add_widget(l)
+        self.top_wall = l = Button(background_normal='assets/png/observer_wall.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":5000./10000,"y":0})
+        l.width=l.height=ssize
+        l.observer_id=0
+        l.bind(on_press=self.power_pressed)
+        l.command="wall"
+        topfl.add_widget(l)
+        self.top_puck_storm = l = Button(background_normal='assets/png/observer_puck_storm.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":10000./10000,"y":0})
+        l.width=l.height=ssize
+        l.observer_id=0
+        l.bind(on_press=self.power_pressed)
+        l.command="puck_storm"
+        topfl.add_widget(l)
+
+        self.top_selector = l = Image(source='assets/png/observer_selector.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":-0.3,"y":0})
+        l.width=l.height=ssize
+        topfl.add_widget(l)
         self.add_widget(topfl)
 
 
         self.add_widget(BoxLayout(size_hint=(1,6.)))
 
 
-        self.bottomfl = bottomfl = RelativeLayout()
+        self.bottomfl = bottomfl = ScatterLayout(do_rotation=False, do_scale=False,do_translation_y=False)
         #self.bottom_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
         self.bottom_score = l = ProgressBar(max=10000)
         l.size_hint = (1,.1)
         #l.size_hint = (.2,1)
-        l.pos_hint = {'y':.5}
+        l.pos_hint = {'y':.1}
         bottomfl.add_widget(l)
 
-        self.bottom_button  =l= BoButton(text="PowerUp", font_size=20)
+        #self.bottom_button  =l= BoButton(text="PowerUp", font_size=20)
         #l.size_hint = (.2,1)
         #l.pos_hint = {'x':.3+.1}
-        l.observer_id=1
+        #l.observer_id=1
         #l.bind(on_press=self.power_pressed)
         #bottomfl.add_widget(l)
-        sratio = self.width/1920.
-        ssize = 150*sratio
         l = Button(background_normal='assets/png/observer_speedup.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":-0.3,"y":0})
         l.width=l.height=ssize
         l.observer_id=1
         l.bind(on_press=self.power_pressed)
         l.command="speedup"
         bottomfl.add_widget(l)
-        l = Button(background_normal='assets/png/observer_vortex.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":1000./10000.,"y":0})
+        self.bottom_vortex = l = Button(background_normal='assets/png/observer_vortex.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":1000./10000.,"y":0})
         l.width=l.height=ssize
         l.observer_id=1
         l.bind(on_press=self.power_pressed)
         l.command="vortex"
         bottomfl.add_widget(l)
-        l = Button(background_normal='assets/png/observer_wall.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":5000./10000,"y":0})
+        self.bottom_wall = l = Button(background_normal='assets/png/observer_wall.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":5000./10000,"y":0})
         l.width=l.height=ssize
         l.observer_id=1
         l.bind(on_press=self.power_pressed)
         l.command="wall"
         bottomfl.add_widget(l)
-        l = Button(background_normal='assets/png/observer_puck_storm.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":10000./10000,"y":0})
+        self.bottom_puck_storm = l = Button(background_normal='assets/png/observer_puck_storm.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":10000./10000,"y":0})
         l.width=l.height=ssize
         l.observer_id=1
         l.bind(on_press=self.power_pressed)
         l.command="puck_storm"
         bottomfl.add_widget(l)
 
-        self.selector = l = Image(source='assets/png/observer_selector.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":-0.3,"y":0})
+        self.bottom_selector = l = Image(source='assets/png/observer_selector.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":-0.3,"y":0})
         l.width=l.height=ssize
         bottomfl.add_widget(l)
         self.add_widget(bottomfl)
     def update_scores(self):
         gameref = self.gameref
         #self.top_score.text=str(int(gameref.top_points))
-        self.top_score.value=gameref.top_points
-        self.set_powerup_text(gameref.top_points, self.top_button)
+
+        top_points = gameref.top_points
+        self.top_score.value=top_points
+        self.top_puck_storm.disabled = top_points<10000
+        self.top_wall.disabled = top_points<5000
+        self.top_vortex.disabled = top_points<1000
+        #self.set_powerup_text(gameref.top_points, self.top_button)
         #self.bottom_score.text=str(int(gameref.bottom_points))
-        self.bottom_score.value=gameref.bottom_points
+        bottom_points = gameref.bottom_points
+        self.bottom_score.value=bottom_points
+        self.bottom_puck_storm.disabled = bottom_points<10000
+        self.bottom_wall.disabled = bottom_points<5000
+        self.bottom_vortex.disabled = bottom_points<1000
         #self.set_powerup_text(gameref.bottom_points, self.bottom_button)
     def set_powerup_text(self, points, instance):
         action, command = observer_actions.points_to_powerup(points)
@@ -264,4 +321,7 @@ class ObserverMenu(BoxLayout):
     def set_selector_pos(self, isbottom, command):
         actioncost = observer_actions.actioncosts[command]
         if actioncost==0:actioncost=-3000
-        self.selector.pos_hint={"x":actioncost/10000.,"y":0}
+        if isbottom:
+            self.bottom_selector.pos_hint={"x":actioncost/10000.,"y":0}
+        else:
+            self.top_selector.pos_hint={"x":actioncost/10000.,"y":0}

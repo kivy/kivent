@@ -120,7 +120,9 @@ class TestGame(Widget):
                     self.top_points+=tbodyspeed
                 self.observermenu.update_scores()
     def action_vortex(self,wp=None,yspos=None):
-        self.create_floater(wp,mass=0,collision_type=7,radius=100)#radius=points
+        vortex_id = self.create_floater(wp,mass=0,collision_type=7,radius=100)#radius=points
+        Clock.schedule_once(partial(
+            self.gameworld.timed_remove_entity, vortex_id),5)
         if yspos<0.5:
             self.bottom_points-=1000
             action, command = self.points_to_powerup(self.bottom_points)
@@ -238,15 +240,15 @@ class TestGame(Widget):
     def presolve_collide_with_vortex(self, space, arbiter):
         #systems = self.gameworld.systems
         body1 = arbiter.shapes[0].body
-        body2 = arbiter.shapes[1].body
+        body2 = arbiter.shapes[1].body#vortex
         p1=body1.position
         p2=body2.position
         #ent1_id = body1.data #puck
         #ent2_id = body2.data #goal
         #ents= = self.gameworld.entities
         # apos = entity.position
-        dvecx = (p2.x - p1.x) * body1.mass * 0.1
-        dvecy = (p2.y - p1.y) * body1.mass * 0.1
+        dvecx = (p2.x - p1.x) * body1.mass * 0.2
+        dvecy = (p2.y - p1.y) * body1.mass * 0.2
         body1.apply_impulse((dvecx, dvecy))
 
         return False

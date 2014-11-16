@@ -224,6 +224,9 @@ class TestGame(Widget):
             6, 6,
             post_solve_func=self.postsolve_collide_sound)
         physics_system.add_collision_handler(
+            1, 1,
+            post_solve_func=self.postsolve_collide_sound)
+        physics_system.add_collision_handler(
             6, 2,
             post_solve_func=self.postsolve_collide_sound)
         physics_system.add_collision_handler(

@@ -195,6 +195,13 @@ class TestGame(Widget):
         physics_system = systems['physics']
         def rfalse(na,nb):
              return False
+        #1 - puck
+        #2 - wall
+        #3 - airhole
+        #4 - goal
+        #5 - real goal
+        #6 - paddle
+        #7 - vortex
         physics_system.add_collision_handler(
             1, 3, 
             begin_func=self.begin_collide_with_airhole,

@@ -2,18 +2,18 @@ KivEnt
 ======
 Project Website: http://www.kivent.org
 
-Documentation: http://www.kivent.org/docs
+Documentation: http://www.kivent.org/docs  
 scroll down for extra detailed installation instructions
 
-Warning Tutorials Out Dated! Will Fix Soon.
+Warning Tutorials Out Dated! Will Fix Soon.  
 Update: 2_basic_app tutorial and sample_application up to date. 04/10/14
 
 Tutorial 3 now function, tutorial 4 partially finished. 04/17/14
 
-KivEnt is an Entity Based Game Engine for Kivy
+KivEnt is an Entity Based Game Engine for Kivy  
 https://github.com/Kovak/KivEnt/wiki/An-Introduction-to-KivEnt
 
-Requires Cymunk in order to run: 
+Requires Cymunk in order to run:   
 get the master branch from here:https://github.com/tito/cymunk
 
 You will need to compile both the cymunk module as well as the kivent_cython folders code.
@@ -26,8 +26,8 @@ Do not make install kivy, simply make it and then
 
 export PYTHONPATH=~/path/to/kivy:$PYTHONPATH 
 
-do the same for cymunk
-(this is the path to python folder in cymunk)
+do the same for cymunk  
+(this is the path to python folder in cymunk)  
 export PYTHONPATH=~/path/to/cymunk/cymunk/python:$PYTHONPATH
 
 
@@ -78,9 +78,10 @@ and kivent_cymunk (unless you *really* don't want physics)
     python setup.py build_ext --inplace
     cd ../../..
     
-rather than creating the softlink above, you could probably alter your pythonpath, or other method. But I'll stick with ln for now
+rather than creating the softlink above, you could probably alter your pythonpath, or other method. But I'll stick with ln for now.
 
-If you have got this far you should be able to run some examples - this first one without cymunk working
+If you have got this far you should be able to run some examples - this first one without cymunk working.
+
 at time of writing, tutorial 2,3 and 8 work.
 
     cd KivEnt/kivent_tutorials/2_basic_app/

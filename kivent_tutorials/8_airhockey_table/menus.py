@@ -4,6 +4,7 @@ from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.scatterlayout import ScatterLayout
+from kivy.uix.scatter import Scatter, ScatterPlane
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.popup import Popup
@@ -14,6 +15,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.base import stopTouchApp
 from kivy.uix.progressbar import ProgressBar
+from kivy.properties import ObjectProperty
 
 from random import random
 
@@ -21,6 +23,33 @@ import observer_actions
 
 
 import json
+class ScatterPlaneLayout(ScatterPlane):
+    '''ScatterLayout class, see module documentation for more information.
+    '''
+
+    content = ObjectProperty()
+
+    def __init__(self, **kw):
+        self.content = FloatLayout()
+        super(ScatterPlaneLayout, self).__init__(**kw)
+        if self.content.size != self.size:
+            self.content.size = self.size
+        super(ScatterPlaneLayout, self).add_widget(self.content)
+        self.bind(size=self.update_size)
+
+    def update_size(self, instance, size):
+        self.content.size = size
+
+    def add_widget(self, *l):
+        self.content.add_widget(*l)
+
+    def remove_widget(self, *l):
+        self.content.remove_widget(*l)
+
+    def clear_widgets(self):
+        self.content.clear_widgets()
+
+
 
 class BoButton(Button):
 	def __init__(self, **kwargs):
@@ -189,7 +218,7 @@ class ObserverMenu(BoxLayout):
         topfl.add_widget(l)
         self.add_widget(topfl)'''
         
-        self.topfl = topfl = ScatterLayout(do_rotation=False, do_scale=False,do_translation_y=False)
+        self.topfl = topfl = ScatterPlaneLayout(do_rotation=False, do_scale=False,do_translation=False,auto_bring_to_front=False)
         topfl.rotation=180
         #self.top_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
         self.top_score = l = ProgressBar(max=10000)
@@ -237,8 +266,7 @@ class ObserverMenu(BoxLayout):
 
         self.add_widget(BoxLayout(size_hint=(1,6.)))
 
-
-        self.bottomfl = bottomfl = ScatterLayout(do_rotation=False, do_scale=False,do_translation_y=False)
+        self.bottomfl = bottomfl = ScatterPlaneLayout(do_rotation=False, do_scale=False,do_translation=False)
         #self.bottom_score = l = Label(text="0", font_size=30, font_name='assets/ttf/EHSMB.TTF')
         self.bottom_score = l = ProgressBar(max=10000)
         l.size_hint = (1,.1)

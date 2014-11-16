@@ -23,6 +23,8 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         self.current_menu_ref = None
+        self.bottom_action_name = "speedup"
+        self.top_action_name = "speedup"
         Clock.schedule_once(self.init_game)
 
     def ensure_startup(self):
@@ -78,9 +80,12 @@ class TestGame(Widget):
             super(TestGame, self).on_touch_down(touch)
         else:#middle area,for observers
             if yspos<0.5:
+                do_super = self.bottom_action_name in ['wall']
                 self.bottom_action(wp,yspos)
             else:
+                do_super = self.top_action_name in ['wall']
                 self.top_action(wp,yspos)
+            if do_super:super(TestGame, self).on_touch_down(touch)
             self.observermenu.on_touch_down(touch)
 
         if self.current_menu_ref:self.current_menu_ref.on_touch_down(touch)
@@ -121,7 +126,8 @@ class TestGame(Widget):
             self.set_observer_action(0)
         self.observermenu.update_scores()
     def action_wall(self,wp=None,yspos=None):
-        self.create_floater(wp)
+        #self.create_floater(wp)
+        self.draw_wall(20,200,wp,(0,1,0,0.5),250,collision_type=6)
         if yspos<0.5:
             self.bottom_points-=5000
             self.set_observer_action(1)
@@ -153,8 +159,10 @@ class TestGame(Widget):
         actionref=getattr(self,"action_"+action)
         if isbottom:
             self.bottom_action = actionref
+            self.bottom_action_name = action
         else:
             self.top_action = actionref
+            self.top_action_name = action
 
 
     def create_scoreboard(self):
@@ -534,23 +542,23 @@ class TestGame(Widget):
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
                 property_name, .1, 5., 'float', callback=self.lerp_callback)
 
-    def draw_wall(self, width, height, pos, color):
+    def draw_wall(self, width, height, pos, color, mass=0, collision_type=2):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
         shape_dict = {'width': width, 'height': height, 
-            'mass': 0, 'offset': (0, 0)}
+            'mass': mass, 'offset': (0, 0)}
         col_shape = {'shape_type': 'box', 'elasticity': .8,
-            'collision_type': 2, 'shape_info': shape_dict, 'friction': 1.0}
+            'collision_type': collision_type, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         physics_component = {'main_shape': 'box', 
             'velocity': (x_vel, y_vel), 
             'position': pos, 'angle': angle, 
             'angular_velocity': angular_velocity, 
-            'vel_limit': 0., 
-            'ang_vel_limit': radians(0.), 
-            'mass': 0, 'col_shapes': col_shapes}
+            'vel_limit': 150.,
+            'ang_vel_limit': radians(200.),
+            'mass': mass, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component, 
             'renderer': {'size': (width, height),'render': True}, 
             'position': pos, 'rotate': 0, 'color': color,

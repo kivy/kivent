@@ -34,7 +34,23 @@ export PYTHONPATH=~/path/to/cymunk/cymunk/python:$PYTHONPATH
 
 Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 13.04 
 
-Extra detailed installation instructions:
+##Extra detailed installation instructions:
+
+###dependencies
+
+you may need to do something like this
+    sudo apt-get install git
+
+    #kivy deps
+    sudo apt-get install pkg-config python-setuptools python-pygame python-opengl   python-gst0.10 python-enchant gstreamer0.10-plugins-good python-dev   build-essential libgl1-mesa-dev libgles2-mesa-dev
+    
+    #get pip if you don't have it
+    sudo easy_install pip
+    
+    #get cython
+    sudo pip install cython
+    
+###Build and Environment Vars
 
 first get to a folder to clone a couple of projects, replace /path/to/ with /home/myuser/whateverfolderyouwant
 
@@ -79,6 +95,8 @@ and kivent_cymunk (unless you *really* don't want physics)
     cd ../../..
     
 rather than creating the softlink above, you could probably alter your pythonpath, or other method. But I'll stick with ln for now.
+
+###Try it out
 
 If you have got this far you should be able to run some examples - this first one without cymunk working.
 

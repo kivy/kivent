@@ -127,35 +127,29 @@ class TestGame(Widget):
         self.pfuncs[vortex_id]=pfunc
         if yspos<0.5:
             self.bottom_points-=1000
-            action, command = self.points_to_powerup(self.bottom_points)
-            self.set_observer_action(1,command)
+            self.set_observer_action(1)
         else:
             self.top_points-=1000
-            action, command = self.points_to_powerup(self.top_points)
-            self.set_observer_action(0,command)
+            self.set_observer_action(0)
         self.observermenu.update_scores()
     def action_wall(self,wp=None,yspos=None):
         self.create_floater(wp)
         if yspos<0.5:
             self.bottom_points-=5000
-            action, command = self.points_to_powerup(self.bottom_points)
-            self.set_observer_action(1,command)
+            self.set_observer_action(1)
         else:
             self.top_points-=5000
-            action, command = self.points_to_powerup(self.top_points)
-            self.set_observer_action(0,command)
+            self.set_observer_action(0)
         self.observermenu.update_scores()
     def action_puck_storm(self,wp=None,yspos=None):
         for i in range(10):
             self.create_puck((1920.*.5, 1080.*.5))
         if yspos<0.5:
             self.bottom_points-=10000
-            action, command = self.points_to_powerup(self.bottom_points)
-            self.set_observer_action(1,command)
+            self.set_observer_action(1)
         else:
             self.top_points-=10000
-            action, command = self.points_to_powerup(self.top_points)
-            self.set_observer_action(0,command)
+            self.set_observer_action(0)
         self.observermenu.update_scores()
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
@@ -401,7 +395,7 @@ class TestGame(Widget):
         Clock.unschedule(self.spawn_new_puck)
         self.blue_score = 0
         self.red_score = 0
-        self.bottom_points = 4000
+        self.bottom_points = 11000
         self.top_points = 4000
         for p in set(self.paddleIDs):
             self.remove_entity(p)

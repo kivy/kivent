@@ -148,11 +148,15 @@ class TestGame(Widget):
         self.observermenu.update_scores()
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
-        if 0.3<touch.spos[1]<0.7 and 'touched_ent_id' in touch.ud:
-            if touch.spos[0]<0.08 or touch.spos[0]>0.92:
-                touched_id = touch.ud['touched_ent_id']
-                if touched_id in self.paddleIDs:
-                    self.remove_entity(touched_id)
+        if 'touched_ent_id' in touch.ud:
+            touched_id = touch.ud['touched_ent_id']
+            if touched_id in self.paddleIDs:
+                if 0.3<touch.spos[1]<0.7 and touch.spos[0]<0.08 or touch.spos[0]>0.92:
+                        self.remove_entity(touched_id)
+                else:
+                    tbody = self.gameworld.entities[touched_id].physics.body
+                    tbodyvel = tbody.velocity
+                    tbody.velocity=(tbodyvel.x*1.4,tbodyvel.y*1.4)
     def set_observer_action(self, isbottom, action="speedup"):
         #if action=="speedup":
         #actionref=self.action_speedup

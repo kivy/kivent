@@ -137,8 +137,8 @@ class TestGame(Widget):
             self.set_observer_action(0)
         self.observermenu.update_scores()
     def action_puck_storm(self,wp=None,yspos=None):
-        for i in range(10):
-            self.create_puck((1920.*.5, 1080.*.5))
+        for i in range(7):
+            self.create_puck((wp[0], wp[1]))
         if yspos<0.5:
             self.bottom_points-=10000
             self.set_observer_action(1)
@@ -558,7 +558,7 @@ class TestGame(Widget):
             'velocity': (x_vel, y_vel), 
             'position': pos, 'angle': angle, 
             'angular_velocity': angular_velocity, 
-            'vel_limit': 150.,
+            'vel_limit': 1500.,
             'ang_vel_limit': radians(200.),
             'mass': mass, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component, 

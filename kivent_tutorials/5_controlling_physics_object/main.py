@@ -3,10 +3,12 @@ from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
 import cymunk
-import kivent
 from random import randint
 from math import radians, atan2, degrees
-from kivent import GameSystem, texture_manager
+import kivent_core
+import kivent_cymunk
+from kivent_core.gamesystems import GameSystem
+from kivent_core.renderers import texture_manager
 from cymunk import PivotJoint, GearJoint, Body
 from kivy.properties import NumericProperty, ListProperty
 from kivy.vector import Vector

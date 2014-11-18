@@ -74,8 +74,10 @@ class TestGame(Widget):
             if 0.35<yspos<0.65:#on a goal
                 paddleid = self.create_paddle(wp, color=(1.-xspos,0.,xspos,0.65), player=int(xspos+0.5))
                 super(TestGame, self).on_touch_down(touch)
-        elif 0.45<yspos<0.55 and 0.47<xspos<0.53:#clicked in middle
-            self.setMenu(menus.PauseMenu(self))
+            else:
+                self.playermenu.on_touch_down(touch)
+        #elif 0.45<yspos<0.55 and 0.47<xspos<0.53:#clicked in middle
+        #    self.setMenu(menus.PauseMenu(self))
         elif xspos<0.4 or xspos>0.6:#general player area
             super(TestGame, self).on_touch_down(touch)
         else:#middle area,for observers
@@ -177,6 +179,8 @@ class TestGame(Widget):
         mainscreen.add_widget(scoreboard)
         self.observermenu = observermenu = menus.ObserverMenu(self)
         mainscreen.add_widget(observermenu)
+        self.playermenu = playermenu = menus.PlayerMenu(self)
+        mainscreen.add_widget(playermenu)
     def setMenu(self, newMenu):
         mainscreen = self.ids['gamescreenmanager'].ids['main_screen']#.mainlayout
 

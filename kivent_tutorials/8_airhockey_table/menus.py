@@ -291,3 +291,66 @@ class ObserverMenu(BoxLayout):
             self.bottomfl.selector.pos_hint={"x":actioncost/10000.,"y":0}
         else:
             self.topfl.selector.pos_hint={"x":actioncost/10000.,"y":0}
+
+class PlayerPanel(ScatterPlaneLayout):
+    def __init__(self, **kwargs):
+        super(PlayerPanel, self).__init__(**kwargs)
+        self.player_id=kwargs['player_id']
+        #sratio = self.width/1920.
+        #ssize = 150.*sratio*8.
+        self.size_hint = (.5,.1)
+        #self.width = 1080
+        #self.height= 100
+
+        l = Button(background_normal='assets/png/pause.png', size_hint=(.2,1), allow_stretch=True)#, pos_hint={"x":-0.3,"y":0})
+        #l.width=l.height=ssize
+        l.bind(on_press=self.pause_pressed)
+        self.add_widget(l)
+    def pause_pressed(self, instance):
+        self.parent.pause_pressed(instance, player_id=self.player_id)
+
+
+class PlayerMenu(FloatLayout):
+    def __init__(self, gameref, **kwargs):
+        super(PlayerMenu, self).__init__(**kwargs)
+        self.sname = 'player_menu'
+        self.orientation = 'horizontal'
+        self.gameref = gameref
+        self.width = gameref.width
+        self.height = gameref.height
+        self.size_hint = (1,1)
+        #self.pos_hint = {'y':.3+.1}
+
+        #sratio = self.width/1920.
+        #ssize = 150*sratio
+
+        self.leftfl = leftfl = PlayerPanel(do_rotation=False, do_scale=False,do_translation=False,
+                                           auto_bring_to_front=False, player_id=0)
+        leftfl.rotation=90
+        #leftfl.x=200
+        leftfl.pos_hint={'x':.9}
+        #leftfl = Button()
+        self.add_widget(leftfl)
+
+
+        #self.add_widget(BoxLayout(size_hint_x=6))
+
+        self.rightfl = rightfl = PlayerPanel(do_rotation=False, do_scale=False,do_translation=False,
+                                                 auto_bring_to_front=False, player_id=1)
+        #leftfl.x=200
+        rightfl.pos_hint={'y':.3}
+        rightfl.rotation=270
+        #rightfl = Button()
+
+        self.add_widget(rightfl)
+    def update_scores(self):
+        gameref = self.gameref
+
+        left_points = gameref.left_points
+        self.leftfl.update_scores(left_points)
+
+        right_points = gameref.right_points
+        self.rightfl.update_scores(right_points)
+    def pause_pressed(self, instance=None, touch=None, player_id=None):
+        gameref = self.gameref
+        gameref.setMenu(PauseMenu(gameref))

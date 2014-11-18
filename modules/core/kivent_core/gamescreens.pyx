@@ -10,7 +10,9 @@ class GameScreenManager(ScreenManager):
         self.states = {}
 
     def on_state(self, instance, value):
-        self.current = self.states[value]
+        state_name = self.states[value]
+        if state_name is not None:
+            self.current = state_name
 
     def on_touch_down(self, touch):
         super(GameScreenManager, self).on_touch_down(touch)

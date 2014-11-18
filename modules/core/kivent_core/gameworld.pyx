@@ -89,13 +89,19 @@ class GameWorld(Widget):
         self.deactivated_entities = []
         self.entities_to_remove = []
         self.systems = {}
+        self.state_callbacks = {}
 
 
-    def add_state(self, state_name, systems_added, systems_removed, 
-        systems_paused, systems_unpaused, screenmanager_screen):
+    def add_state(self, state_name, screenmanager_screen=None, 
+        systems_added=None, systems_removed=None, systems_paused=None, 
+        systems_unpaused=None, on_change_callback=None):
         '''
         Args:
             state_name (str): Name for this state, should be unique.
+
+            screenmanager_screen (str): Name of the screen for 
+            GameScreenManager to make current when this state is transitioned
+            into.
 
             systems_added (list): List of system_id that should be added
             to the GameWorld canvas when this state is transitioned into.
@@ -109,20 +115,31 @@ class GameWorld(Widget):
             systems_unpaused (list): List of system_id that will be unpaused 
             when this state is transitioned into.
 
-            screenmanager_screen (str): Name of the screen for 
-            GameScreenManager to make current when this state is transitioned
-            into.
+            on_change_callback (object): Callback function that will receive
+            args of state_name, previous_state_name. The callback
+            will run after the state change has occured
+
 
         This function adds a new state for your GameWorld that will help you
         organize which systems are active in canvas, paused, or unpaused,
         and help you link that up to a Screen for the GameScreenManager
         so that you can sync your UI and game logic.
         '''
+        if systems_added is None:
+            systems_added = []
+        if systems_removed is None:
+            systems_removed = []
+        if systems_paused is None:
+            systems_paused = []
+        if systems_unpaused is None:
+            systems_unpaused = []
         self.states[state_name] = {'systems_added': systems_added, 
             'systems_removed': systems_removed, 
             'systems_paused': systems_paused, 
             'systems_unpaused': systems_unpaused}
         self.gamescreenmanager.states[state_name] = screenmanager_screen
+        self.state_callbacks[state_name] = on_change_callback
+        self._last_state = 'initial'
 
     def on_state(self, instance, value):
         '''State change is handled here, systems will be added or removed
@@ -133,8 +150,10 @@ class GameWorld(Widget):
             state_dict = self.states[value]
         except KeyError: 
             self.state = 'initial'
+            self._last_state = 'initial'
             print('State does not exist, resetting to initial')
             return
+
         gamescreenmanager = self.gamescreenmanager
         gamescreenmanager.state = value
         systems = self.systems
@@ -162,6 +181,10 @@ class GameWorld(Widget):
             systems[system].paused = True
         for system in state_dict['systems_unpaused']:
             systems[system].paused = False
+        state_callback = self.state_callbacks[value]
+        if state_callback is not None:
+            state_callback(value, self._last_state)
+            self._last_state = value
 
     def create_entity(self):
         '''Used internally if there is not an entity currently available in

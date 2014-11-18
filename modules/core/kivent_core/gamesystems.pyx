@@ -10,6 +10,7 @@ from functools import partial
 from kivy.graphics import RenderContext
 from kivy.graphics.transformation import Matrix
 cimport cython
+from kivy.vector import Vector
 
 
 class Component(object):
@@ -140,13 +141,11 @@ class GameSystem(Widget):
         self.frame_time = 0.0
 
     def on_gameview(self, instance, value):
-        print(value, self, self.parent, self.gameworld)
         if self.parent is not None:
             self.parent.remove_widget(self)
         gameworld = self.gameworld
         systems = gameworld.systems
         if value not in systems:
-            print('value not in', systems)
             Clock.schedule_once(lambda dt: self.on_gameview(instance, value))
             return
         else:
@@ -591,15 +590,20 @@ class GameView(GameSystem):
     camera_pos = ListProperty((0, 0))
     camera_scale = NumericProperty(1.0)
     focus_entity = BooleanProperty(False)
+    do_touch_zoom = BooleanProperty(False)
     do_scroll = BooleanProperty(True)
     entity_to_focus = NumericProperty(None, allownone=True)
     updateable = BooleanProperty(True)
+    scale_min = NumericProperty(.5)
+    scale_max = NumericProperty(8.)
     camera_speed_multiplier = NumericProperty(1.0)
     render_system_order = ListProperty([])
 
     def __init__(self, **kwargs):
         super(GameView, self).__init__(**kwargs)
         self.matrix = Matrix()
+        self._touch_count = 0
+        self._touches = []
         self.canvas = RenderContext()
 
     def get_camera_centered(self, map_size, camera_size, camera_scale):
@@ -609,21 +613,20 @@ class GameView(GameSystem):
 
     def update_render_state(self):
         '''
-        Args:
-            viewport (object): A reference to the GameView calling this
-            update
-
-        **Messy: Will probably change in the future** 
-        Used internally by gameview to update GameWorld canvas, this 
-        needs a better architecture in the future as this info should be 
-        contained inside GameView instead'''
+        Used internally by gameview to update the projection matrix to properly
+        reflect the settings for camera_size, camera_pos, and the pos and size
+        of gameview.'''
         camera_pos = self.camera_pos
         camera_size = self.size
+        pos = self.pos
         camera_scale = self.camera_scale
         proj = self.matrix.view_clip(
-            -camera_pos[0], camera_size[0]*camera_scale + -camera_pos[0], 
-            -camera_pos[1], camera_size[1]*camera_scale + -camera_pos[1], 0., 
-            100, 0)
+            -camera_pos[0] + pos[0], 
+            camera_size[0]*camera_scale + -camera_pos[0] + pos[0], 
+            -camera_pos[1] + pos[1], 
+            camera_size[1]*camera_scale + -camera_pos[1] + pos[1],
+            0., 100, 0)
+
         self.canvas['projection_mat'] = proj
 
     def add_widget(self, widget):
@@ -634,7 +637,6 @@ class GameView(GameSystem):
             index=render_system_order.index(system_id)
         else:
             index=0
-        print(index)
         super(GameView, self).add_widget(widget, index=index)
         systems = gameworld.systems
         if isinstance(widget, GameSystem):
@@ -686,17 +688,78 @@ class GameView(GameSystem):
             self.camera_pos[1] += dist_y
         self.update_render_state()
 
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            touch.grab(self)
+            self._touch_count += 1
+            self._touches.append(touch)
+            touch.ud['world_pos'] = self.convert_from_screen_to_world(
+                (self.size[0]*.5, self.size[1]*.5))
+            touch.ud['start_pos'] = touch.pos
+            touch.ud['start_scale'] = self.camera_scale
+
+    def on_touch_up(self, touch):
+        if touch.grab_current is self:
+            self._touch_count -= 1
+            self._touches.remove(touch)
+
+    def convert_from_screen_to_world(self, touch_pos):
+        x,y = touch_pos
+        cx, cy = self.camera_pos
+        camera_scale = self.camera_scale
+        new_x = (x * camera_scale) - cx
+        new_y = (y * camera_scale) - cy
+        return new_x, new_y
+
+
+    def look_at(self, pos):
+        camera_size = self.size
+        camera_scale = self.camera_scale
+        camera_pos = self.camera_pos
+        self.camera_pos[0] = -pos[0] + camera_size[0]*.5*camera_scale
+        self.camera_pos[1] = -pos[1] + camera_size[1]*.5*camera_scale
+
 
     def on_touch_move(self, touch):
-        if not self.focus_entity and self.do_scroll:
-            camera_scale = self.camera_scale
-            dist_x = touch.dx * camera_scale
-            dist_y = touch.dy * camera_scale
-        
-            if self.do_scroll_lock and self.gameworld.currentmap:
-                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
-            self.camera_pos[0] += dist_x
-            self.camera_pos[1] += dist_y
+        if touch.grab_current is self:
+            if not self.focus_entity and self.do_touch_zoom:
+                if self._touch_count > 1:
+
+                    points = [Vector(t.x, t.y) for t in self._touches]
+                    anchor = max(
+                        points[:], key=lambda p: p.distance(touch.pos))
+                    an_index = points.index(anchor)
+                    anchor_touch = self._touches[an_index]
+                    farthest = max(points, key=anchor.distance)
+                    if farthest is not points[-1]:
+                        return
+                    old_line = Vector(*touch.ud['start_pos']) - anchor
+                    new_line = Vector(*touch.pos) - anchor
+                    if not old_line.length():   # div by zero
+                        return
+
+                    new_scale = (new_line.length() / old_line.length()) * (
+                        touch.ud['start_scale'])
+                    if new_scale > self.scale_max:
+                        self.camera_scale = self.scale_max
+                    elif new_scale < self.scale_min:
+                        self.camera_scale = self.scale_min
+                    else:
+                        self.camera_scale = new_scale
+                    self.look_at(anchor_touch.ud['world_pos'])
+                    
+
+
+            if not self.focus_entity and self.do_scroll:
+                if self._touch_count == 1:
+                    camera_scale = self.camera_scale
+                    dist_x = touch.dx * camera_scale
+                    dist_y = touch.dy * camera_scale
+                
+                    if self.do_scroll_lock and self.gameworld.currentmap:
+                        dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
+                    self.camera_pos[0] += dist_x
+                    self.camera_pos[1] += dist_y
 
     def lock_scroll(self, float distance_x, float distance_y):
         currentmap = self.gameworld.currentmap

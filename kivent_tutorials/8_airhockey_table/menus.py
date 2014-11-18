@@ -192,8 +192,6 @@ class ObserverPanel(ScatterPlaneLayout):
     def __init__(self, **kwargs):
         super(ObserverPanel, self).__init__(**kwargs)
         #self.topfl = topfl = ScatterPlaneLayout(do_rotation=False, do_scale=False,do_translation=False,auto_bring_to_front=False)
-        topfl = self
-        topfl.rotation=180
         self.observer_id=kwargs['observer_id']
         self.score = l = ProgressBar(max=10000)
         l.size_hint = (1,.1)
@@ -259,6 +257,7 @@ class ObserverMenu(BoxLayout):
 
         self.bottomfl = bottomfl = ObserverPanel(do_rotation=False, do_scale=False,do_translation=False,
                                                  auto_bring_to_front=False, observer_id=1)
+        bottomfl.rotation=0
 
         self.add_widget(bottomfl)
     def update_scores(self):

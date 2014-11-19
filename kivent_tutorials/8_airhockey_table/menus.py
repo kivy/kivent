@@ -153,7 +153,7 @@ class NewGameMenu(BoxLayout, basemenu):
     def on_back(self):
         pass
         #self.gameref.setMenu(GameUIMenu(self.gameref))
-class GameUIMenu(BoxLayout, basemenu):
+class GameUIMenu(FloatLayout, basemenu):
     def __init__(self, gameref, **kwargs):
         super(GameUIMenu, self).__init__(**kwargs)
         self.sname = 'ingame'
@@ -161,6 +161,10 @@ class GameUIMenu(BoxLayout, basemenu):
         self.gameref = gameref
         self.width = gameref.width
         self.height = gameref.height
+        self.player_menu = PlayerMenu(gameref)
+        self.add_widget(self.player_menu)
+        self.observer_menu = ObserverMenu(gameref)
+        self.add_widget(self.observer_menu)
 
 
 class ScoreBoard(BoxLayout):

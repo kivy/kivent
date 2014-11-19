@@ -14,6 +14,8 @@ import cymunk as cy
 from kivent_core.renderers import texture_manager, VertMesh
 texture_manager.load_image('assets/png/lingrad.png')
 texture_manager.load_image('assets/png/lingrad_alt.png')
+texture_manager.load_image('assets/png/puck.png')
+texture_manager.load_image('assets/png/paddle.png')
 from kivent_cymunk.physics import CymunkPhysics
 from functools import partial
 
@@ -131,7 +133,7 @@ class TestGame(Widget):
         self.observermenu.update_scores()
     def action_wall(self,wp=None,yspos=None):
         #self.create_floater(wp)
-        wallid = self.draw_wall(20,200,wp,(0,1,0,0.5),250,collision_type=6)
+        wallid = self.draw_wall(20,200,wp,(0,1,0,0.5),250,collision_type=6, texture='lingrad_alt')
         self.miscIDs.add(wallid)
         if yspos<0.5:
             self.bottom_points-=5000
@@ -695,7 +697,7 @@ class TestGame(Widget):
         col_shape = {'shape_type': 'circle', 'elasticity': .8,
             'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
-        vert_mesh = self.draw_regular_polygon(30, 75., (0., 1., 0., 1.))
+        #vert_mesh = self.draw_regular_polygon(30, 75., (0., 1., 0., 1.))
         physics_component = {'main_shape': 'circle', 
             'velocity': (x_vel, y_vel), 
             'position': pos, 'angle': angle, 
@@ -705,9 +707,11 @@ class TestGame(Widget):
             'mass': 50, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component, 
             'puck_renderer': {#'texture': 'asteroid1', 
-            'vert_mesh': vert_mesh, 
-            #'size': (64, 64),
-            'render': True}, 
+            #'vert_mesh': vert_mesh,
+            'size': (75*2,75*2),
+            'texture':'puck'
+            #'render': True
+            },
             'position': pos, 'rotate': 0, 'color': (0., 1., 0., 1.),
             'lerp_system': {},
             'scale':1}
@@ -789,7 +793,7 @@ class TestGame(Widget):
         col_shape = {'shape_type': 'circle', 'elasticity': .8,
             'collision_type': 6, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
-        vert_mesh = self.draw_regular_polygon(30, radius, (1., 0., 0., 1.))
+        #vert_mesh = self.draw_regular_polygon(30, radius, (1., 0., 0., 1.))
         physics_component = {'main_shape': 'circle',
             'velocity': (0,0),
             'position': pos, 'angle': angle,
@@ -799,9 +803,9 @@ class TestGame(Widget):
             'mass': 50, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component,
             'puck_renderer': {#'texture': 'asteroid1',
-            'vert_mesh': vert_mesh,
-            #'size': (64, 64),
-            'render': True},
+            #'vert_mesh': vert_mesh,
+            'size': (50*2, 50*2),
+            'texture': 'paddle'},
             'position': pos, 'rotate': 0, 'color': color,
             'lerp_system': {},
             'scale':1.}

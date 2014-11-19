@@ -16,6 +16,7 @@ texture_manager.load_image('assets/png/lingrad.png')
 texture_manager.load_image('assets/png/lingrad_alt.png')
 texture_manager.load_image('assets/png/puck.png')
 texture_manager.load_image('assets/png/paddle.png')
+texture_manager.load_image('assets/png/airhole.png')
 from kivent_cymunk.physics import CymunkPhysics
 from functools import partial
 
@@ -602,7 +603,7 @@ class TestGame(Widget):
             'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         color=(.25, .25, .25, .25)
-        vert_mesh = self.draw_regular_polygon(30, 40., color)
+        #vert_mesh = self.draw_regular_polygon(30, 40., color)
         physics_component = {'main_shape': 'circle', 
             'velocity': (x_vel, y_vel), 
             'position': pos, 'angle': angle, 
@@ -612,9 +613,9 @@ class TestGame(Widget):
             'mass': 0, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component, 
             'renderer': {#'texture': 'asteroid1', 
-            'vert_mesh': vert_mesh, 
-            #'size': (64, 64),
-            'render': True}, 
+            #'vert_mesh': vert_mesh,
+            'size': (40*2, 40*2),
+            'texture': 'airhole'},
             'position': pos, 'rotate': 0, 'color': color,
             'lerp_system': {},
             'scale':.5}

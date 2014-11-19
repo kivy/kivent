@@ -73,6 +73,9 @@ class TestGame(Widget):
 
 
     def on_touch_down(self, touch):
+        if self.current_menu_ref:
+            clicked_on_menu = self.current_menu_ref.on_touch_down(touch)
+            if clicked_on_menu:return
         wp = self.getWorldPosFromTuple(touch.pos)
         xspos = touch.spos[0]
         yspos = touch.spos[1]
@@ -96,7 +99,6 @@ class TestGame(Widget):
             if do_super:super(TestGame, self).on_touch_down(touch)
             #self.observermenu.on_touch_down(touch)
 
-        if self.current_menu_ref:self.current_menu_ref.on_touch_down(touch)
     def bottom_action(self,wp=None,yspos=None):
         print "no action bottom"
     def top_action(self,wp=None,yspos=None):

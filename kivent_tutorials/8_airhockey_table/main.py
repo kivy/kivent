@@ -802,7 +802,7 @@ class TestGame(Widget):
             'velocity': (0,0),
             'position': pos, 'angle': angle,
             'angular_velocity': angular_velocity,
-            'vel_limit': 1500.,
+            'vel_limit': 3000.,
             'ang_vel_limit': radians(200),
             'mass': 50, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component,

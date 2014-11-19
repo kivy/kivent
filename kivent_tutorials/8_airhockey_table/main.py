@@ -12,6 +12,8 @@ import kivent_cymunk
 import cymunk as cy
 
 from kivent_core.renderers import texture_manager, VertMesh
+texture_manager.load_image('assets/png/lingrad.png')
+texture_manager.load_image('assets/png/lingrad_alt.png')
 from kivent_cymunk.physics import CymunkPhysics
 from functools import partial
 
@@ -451,21 +453,21 @@ class TestGame(Widget):
         self.draw_wall_decoration(20., 1080, (1920*0.6, 1080/2), (0., .5, 1., 0.3))
 
         #left goal walls
-        self.draw_wall(20., wall_height, (goal_thickness, wall_middle), (0., 1., 0., 1.))
-        self.draw_wall(20., wall_height, (goal_thickness, 1080-wall_middle), (0., 1., 0., 1.))
-        self.draw_wall(20., goal_height, (10, 1080/2), (0., 1., 0., 1.))
-        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.))
-        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.))
+        self.draw_wall(20., wall_height, (goal_thickness, wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_wall(20., wall_height, (goal_thickness, 1080-wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_wall(20., goal_height, (20, 1080/2), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.), texture='lingrad')
 
         #right goal walls
-        self.draw_wall(20., wall_height, (1920-goal_thickness, wall_middle), (0., 1., 0., 1.))
-        self.draw_wall(20., wall_height, (1920-goal_thickness, 1080-wall_middle), (0., 1., 0., 1.))
-        self.draw_wall(20., goal_height, (1920-10, 1080/2), (0., 1., 0., 1.))
-        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.))
-        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.))
+        self.draw_wall(20., wall_height, (1920-goal_thickness, wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_wall(20., wall_height, (1920-goal_thickness, 1080-wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_wall(20., goal_height, (1920-20, 1080/2), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.), texture='lingrad')
 
-        self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 10.), (0., 1., 0., 1.))
-        self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.))
+        self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 10.), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.), texture='lingrad')
         #self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
         #self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
         self.draw_goal((20.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height),
@@ -552,7 +554,7 @@ class TestGame(Widget):
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
                 property_name, .1, 5., 'float', callback=self.lerp_callback)
 
-    def draw_wall(self, width, height, pos, color, mass=0, collision_type=2):
+    def draw_wall(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad'):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
         angle = 0 #radians(randint(-360, 360))
@@ -570,7 +572,7 @@ class TestGame(Widget):
             'ang_vel_limit': radians(200.),
             'mass': mass, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component, 
-            'renderer': {'size': (width, height),'render': True}, 
+            'renderer': {'size': (width, height),'render': True, 'texture':texture},
             'position': pos, 'rotate': 0, 'color': color,
             'scale':1}
         component_order = ['position', 'rotate', 'color',

@@ -81,7 +81,7 @@ class TestGame(Widget):
         yspos = touch.spos[1]
         if xspos<0.08 or xspos>0.92:#far left or right
             if 0.35<yspos<0.65:#on a goal
-                paddleid = self.create_paddle(wp, color=(1.-xspos,0.,xspos,0.65), player=int(xspos+0.5))
+                paddleid = self.create_paddle(wp, color=(1.-xspos,0.,xspos,1.), player=int(xspos+0.5))
                 super(TestGame, self).on_touch_down(touch)
             #else:
             #    self.playermenu.on_touch_down(touch)
@@ -435,8 +435,8 @@ class TestGame(Widget):
 
         for yposd in range(1,paddle_multiplier+1):
             ypos = float(yposd)/float(paddle_multiplier+1)
-            a_paddle_id = self.create_paddle((1920.*.25, 1080.*ypos), color=(1.,0.,0.,0.65),player=0)
-            a_paddle_id = self.create_paddle((1920.*.75, 1080.*ypos), color=(0.,0.,1.,0.65),player=1)
+            a_paddle_id = self.create_paddle((1920.*.25, 1080.*ypos), color=(1.,0.,0.,1.),player=0)
+            a_paddle_id = self.create_paddle((1920.*.75, 1080.*ypos), color=(0.,0.,1.,1.),player=1)
 
     def draw_some_stuff(self):
         size = Window.size
@@ -600,7 +600,8 @@ class TestGame(Widget):
         y_vel = 0 #randint(-100, 100)
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
-        shape_dict = {'inner_radius': 0, 'outer_radius': 40., 
+        radius=60
+        shape_dict = {'inner_radius': 0, 'outer_radius': radius,
             'mass': 0, 'offset': (0, 0)}
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
             'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
@@ -617,7 +618,7 @@ class TestGame(Widget):
         create_component_dict = {'physics': physics_component, 
             'renderer': {#'texture': 'asteroid1', 
             #'vert_mesh': vert_mesh,
-            'size': (40*2, 40*2),
+            'size': (radius*2, radius*2),
             'texture': 'airhole'},
             'position': pos, 'rotate': 0, 'color': color,
             'lerp_system': {},

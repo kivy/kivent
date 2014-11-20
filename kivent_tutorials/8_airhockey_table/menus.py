@@ -87,10 +87,10 @@ class PauseMenu(BoxLayout, basemenu):
         self.mainlabel = l
     def pausepressed(self, instance=None):
         gameref = self.gameref
-        gameref.setMenu(GameUIMenu(self.gameref))
+        gameref.setMenu(self.gameref.game_ui_menu)
     def quitpressed(self, instance=None):
         gameref = self.gameref
-        gameref.setMenu(NewGameMenu(self.gameref))
+        gameref.setMenu(self.gameref.game_ui_menu)
     def on_activate(self):
         pass
     def on_back(self):
@@ -120,7 +120,7 @@ class VictoryMenu(BoxLayout, basemenu):
         self.mainlabel = l
     def quitpressed(self, instance=None):
         gameref = self.gameref
-        gameref.setMenu(NewGameMenu(self.gameref))
+        gameref.setMenu(self.gameref.game_ui_menu)
     def on_activate(self):
         pass
     def on_back(self):

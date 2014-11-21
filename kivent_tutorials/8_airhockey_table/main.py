@@ -486,14 +486,15 @@ class TestGame(Widget):
             (real_goal_thickness, 450.), (1., 0., 0., .25), collision_type=5)
         x1 = 225
         y1 = 95
-        xnum=15
-        ynum=10
+        xnum=20#4-100?
+        ynum=xnum*1060/1740+1
         xstep = (1920-x1*2)/float(xnum-1)
         ystep = (1080-y1*2)/float(ynum-1)
         for x in range(xnum):
             for y in range(ynum):
                 pos = (x1 + xstep *x, y1 + ystep*y)
                 self.create_air_hole(pos)
+                #self.create_air_triangle(pos)
         self.new_game()
 
     def draw_goal(self, pos, size, color, collision_type=4):
@@ -595,6 +596,39 @@ class TestGame(Widget):
         return self.gameworld.init_entity(create_component_dict,
             component_order)
 
+    def create_air_triangle(self, pos):
+        from random import random
+        x_vel = 0 #randint(-100, 100)
+        y_vel = 0 #randint(-100, 100)
+        angle = random()*11./7. #radians(randint(-360, 360))
+        angular_velocity = 0 #radians(randint(-150, -150))
+        radius=60
+        shape_dict = {'inner_radius': 0, 'outer_radius': radius,
+            'mass': 0, 'offset': (0, 0)}
+        col_shape = {'shape_type': 'circle', 'elasticity': .5,
+            'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
+        col_shapes = [col_shape]
+        color=(.25, .25, .25, .25)
+        vert_mesh = self.draw_regular_polygon(3, radius, color)
+        physics_component = {'main_shape': 'circle',
+            'velocity': (x_vel, y_vel),
+            'position': pos, 'angle': angle,
+            'angular_velocity': angular_velocity,
+            'vel_limit': 0.,
+            'ang_vel_limit': radians(0.),
+            'mass': 0, 'col_shapes': col_shapes}
+        create_component_dict = {'physics': physics_component,
+            'renderer': {'render': True,
+            'vert_mesh': vert_mesh#,
+            #'size': (radius*2, radius*2)
+            },
+            'position': pos, 'rotate': angle, 'color': color,
+            'lerp_system': {},
+            'scale':.5}
+        component_order = ['position', 'rotate', 'color',
+            'physics', 'renderer', 'lerp_system', 'scale']
+        return self.gameworld.init_entity(create_component_dict,
+            component_order)
     def create_air_hole(self, pos):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)

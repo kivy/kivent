@@ -30,6 +30,7 @@ class TestGame(Widget):
         self.current_menu_ref = None
         self.bottom_action_name = "speedup"
         self.top_action_name = "speedup"
+        self.paused = False
         Clock.schedule_once(self.init_game)
 
     def ensure_startup(self):
@@ -902,7 +903,8 @@ class TestGame(Widget):
         gameworld.currentmap = gameworld.systems['map']
 
     def update(self, dt):
-        self.gameworld.update(dt)
+        if not self.paused:
+            self.gameworld.update(dt)
 
     def setup_states(self):
         self.gameworld.add_state(state_name='main', 

@@ -95,7 +95,9 @@ class PauseMenu(BoxLayout, basemenu):
         gameref = self.gameref
         gameref.setMenu(IntroMenu(self.gameref))
     def on_activate(self):
-        pass
+        self.gameref.paused=True
+    def on_deactivate(self):
+        self.gameref.paused=False
     def on_back(self):
         pass
         #self.gameref.setMenu(GameUIMenu(self.gameref))

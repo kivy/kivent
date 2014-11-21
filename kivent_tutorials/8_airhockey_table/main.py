@@ -765,10 +765,10 @@ class TestGame(Widget):
         return _id
     def create_puck(self, pos):
         sounds.play_spawnpuck(.3)
-        x_vel = randint(-100, 100)
-        y_vel = randint(-100, 100)
+        x_vel = 0#randint(-100, 100)
+        y_vel = 0#randint(-100, 100)
         angle = 0 #radians(randint(-360, 360))
-        angular_velocity = 0 #radians(randint(-150, -150))
+        angular_velocity = 10 #radians(randint(-150, -150))
         shape_dict = {'inner_radius': 0, 'outer_radius': 75., 
             'mass': 50, 'offset': (0., 0.)}
         col_shape = {'shape_type': 'circle', 'elasticity': .8,

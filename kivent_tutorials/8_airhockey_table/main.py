@@ -219,7 +219,7 @@ class TestGame(Widget):
             separate_func=self.begin_seperate_with_airhole)
         physics_system.add_collision_handler(
             1, 2,
-            post_solve_func=self.postsolve_collide_sound)
+            post_solve_func=self.low_collide_sound)#puck-wall
         physics_system.add_collision_handler(
             1, 4, 
             begin_func=self.begin_collide_with_goal)
@@ -238,16 +238,16 @@ class TestGame(Widget):
             begin_func=self.begin_collide_with_real_goal)
         physics_system.add_collision_handler(
             1, 6,
-            post_solve_func=self.postsolve_collide_sound)
+            post_solve_func=self.mid_collide_sound)#puck-paddle
         physics_system.add_collision_handler(
             6, 6,
-            post_solve_func=self.postsolve_collide_sound)
+            post_solve_func=self.high_collide_sound)#paddle-paddle
         physics_system.add_collision_handler(
             1, 1,
-            post_solve_func=self.postsolve_collide_sound)
+            post_solve_func=self.mid_collide_sound)#puck-puck
         physics_system.add_collision_handler(
             6, 2,
-            post_solve_func=self.postsolve_collide_sound)
+            post_solve_func=self.low_collide_sound)#paddle-wall
         physics_system.add_collision_handler(
             6, 3,
             begin_func=self.begin_collide_with_airhole,
@@ -342,6 +342,33 @@ class TestGame(Widget):
             sounds.play_thack(vol)
         else:
             sounds.vol_thack(vol)
+        return True
+    def high_collide_sound(self, space, arbiter):
+        crashforce =  arbiter.total_ke
+        vol = min(1,crashforce/50000000)
+        if vol<0.1:return
+        if arbiter.is_first_contact:
+            sounds.play_hithigh(vol)
+        else:
+            sounds.vol_hithigh(vol)
+        return True
+    def mid_collide_sound(self, space, arbiter):
+        crashforce =  arbiter.total_ke
+        vol = min(1,crashforce/50000000)
+        if vol<0.1:return
+        if arbiter.is_first_contact:
+            sounds.play_hitmid(vol)
+        else:
+            sounds.vol_hitmid(vol)
+        return True
+    def low_collide_sound(self, space, arbiter):
+        crashforce =  arbiter.total_ke
+        vol = min(1,crashforce/50000000)
+        if vol<0.1:return
+        if arbiter.is_first_contact:
+            sounds.play_hitlow(vol)
+        else:
+            sounds.vol_hitlow(vol)
         return True
 
     def lerp_callback_goal_score(self, entity_id, component_name, property_name,
@@ -731,6 +758,7 @@ class TestGame(Widget):
         self.miscIDs.add(_id)
         return _id
     def create_puck(self, pos):
+        sounds.play_spawnpuck(.3)
         x_vel = randint(-100, 100)
         y_vel = randint(-100, 100)
         angle = 0 #radians(randint(-360, 360))

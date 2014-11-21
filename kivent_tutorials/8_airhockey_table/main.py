@@ -76,6 +76,7 @@ class TestGame(Widget):
         if self.current_menu_ref:
             clicked_on_menu = self.current_menu_ref.on_touch_down(touch)
             if clicked_on_menu:return
+            if self.current_menu_ref.sname!='ingame':return
         wp = self.getWorldPosFromTuple(touch.pos)
         xspos = touch.spos[0]
         yspos = touch.spos[1]

@@ -15,6 +15,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
 from kivy.base import stopTouchApp
 from kivy.uix.progressbar import ProgressBar
+from kivy.uix.slider import Slider
 from kivy.properties import ObjectProperty
 
 from random import random
@@ -73,24 +74,26 @@ class PauseMenu(BoxLayout, basemenu):
         self.width = gameref.width
         self.height = gameref.height
 
+
+        self.add_widget( BoxLayout() )
         l = BoButton(text="Resume", font_size=40)
         l.bind(on_press=self.pausepressed)
         #l.size_hint = (.25,.25)
         #l.pos_hint = {'y':.25+.125}
         self.add_widget(l)
-        b = BoButton(text="New Game", font_size=30)
+        b = BoButton(text="Quit", font_size=30)
         b.bind(on_press=self.quitpressed)
-        self.add_widget( BoxLayout() )
+        b.size_hint = (.25,.25)
+        b.pos_hint = {'y':.25+.125,'x':.25+.125}
         self.add_widget(b)
-        #b.size_hint = (.25,.25)
-        #b.pos_hint = {'y':.25+.125}
+        self.add_widget( BoxLayout() )
         self.mainlabel = l
     def pausepressed(self, instance=None):
         gameref = self.gameref
         gameref.setMenu(self.gameref.game_ui_menu)
     def quitpressed(self, instance=None):
         gameref = self.gameref
-        gameref.setMenu(NewGameMenu(self.gameref))
+        gameref.setMenu(IntroMenu(self.gameref))
     def on_activate(self):
         pass
     def on_back(self):
@@ -148,6 +151,36 @@ class NewGameMenu(BoxLayout, basemenu):
         gameref = self.gameref
         gameref.new_game()
         gameref.setMenu(self.gameref.game_ui_menu)
+    def on_activate(self):
+        pass
+    def on_back(self):
+        pass
+        #self.gameref.setMenu(GameUIMenu(self.gameref))
+
+class IntroMenu(BoxLayout, basemenu):
+    def __init__(self, gameref, **kwargs):
+        super(IntroMenu, self).__init__(**kwargs)
+        self.sname = 'intro'
+        self.orientation = 'vertical'
+        self.gameref = gameref
+        self.width = gameref.width
+        self.height = gameref.height
+
+        l = Label(text="Light Hockey", font_size=80)
+        #l.size_hint = (.25,.25)
+        #l.pos_hint = {'y':.25+.125}
+        self.add_widget(l)
+        l = Label(text="touch to play", font_size=40)
+        #l.size_hint = (.25,.25)
+        #l.pos_hint = {'y':.25+.125}
+        self.add_widget(l)
+        #b.size_hint = (.25,.25)
+        #b.pos_hint = {'y':.25+.125}
+        self.mainlabel = l
+    def on_touch_down(self, touch):
+        gameref = self.gameref
+        gameref.new_game()
+        gameref.setMenu(NewGameMenu(self.gameref))
     def on_activate(self):
         pass
     def on_back(self):

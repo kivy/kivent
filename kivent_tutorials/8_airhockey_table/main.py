@@ -44,7 +44,7 @@ class TestGame(Widget):
     def init_game(self, dt):
         if self.ensure_startup():
             self.game_ui_menu = menus.GameUIMenu(self)
-            self.setMenu(self.game_ui_menu)
+            self.setMenu(menus.IntroMenu(self))
             self.create_scoreboard()
             self.setup_map()
             self.setup_states()

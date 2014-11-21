@@ -129,7 +129,7 @@ class TestGame(Widget):
     def action_vortex(self,wp=None,yspos=None):
         vortex_id = self.create_floater(wp,mass=1000,collision_type=7,radius=100,color=(0.1,.1,0.1,0.75))#radius=points
         pfunc = partial( self.remove_entity, vortex_id,0.)
-        Clock.schedule_once(pfunc,5)
+        Clock.schedule_once(pfunc,7.5)
         self.pfuncs[vortex_id]=pfunc
         if yspos<0.5:
             self.bottom_points-=1000
@@ -140,7 +140,9 @@ class TestGame(Widget):
         self.observermenu.update_scores()
     def action_wall(self,wp=None,yspos=None):
         #self.create_floater(wp)
-        wallid = self.draw_wall(20,200,wp,(0,1,0,0.5),250,collision_type=6, texture='lingrad_alt')
+        wallid = self.draw_wall(20,200,wp,(0,1,0,0.5),250,collision_type=8, texture='lingrad_alt')
+        pfunc = partial( self.remove_entity, wallid,0.)
+        Clock.schedule_once(pfunc,15)
         self.miscIDs.add(wallid)
         if yspos<0.5:
             self.bottom_points-=5000
@@ -215,6 +217,8 @@ class TestGame(Widget):
         #5 - real goal
         #6 - paddle
         #7 - vortex
+        #8 - obstical
+        #collide_remove_first
         physics_system.add_collision_handler(
             1, 3, 
             begin_func=self.begin_collide_with_airhole,
@@ -229,24 +233,21 @@ class TestGame(Widget):
             1, 7,
             pre_solve_func=self.presolve_collide_with_vortex)
         physics_system.add_collision_handler(
-            6, 7,
-            pre_solve_func=self.presolve_collide_with_vortex)
+            1, 1,
+            post_solve_func=self.mid_collide_sound)#puck-puck
         physics_system.add_collision_handler(
-            7, 3,
-            begin_func=self.begin_collide_with_airhole,
-            separate_func=self.begin_seperate_with_airhole)
-        physics_system.add_collision_handler(
-            1, 5, 
+            1, 5,
             begin_func=self.begin_collide_with_real_goal)
         physics_system.add_collision_handler(
             1, 6,
             post_solve_func=self.mid_collide_sound)#puck-paddle
+
+        physics_system.add_collision_handler(
+            6, 7,
+            pre_solve_func=self.presolve_collide_with_vortex)
         physics_system.add_collision_handler(
             6, 6,
             post_solve_func=self.high_collide_sound)#paddle-paddle
-        physics_system.add_collision_handler(
-            1, 1,
-            post_solve_func=self.mid_collide_sound)#puck-puck
         physics_system.add_collision_handler(
             6, 2,
             post_solve_func=self.low_collide_sound)#paddle-wall
@@ -260,6 +261,40 @@ class TestGame(Widget):
         physics_system.add_collision_handler(
             6, 5,
             begin_func=rfalse)
+
+        physics_system.add_collision_handler(
+            7, 3,
+            begin_func=self.begin_collide_with_airhole,
+            separate_func=self.begin_seperate_with_airhole)
+        physics_system.add_collision_handler(
+            7, 5,
+            begin_func=self.collide_remove_first)
+        physics_system.add_collision_handler(
+            7, 4,
+            begin_func=rfalse)
+        physics_system.add_collision_handler(
+            7, 7,
+            pre_solve_func=rfalse)
+
+        physics_system.add_collision_handler(
+            8, 3,
+            begin_func=self.begin_collide_with_airhole,
+            separate_func=self.begin_seperate_with_airhole)
+        physics_system.add_collision_handler(
+            8, 5,
+            begin_func=self.collide_remove_first)
+        physics_system.add_collision_handler(
+            8, 4,
+            begin_func=rfalse)
+        physics_system.add_collision_handler(
+            8, 7,
+            pre_solve_func=self.presolve_collide_with_vortex)
+        physics_system.add_collision_handler(
+            8, 8,
+            post_solve_func=self.high_collide_sound)#paddle-paddle
+        physics_system.add_collision_handler(
+            8, 6,
+            post_solve_func=self.high_collide_sound)#paddle-paddle
 
     def presolve_collide_with_vortex(self, space, arbiter):
         #systems = self.gameworld.systems
@@ -286,6 +321,9 @@ class TestGame(Widget):
 
         return False
 
+    def collide_remove_first(self, space, arbiter):
+        ent1_id = arbiter.shapes[0].body.data
+        self.remove_entity(ent1_id)
     def begin_collide_with_real_goal(self, space, arbiter):
         ent1_id = arbiter.shapes[0].body.data #puck
         ent2_id = arbiter.shapes[1].body.data #goal

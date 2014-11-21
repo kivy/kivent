@@ -185,7 +185,7 @@ class NewGameMenu(BoxLayout, basemenu):
         gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
         gameref.setMenu(self.gameref.game_ui_menu)
     def on_activate(self):
-        pass
+        self.gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
     def on_back(self):
         pass
         #self.gameref.setMenu(GameUIMenu(self.gameref))

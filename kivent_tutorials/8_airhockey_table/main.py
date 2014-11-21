@@ -637,7 +637,7 @@ class TestGame(Widget):
                 property_name, 1., 5., 'float', callback=self.lerp_callback)
         else:
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
-                property_name, .1, 5., 'float', callback=self.lerp_callback)
+                property_name, .4, 5., 'float', callback=self.lerp_callback)
 
     def draw_wall(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad'):
         x_vel = 0 #randint(-100, 100)

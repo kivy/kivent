@@ -147,9 +147,40 @@ class NewGameMenu(BoxLayout, basemenu):
         #b.size_hint = (.25,.25)
         #b.pos_hint = {'y':.25+.125}
         self.mainlabel = l
+        bl = BoxLayout(orientation='horizontal')
+
+
+        self.paddle_slider_a = s=Slider(orientation='vertical', min=1,max=4,value=1,step=1)
+        s.bind(value=self.release_paddle_slider_a)
+        bl.add_widget(s)
+
+
+        self.puck_slider = s=Slider(orientation='vertical', min=1,max=4,value=1,step=1)
+        s.bind(value=self.release_puck_slider)
+        bl.add_widget(s)
+
+
+        self.paddle_slider_b = s=Slider(orientation='vertical', min=1,max=4,value=1,step=1)
+        s.bind(value=self.release_paddle_slider_b)
+        bl.add_widget(s)
+
+
+        self.add_widget(bl)
+    def release_paddle_slider_a(self, instance, touch=None):
+        print instance,instance.value
+        value = int(instance.value)
+        self.paddle_slider_b.value = value
+        self.gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
+    def release_paddle_slider_b(self, instance, touch=None):
+        print instance,instance.value
+        value = int(instance.value)
+        self.paddle_slider_a.value = value
+        self.gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_b.value))
+    def release_puck_slider(self, instance, touch=None):
+        self.gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
     def gopressed(self, instance=None):
         gameref = self.gameref
-        gameref.new_game()
+        gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
         gameref.setMenu(self.gameref.game_ui_menu)
     def on_activate(self):
         pass

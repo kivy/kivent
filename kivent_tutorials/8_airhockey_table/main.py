@@ -292,7 +292,8 @@ class TestGame(Widget):
         ppx =  puckposition.x/1920.
         #self.create_puck_fader((puckposition.x,puckposition.y))
         self.remove_entity(ent1_id)
-        Clock.schedule_once(self.spawn_new_puck, 2.5)
+        if len(self.puckIDs) < self.puck_number:
+            Clock.schedule_once(self.spawn_new_puck, 2.5)
         sounds.play_jingle()
         if ppx<0.5:
             self.blue_score+=1
@@ -427,6 +428,8 @@ class TestGame(Widget):
         self.clear_game()
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
+
+        self.puck_number = puck_number
 
         for yposd in range(1,puck_number+1):
             ypos = float(yposd)/float(puck_number+1)

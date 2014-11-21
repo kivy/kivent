@@ -556,10 +556,10 @@ class LerpSystem(GameSystem):
 
 
 class GameView(GameSystem):
-    '''GameView is another entity-less system. It is intended to work with
-    other systems in order to provide camera functionally. 
-    **The implementation for GameView is very messy at the moment,
-    expect changes in the future to clean up the API and add functionality**
+    '''GameView provides a simple camera system that will control the rendering
+    view of any other **GameSystem** that has had the **gameview** property set 
+    **GameSystem** that have a **gameview** will be added to the GameView
+    canvas instead of the GameWorld canvas. 
 
     **Attributes:**
         **do_scroll_lock** (BooleanProperty): If True the scrolling will be 
@@ -567,7 +567,11 @@ class GameView(GameSystem):
 
         **camera_pos** (ListProperty): Current position of the camera
         
-        **camera_scale** (ListProperty): Current scale of the camera
+        **camera_scale** (NumericProperty): Current scale of the camera. The 
+        scale is equal to the amount of the game world that will be shown 
+        compared to the physical size of the GameView, therefore 2x will show 
+        twice as much of your gameworld, appearing 'zoomed out', while .5 will 
+        show half as much of the gameworld, appearing 'zoomed in'.  
 
         **focus_entity** (BooleanProperty): If True the camera will follow the 
         entity set in entity_to_focus
@@ -581,8 +585,28 @@ class GameView(GameSystem):
         to reach focused entity, Speed will be 1.0/camera_speed_multiplier 
         seconds to close the distance
 
-        **render_system_order** (ListProperty): List of system_id in desired 
-        order of rendering last to first. 
+        **render_system_order** (ListProperty): List of **system_id** in the 
+        desired order of rendering last to first. **GameSystem** with 
+        **system_id** not in **render_system_order** will be inserted at
+        position 0. 
+ 
+        **move_speed_multiplier** (NumericProperty): Multiplier to further 
+        control the speed of touch dragging of camera. Example Usage: 
+        Bind to the size of your gameview divided by the size of the window
+        to ensure that apparent dragging speed stays consistent. 
+
+        **do_touch_zoom** (BooleanProperty): If True the camera will zoom with
+        2 finger touch interaction.
+
+        **scale_min** (NumericProperty): The minimum scale factor that will be
+        allowed when touch zoom is being used. This will be the most 'zoomed
+        in' your camera will be allowed to go. This limit do not apply
+        when manually manipulated **camera_scale**.
+
+        **scale_max** (NumericProperty): The maximum scale factor that will be
+        allowed when touch zoom is being used. This will be the most 'zoomed 
+        out' your camera will be allowed to go. This limit do not apply
+        when manually manipulated **camera_scale**.
 
     '''
     system_id = StringProperty('default_gameview')
@@ -706,14 +730,16 @@ class GameView(GameSystem):
             self._touches.remove(touch)
 
     def get_camera_center(self):
+        '''Returns the current center point of the cameras view'''
         cx, cy = self.camera_pos
         size = self.size
         camera_scale = self.camera_scale
         sw, sh = size[0] * camera_scale *.5, size[1] * camera_scale * .5
         return sw - cx, sh - cy
 
-    def convert_from_screen_to_world(self, touch_pos):
-        x,y = touch_pos
+    def convert_from_screen_to_world(self, pos):
+        '''Converts the coordinates of pos from screen space to camera space'''
+        x,y = pos
         cx, cy = self.camera_pos
         camera_scale = self.camera_scale
         new_x = (x * camera_scale) - cx
@@ -722,6 +748,7 @@ class GameView(GameSystem):
 
 
     def look_at(self, pos):
+        '''Set the camera to be focused at pos.'''
         camera_size = self.size
         camera_scale = self.camera_scale
         camera_pos = self.camera_pos

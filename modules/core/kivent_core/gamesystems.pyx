@@ -598,6 +598,7 @@ class GameView(GameSystem):
     scale_max = NumericProperty(8.)
     camera_speed_multiplier = NumericProperty(1.0)
     render_system_order = ListProperty([])
+    move_speed_multiplier = NumericProperty(1.0)
 
     def __init__(self, **kwargs):
         super(GameView, self).__init__(**kwargs)
@@ -693,8 +694,9 @@ class GameView(GameSystem):
             touch.grab(self)
             self._touch_count += 1
             self._touches.append(touch)
-            touch.ud['world_pos'] = self.convert_from_screen_to_world(
-                (self.size[0]*.5, self.size[1]*.5))
+            camera_pos = self.camera_pos
+            size = self.size
+            touch.ud['world_pos'] = self.get_camera_center()
             touch.ud['start_pos'] = touch.pos
             touch.ud['start_scale'] = self.camera_scale
 
@@ -702,6 +704,13 @@ class GameView(GameSystem):
         if touch.grab_current is self:
             self._touch_count -= 1
             self._touches.remove(touch)
+
+    def get_camera_center(self):
+        cx, cy = self.camera_pos
+        size = self.size
+        camera_scale = self.camera_scale
+        sw, sh = size[0] * camera_scale *.5, size[1] * camera_scale * .5
+        return sw - cx, sh - cy
 
     def convert_from_screen_to_world(self, touch_pos):
         x,y = touch_pos
@@ -722,6 +731,7 @@ class GameView(GameSystem):
 
     def on_touch_move(self, touch):
         if touch.grab_current is self:
+            move_speed_multiplier = self.move_speed_multiplier
             if not self.focus_entity and self.do_touch_zoom:
                 if self._touch_count > 1:
 
@@ -753,8 +763,8 @@ class GameView(GameSystem):
             if not self.focus_entity and self.do_scroll:
                 if self._touch_count == 1:
                     camera_scale = self.camera_scale
-                    dist_x = touch.dx * camera_scale
-                    dist_y = touch.dy * camera_scale
+                    dist_x = touch.dx * camera_scale * move_speed_multiplier
+                    dist_y = touch.dy * camera_scale * move_speed_multiplier
                 
                     if self.do_scroll_lock and self.gameworld.currentmap:
                         dist_x, dist_y = self.lock_scroll(dist_x, dist_y)

@@ -346,7 +346,7 @@ class TestGame(Widget):
     def high_collide_sound(self, space, arbiter):
         crashforce =  arbiter.total_ke
         vol = min(1,crashforce/50000000)
-        if vol<0.1:return
+        if vol<0.01:return
         if arbiter.is_first_contact:
             sounds.play_hithigh(vol)
         else:
@@ -355,7 +355,7 @@ class TestGame(Widget):
     def mid_collide_sound(self, space, arbiter):
         crashforce =  arbiter.total_ke
         vol = min(1,crashforce/50000000)
-        if vol<0.1:return
+        if vol<0.01:return
         if arbiter.is_first_contact:
             sounds.play_hitmid(vol)
         else:
@@ -364,7 +364,7 @@ class TestGame(Widget):
     def low_collide_sound(self, space, arbiter):
         crashforce =  arbiter.total_ke
         vol = min(1,crashforce/50000000)
-        if vol<0.1:return
+        if vol<0.01:return
         if arbiter.is_first_contact:
             sounds.play_hitlow(vol)
         else:

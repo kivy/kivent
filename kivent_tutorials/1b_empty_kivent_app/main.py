@@ -1,7 +1,7 @@
 import kivy
 from kivy.app import App
 from kivy.uix.widget import Widget
-import kivent
+import kivent_core
 from kivy.clock import Clock
 
 
@@ -11,9 +11,12 @@ class TestGame(Widget):
         Clock.schedule_once(self.init_game)
 
     def init_game(self, dt):
-        self.setup_map()
-        self.setup_states()
-        self.set_state()
+        try:
+            self.setup_map()
+            self.setup_states()
+            self.set_state()
+        except:
+            Clock.schedule_once(self.init_game)
 
     def setup_map(self):
         gameworld = self.gameworld

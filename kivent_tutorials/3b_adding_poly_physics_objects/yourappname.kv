@@ -6,8 +6,6 @@ TestGame:
     gameworld: gameworld
     GameWorld:
         id: gameworld
-        size: root.size
-        pos: root.pos
         gamescreenmanager: gamescreenmanager
         PositionSystem:
             system_id: 'position'
@@ -18,46 +16,42 @@ TestGame:
         ColorSystem:
             system_id: 'color'
             gameworld: gameworld
-        BoundarySystem:
-            system_id: 'boundary'
+        ScaleSystem:
+            system_id: 'scale'
             gameworld: gameworld
         GameView:
             system_id: 'gameview'
             focus_entity: False
             updateable: True
             gameworld: gameworld
+            pos: root.pos
+            do_scroll: False
             do_scroll_lock: False
-            paused: False
-            do_scroll: True
             size: root.size
+            camera_scale: 1.0
         GameMap:
             system_id: 'map'
-            map_size: (400, 300)
+            map_size: root.size
             gameworld: gameworld
-        Renderer:
+        CymunkTouchSystem:
+            system_id: 'touch_system'
             gameworld: gameworld
-            system_id: 'physics_renderer'
-            gameview: 'gameview'
-            do_rotate: True
-            shader_source: 'assets/glsl/positionrotateshader.glsl'
-        Renderer:
-            gameworld: gameworld
-            system_id: 'debug_renderer'
-            gameview: 'gameview'
-            do_color: True
-            shader_source: 'assets/glsl/positioncolorshader.glsl'
+            size: root.size
+            pos: root.pos
+            max_force: 300000.
+            gameview_name: 'gameview'
+            physics_system: 'physics'
         Renderer:
             gameworld: gameworld
             system_id: 'renderer'
             gameview: 'gameview'
-            shader_source: 'assets/glsl/positionshader.glsl'
-
-
+            do_rotate: True
+            do_color: True
+            do_scale: True
+            shader_source: 'assets/glsl/positioncolorrotatescaleshader.glsl'
         CymunkPhysics:
             gameworld: root.gameworld
             system_id: 'physics'
-            iterations: 10
-            collision_slop: .1
     GameScreenManager:
         id: gamescreenmanager
         size: root.size

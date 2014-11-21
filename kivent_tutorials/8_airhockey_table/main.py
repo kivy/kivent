@@ -565,8 +565,10 @@ class TestGame(Widget):
         if random()>.5:
             make_hole = self.create_air_hole
         else:
-            make_hole = self.create_air_triangle
-
+            if random()>.5:
+                make_hole = self.create_air_triangle
+            else:
+                make_hole = self.create_air_square
         for x in range(xnum):
             for y in range(ynum):
                 pos = (x1 + xstep *x, y1 + ystep*y)
@@ -686,6 +688,40 @@ class TestGame(Widget):
         col_shapes = [col_shape]
         color=(.25, .25, .25, .25)
         vert_mesh = self.draw_regular_polygon(3, radius+random()*radius, color)
+        physics_component = {'main_shape': 'circle',
+            'velocity': (x_vel, y_vel),
+            'position': pos, 'angle': angle,
+            'angular_velocity': angular_velocity,
+            'vel_limit': 0.,
+            'ang_vel_limit': radians(0.),
+            'mass': 0, 'col_shapes': col_shapes}
+        create_component_dict = {'physics': physics_component,
+            'renderer': {'render': True,
+            'vert_mesh': vert_mesh#,
+            #'size': (radius*2, radius*2)
+            },
+            'position': pos, 'rotate': angle, 'color': color,
+            'lerp_system': {},
+            'scale':.5}
+        component_order = ['position', 'rotate', 'color',
+            'physics', 'renderer', 'lerp_system', 'scale']
+        return self.gameworld.init_entity(create_component_dict,
+            component_order)
+    def create_air_square(self, pos):
+        from random import random
+        x_vel = 0 #randint(-100, 100)
+        y_vel = 0 #randint(-100, 100)
+        angle = 22./14./2. #radians(randint(-360, 360))
+        print angle
+        angular_velocity = 0. #radians(randint(-150, -150))
+        radius=60
+        shape_dict = {'inner_radius': 0, 'outer_radius': radius,
+            'mass': 0, 'offset': (0, 0)}
+        col_shape = {'shape_type': 'circle', 'elasticity': .5,
+            'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
+        col_shapes = [col_shape]
+        color=(.25, .25, .25, .25)
+        vert_mesh = self.draw_regular_polygon(4, radius, color)
         physics_component = {'main_shape': 'circle',
             'velocity': (x_vel, y_vel),
             'position': pos, 'angle': angle,

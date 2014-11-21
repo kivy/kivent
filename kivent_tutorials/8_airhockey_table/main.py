@@ -521,11 +521,16 @@ class TestGame(Widget):
         ynum=xnum*1060/1740+1
         xstep = (1920-x1*2)/float(xnum-1)
         ystep = (1080-y1*2)/float(ynum-1)
+        from random import random
+        if random()>.5:
+            make_hole = self.create_air_hole
+        else:
+            make_hole = self.create_air_triangle
+
         for x in range(xnum):
             for y in range(ynum):
                 pos = (x1 + xstep *x, y1 + ystep*y)
-                self.create_air_hole(pos)
-                #self.create_air_triangle(pos)
+                make_hole(pos)
         self.new_game()
 
     def draw_goal(self, pos, size, color, collision_type=4):
@@ -640,7 +645,7 @@ class TestGame(Widget):
             'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
         color=(.25, .25, .25, .25)
-        vert_mesh = self.draw_regular_polygon(3, radius, color)
+        vert_mesh = self.draw_regular_polygon(3, radius+random()*radius, color)
         physics_component = {'main_shape': 'circle',
             'velocity': (x_vel, y_vel),
             'position': pos, 'angle': angle,

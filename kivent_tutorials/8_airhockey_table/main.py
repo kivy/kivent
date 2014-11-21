@@ -79,7 +79,7 @@ class TestGame(Widget):
         wp = self.getWorldPosFromTuple(touch.pos)
         xspos = touch.spos[0]
         yspos = touch.spos[1]
-        if xspos<0.08 or xspos>0.92:#far left or right
+        '''if xspos<0.08 or xspos>0.92:#far left or right
             if 0.35<yspos<0.65:#on a goal
                 paddleid = self.create_paddle(wp, color=(1.-xspos,0.,xspos,1.), player=int(xspos+0.5))
                 super(TestGame, self).on_touch_down(touch)
@@ -87,7 +87,8 @@ class TestGame(Widget):
             #    self.playermenu.on_touch_down(touch)
         #elif 0.45<yspos<0.55 and 0.47<xspos<0.53:#clicked in middle
         #    self.setMenu(menus.PauseMenu(self))
-        elif xspos<0.4 or xspos>0.6:#general player area
+        el'''
+        if xspos<0.4 or xspos>0.6:#general player area
             super(TestGame, self).on_touch_down(touch)
         else:#middle area,for observers
             if yspos<0.5:
@@ -161,12 +162,12 @@ class TestGame(Widget):
         if 'touched_ent_id' in touch.ud:
             touched_id = touch.ud['touched_ent_id']
             if touched_id in self.paddleIDs:
-                if 0.3<touch.spos[1]<0.7 and touch.spos[0]<0.08 or touch.spos[0]>0.92:
+                '''if 0.3<touch.spos[1]<0.7 and touch.spos[0]<0.08 or touch.spos[0]>0.92:
                         self.remove_entity(touched_id)
-                else:
-                    tbody = self.gameworld.entities[touched_id].physics.body
-                    tbodyvel = tbody.velocity
-                    tbody.velocity=(tbodyvel.x*1.4,tbodyvel.y*1.4)
+                else:'''
+                tbody = self.gameworld.entities[touched_id].physics.body
+                tbodyvel = tbody.velocity
+                tbody.velocity=(tbodyvel.x*1.4,tbodyvel.y*1.4)
     def set_observer_action(self, isbottom, action="speedup"):
         #if action=="speedup":
         #actionref=self.action_speedup

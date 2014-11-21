@@ -34,7 +34,7 @@ class TestGame(Widget):
         Clock.schedule_once(self.init_game)
 
     def ensure_startup(self):
-        systems_to_check = ['map', 'physics', 'renderer', 
+        systems_to_check = ['map', 'physics', 'renderer', 'puck_renderer',
             'rotate', 'position', 'gameview', 'lerp_system']
         systems = self.gameworld.systems
         for each in systems_to_check:

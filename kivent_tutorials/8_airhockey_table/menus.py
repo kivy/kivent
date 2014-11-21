@@ -147,7 +147,7 @@ class NewGameMenu(BoxLayout, basemenu):
     def gopressed(self, instance=None):
         gameref = self.gameref
         gameref.new_game()
-        gameref.setMenu(GameUIMenu(self.gameref))
+        gameref.setMenu(self.gameref.game_ui_menu)
     def on_activate(self):
         pass
     def on_back(self):

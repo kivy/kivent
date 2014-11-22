@@ -5,7 +5,7 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
-from random import randint, choice
+from random import randint, choice, random
 from math import radians, pi, sin, cos, sqrt
 import kivent_core
 import kivent_cymunk
@@ -975,9 +975,42 @@ class TestGame(Widget):
     def setup_map(self):
         gameworld = self.gameworld
         gameworld.currentmap = gameworld.systems['map']
+    def do_ai(self, dt):
+        paddlenum = len(self.paddleIDs)
+        for paddleid in self.paddleIDs:
+            if randint(0,100)>91+paddlenum:
+                paddle = self.gameworld.entities[paddleid]
+                paddlepos = paddle.physics.body.position
+                isblue = paddle.color.b>.6
+                if isblue:
+                    if paddlepos.x<1080/2:
+                        continue
+                    modvec=cy.Vec2d(100,0)
+                if not isblue:
+                    if paddlepos.x>1080/2:
+                        continue
+                    modvec=cy.Vec2d(-100,0)
+                smallest_dist=99999999
+                nearestpuck = None
+                nearvec=None
+                for puckid in self.puckIDs:
+                    puck = self.gameworld.entities[puckid]
 
+                    diff = puck.physics.body.position-paddlepos
+                    len2 = diff.get_length_sqrd()
+                    if len2<smallest_dist:
+                        smallest_dist=len2
+                        nearestpuck=puck
+                        nearvec=diff
+                if nearestpuck:
+                    if smallest_dist< 300*300:
+                        nearvec*=5
+                    nearvec+=modvec+cy.Vec2d(-0.5+random(), -0.5+random())*10
+                    paddle.physics.body.apply_impulse(nearvec*100.)
     def update(self, dt):
         if not self.paused:
+            if self.current_menu_ref.sname != 'ingame':
+                self.do_ai(dt)
             self.gameworld.update(dt)
 
     def setup_states(self):

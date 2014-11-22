@@ -1009,7 +1009,7 @@ class TestGame(Widget):
                     paddle.physics.body.apply_impulse(nearvec*100.)
     def update(self, dt):
         if not self.paused:
-            if self.current_menu_ref.sname != 'ingame':
+            if self.current_menu_ref.sname == 'intro':
                 self.do_ai(dt)
             self.gameworld.update(dt)
 

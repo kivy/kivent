@@ -14,9 +14,10 @@ import cymunk as cy
 from kivent_core.renderers import texture_manager, VertMesh
 texture_manager.load_image('assets/png/lingrad.png')
 texture_manager.load_image('assets/png/lingrad_alt.png')
-texture_manager.load_image('assets/png/puck.png')
+texture_manager.load_image('assets/png/kivy-logo.png')
 texture_manager.load_image('assets/png/paddle.png')
 texture_manager.load_image('assets/png/airhole.png')
+texture_manager.load_image('assets/png/bubbles.png')
 from kivent_cymunk.physics import CymunkPhysics
 from functools import partial
 
@@ -525,6 +526,8 @@ class TestGame(Widget):
         wall_height=(1080/2-goal_height/2.)
         wall_middle=wall_height/2.
 
+        self.draw_wall_decoration(1920., 1080, (1920*0.5, 1080*.5), (.251, .251, .251, .8), texture='bubbles')
+
         #player limit walls
         self.draw_wall_decoration(20., 1080, (1920*0.4, 1080/2), (1., .5, 0., 0.3))
         self.draw_wall_decoration(20., 1080, (1920*0.6, 1080/2), (0., .5, 1., 0.3))
@@ -664,11 +667,12 @@ class TestGame(Widget):
             'physics', 'renderer','scale']
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
-    def draw_wall_decoration(self, width, height, pos, color):
+    def draw_wall_decoration(self, width, height, pos, color, texture=None):
         create_component_dict = {
             'renderer': {'size': (width, height),'render': True},
             'position': pos, 'rotate': 0, 'color': color,
             'scale':1}
+        if texture:create_component_dict['renderer']['texture'] = texture
         component_order = ['position', 'rotate', 'color',
             'renderer','scale']
         return self.gameworld.init_entity(create_component_dict,
@@ -861,10 +865,10 @@ class TestGame(Widget):
             'puck_renderer': {#'texture': 'asteroid1', 
             #'vert_mesh': vert_mesh,
             'size': (75*2,75*2),
-            'texture':'puck'
+            'texture':'kivy-logo'
             #'render': True
             },
-            'position': pos, 'rotate': 0, 'color': (0., 1., 0., 1.),
+            'position': pos, 'rotate': 0, 'color': (1., 1., 1., 1.),
             'lerp_system': {},
             'scale':1}
         component_order = ['position', 'rotate', 'color',

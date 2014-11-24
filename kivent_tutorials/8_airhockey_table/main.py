@@ -24,6 +24,8 @@ from functools import partial
 import sounds
 import menus
 
+faded_air_hole_alpha=.1
+
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
@@ -456,7 +458,7 @@ class TestGame(Widget):
         final_value):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(entity_id, 'color', 'a', .25, 5.5,
+        lerp_system.add_lerp_to_entity(entity_id, 'color', 'a', faded_air_hole_alpha, 5.5,
             'float')
         lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .5, 5.5,
             'float')
@@ -471,7 +473,7 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         lerp_system.clear_lerps_from_entity(ent2_id)
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'a', .25, 2.5,
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'a', faded_air_hole_alpha, 2.5,
             'float')
         lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', .5, 2.5,
             'float')
@@ -690,7 +692,7 @@ class TestGame(Widget):
         col_shape = {'shape_type': 'circle', 'elasticity': .5,
             'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
-        color=(.25, .25, .25, .25)
+        color=(.25, .25, .25, faded_air_hole_alpha)
         vert_mesh = self.draw_regular_polygon(3, radius+random()*radius, color)
         physics_component = {'main_shape': 'circle',
             'velocity': (x_vel, y_vel),
@@ -724,7 +726,7 @@ class TestGame(Widget):
         col_shape = {'shape_type': 'circle', 'elasticity': .5,
             'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
-        color=(.25, .25, .25, .25)
+        color=(.25, .25, .25, faded_air_hole_alpha)
         vert_mesh = self.draw_regular_polygon(4, radius, color)
         physics_component = {'main_shape': 'circle',
             'velocity': (x_vel, y_vel),
@@ -756,7 +758,7 @@ class TestGame(Widget):
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
             'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
-        color=(.25, .25, .25, .25)
+        color=(.25, .25, .25, faded_air_hole_alpha)
         #vert_mesh = self.draw_regular_polygon(30, 40., color)
         physics_component = {'main_shape': 'circle', 
             'velocity': (x_vel, y_vel), 

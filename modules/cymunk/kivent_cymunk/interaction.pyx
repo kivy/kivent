@@ -98,6 +98,7 @@ class CymunkTouchSystem(GameSystem):
             touch_ent = gameworld.init_entity(creation_dict, ['position', 
                 system_id])
             touch.ud['ent_id'] = touch_ent
+            touch.ud['touched_ent_id'] = entity_id 
 
     def on_touch_move(self, touch):
         cdef object gameworld 

@@ -71,10 +71,10 @@ cdef class TextureManager:
         return self._keys[tex_key]
 
     def get_texkey_in_group(self, tex_key, atlas_name):
-        if tex_key is None and atlas_name is None:
+        if tex_key is None and atlas_name is None:#should this be or?
             return True
         else:
-            return tex_key in self._groups[atlas_name]
+            return atlas_name in self._groups and tex_key in self._groups[atlas_name]
 
     def load_atlas(self, source):
         texture = CoreImage(

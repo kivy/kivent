@@ -567,13 +567,13 @@ class TestGame(Widget):
         xstep = (1920-x1*2)/float(xnum-1)
         ystep = (1080-y1*2)/float(ynum-1)
         from random import random
-        if random()>.5:
+        if 1:#random()>.5:
             make_hole = self.create_air_hole
-        else:
+        '''else:
             if random()>.5:
                 make_hole = self.create_air_triangle
             else:
-                make_hole = self.create_air_square
+                make_hole = self.create_air_square'''
         self.airholeids=[]
         aairhole = self.airholeids.append
         for x in range(xnum):

@@ -386,36 +386,16 @@ class PlayerPanel(ScatterPlaneLayout):
         self.parent.pause_pressed(instance, player_id=self.player_id)
 
 
-class PlayerMenu(FloatLayout):
-    def __init__(self, gameref, **kwargs):
-        super(PlayerMenu, self).__init__(**kwargs)
-        self.sname = 'player_menu'
-        self.orientation = 'horizontal'
-        self.gameref = gameref
-        self.width = gameref.width
-        self.height = gameref.height
+class MirroredMenu(FloatLayout):
+    def __init__(self,leftfl,rightfl, **kwargs):
+        super(MirroredMenu, self).__init__(**kwargs)
         self.size_hint = (1,1)
-        #self.pos_hint = {'y':.3+.1}
 
-        #sratio = self.width/1920.
-        #ssize = 150*sratio
-
-        self.leftfl = leftfl = PlayerPanel(do_rotation=False, do_scale=False,do_translation=False,
-                                           auto_bring_to_front=False, player_id=0)
+        self.leftfl = leftfl
         leftfl.rotation=90
-        #leftfl.height=600
-        #leftfl.x=200
-        #leftfl.pos_hint={'x':.9}
-        #leftfl = Button()
         self.add_widget(leftfl)
 
-
-        #self.add_widget(BoxLayout(size_hint_x=12))
-
-        self.rightfl = rightfl = PlayerPanel(do_rotation=False, do_scale=False,do_translation=False,
-                                                 auto_bring_to_front=False, player_id=1)
-        #leftfl.x=200
-        #rightfl.pos_hint={'y':.3}
+        self.rightfl = rightfl
         rightfl.rotation=270
         #rightfl = Button()
 
@@ -436,6 +416,15 @@ class PlayerMenu(FloatLayout):
         self.rightfl.width=height
         self.leftfl.height=width*.5
         self.rightfl.height=width*.5
+
+class PlayerMenu(MirroredMenu):
+    def __init__(self, gameref, **kwargs):
+        self.gameref = gameref
+        leftfl = PlayerPanel(do_rotation=False, do_scale=False,do_translation=False,
+                                           auto_bring_to_front=False, player_id=0)
+        rightfl = PlayerPanel(do_rotation=False, do_scale=False,do_translation=False,
+                                           auto_bring_to_front=False, player_id=1)
+        super(PlayerMenu, self).__init__(leftfl,rightfl,**kwargs)
     def update_scores(self):
         gameref = self.gameref
 

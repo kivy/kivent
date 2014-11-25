@@ -370,9 +370,9 @@ class TestGame(Widget):
         #else:
         ent = self.gameworld.entities[ent1_id]
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', ent.color.b, .2,
-            'float', callback=self.lerp_callback_airhole)
+            'float')
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'r', ent.color.r, .2,
-            'float', callback=self.lerp_callback_airhole)
+            'float')
 
         return False
     def begin_collide_with_wall(self, space, arbiter):

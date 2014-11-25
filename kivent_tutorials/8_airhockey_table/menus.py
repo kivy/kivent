@@ -51,7 +51,43 @@ class ScatterPlaneLayout(ScatterPlane):
     def clear_widgets(self):
         self.content.clear_widgets()
 
+class MirroredPanel(ScatterPlaneLayout):
+    def __init__(self, **kwargs):
 
+        if 'player_id' in kwargs:self.player_id=kwargs['player_id']
+        super(MirroredPanel, self).__init__(do_rotation=False, do_scale=False,do_translation=False,
+                                           auto_bring_to_front=False, **kwargs)
+
+class MirroredMenu(FloatLayout):
+    def __init__(self,leftfl,rightfl, **kwargs):
+        super(MirroredMenu, self).__init__(**kwargs)
+        self.size_hint = (1,1)
+
+        self.leftfl = leftfl
+        leftfl.rotation=90
+        self.add_widget(leftfl)
+
+        self.rightfl = rightfl
+        rightfl.rotation=270
+        #rightfl = Button()
+
+        self.add_widget(rightfl)
+
+        size = Window.size
+        self.leftfl.size_hint=(None,None)
+        self.rightfl.size_hint=(None,None)
+        self.leftfl.width=size[1]
+        self.rightfl.width=size[1]
+        self.leftfl.height=size[0]*.5
+        self.rightfl.height=size[0]*.5
+        self.leftfl.pos_hint={'x':0.5}
+        self.rightfl.pos_hint={'y':0.}
+        Window.bind(on_resize=self.redosizes)
+    def redosizes(self, win,width,height):
+        self.leftfl.width=height
+        self.rightfl.width=height
+        self.leftfl.height=width*.5
+        self.rightfl.height=width*.5
 
 class BoButton(Button):
 	def __init__(self, **kwargs):
@@ -133,42 +169,92 @@ class VictoryMenu(BoxLayout, basemenu):
         pass
         #self.gameref.setMenu(GameUIMenu(self.gameref))
 
-class NewGameMenu(BoxLayout, basemenu):
+class NewGamePanel(MirroredPanel):
     def __init__(self, gameref, **kwargs):
-        super(NewGameMenu, self).__init__(**kwargs)
+        super(NewGamePanel, self).__init__(**kwargs)
+        self.player_id=kwargs['player_id']
         self.sname = 'new_game'
         self.orientation = 'vertical'
         self.gameref = gameref
-        self.width = gameref.width
-        self.height = gameref.height
+        self._bl = BoxLayout(orientation='vertical')
 
-        l = BoButton(text="GO", font_size=80)
-        l.bind(on_press=self.gopressed)
-        #l.size_hint = (.25,.25)
-        #l.pos_hint = {'y':.25+.125}
-        self.add_widget(l)
         #b.size_hint = (.25,.25)
         #b.pos_hint = {'y':.25+.125}
-        self.mainlabel = l
         bl = BoxLayout(orientation='horizontal')
 
 
+
+        paddlebl = BoxLayout(orientation='vertical')
+        paddlebl.add_widget(Label(text='Paddles'))
+        paddlebl.add_widget(BoButton(text='4', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
+        paddlebl.add_widget(BoButton(text='3', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
+        paddlebl.add_widget(BoButton(text='2', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
+        paddlebl.add_widget(BoButton(text='1', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
+
         self.paddle_slider_a = s=Slider(orientation='vertical', min=1,max=4,value=1,step=1)
         s.bind(value=self.release_paddle_slider_a)
-        bl.add_widget(s)
+        bl.add_widget(paddlebl)
+        
+        
+        puckbl = BoxLayout(orientation='vertical')
+        puckbl.add_widget(Label(text='Pucks'))
+        puckbl.add_widget(BoButton(text='4', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        puckbl.add_widget(BoButton(text='3', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        puckbl.add_widget(BoButton(text='2', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        puckbl.add_widget(BoButton(text='1', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
 
 
         self.puck_slider = s=Slider(orientation='vertical', min=1,max=4,value=1,step=1)
         s.bind(value=self.release_puck_slider)
-        bl.add_widget(s)
+        bl.add_widget(puckbl)
+
+        self._bl.add_widget(bl)
 
 
-        self.paddle_slider_b = s=Slider(orientation='vertical', min=1,max=4,value=1,step=1)
-        s.bind(value=self.release_paddle_slider_b)
-        bl.add_widget(s)
+        l = BoButton(text="Ready", font_size=80)
+        l.bind(on_press=self.gopressed)
+        l.size_hint = (.75,.5)
+        l.pos_hint = {'x':.125}
+        self._bl.add_widget(l)
+        self.mainlabel = l
 
 
-        self.add_widget(bl)
+        self.add_widget(self._bl)
+    def set_players(self, instance, touch=None):
+        value = int(instance.text)
+        self.gameref.new_game(paddle_multiplier=value)
+    def set_pucks(self, instance, touch=None):
+        value = int(instance.text)
+        self.gameref.new_game(puck_number=value)
+    def release_puck_slider(self, instance, touch=None):
+        self.gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
+    def release_paddle_slider_a(self, instance, touch=None):
+        print instance,instance.value
+        value = int(instance.value)
+        self.gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(value))
+    def release_puck_slider(self, instance, touch=None):
+        self.gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
+    def gopressed(self, instance=None):
+        gameref = self.gameref
+        gameref.new_game()#puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
+        gameref.setMenu(self.gameref.game_ui_menu)
+    def on_activate(self):
+        self.gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
+    def on_back(self):
+        pass
+        #self.gameref.setMenu(GameUIMenu(self.gameref))
+
+from kivy.properties import NumericProperty
+class NewGameMenu(MirroredMenu, basemenu):
+    puck_number = NumericProperty(1)
+    paddle_number = NumericProperty(1)
+    def __init__(self, gameref, **kwargs):
+        self.gameref = gameref
+        leftfl = NewGamePanel(gameref,player_id=0)
+        rightfl = NewGamePanel(gameref,player_id=1)
+        super(NewGameMenu, self).__init__(leftfl,rightfl,**kwargs)
+        self.sname = 'new_game'
+        self.orientation = 'vertical'
     def release_paddle_slider_a(self, instance, touch=None):
         print instance,instance.value
         value = int(instance.value)
@@ -183,14 +269,10 @@ class NewGameMenu(BoxLayout, basemenu):
         self.gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
     def gopressed(self, instance=None):
         gameref = self.gameref
-        gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
+        gameref.new_game()#puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
         gameref.setMenu(self.gameref.game_ui_menu)
     def on_activate(self):
-        self.gameref.new_game(puck_number=int(self.puck_slider.value), paddle_multiplier=int(self.paddle_slider_a.value))
-    def on_back(self):
-        pass
-        #self.gameref.setMenu(GameUIMenu(self.gameref))
-
+        self.gameref.new_game(puck_number=int(self.puck_number), paddle_multiplier=int(self.paddle_number))
 class IntroMenu(BoxLayout, basemenu):
     def __init__(self, gameref, **kwargs):
         super(IntroMenu, self).__init__(**kwargs)
@@ -319,7 +401,7 @@ class ObserverMenu(BoxLayout):
         #ssize = 150*sratio
 
         self.topfl = topfl = ObserverPanel(do_rotation=False, do_scale=False,do_translation=False,
-                                           auto_bring_to_front=False, observer_id=0)
+                                                 auto_bring_to_front=False, observer_id=0)
         topfl.rotation=180
         self.add_widget(topfl)
 
@@ -363,10 +445,9 @@ class ObserverMenu(BoxLayout):
         else:
             self.topfl.selector.pos_hint={"x":actioncost/10000.,"y":0}
 
-class PlayerPanel(ScatterPlaneLayout):
+class PlayerPanel(MirroredPanel):
     def __init__(self, **kwargs):
         super(PlayerPanel, self).__init__(**kwargs)
-        self.player_id=kwargs['player_id']
         #sratio = self.width/1920.
         #ssize = 150.*sratio*8.
         bl = BoxLayout(orientation='horizontal')
@@ -385,45 +466,11 @@ class PlayerPanel(ScatterPlaneLayout):
     def pause_pressed(self, instance):
         self.parent.pause_pressed(instance, player_id=self.player_id)
 
-
-class MirroredMenu(FloatLayout):
-    def __init__(self,leftfl,rightfl, **kwargs):
-        super(MirroredMenu, self).__init__(**kwargs)
-        self.size_hint = (1,1)
-
-        self.leftfl = leftfl
-        leftfl.rotation=90
-        self.add_widget(leftfl)
-
-        self.rightfl = rightfl
-        rightfl.rotation=270
-        #rightfl = Button()
-
-        self.add_widget(rightfl)
-
-        size = Window.size
-        self.leftfl.size_hint=(None,None)
-        self.rightfl.size_hint=(None,None)
-        self.leftfl.width=size[1]
-        self.rightfl.width=size[1]
-        self.leftfl.height=size[0]*.5
-        self.rightfl.height=size[0]*.5
-        self.leftfl.pos_hint={'x':0.5}
-        self.rightfl.pos_hint={'y':0.}
-        Window.bind(on_resize=self.redosizes)
-    def redosizes(self, win,width,height):
-        self.leftfl.width=height
-        self.rightfl.width=height
-        self.leftfl.height=width*.5
-        self.rightfl.height=width*.5
-
 class PlayerMenu(MirroredMenu):
     def __init__(self, gameref, **kwargs):
         self.gameref = gameref
-        leftfl = PlayerPanel(do_rotation=False, do_scale=False,do_translation=False,
-                                           auto_bring_to_front=False, player_id=0)
-        rightfl = PlayerPanel(do_rotation=False, do_scale=False,do_translation=False,
-                                           auto_bring_to_front=False, player_id=1)
+        leftfl = PlayerPanel(player_id=0)
+        rightfl = PlayerPanel(player_id=1)
         super(PlayerMenu, self).__init__(leftfl,rightfl,**kwargs)
     def update_scores(self):
         gameref = self.gameref

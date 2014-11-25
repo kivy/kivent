@@ -494,12 +494,22 @@ class TestGame(Widget):
         self.observermenu.update_scores()
         self.set_observer_action(0)
         self.set_observer_action(1)
-    def new_game(self, puck_number=1, paddle_multiplier=1):
+    def new_game(self, puck_number=None, paddle_multiplier=None):
         self.clear_game()
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
 
-        self.puck_number = puck_number
+        if not hasattr(self, 'puck_number'):self.puck_number=1
+        if not hasattr(self, 'paddle_multiplier'):self.paddle_multiplier=1
+
+        if not puck_number:
+            puck_number = self.puck_number
+        else:
+            self.puck_number = puck_number
+        if not paddle_multiplier:
+            paddle_multiplier = self.paddle_multiplier
+        else:
+            self.paddle_multiplier = paddle_multiplier
 
         for yposd in range(1,puck_number+1):
             ypos = float(yposd)/float(puck_number+1)

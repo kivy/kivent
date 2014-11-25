@@ -574,10 +574,12 @@ class TestGame(Widget):
                 make_hole = self.create_air_triangle
             else:
                 make_hole = self.create_air_square
+        self.airholeids=[]
+        aairhole = self.airholeids.append
         for x in range(xnum):
             for y in range(ynum):
                 pos = (x1 + xstep *x, y1 + ystep*y)
-                make_hole(pos)
+                aairhole(make_hole(pos))
         self.new_game()
 
     def draw_goal(self, pos, size, color, collision_type=4):
@@ -981,6 +983,15 @@ class TestGame(Widget):
     def setup_map(self):
         gameworld = self.gameworld
         gameworld.currentmap = gameworld.systems['map']
+    def do_airhole_extras(self, dt):
+        if random()<.9:return
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        entid = choice(self.airholeids)
+        lerp_system.clear_lerps_from_entity(entid)
+        #lerp_system.add_lerp_to_entity(entid,'color',choice(['r','g','b']),.7,1.,'float',callback=self.lerp_callback_airhole)
+        lerp_system.add_lerp_to_entity(entid,'color','a',.6,1.,'float',callback=self.lerp_callback_airhole)
+        lerp_system.add_lerp_to_entity(entid,'scale','s',.6,1.,'float')
     def do_ai(self, dt):
         paddlenum = len(self.paddleIDs)
         for paddleid in self.paddleIDs:
@@ -1017,6 +1028,7 @@ class TestGame(Widget):
         if not self.paused:
             if self.current_menu_ref.sname == 'intro':
                 self.do_ai(dt)
+            #self.do_airhole_extras(dt)
             self.gameworld.update(dt)
 
     def setup_states(self):

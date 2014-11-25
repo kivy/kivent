@@ -17,6 +17,7 @@ from kivy.base import stopTouchApp
 from kivy.uix.progressbar import ProgressBar
 from kivy.uix.slider import Slider
 from kivy.properties import ObjectProperty
+from kivy.core.window import Window
 
 from random import random
 
@@ -368,24 +369,24 @@ class PlayerPanel(ScatterPlaneLayout):
         self.player_id=kwargs['player_id']
         #sratio = self.width/1920.
         #ssize = 150.*sratio*8.
-        bl = BoxLayout(orientation='vertical')
-        bl.size_hint = (1,1)
-        self.size_hint = (1,1)
+        bl = BoxLayout(orientation='horizontal')
+        bl.size_hint = (1,.15)
+        #self.size_hint = (1,1)
         #self.width = 1080
         #self.height= 100
 
-        l = Button(background_normal='assets/png/pause.png', size_hint=(1,.1), allow_stretch=False)#, pos_hint={"x":-0.3,"y":0})
+        l = Button(background_normal='assets/png/pause.png', size_hint=(1,1), allow_stretch=True)#, pos_hint={"x":-0.3,"y":0})
         #l.width=l.height=ssize
         l.bind(on_press=self.pause_pressed)
-        bl.add_widget(BoxLayout(size_hint=(1,.1)))
+        bl.add_widget(BoxLayout(size_hint=(.8,1)))
         bl.add_widget(l)
-        bl.add_widget(BoxLayout(size_hint=(1,.8)))
+        bl.add_widget(BoxLayout(size_hint=(6,1)))
         self.add_widget(bl)
     def pause_pressed(self, instance):
         self.parent.pause_pressed(instance, player_id=self.player_id)
 
 
-class PlayerMenu(BoxLayout):
+class PlayerMenu(FloatLayout):
     def __init__(self, gameref, **kwargs):
         super(PlayerMenu, self).__init__(**kwargs)
         self.sname = 'player_menu'
@@ -401,24 +402,40 @@ class PlayerMenu(BoxLayout):
 
         self.leftfl = leftfl = PlayerPanel(do_rotation=False, do_scale=False,do_translation=False,
                                            auto_bring_to_front=False, player_id=0)
-        leftfl.rotation=0
-        leftfl.height=600
+        leftfl.rotation=90
+        #leftfl.height=600
         #leftfl.x=200
         #leftfl.pos_hint={'x':.9}
         #leftfl = Button()
         self.add_widget(leftfl)
 
 
-        self.add_widget(BoxLayout(size_hint_x=12))
+        #self.add_widget(BoxLayout(size_hint_x=12))
 
         self.rightfl = rightfl = PlayerPanel(do_rotation=False, do_scale=False,do_translation=False,
                                                  auto_bring_to_front=False, player_id=1)
         #leftfl.x=200
         #rightfl.pos_hint={'y':.3}
-        rightfl.rotation=180
+        rightfl.rotation=270
         #rightfl = Button()
 
         self.add_widget(rightfl)
+
+        size = Window.size
+        self.leftfl.size_hint=(None,None)
+        self.rightfl.size_hint=(None,None)
+        self.leftfl.width=size[1]
+        self.rightfl.width=size[1]
+        self.leftfl.height=size[0]*.5
+        self.rightfl.height=size[0]*.5
+        self.leftfl.pos_hint={'x':0.5}
+        self.rightfl.pos_hint={'y':0.}
+        Window.bind(on_resize=self.redosizes)
+    def redosizes(self, win,width,height):
+        self.leftfl.width=height
+        self.rightfl.width=height
+        self.leftfl.height=width*.5
+        self.rightfl.height=width*.5
     def update_scores(self):
         gameref = self.gameref
 

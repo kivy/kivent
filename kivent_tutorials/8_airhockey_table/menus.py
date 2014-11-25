@@ -93,6 +93,18 @@ class BoButton(Button):
 	def __init__(self, **kwargs):
 		super(Button, self).__init__(**kwargs)
 		self.background_color = (1,1,1,0.5)
+class RedButton(Button):
+	def __init__(self, **kwargs):
+		super(Button, self).__init__(**kwargs)
+		self.background_color = (1,.5,.5,0.5)
+class GreenButton(Button):
+	def __init__(self, **kwargs):
+		super(Button, self).__init__(**kwargs)
+		self.background_color = (.5,1,.5,0.5)
+class BlueButton(Button):
+	def __init__(self, **kwargs):
+		super(Button, self).__init__(**kwargs)
+		self.background_color = (.5,.5,1,0.5)
 
 class basemenu():
 	def on_activate(self):
@@ -173,6 +185,10 @@ class NewGamePanel(MirroredPanel):
     def __init__(self, gameref, **kwargs):
         super(NewGamePanel, self).__init__(**kwargs)
         self.player_id=kwargs['player_id']
+        if self.player_id==1:
+            pButton = RedButton
+        else:
+            pButton = BlueButton
         self.sname = 'new_game'
         self.orientation = 'vertical'
         self.gameref = gameref
@@ -186,10 +202,10 @@ class NewGamePanel(MirroredPanel):
 
         paddlebl = BoxLayout(orientation='vertical')
         paddlebl.add_widget(Label(text='Paddles'))
-        paddlebl.add_widget(BoButton(text='4', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
-        paddlebl.add_widget(BoButton(text='3', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
-        paddlebl.add_widget(BoButton(text='2', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
-        paddlebl.add_widget(BoButton(text='1', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
+        paddlebl.add_widget(pButton(text='4', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
+        paddlebl.add_widget(pButton(text='3', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
+        paddlebl.add_widget(pButton(text='2', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
+        paddlebl.add_widget(pButton(text='1', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
 
         self.paddle_slider_a = s=Slider(orientation='vertical', min=1,max=4,value=1,step=1)
         s.bind(value=self.release_paddle_slider_a)
@@ -198,10 +214,10 @@ class NewGamePanel(MirroredPanel):
         
         puckbl = BoxLayout(orientation='vertical')
         puckbl.add_widget(Label(text='Pucks'))
-        puckbl.add_widget(BoButton(text='4', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
-        puckbl.add_widget(BoButton(text='3', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
-        puckbl.add_widget(BoButton(text='2', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
-        puckbl.add_widget(BoButton(text='1', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        puckbl.add_widget(GreenButton(text='4', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        puckbl.add_widget(GreenButton(text='3', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        puckbl.add_widget(GreenButton(text='2', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        puckbl.add_widget(GreenButton(text='1', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
 
 
         self.puck_slider = s=Slider(orientation='vertical', min=1,max=4,value=1,step=1)
@@ -211,7 +227,7 @@ class NewGamePanel(MirroredPanel):
         self._bl.add_widget(bl)
 
 
-        l = BoButton(text="Ready", font_size=80)
+        l = pButton(text="Ready", font_size=80)
         l.bind(on_press=self.gopressed)
         l.size_hint = (.75,.5)
         l.pos_hint = {'x':.125}

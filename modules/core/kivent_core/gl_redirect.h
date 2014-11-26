@@ -1,8 +1,11 @@
 /**
  * Redirect the inclusion of GL file to the selected provider
  */
-
+#ifndef __WIN32__
 #include "config.h"
+#else
+#include "configwin32.h"
+#endif
 
 #if __USE_GLEW
 #	include <GL/glew.h>

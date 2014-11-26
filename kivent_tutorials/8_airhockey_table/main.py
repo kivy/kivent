@@ -24,7 +24,7 @@ from functools import partial
 import sounds
 import menus
 
-faded_air_hole_alpha=.1
+faded_air_hole_alpha=.075
 
 
 class TestGame(Widget):
@@ -607,7 +607,7 @@ class TestGame(Widget):
             (real_goal_thickness, 450.), (1., 0., 0., .25), collision_type=5)
         x1 = 225
         y1 = 95
-        xnum=30#4-100?
+        xnum=22#4-100?
         ynum=xnum*1060/1740+1
         xstep = (1920-x1*2)/float(xnum-1)
         ystep = (1080-y1*2)/float(ynum-1)
@@ -625,9 +625,81 @@ class TestGame(Widget):
         for x in range(xnum):
             for y in range(ynum):
                 pos = (x1 + xstep *x, y1 + ystep*y)
-                aairhole(make_hole(pos))
+                aairhole(make_hole(pos,60))
         self.new_game()
+    def makeVertMesh(self,all_verts, triangles,vert_data_count=6):
+        #render_system = self.gameworld.systems['renderer']
+        vert_count = len(all_verts)
+        index_count = len(triangles)
+        #attrcount = render_system.attribute_count
+        vert_mesh =  VertMesh(vert_data_count,
+            vert_count, index_count)
+        print triangles
+        vert_mesh.indices = triangles
+        for i in range(vert_count):
+            vert_mesh[i] = all_verts[i]
+        return vert_mesh
 
+    def draw_layered_regular_polygon(self, pos, levels, sides, middle_color,
+        radius_color_dict):
+        '''
+        radius_color_dict = {'level#': (r, (r,g,b,a))}
+        '''
+        pos=(0,0)
+        x, y = pos
+        angle = 2 * pi / sides
+        all_verts = []
+        all_verts_a = all_verts.append
+        mid = list(pos)
+        mid.extend(middle_color)
+        all_verts_a(mid)
+        r_total = 0
+        i = 0
+        triangles = []
+        vert_count = 1
+        tri_count = 0
+        tri_a = triangles.extend
+        for count in range(levels):
+            level = i + 1
+            r, color = radius_color_dict[level]
+            print color
+            for s in range(sides):
+                new_pos = list((x + (r + r_total) * sin(s * angle),
+                    y + (r + r_total) * cos(s * angle)))
+                new_pos.extend((0,0))
+                new_pos.extend(color)
+                all_verts_a(new_pos)
+                vert_count += 1
+            print vert_count
+            r_total +=  r
+            c = 1 #side number we are on in loop
+            if level == 1:
+                for each in range(sides):
+                    if c < sides:
+                        tri_a((c, 0, c+1))
+                    else:
+                        tri_a((c, 0, 1))
+                    tri_count += 1
+                    c += 1
+            else:
+                for each in range(sides):
+                    offset = sides*(i-1)
+                    if c < sides:
+                        tri_a((c+sides+offset, c+sides+1+offset, c+offset))
+                        #tri_a((c+offset, c+1+offset, c+sides+1+offset))
+                    else:
+                        tri_a((c+sides+offset, sides+1+offset, sides+offset))
+                        tri_a((sides+offset, 1+offset, sides+1+offset))
+                    tri_count += 2
+                    c += 1
+                print "offset:",offset
+            i += 1
+        render_system = self.gameworld.systems['renderer']
+        vert_mesh = self.makeVertMesh(all_verts, triangles, vert_data_count=render_system.attribute_count)
+        return {#'texture': 'asteroid1',
+            'vert_mesh': vert_mesh,
+            #'size': (64, 64),
+            'render': True}
     def draw_goal(self, pos, size, color, collision_type=4):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
@@ -796,12 +868,11 @@ class TestGame(Widget):
             'physics', 'renderer', 'lerp_system', 'scale']
         return self.gameworld.init_entity(create_component_dict,
             component_order)
-    def create_air_hole(self, pos):
+    def create_air_hole(self, pos,radius=60):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
-        radius=60
         shape_dict = {'inner_radius': 0, 'outer_radius': radius*.001,
             'mass': 0, 'offset': (0, 0)}
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
@@ -816,11 +887,23 @@ class TestGame(Widget):
             'vel_limit': 0., 
             'ang_vel_limit': radians(0.), 
             'mass': 0, 'col_shapes': col_shapes}
-        create_component_dict = {'physics': physics_component, 
-            'renderer': {#'texture': 'asteroid1', 
+
+        levels = 4#randint(1,4)
+        sides = 16
+        middle_color = (1., 1., 1., 1.)
+        radius_color_dict = {
+            1: (radius, (0.866666667, 0.443137255, 0.235294118, 1.0)),
+            2: (radius*.4, (0.866666667, 0.8, 0.9, 0.6)),
+            3: (radius*.4, (0.866666667, 0.8, 0.9, 0.4)),
+            4: (radius*.4, (0.866666667, 0.8, 0.9, 0.2)),}
+        poly_render_dict = self.draw_layered_regular_polygon(pos,
+            levels, sides, middle_color, radius_color_dict)
+        render_dict={#'texture': 'asteroid1',
             #'vert_mesh': vert_mesh,
             'size': (radius*2, radius*2),
-            'texture': 'airhole'},
+            'texture': 'airhole'}
+        create_component_dict = {'physics': physics_component, 
+            'renderer': render_dict,
             'position': pos, 'rotate': 0, 'color': color,
             'lerp_system': {},
             'scale':.5}

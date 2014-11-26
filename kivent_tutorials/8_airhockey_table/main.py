@@ -888,7 +888,7 @@ class TestGame(Widget):
             'ang_vel_limit': radians(0.), 
             'mass': 0, 'col_shapes': col_shapes}
 
-        levels = 4#randint(1,4)
+        '''levels = 4#randint(1,4)
         sides = 16
         middle_color = (1., 1., 1., 1.)
         radius_color_dict = {
@@ -896,8 +896,8 @@ class TestGame(Widget):
             2: (radius*.4, (0.866666667, 0.8, 0.9, 0.6)),
             3: (radius*.4, (0.866666667, 0.8, 0.9, 0.4)),
             4: (radius*.4, (0.866666667, 0.8, 0.9, 0.2)),}
-        poly_render_dict = self.draw_layered_regular_polygon(pos,
-            levels, sides, middle_color, radius_color_dict)
+        render_dict = self.draw_layered_regular_polygon(pos,
+            levels, sides, middle_color, radius_color_dict)'''
         render_dict={#'texture': 'asteroid1',
             #'vert_mesh': vert_mesh,
             'size': (radius*2, radius*2),

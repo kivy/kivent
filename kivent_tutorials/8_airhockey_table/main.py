@@ -246,7 +246,7 @@ class TestGame(Widget):
             begin_func=self.begin_collide_with_real_goal)
         physics_system.add_collision_handler(
             1, 6,
-            post_solve_func=self.mid_collide_sound)#puck-paddle
+            post_solve_func=self.begin_collide_with_paddle)#self.mid_collide_sound)#puck-paddle
 
         physics_system.add_collision_handler(
             6, 7,
@@ -381,20 +381,28 @@ class TestGame(Widget):
             'float')
 
         return False
+    def begin_collide_with_paddle(self, space, arbiter):
+        ent1_id = arbiter.shapes[0].body.data #puck
+        ent2_id = arbiter.shapes[1].body.data #paddle
+        systems = self.gameworld.systems
+
+        crashforce =  arbiter.total_ke
+        vol = min(1,crashforce/50000000)
+        if vol<0.01:return
+        if arbiter.is_first_contact:
+            sounds.play_hitmid(vol)
+        else:
+            sounds.vol_hitmid(vol)
+
+        lerp_system = systems['lerp_system']
+        lerp_system.clear_lerps_from_entity(ent1_id)
+        lerp_system.add_lerp_to_entity(ent1_id, 'scale', 's', 1.+vol*.5, .06,
+            'float', callback=self.lerp_callback_puck)
     def begin_collide_with_wall(self, space, arbiter):
         ent1_id = arbiter.shapes[0].body.data #puck
         ent2_id = arbiter.shapes[1].body.data #wall
         systems = self.gameworld.systems
 
-        lerp_system = systems['lerp_system']
-        lerp_system.clear_lerps_from_entity(ent2_id)
-        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 2.5, .06,
-            'float', callback=self.lerp_callback_wall)
-        ent = self.gameworld.entities[ent1_id]
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', ent.color.b, .2,
-            'float')
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'r', ent.color.r, .2,
-            'float')
         crashforce =  arbiter.total_ke
         vol = min(1,crashforce/50000000)
         if vol<0.01:return
@@ -402,6 +410,16 @@ class TestGame(Widget):
             sounds.play_hitlow(vol)
         else:
             sounds.vol_hitlow(vol)
+
+        lerp_system = systems['lerp_system']
+        lerp_system.clear_lerps_from_entity(ent2_id)
+        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2+vol, .06,
+            'float', callback=self.lerp_callback_wall)
+        ent = self.gameworld.entities[ent1_id]
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', ent.color.b, .2,
+            'float')
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'r', ent.color.r, .2,
+            'float')
     def postsolve_collide_sound(self, space, arbiter):
         #ent1_id = arbiter.shapes[0].body.data #puck
         #ent2_id = arbiter.shapes[1].body.data #paddle
@@ -488,6 +506,12 @@ class TestGame(Widget):
         lerp_system.add_lerp_to_entity(entity_id, 'color', 'a', faded_air_hole_alpha, 5.5,
             'float')
         lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .5, 5.5,
+            'float')
+    def lerp_callback_puck(self, entity_id, component_name, property_name,
+        final_value):
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', 1.0, .4,
             'float')
     def lerp_callback_wall(self, entity_id, component_name, property_name,
         final_value):

@@ -388,7 +388,7 @@ class TestGame(Widget):
 
         lerp_system = systems['lerp_system']
         lerp_system.clear_lerps_from_entity(ent2_id)
-        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.1, .06,
+        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 2.5, .06,
             'float', callback=self.lerp_callback_wall)
         ent = self.gameworld.entities[ent1_id]
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', ent.color.b, .2,
@@ -493,7 +493,7 @@ class TestGame(Widget):
         final_value):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', 1, .5,
+        lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', 1.05, .4,
             'float')
     '''def lerp_callback_airhole_scale(self, entity_id, component_name, property_name,
         final_value):
@@ -593,8 +593,8 @@ class TestGame(Widget):
 
 
         #top-bottom walls
-        self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 10.), (0., 1., 0., 1.), texture='lingrad')
-        self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 10.), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.), texture='lingrad')
         #self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
         #self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
         self.draw_goal((20.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height),
@@ -764,6 +764,14 @@ class TestGame(Widget):
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
                 property_name, .4, 5., 'float', callback=self.lerp_callback)
 
+    def draw_walls(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad'):
+        segnum = 10
+        ww = width/float(segnum)
+        pos= (pos[0]-width*.5+ww*.5,pos[1])
+        for w in range(segnum):
+
+            self.draw_wall(ww, height, pos, color, mass, collision_type, texture)
+            pos = (pos[0]+ww,pos[1])
     def draw_wall(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad'):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
@@ -785,7 +793,7 @@ class TestGame(Widget):
             'renderer': {'size': (width, height),'render': True, 'texture':texture},
             'position': pos, 'rotate': 0, 'color': color,
             'lerp_system': {},
-            'scale':1}
+            'scale':1.}
         component_order = ['position', 'rotate', 'color',
             'physics', 'renderer','lerp_system','scale']
         return self.gameworld.init_entity(create_component_dict, 

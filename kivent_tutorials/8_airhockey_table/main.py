@@ -1161,12 +1161,13 @@ class TestGame(Widget):
                 paddle = self.gameworld.entities[paddleid]
                 paddlepos = paddle.physics.body.position
                 isblue = paddle.color.b>.6
+                print paddlepos.x
                 if isblue:
-                    if paddlepos.x<1080/2:
+                    if paddlepos.x<1920/2:
                         continue
                     modvec=cy.Vec2d(100,0)
                 if not isblue:
-                    if paddlepos.x>1080/2:
+                    if paddlepos.x>1920/2:
                         continue
                     modvec=cy.Vec2d(-100,0)
                 smallest_dist=99999999

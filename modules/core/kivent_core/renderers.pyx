@@ -43,6 +43,15 @@ cdef class TextureManager:
         else:
             raise KeyError()
 
+    def load_texture(self, name, texture):
+        if name in self._textures:
+            raise KeyError()
+        else:
+            self._textures[name] = texture
+            self._keys[name] = name
+            self._uvs[name] = [0., 0., 1., 1.]
+            self._groups[name] = [name]
+
     def unload_texture(self, name):
         if name not in self._textures:
             raise KeyError()

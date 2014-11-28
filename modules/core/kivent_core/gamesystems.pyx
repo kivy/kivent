@@ -646,27 +646,30 @@ class GameView(GameSystem):
         pos = self.pos
         camera_scale = self.camera_scale
         proj = self.matrix.view_clip(
-            -camera_pos[0] + pos[0], 
-            camera_size[0]*camera_scale + -camera_pos[0] + pos[0], 
-            -camera_pos[1] + pos[1], 
-            camera_size[1]*camera_scale + -camera_pos[1] + pos[1],
+            -camera_pos[0], 
+            camera_size[0]*camera_scale + -camera_pos[0], 
+            -camera_pos[1], 
+            camera_size[1]*camera_scale + -camera_pos[1],
             0., 100, 0)
 
         self.canvas['projection_mat'] = proj
 
     def add_widget(self, widget):
         gameworld = self.gameworld
-        render_system_order = self.render_system_order
-        cdef str system_id = widget.system_id
-        if system_id in render_system_order:
-            index=render_system_order.index(system_id)
-        else:
-            index=0
-        super(GameView, self).add_widget(widget, index=index)
-        systems = gameworld.systems
+        cdef str system_id
         if isinstance(widget, GameSystem):
+            render_system_order = self.render_system_order
+            system_id = widget.system_id
+            if system_id in render_system_order:
+                index=render_system_order.index(system_id)
+            else:
+                index=0
+            super(GameView, self).add_widget(widget, index=index)
+            systems = gameworld.systems
             if widget.system_id not in systems:
                 Clock.schedule_once(partial(gameworld.add_system, widget))
+        else:
+            super(GameView, self).add_widget(widget)
         
 
     def remove_widget(self, widget):
@@ -739,12 +742,22 @@ class GameView(GameSystem):
 
     def convert_from_screen_to_world(self, pos):
         '''Converts the coordinates of pos from screen space to camera space'''
+        #pos of touch
         x,y = pos
+        print(pos, self.camera_pos)
+        print(self.pos, self.size)
+        #pos of widget
+        rx, ry = self.pos
         cx, cy = self.camera_pos
+        #touch pos converted to widget space
+        wx, wy = x - rx, y - ry
         camera_scale = self.camera_scale
-        new_x = (x * camera_scale) - cx
-        new_y = (y * camera_scale) - cy
-        return new_x, new_y
+        map_x, map_y = (wx * camera_scale) - cx, (wy * camera_scale) - cy
+
+        world_x = map_x
+        world_y = map_y
+        print(world_x, world_y)
+        return world_x, world_y
 
 
     def look_at(self, pos):

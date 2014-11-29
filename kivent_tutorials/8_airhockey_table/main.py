@@ -602,16 +602,16 @@ class TestGame(Widget):
         self.draw_wall_decoration(20., 1080, (1920*0.6, 1080/2), (0., .5, 1., 0.3))
 
         #left goal walls
-        self.draw_wall(20., wall_height, (goal_thickness, wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_wall(20., wall_height, (goal_thickness, 1080-wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_wall(20., goal_height, (20, 1080/2), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_vwalls(20., wall_height, (goal_thickness, wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_vwalls(20., wall_height, (goal_thickness, 1080-wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_vwalls(20., goal_height, (20, 1080/2), (0., 1., 0., 1.), texture='lingrad_alt',segnum=3)
         self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.), texture='lingrad')
         self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.), texture='lingrad')
 
         #right goal walls
-        self.draw_wall(20., wall_height, (1920-goal_thickness, wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_wall(20., wall_height, (1920-goal_thickness, 1080-wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_wall(20., goal_height, (1920-20, 1080/2), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_vwalls(20., wall_height, (1920-goal_thickness, wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_vwalls(20., wall_height, (1920-goal_thickness, 1080-wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
+        self.draw_vwalls(20., goal_height, (1920-20, 1080/2), (0., 1., 0., 1.), texture='lingrad_alt',segnum=3)
         self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.), texture='lingrad')
         self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.), texture='lingrad')
 
@@ -788,14 +788,20 @@ class TestGame(Widget):
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
                 property_name, .4, 5., 'float', callback=self.lerp_callback)
 
-    def draw_walls(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad'):
-        segnum = 10
+    def draw_walls(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad',segnum=10):
         ww = width/float(segnum)
         pos= (pos[0]-width*.5+ww*.5,pos[1])
         for w in range(segnum):
 
             self.draw_wall(ww, height, pos, color, mass, collision_type, texture)
             pos = (pos[0]+ww,pos[1])
+    def draw_vwalls(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad', segnum=2):
+        ww = height/float(segnum)
+        pos= (pos[0],pos[1]-height*.5+ww*.5)
+        for w in range(segnum):
+
+            self.draw_wall(width, ww, pos, color, mass, collision_type, texture)
+            pos = (pos[0],pos[1]+ww)
     def draw_wall(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad'):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)

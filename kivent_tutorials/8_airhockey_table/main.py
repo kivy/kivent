@@ -24,7 +24,7 @@ from functools import partial
 import sounds
 import menus
 
-faded_air_hole_alpha=.1
+faded_air_hole_alpha=.075
 
 
 class TestGame(Widget):
@@ -225,10 +225,13 @@ class TestGame(Widget):
         physics_system.add_collision_handler(
             1, 3, 
             begin_func=self.begin_collide_with_airhole,
-            separate_func=self.begin_seperate_with_airhole)
+            separate_func=self.begin_seperate_with_airhole)#puck-airhole
         physics_system.add_collision_handler(
             1, 2,
-            post_solve_func=self.low_collide_sound)#puck-wall
+            post_solve_func=self.begin_collide_with_wall)#low_collide_sound)#puck-wall
+        physics_system.add_collision_handler(
+            1, 8,
+            post_solve_func=self.begin_collide_with_wall)#low_collide_sound)#puck-wall
         physics_system.add_collision_handler(
             1, 4, 
             begin_func=self.begin_collide_with_goal)
@@ -243,7 +246,7 @@ class TestGame(Widget):
             begin_func=self.begin_collide_with_real_goal)
         physics_system.add_collision_handler(
             1, 6,
-            post_solve_func=self.mid_collide_sound)#puck-paddle
+            post_solve_func=self.begin_collide_with_paddle)#self.mid_collide_sound)#puck-paddle
 
         physics_system.add_collision_handler(
             6, 7,
@@ -253,7 +256,10 @@ class TestGame(Widget):
             post_solve_func=self.high_collide_sound)#paddle-paddle
         physics_system.add_collision_handler(
             6, 2,
-            post_solve_func=self.low_collide_sound)#paddle-wall
+            post_solve_func=self.begin_collide_with_wall)#self.low_collide_sound)#paddle-wall
+        physics_system.add_collision_handler(
+            6, 8,
+            post_solve_func=self.begin_collide_with_wall)#self.low_collide_sound)#paddle-wall
         physics_system.add_collision_handler(
             6, 3,
             begin_func=self.begin_collide_with_airhole,
@@ -295,9 +301,9 @@ class TestGame(Widget):
         physics_system.add_collision_handler(
             8, 8,
             post_solve_func=self.high_collide_sound)#paddle-paddle
-        physics_system.add_collision_handler(
-            8, 6,
-            post_solve_func=self.high_collide_sound)#paddle-paddle
+        #physics_system.add_collision_handler(
+        #    8, 6,
+        #    post_solve_func=self.high_collide_sound)#paddle-paddle
 
     def presolve_collide_with_vortex(self, space, arbiter):
         #systems = self.gameworld.systems
@@ -352,9 +358,9 @@ class TestGame(Widget):
     def spawn_new_puck(self, dt):
         puck_id = self.create_puck((1920.*.5, 1080.*.5))
         systems = self.gameworld.systems
-        lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(puck_id, 'color', 'g', .4, 5.,
-            'float', callback=self.lerp_callback)
+        #lerp_system = systems['lerp_system']
+        #lerp_system.add_lerp_to_entity(puck_id, 'color', 'g', .4, 5.,
+        #    'float', callback=self.lerp_callback)
 
     def begin_collide_with_airhole(self, space, arbiter):
         ent1_id = arbiter.shapes[0].body.data #puck
@@ -362,7 +368,7 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         lerp_system.clear_lerps_from_entity(ent2_id)
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'a', .85, .2,
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'a', .55, .2,
             'float', callback=self.lerp_callback_airhole)
         lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2, .3,
             'float')#, callback=self.lerp_callback_airhole_scale)#
@@ -370,11 +376,50 @@ class TestGame(Widget):
         #else:
         ent = self.gameworld.entities[ent1_id]
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', ent.color.b, .2,
-            'float', callback=self.lerp_callback_airhole)
+            'float')
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'r', ent.color.r, .2,
-            'float', callback=self.lerp_callback_airhole)
+            'float')
 
         return False
+    def begin_collide_with_paddle(self, space, arbiter):
+        ent1_id = arbiter.shapes[0].body.data #puck
+        ent2_id = arbiter.shapes[1].body.data #paddle
+        systems = self.gameworld.systems
+
+        crashforce =  arbiter.total_ke
+        vol = min(1,crashforce/50000000)
+        if vol<0.01:return
+        if arbiter.is_first_contact:
+            sounds.play_hitmid(vol)
+        else:
+            sounds.vol_hitmid(vol)
+
+        lerp_system = systems['lerp_system']
+        lerp_system.clear_lerps_from_entity(ent1_id)
+        lerp_system.add_lerp_to_entity(ent1_id, 'scale', 's', 1.+vol*.5, .06,
+            'float', callback=self.lerp_callback_puck)
+    def begin_collide_with_wall(self, space, arbiter):
+        ent1_id = arbiter.shapes[0].body.data #puck
+        ent2_id = arbiter.shapes[1].body.data #wall
+        systems = self.gameworld.systems
+
+        crashforce =  arbiter.total_ke
+        vol = min(1,crashforce/50000000)
+        if vol<0.01:return
+        if arbiter.is_first_contact:
+            sounds.play_hitlow(vol)
+        else:
+            sounds.vol_hitlow(vol)
+
+        lerp_system = systems['lerp_system']
+        lerp_system.clear_lerps_from_entity(ent2_id)
+        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.2+vol, .06,
+            'float', callback=self.lerp_callback_wall)
+        ent = self.gameworld.entities[ent1_id]
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'b', ent.color.b, .2,
+            'float')
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'r', ent.color.r, .2,
+            'float')
     def postsolve_collide_sound(self, space, arbiter):
         #ent1_id = arbiter.shapes[0].body.data #puck
         #ent2_id = arbiter.shapes[1].body.data #paddle
@@ -462,6 +507,18 @@ class TestGame(Widget):
             'float')
         lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .5, 5.5,
             'float')
+    def lerp_callback_puck(self, entity_id, component_name, property_name,
+        final_value):
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', 1.0, .4,
+            'float')
+    def lerp_callback_wall(self, entity_id, component_name, property_name,
+        final_value):
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', 1.05, .4,
+            'float')
     '''def lerp_callback_airhole_scale(self, entity_id, component_name, property_name,
         final_value):
         systems = self.gameworld.systems
@@ -473,9 +530,9 @@ class TestGame(Widget):
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
         lerp_system.clear_lerps_from_entity(ent2_id)
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'a', faded_air_hole_alpha, 2.5,
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'a', faded_air_hole_alpha, .75,
             'float')
-        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', .5, 2.5,
+        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', .5, .75,
             'float')
         return False
     def clear_game(self):
@@ -494,18 +551,28 @@ class TestGame(Widget):
         self.observermenu.update_scores()
         self.set_observer_action(0)
         self.set_observer_action(1)
-    def new_game(self, puck_number=1, paddle_multiplier=1):
+    def new_game(self, puck_number=None, paddle_multiplier=None):
         self.clear_game()
         systems = self.gameworld.systems
         lerp_system = systems['lerp_system']
 
-        self.puck_number = puck_number
+        if not hasattr(self, 'puck_number'):self.puck_number=1
+        if not hasattr(self, 'paddle_multiplier'):self.paddle_multiplier=1
+
+        if not puck_number:
+            puck_number = self.puck_number
+        else:
+            self.puck_number = puck_number
+        if not paddle_multiplier:
+            paddle_multiplier = self.paddle_multiplier
+        else:
+            self.paddle_multiplier = paddle_multiplier
 
         for yposd in range(1,puck_number+1):
             ypos = float(yposd)/float(puck_number+1)
             puck_id = self.create_puck((1920.*.5, 1080.*ypos))
-            lerp_system.add_lerp_to_entity(puck_id, 'color', 'g', .4, 5.,
-                'float', callback=self.lerp_callback)
+            #lerp_system.add_lerp_to_entity(puck_id, 'color', 'g', .4, 5.,
+            #    'float', callback=self.lerp_callback)
 
         for yposd in range(1,paddle_multiplier+1):
             ypos = float(yposd)/float(paddle_multiplier+1)
@@ -548,8 +615,10 @@ class TestGame(Widget):
         self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.), texture='lingrad')
         self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.), texture='lingrad')
 
-        self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 10.), (0., 1., 0., 1.), texture='lingrad')
-        self.draw_wall(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.), texture='lingrad')
+
+        #top-bottom walls
+        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 10.), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.), texture='lingrad')
         #self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
         #self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
         self.draw_goal((20.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height),
@@ -562,24 +631,99 @@ class TestGame(Widget):
             (real_goal_thickness, 450.), (1., 0., 0., .25), collision_type=5)
         x1 = 225
         y1 = 95
-        xnum=20#4-100?
+        xnum=22#4-100?
         ynum=xnum*1060/1740+1
         xstep = (1920-x1*2)/float(xnum-1)
         ystep = (1080-y1*2)/float(ynum-1)
         from random import random
-        if random()>.5:
+        if 1:#random()>.5:
             make_hole = self.create_air_hole
-        else:
+            #make_hole = self.create_air_triangle
+        '''else:
             if random()>.5:
                 make_hole = self.create_air_triangle
             else:
-                make_hole = self.create_air_square
+                make_hole = self.create_air_square'''
+        self.airholeids=[]
+        aairhole = self.airholeids.append
         for x in range(xnum):
             for y in range(ynum):
                 pos = (x1 + xstep *x, y1 + ystep*y)
-                make_hole(pos)
+                aairhole(make_hole(pos,60))
         self.new_game()
+    def makeVertMesh(self,all_verts, triangles,vert_data_count=6):
+        #render_system = self.gameworld.systems['renderer']
+        vert_count = len(all_verts)
+        index_count = len(triangles)
+        #attrcount = render_system.attribute_count
+        vert_mesh =  VertMesh(vert_data_count,
+            vert_count, index_count)
+        print triangles
+        vert_mesh.indices = triangles
+        for i in range(vert_count):
+            vert_mesh[i] = all_verts[i]
+        return vert_mesh
 
+    def draw_layered_regular_polygon(self, pos, levels, sides, middle_color,
+        radius_color_dict):
+        '''
+        radius_color_dict = {'level#': (r, (r,g,b,a))}
+        '''
+        pos=(0,0)
+        x, y = pos
+        angle = 2 * pi / sides
+        all_verts = []
+        all_verts_a = all_verts.append
+        mid = list(pos)
+        mid.extend(middle_color)
+        all_verts_a(mid)
+        r_total = 0
+        i = 0
+        triangles = []
+        vert_count = 1
+        tri_count = 0
+        tri_a = triangles.extend
+        for count in range(levels):
+            level = i + 1
+            r, color = radius_color_dict[level]
+            print color
+            for s in range(sides):
+                new_pos = list((x + (r + r_total) * sin(s * angle),
+                    y + (r + r_total) * cos(s * angle)))
+                new_pos.extend((0,0))
+                new_pos.extend(color)
+                all_verts_a(new_pos)
+                vert_count += 1
+            print vert_count
+            r_total +=  r
+            c = 1 #side number we are on in loop
+            if level == 1:
+                for each in range(sides):
+                    if c < sides:
+                        tri_a((c, 0, c+1))
+                    else:
+                        tri_a((c, 0, 1))
+                    tri_count += 1
+                    c += 1
+            else:
+                for each in range(sides):
+                    offset = sides*(i-1)
+                    if c < sides:
+                        tri_a((c+sides+offset, c+sides+1+offset, c+offset))
+                        #tri_a((c+offset, c+1+offset, c+sides+1+offset))
+                    else:
+                        tri_a((c+sides+offset, sides+1+offset, sides+offset))
+                        tri_a((sides+offset, 1+offset, sides+1+offset))
+                    tri_count += 2
+                    c += 1
+                print "offset:",offset
+            i += 1
+        render_system = self.gameworld.systems['renderer']
+        vert_mesh = self.makeVertMesh(all_verts, triangles, vert_data_count=render_system.attribute_count)
+        return {#'texture': 'asteroid1',
+            'vert_mesh': vert_mesh,
+            #'size': (64, 64),
+            'render': True}
     def draw_goal(self, pos, size, color, collision_type=4):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
@@ -644,6 +788,14 @@ class TestGame(Widget):
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
                 property_name, .4, 5., 'float', callback=self.lerp_callback)
 
+    def draw_walls(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad'):
+        segnum = 10
+        ww = width/float(segnum)
+        pos= (pos[0]-width*.5+ww*.5,pos[1])
+        for w in range(segnum):
+
+            self.draw_wall(ww, height, pos, color, mass, collision_type, texture)
+            pos = (pos[0]+ww,pos[1])
     def draw_wall(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad'):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
@@ -664,9 +816,10 @@ class TestGame(Widget):
         create_component_dict = {'physics': physics_component, 
             'renderer': {'size': (width, height),'render': True, 'texture':texture},
             'position': pos, 'rotate': 0, 'color': color,
-            'scale':1}
+            'lerp_system': {},
+            'scale':1.}
         component_order = ['position', 'rotate', 'color',
-            'physics', 'renderer','scale']
+            'physics', 'renderer','lerp_system','scale']
         return self.gameworld.init_entity(create_component_dict, 
             component_order)
     def draw_wall_decoration(self, width, height, pos, color, texture=None):
@@ -686,8 +839,8 @@ class TestGame(Widget):
         y_vel = 0 #randint(-100, 100)
         angle = random()*11./7. #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
-        radius=60
-        shape_dict = {'inner_radius': 0, 'outer_radius': radius,
+        radius=30
+        shape_dict = {'inner_radius': 0, 'outer_radius': radius*.001,
             'mass': 0, 'offset': (0, 0)}
         col_shape = {'shape_type': 'circle', 'elasticity': .5,
             'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
@@ -747,18 +900,17 @@ class TestGame(Widget):
             'physics', 'renderer', 'lerp_system', 'scale']
         return self.gameworld.init_entity(create_component_dict,
             component_order)
-    def create_air_hole(self, pos):
+    def create_air_hole(self, pos,radius=60):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
-        radius=60
-        shape_dict = {'inner_radius': 0, 'outer_radius': radius,
+        shape_dict = {'inner_radius': 0, 'outer_radius': radius*.001,
             'mass': 0, 'offset': (0, 0)}
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
             'collision_type': 3, 'shape_info': shape_dict, 'friction': 1.0}
         col_shapes = [col_shape]
-        color=(.25, .25, .25, faded_air_hole_alpha)
+        color=(.25, .75, .25, faded_air_hole_alpha)
         #vert_mesh = self.draw_regular_polygon(30, 40., color)
         physics_component = {'main_shape': 'circle', 
             'velocity': (x_vel, y_vel), 
@@ -767,11 +919,23 @@ class TestGame(Widget):
             'vel_limit': 0., 
             'ang_vel_limit': radians(0.), 
             'mass': 0, 'col_shapes': col_shapes}
-        create_component_dict = {'physics': physics_component, 
-            'renderer': {#'texture': 'asteroid1', 
+
+        '''levels = 4#randint(1,4)
+        sides = 16
+        middle_color = (1., 1., 1., 1.)
+        radius_color_dict = {
+            1: (radius, (0.866666667, 0.443137255, 0.235294118, 1.0)),
+            2: (radius*.4, (0.866666667, 0.8, 0.9, 0.6)),
+            3: (radius*.4, (0.866666667, 0.8, 0.9, 0.4)),
+            4: (radius*.4, (0.866666667, 0.8, 0.9, 0.2)),}
+        render_dict = self.draw_layered_regular_polygon(pos,
+            levels, sides, middle_color, radius_color_dict)'''
+        render_dict={#'texture': 'asteroid1',
             #'vert_mesh': vert_mesh,
             'size': (radius*2, radius*2),
-            'texture': 'airhole'},
+            'texture': 'airhole'}
+        create_component_dict = {'physics': physics_component, 
+            'renderer': render_dict,
             'position': pos, 'rotate': 0, 'color': color,
             'lerp_system': {},
             'scale':.5}
@@ -844,13 +1008,13 @@ class TestGame(Widget):
 
         self.miscIDs.add(_id)
         return _id
-    def create_puck(self, pos):
+    def create_puck(self, pos, radius=50):
         sounds.play_spawnpuck(.3)
         x_vel = 0#randint(-100, 100)
         y_vel = 0#randint(-100, 100)
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 10 #radians(randint(-150, -150))
-        shape_dict = {'inner_radius': 0, 'outer_radius': 75., 
+        shape_dict = {'inner_radius': 0, 'outer_radius': radius,
             'mass': 50, 'offset': (0., 0.)}
         col_shape = {'shape_type': 'circle', 'elasticity': .8,
             'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
@@ -866,7 +1030,7 @@ class TestGame(Widget):
         create_component_dict = {'physics': physics_component, 
             'puck_renderer': {#'texture': 'asteroid1', 
             #'vert_mesh': vert_mesh,
-            'size': (75*2,75*2),
+            'size': (radius*2,radius*2),
             'texture':'kivy-logo'
             #'render': True
             },
@@ -942,10 +1106,10 @@ class TestGame(Widget):
         space = self.gameworld.systems['physics'].space
         space.add(aj)
         return aj
-    def create_paddle(self, pos, color=(1,1,1,0.65), player=0):
+    def create_paddle(self, pos, color=(1,1,1,0.65), player=0, radius=75):
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
-        radius=55
+        radius=radius
         shape_dict = {'inner_radius': 0, 'outer_radius': radius,
             'mass': 50, 'offset': (0., 0.)}
         col_shape = {'shape_type': 'circle', 'elasticity': .8,
@@ -962,7 +1126,7 @@ class TestGame(Widget):
         create_component_dict = {'physics': physics_component,
             'puck_renderer': {#'texture': 'asteroid1',
             #'vert_mesh': vert_mesh,
-            'size': (50*2, 50*2),
+            'size': (radius*2, radius*2),
             'texture': 'paddle'},
             'position': pos, 'rotate': 0, 'color': color,
             'lerp_system': {},
@@ -981,6 +1145,15 @@ class TestGame(Widget):
     def setup_map(self):
         gameworld = self.gameworld
         gameworld.currentmap = gameworld.systems['map']
+    def do_airhole_extras(self, dt):
+        if random()<.9:return
+        systems = self.gameworld.systems
+        lerp_system = systems['lerp_system']
+        entid = choice(self.airholeids)
+        lerp_system.clear_lerps_from_entity(entid)
+        #lerp_system.add_lerp_to_entity(entid,'color',choice(['r','g','b']),.7,1.,'float',callback=self.lerp_callback_airhole)
+        lerp_system.add_lerp_to_entity(entid,'color','a',.6,1.,'float',callback=self.lerp_callback_airhole)
+        lerp_system.add_lerp_to_entity(entid,'scale','s',.6,1.,'float')
     def do_ai(self, dt):
         paddlenum = len(self.paddleIDs)
         for paddleid in self.paddleIDs:
@@ -988,12 +1161,13 @@ class TestGame(Widget):
                 paddle = self.gameworld.entities[paddleid]
                 paddlepos = paddle.physics.body.position
                 isblue = paddle.color.b>.6
+                print paddlepos.x
                 if isblue:
-                    if paddlepos.x<1080/2:
+                    if paddlepos.x<1920/2:
                         continue
                     modvec=cy.Vec2d(100,0)
                 if not isblue:
-                    if paddlepos.x>1080/2:
+                    if paddlepos.x>1920/2:
                         continue
                     modvec=cy.Vec2d(-100,0)
                 smallest_dist=99999999
@@ -1017,6 +1191,7 @@ class TestGame(Widget):
         if not self.paused:
             if self.current_menu_ref.sname == 'intro':
                 self.do_ai(dt)
+            #self.do_airhole_extras(dt)
             self.gameworld.update(dt)
 
     def setup_states(self):

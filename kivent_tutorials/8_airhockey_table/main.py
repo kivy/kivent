@@ -155,8 +155,9 @@ class TestGame(Widget):
             self.set_observer_action(0)
         self.observermenu.update_scores()
     def action_puck_storm(self,wp=None,yspos=None):
+        storm_power = 800
         for i in range(7):
-            self.create_puck((wp[0], wp[1]))
+            self.create_puck((wp[0], wp[1]),x_vel=randint(-storm_power, storm_power),y_vel=randint(-storm_power, storm_power))
         if yspos<0.5:
             self.bottom_points-=10000
             self.set_observer_action(1)
@@ -1014,10 +1015,8 @@ class TestGame(Widget):
 
         self.miscIDs.add(_id)
         return _id
-    def create_puck(self, pos, radius=50):
+    def create_puck(self, pos, radius=50,x_vel=0,y_vel=0):
         sounds.play_spawnpuck(.3)
-        x_vel = 0#randint(-100, 100)
-        y_vel = 0#randint(-100, 100)
         angle = 0 #radians(randint(-360, 360))
         angular_velocity = 10 #radians(randint(-150, -150))
         shape_dict = {'inner_radius': 0, 'outer_radius': radius,

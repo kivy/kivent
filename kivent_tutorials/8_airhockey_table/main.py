@@ -23,6 +23,7 @@ from functools import partial
 
 import sounds
 import menus
+import observer_actions
 
 faded_air_hole_alpha=.075
 
@@ -97,19 +98,20 @@ class TestGame(Widget):
             super(TestGame, self).on_touch_down(touch)
         else:#middle area,for observers
             if yspos<0.5:
-                do_super = self.bottom_action_name in ['wall', 'vortex']
-                self.bottom_action(wp,yspos)
+                #do_super = self.bottom_action_name in ['wall', 'vortex']
+                self.bottom_action(wp,touch)
             else:
-                do_super = self.top_action_name in ['wall', 'vortex']
-                self.top_action(wp,yspos)
-            if do_super:super(TestGame, self).on_touch_down(touch)
+                #do_super = self.top_action_name in ['wall', 'vortex']
+                self.top_action(wp,touch)
+            #if do_super:super(TestGame, self).on_touch_down(touch)
             #self.observermenu.on_touch_down(touch)
 
-    def bottom_action(self,wp=None,yspos=None):
+    def bottom_action(self,wp=None,touch=None):
         print "no action bottom"
-    def top_action(self,wp=None,yspos=None):
+    def top_action(self,wp=None,touch=None):
         print "no action top"
-    def action_speedup(self,wp=None,yspos=None):
+    def action_speedup(self,wp=None,touch=None):
+        yspos = touch.spos[1]
         touched_shapes = self.getShapesAt(wp)
         for touched_shape in touched_shapes:
             tbody = touched_shape.body
@@ -129,7 +131,8 @@ class TestGame(Widget):
                 else:
                     self.top_points+=tbodyspeed
                 self.observermenu.update_scores()
-    def action_vortex(self,wp=None,yspos=None):
+    def action_vortex(self,wp=None,touch=None):
+        yspos = touch.spos[1]
         vortex_id = self.create_floater(wp,mass=1000,collision_type=7,radius=100,color=(0.1,.1,0.1,0.75))#radius=points
         pfunc = partial( self.remove_entity, vortex_id,0.)
         Clock.schedule_once(pfunc,7.5)
@@ -141,9 +144,23 @@ class TestGame(Widget):
             self.top_points-=1000
             self.set_observer_action(0)
         self.observermenu.update_scores()
-    def action_wall(self,wp=None,yspos=None):
+        super(TestGame, self).on_touch_down(touch)
+    def action_wall(self,wp=None,touch=None):
+        yspos = touch.spos[1]
         #self.create_floater(wp)
-        wallid = self.draw_wall(20,200,wp,(0,1,0,0.5),250,collision_type=8, texture='lingrad_alt')
+        istop = int(yspos+.5)
+        lasttouches = observer_actions.lasttouches
+        lasttouch = lasttouches[istop]
+        if lasttouch == None:
+            lasttouches[istop] = touch
+            return
+        owp = self.getWorldPosFromTuple(lasttouch.pos)
+        v2d=cy.Vec2d
+        dist=v2d(v2d(wp)-v2d(owp))
+        avg=v2d(v2d(wp)+v2d(owp))*.5
+        print dist
+
+        wallid = self.draw_wall(20,200,(avg.x,avg.y),(0,1,0,0.5),mass=0,collision_type=2, texture='lingrad_alt', angle=dist.angle+pi*.5)
         pfunc = partial( self.remove_entity, wallid,0.)
         Clock.schedule_once(pfunc,15)
         self.miscIDs.add(wallid)
@@ -154,7 +171,9 @@ class TestGame(Widget):
             self.top_points-=5000
             self.set_observer_action(0)
         self.observermenu.update_scores()
-    def action_puck_storm(self,wp=None,yspos=None):
+        lasttouches[istop] = None
+    def action_puck_storm(self,wp=None,touch=None):
+        yspos = touch.spos[1]
         storm_power = 800
         for i in range(7):
             self.create_puck((wp[0], wp[1]),x_vel=randint(-storm_power, storm_power),y_vel=randint(-storm_power, storm_power))
@@ -803,10 +822,9 @@ class TestGame(Widget):
 
             self.draw_wall(width, ww, pos, color, mass, collision_type, texture)
             pos = (pos[0],pos[1]+ww)
-    def draw_wall(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad'):
+    def draw_wall(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad', angle=0):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
-        angle = 0 #radians(randint(-360, 360))
         angular_velocity = 0 #radians(randint(-150, -150))
         shape_dict = {'width': width, 'height': height, 
             'mass': mass, 'offset': (0, 0)}

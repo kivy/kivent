@@ -159,8 +159,9 @@ class TestGame(Widget):
         dist=v2d(v2d(wp)-v2d(owp))
         avg=v2d(v2d(wp)+v2d(owp))*.5
         print dist
+        length = max(50,min( 250, dist.length))
 
-        wallid = self.draw_wall(20,200,(avg.x,avg.y),(0,1,0,0.5),mass=0,collision_type=2, texture='lingrad_alt', angle=dist.angle+pi*.5)
+        wallid = self.draw_wall(25,length,(avg.x,avg.y),(0,1,0,0.5),mass=0,collision_type=2, texture='lingrad_alt', angle=dist.angle+pi*.5)
         pfunc = partial( self.remove_entity, wallid,0.)
         Clock.schedule_once(pfunc,15)
         self.miscIDs.add(wallid)

@@ -393,10 +393,13 @@ class TestGame(Widget):
             self.blue_score+=1
             if self.blue_score>9 and self.current_menu_ref.sname=='ingame':
                 self.setMenu(menus.VictoryMenu(self,winner="Blue"))
+            color = (0,.1,1.,1.)
         else:
             self.red_score+=1
             if self.red_score>9 and self.current_menu_ref.sname=='ingame':
                 self.setMenu(menus.VictoryMenu(self,winner="Red"))
+            color = (1.,.1,0,1.)
+        simps.spawn_particles_at((puckposition[0],puckposition[1]), count=30,maxvel=50.,color=color,drag=1.02)
         self.scoreboard.update_scores()
         return False
 

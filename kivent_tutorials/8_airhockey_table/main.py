@@ -123,6 +123,14 @@ class TestGame(Widget):
         for touched_shape in touched_shapes:
             tbody = touched_shape.body
             if tbody.data in self.puckIDs:
+                if (self.blue_score==9 or self.red_score==9) and self.can_storm:
+                    self.can_storm=False
+                    storm_power=800.
+                    for i in range(7):
+                        self.create_puck((wp[0], wp[1]),
+                                         x_vel=randint(-storm_power, storm_power),
+                                         y_vel=randint(-storm_power, storm_power))
+                    return
                 sounds.play_pitchraise(.5)
                 ent = self.gameworld.entities[tbody.data]
                 color=ent.color
@@ -597,6 +605,7 @@ class TestGame(Widget):
         #self.observermenu.update_scores()
         self.set_observer_action(0)
         self.set_observer_action(1)
+        self.can_storm=True
     def new_game(self, puck_number=None, paddle_multiplier=None):
         self.clear_game()
         systems = self.gameworld.systems

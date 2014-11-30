@@ -679,7 +679,7 @@ class TestGame(Widget):
         #attrcount = render_system.attribute_count
         vert_mesh =  VertMesh(vert_data_count,
             vert_count, index_count)
-        print triangles
+        #print triangles
         vert_mesh.indices = triangles
         for i in range(vert_count):
             vert_mesh[i] = all_verts[i]
@@ -707,7 +707,7 @@ class TestGame(Widget):
         for count in range(levels):
             level = i + 1
             r, color = radius_color_dict[level]
-            print color
+            #print color
             for s in range(sides):
                 new_pos = list((x + (r + r_total) * sin(s * angle),
                     y + (r + r_total) * cos(s * angle)))
@@ -715,7 +715,7 @@ class TestGame(Widget):
                 new_pos.extend(color)
                 all_verts_a(new_pos)
                 vert_count += 1
-            print vert_count
+            #print vert_count
             r_total +=  r
             c = 1 #side number we are on in loop
             if level == 1:
@@ -897,7 +897,7 @@ class TestGame(Widget):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
         angle = 22./14./2. #radians(randint(-360, 360))
-        print angle
+        #print angle
         angular_velocity = 0. #radians(randint(-150, -150))
         radius=60
         shape_dict = {'inner_radius': 0, 'outer_radius': radius,
@@ -1185,7 +1185,7 @@ class TestGame(Widget):
                 paddle = self.gameworld.entities[paddleid]
                 paddlepos = paddle.physics.body.position
                 isblue = paddle.color.b>.6
-                print paddlepos.x
+                #print paddlepos.x
                 if isblue:
                     if paddlepos.x<1920/2:
                         continue

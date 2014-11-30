@@ -43,7 +43,7 @@ def update(dt):
 def create_visual(pos, color,start_scale=1.):
 
     create_component_dict = {
-        'puck_renderer': {'texture': 'airhole',
+        'puck_renderer': {'texture': 'particle',
         'size': (64, 64)},
         'position': pos, 'rotate': 0, 'color': color,
         #'lerp_system': {},

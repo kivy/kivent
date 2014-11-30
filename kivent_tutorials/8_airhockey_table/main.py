@@ -19,6 +19,7 @@ texture_manager.load_image('assets/png/kivy-logo.png')
 texture_manager.load_image('assets/png/paddle.png')
 texture_manager.load_image('assets/png/airhole.png')
 texture_manager.load_image('assets/png/bubbles.png')
+texture_manager.load_image('assets/png/particle.png')
 from kivent_cymunk.physics import CymunkPhysics
 from functools import partial
 

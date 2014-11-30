@@ -330,6 +330,8 @@ class GameUIMenu(FloatLayout, basemenu):
         self.add_widget(self.player_menu)
         self.observer_menu = ObserverMenu(gameref)
         self.add_widget(self.observer_menu)
+    def update(self, dt):
+        self.observer_menu.update(dt)
 
 
 class ScoreBoard(BoxLayout):
@@ -369,11 +371,11 @@ class ObserverPanel(ScatterPlaneLayout):
         sratio = self.width/1920.
         ssize = 150.*sratio*8.
 
-        l = Button(background_normal='assets/png/observer_speedup.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":-0.3,"y":0})
+        '''l = Button(background_normal='assets/png/observer_speedup.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":-0.3,"y":0})
         l.width=l.height=ssize
         l.bind(on_press=self.power_pressed)
         l.command="speedup"
-        self.add_widget(l)
+        self.add_widget(l)'''
         self.vortex = l = Button(background_normal='assets/png/observer_vortex.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":1000./10000.,"y":0})
         l.width=l.height=ssize
         l.bind(on_press=self.power_pressed)
@@ -384,11 +386,11 @@ class ObserverPanel(ScatterPlaneLayout):
         l.bind(on_press=self.power_pressed)
         l.command="wall"
         self.add_widget(l)
-        self.puck_storm = l = Button(background_normal='assets/png/observer_puck_storm.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":10000./10000,"y":0})
+        '''self.puck_storm = l = Button(background_normal='assets/png/observer_puck_storm.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":10000./10000,"y":0})
         l.width=l.height=ssize
         l.bind(on_press=self.power_pressed)
         l.command="puck_storm"
-        self.add_widget(l)
+        self.add_widget(l)'''
 
         self.selector = l = Image(source='assets/png/observer_selector.png', size_hint=(None,None), allow_stretch=True, pos_hint={"x":-0.3,"y":0})
         l.width=l.height=ssize
@@ -397,7 +399,7 @@ class ObserverPanel(ScatterPlaneLayout):
         self.parent.power_pressed(instance, observer_id=self.observer_id)
     def update_scores(self, points):
         self.score.value=points
-        self.puck_storm.disabled = points<10000
+        #self.puck_storm.disabled = points<10000
         self.wall.disabled = points<5000
         self.vortex.disabled = points<1000
 
@@ -455,11 +457,17 @@ class ObserverMenu(BoxLayout):
         gameref.set_observer_action(isbottom,instance.command)
     def set_selector_pos(self, isbottom, command):
         actioncost = observer_actions.actioncosts[command]
-        if actioncost==0:actioncost=-3000
+        if actioncost==0:actioncost=-300000
         if isbottom:
             self.bottomfl.selector.pos_hint={"x":actioncost/10000.,"y":0}
         else:
             self.topfl.selector.pos_hint={"x":actioncost/10000.,"y":0}
+    def update(self, dt):
+        gameref=self.gameref
+        gameref.bottom_points+=dt*100.
+        gameref.top_points+=dt*100.
+        self.update_scores()
+
 
 class PlayerPanel(MirroredPanel):
     def __init__(self, **kwargs):

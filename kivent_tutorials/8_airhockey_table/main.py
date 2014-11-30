@@ -540,8 +540,8 @@ class TestGame(Widget):
         Clock.unschedule(self.spawn_new_puck)
         self.blue_score = 0
         self.red_score = 0
-        self.bottom_points = 11000
-        self.top_points = 4000
+        self.bottom_points = 0
+        self.top_points = 0
         for p in set(self.paddleIDs):
             self.remove_entity(p)
         for p in set(self.puckIDs):
@@ -1196,6 +1196,8 @@ class TestGame(Widget):
         if not self.paused:
             if self.current_menu_ref.sname == 'intro':
                 self.do_ai(dt)
+            elif self.current_menu_ref.sname == 'ingame':
+                self.current_menu_ref.update(dt)
             #self.do_airhole_extras(dt)
             self.gameworld.update(dt)
 

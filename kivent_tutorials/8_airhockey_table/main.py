@@ -316,8 +316,8 @@ class TestGame(Widget):
         #ent2_id = body2.data #goal
         #ents= = self.gameworld.entities
         # apos = entity.position
-        dvecx = (p2.x - p1.x) * body1.mass * 0.2
-        dvecy = (p2.y - p1.y) * body1.mass * 0.2
+        dvecx = (p2.x - p1.x) * body1.mass * 0.5
+        dvecy = (p2.y - p1.y) * body1.mass * 0.5
         body1.apply_impulse((dvecx, dvecy))
 
         return False

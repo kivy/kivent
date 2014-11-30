@@ -608,7 +608,7 @@ class TestGame(Widget):
         self.miscIDs = set()
         self.created_entities = created_entities = []
         entities = self.gameworld.entities
-        self.create_color_circle((1920.*.5, 1080.*.5), color=(0.5,0.5,0.5,0.5))
+        #self.create_color_circle((1920.*.5, 1080.*.5), color=(0.5,0.5,0.5,0.5))
         goal_height=560
         goal_thickness=150
         real_goal_height=goal_height-90

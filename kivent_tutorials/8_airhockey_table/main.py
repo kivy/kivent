@@ -388,7 +388,7 @@ class TestGame(Widget):
         self.remove_entity(ent1_id)
         if len(self.puckIDs) < self.puck_number:
             Clock.schedule_once(self.spawn_new_puck, 2.5)
-        sounds.play_jingle()
+        sounds.play_beeeew()
         if ppx<0.5:
             self.blue_score+=1
             if self.blue_score>9 and self.current_menu_ref.sname=='ingame':

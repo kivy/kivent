@@ -176,7 +176,8 @@ class VictoryMenu(BoxLayout, basemenu):
         gameref = self.gameref
         gameref.setMenu(NewGameMenu(self.gameref))
     def on_activate(self):
-        pass
+        import sounds
+        sounds.play_jingle()
     def on_back(self):
         pass
         #self.gameref.setMenu(GameUIMenu(self.gameref))

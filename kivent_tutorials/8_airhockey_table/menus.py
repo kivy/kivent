@@ -466,6 +466,8 @@ class ObserverMenu(BoxLayout):
         gameref=self.gameref
         gameref.bottom_points+=dt*100.
         gameref.top_points+=dt*100.
+        gameref.bottom_points=min(gameref.bottom_points,10000.)
+        gameref.top_points=min(gameref.bottom_points,10000.)
         self.update_scores()
 
 

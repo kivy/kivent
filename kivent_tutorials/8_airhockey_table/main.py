@@ -130,7 +130,7 @@ class TestGame(Widget):
                     self.bottom_points+=tbodyspeed
                 else:
                     self.top_points+=tbodyspeed
-                self.observermenu.update_scores()
+                #self.observermenu.update_scores()
     def action_vortex(self,wp=None,touch=None):
         yspos = touch.spos[1]
         vortex_id = self.create_floater(wp,mass=1000,collision_type=7,radius=100,color=(0.1,.1,0.1,0.75))#radius=points
@@ -143,7 +143,7 @@ class TestGame(Widget):
         else:
             self.top_points-=1000
             self.set_observer_action(0)
-        self.observermenu.update_scores()
+        #self.observermenu.update_scores()
         super(TestGame, self).on_touch_down(touch)
     def action_wall(self,wp=None,touch=None):
         yspos = touch.spos[1]
@@ -171,7 +171,7 @@ class TestGame(Widget):
         else:
             self.top_points-=5000
             self.set_observer_action(0)
-        self.observermenu.update_scores()
+        #self.observermenu.update_scores()
         lasttouches[istop] = None
     def action_puck_storm(self,wp=None,touch=None):
         yspos = touch.spos[1]
@@ -184,7 +184,7 @@ class TestGame(Widget):
         else:
             self.top_points-=10000
             self.set_observer_action(0)
-        self.observermenu.update_scores()
+        #self.observermenu.update_scores()
     def on_touch_up(self, touch):
         super(TestGame, self).on_touch_up(touch)
         if 'touched_ent_id' in touch.ud:
@@ -569,7 +569,7 @@ class TestGame(Widget):
         for p in set(self.miscIDs):
             self.remove_entity(p)
         self.scoreboard.update_scores()
-        self.observermenu.update_scores()
+        #self.observermenu.update_scores()
         self.set_observer_action(0)
         self.set_observer_action(1)
     def new_game(self, puck_number=None, paddle_multiplier=None):

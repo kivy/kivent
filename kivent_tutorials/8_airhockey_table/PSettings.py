@@ -11,7 +11,10 @@ defaultSettingsDict = {
     'enable_particles':1,
     'volume_multi':.85,
     'puck_max':2,
-    'paddle_max':2
+    'paddle_max':2,
+    'vortex_power':.6,
+    'vortex_radius':140,
+    'vortex_static':1
 
 }
 

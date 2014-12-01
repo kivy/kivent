@@ -154,7 +154,11 @@ class TestGame(Widget):
                 #self.observermenu.update_scores()
     def action_vortex(self,wp=None,touch=None):
         yspos = touch.spos[1]
-        vortex_id = self.create_floater(wp,mass=1000,collision_type=7,radius=100,color=(0.1,.1,0.1,0.75))#radius=points
+        if self.vortex_static:
+            mass = 0
+        else:
+            mass = 1000
+        vortex_id = self.create_floater(wp,mass=mass,collision_type=7,radius=self.vortex_radius,color=(0.1,.1,0.1,0.75))#radius=points
         pfunc = partial( self.remove_entity, vortex_id,0.)
         Clock.schedule_once(pfunc,7.5)
         self.pfuncs[vortex_id]=pfunc
@@ -357,8 +361,9 @@ class TestGame(Widget):
         #ent2_id = body2.data #goal
         #ents= = self.gameworld.entities
         # apos = entity.position
-        dvecx = (p2.x - p1.x) * body1.mass * 0.5
-        dvecy = (p2.y - p1.y) * body1.mass * 0.5
+        power = self.vortex_power
+        dvecx = (p2.x - p1.x) * body1.mass * power
+        dvecy = (p2.y - p1.y) * body1.mass * power
         body1.apply_impulse((dvecx, dvecy))
 
         return False
@@ -637,6 +642,10 @@ class TestGame(Widget):
             ypos = float(yposd)/float(paddle_multiplier+1)
             a_paddle_id = self.create_paddle((1920.*.25, 1080.*ypos), color=(1.,0.,0.,1.),player=0)
             a_paddle_id = self.create_paddle((1920.*.75, 1080.*ypos), color=(0.,0.,1.,1.),player=1)
+        settingsDict = PSettings.settingsDict
+        self.vortex_power = settingsDict['vortex_power']
+        self.vortex_radius = settingsDict['vortex_radius']
+        self.vortex_static = settingsDict['vortex_static']
 
     def draw_some_stuff(self):
         size = Window.size

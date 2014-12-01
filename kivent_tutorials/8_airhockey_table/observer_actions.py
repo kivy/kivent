@@ -1,5 +1,7 @@
 __author__ = 'chozabu'
 
+lasttouches = [None,None]
+
 actioncosts={
     "puck_storm":10000,
     "wall":5000,

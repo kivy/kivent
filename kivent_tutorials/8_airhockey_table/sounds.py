@@ -2,15 +2,21 @@ __author__ = 'chozabu'
 
 from kivy.core.audio import SoundLoader, Sound
 
-click = SoundLoader.load('assets/wav/click.wav')
-thack = SoundLoader.load('assets/wav/thack.wav')
-jingle = SoundLoader.load('assets/wav/jingle.wav')
-pitchraise = SoundLoader.load('assets/wav/pitchraise.wav')
-spawnpuck = SoundLoader.load('assets/wav/spawnpuck.wav')
-hitlow = SoundLoader.load('assets/wav/hitlow.wav')
-hitmid = SoundLoader.load('assets/wav/hitmid.wav')
-hithigh = SoundLoader.load('assets/wav/hithigh.wav')
+click = SoundLoader.load('assets/wav/click.ogg')
+thack = SoundLoader.load('assets/wav/thack.ogg')
+jingle = SoundLoader.load('assets/wav/jingle.ogg')
+beeeew = SoundLoader.load('assets/wav/beeeew.ogg')
+pitchraise = SoundLoader.load('assets/wav/pitchraise.ogg')
+spawnpuck = SoundLoader.load('assets/wav/spawnpuck.ogg')
+hitlow = SoundLoader.load('assets/wav/hitlow.ogg')
+hitmid = SoundLoader.load('assets/wav/hitmid.ogg')
+hithigh = SoundLoader.load('assets/wav/hithigh.ogg')
 
+def play_beeeew(vol=1.):
+	beeeew.volume = vol*.5
+	#if beeeew.status != 'play':beeeew.play()
+	if beeeew.status == 'play':beeeew.stop()
+	beeeew.play()
 
 def vol_spawnpuck(vol=1.):
 	spawnpuck.volume = vol*.5

@@ -372,7 +372,7 @@ class TestGame(Widget):
         ent1_id = arbiter.shapes[0].body.data #puck
         ent2_id = arbiter.shapes[1].body.data #goal
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'r', 1., .3,
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'g', 1., .3,
             'float', callback=self.lerp_callback_goal_score)
         pp = arbiter.shapes[0].body.position
         ent = self.gameworld.entities[ent1_id]
@@ -690,14 +690,16 @@ class TestGame(Widget):
         self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), None, texture='lingrad')
         #self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
         #self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
+
+        #draw goals
         self.draw_goal((20.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height),
-            (0., 1., 0., 1.0))
+            (1., 0., 0., .5))
         self.red_goal_id=self.draw_goal((20.+real_goal_thickness/2., (1080.-real_goal_height)/2. + real_goal_height/2.), (real_goal_thickness, real_goal_height),
             (1., 0., 0., .25), collision_type=5)
         self.draw_goal((1920. - (20.+goal_thickness/2.), (1080.-goal_height)/2. + goal_height/2.), 
-            (goal_thickness, goal_height), (0., 1., 0., 1.0))
+            (goal_thickness, goal_height), (0., 0., 1., .5))
         self.blue_goal_id = self.draw_goal((1920. - (20.+real_goal_thickness/2.), (1080.-450.)/2. + 450./2.),
-            (real_goal_thickness, 450.), (1., 0., 0., .25), collision_type=5)
+            (real_goal_thickness, 450.), (0., 0., 1., .25), collision_type=5)
         x1 = 225
         y1 = 95
         xnum=settingsDict['airhole_xnum']#22#4-100?

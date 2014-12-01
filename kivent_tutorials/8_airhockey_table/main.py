@@ -374,6 +374,8 @@ class TestGame(Widget):
         lerp_system = systems['lerp_system']
         lerp_system.add_lerp_to_entity(ent2_id, 'color', 'g', 1., .3,
             'float', callback=self.lerp_callback_goal_score)
+        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.02, .3,
+            'float')
         pp = arbiter.shapes[0].body.position
         ent = self.gameworld.entities[ent1_id]
         color = ent.color
@@ -530,6 +532,8 @@ class TestGame(Widget):
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
                 property_name, .50, .25, 'float', 
                 callback=self.lerp_callback_goal_score)
+            lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .98, .25,
+                'float')
         elif final_value > .85:
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
                 property_name, .40, .25, 'float', 
@@ -558,8 +562,10 @@ class TestGame(Widget):
                 property_name, .90, .5, 'float', 
                 callback=self.lerp_callback_goal_score)
         else:
-            lerp_system.add_lerp_to_entity(entity_id, component_name, 
+            lerp_system.add_lerp_to_entity(entity_id, component_name,
                 property_name, 0., 1., 'float', )
+            lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', 1.0, .1,
+                'float')
         
 
     def lerp_callback_airhole(self, entity_id, component_name, property_name, 

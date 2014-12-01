@@ -660,23 +660,23 @@ class TestGame(Widget):
         self.draw_wall_decoration(20., 1080, (1920*0.6, 1080/2), (0., .5, 1., 0.3))
 
         #left goal walls
-        self.draw_vwalls(20., wall_height, (goal_thickness, wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_vwalls(20., wall_height, (goal_thickness, 1080-wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_vwalls(20., goal_height, (20, 1080/2), (0., 1., 0., 1.), texture='lingrad_alt',segnum=3)
-        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.), texture='lingrad')
-        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_vwalls(20., wall_height, (goal_thickness, wall_middle), None, texture='lingrad_alt')
+        self.draw_vwalls(20., wall_height, (goal_thickness, 1080-wall_middle), None, texture='lingrad_alt')
+        self.draw_vwalls(20., goal_height, (20, 1080/2), None, texture='lingrad_alt',segnum=3)
+        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2+goal_height/2), None, texture='lingrad')
+        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2-goal_height/2), None, texture='lingrad')
 
         #right goal walls
-        self.draw_vwalls(20., wall_height, (1920-goal_thickness, wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_vwalls(20., wall_height, (1920-goal_thickness, 1080-wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_vwalls(20., goal_height, (1920-20, 1080/2), (0., 1., 0., 1.), texture='lingrad_alt',segnum=3)
-        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.), texture='lingrad')
-        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_vwalls(20., wall_height, (1920-goal_thickness, wall_middle), None, texture='lingrad_alt')
+        self.draw_vwalls(20., wall_height, (1920-goal_thickness, 1080-wall_middle), None, texture='lingrad_alt')
+        self.draw_vwalls(20., goal_height, (1920-20, 1080/2), None, texture='lingrad_alt',segnum=3)
+        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2+goal_height/2), None, texture='lingrad')
+        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2-goal_height/2), None, texture='lingrad')
 
 
         #top-bottom walls
-        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 10.), (0., 1., 0., 1.), texture='lingrad')
-        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 10.), None, texture='lingrad')
+        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), None, texture='lingrad')
         #self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
         #self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
         self.draw_goal((20.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height),
@@ -863,6 +863,9 @@ class TestGame(Widget):
     def draw_wall(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad', angle=0):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
+        if color==None:
+            xpp=pos[0]/1920.
+            color = (1.-xpp,0.,xpp,1.)
         angular_velocity = 0 #radians(randint(-150, -150))
         shape_dict = {'width': width, 'height': height, 
             'mass': mass, 'offset': (0, 0)}

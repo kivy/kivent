@@ -665,8 +665,8 @@ class TestGame(Widget):
         settingsDict = PSettings.settingsDict
         goal_height=settingsDict['goal_height']
         goal_thickness=settingsDict['goal_thickness']
-        real_goal_height=goal_height-90
-        real_goal_thickness=goal_thickness-50
+        real_goal_height=goal_height*.8
+        real_goal_thickness=goal_thickness*.6
         wall_height=(1080/2-goal_height/2.)
         wall_middle=wall_height/2.
 

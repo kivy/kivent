@@ -424,6 +424,7 @@ class ObserverMenu(BoxLayout):
 
         #sratio = self.width/1920.
         #ssize = 150*sratio
+        self.add_widget(BoxLayout(size_hint=(1,.1)))
 
         self.topfl = topfl = ObserverPanel(do_rotation=False, do_scale=False,do_translation=False,
                                                  auto_bring_to_front=False, observer_id=0)
@@ -438,6 +439,7 @@ class ObserverMenu(BoxLayout):
         bottomfl.rotation=0
 
         self.add_widget(bottomfl)
+        self.add_widget(BoxLayout(size_hint=(1,.1)))
         self.observer_points_per_second = PSettings.settingsDict['observer_points_per_second']
     def update_scores(self):
         gameref = self.gameref

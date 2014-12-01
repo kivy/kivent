@@ -43,7 +43,7 @@ class TestGame(Widget):
 
     def ensure_startup(self):
         systems_to_check = ['map', 'physics', 'renderer', 'puck_renderer',
-            'rotate', 'position', 'gameview', 'lerp_system']
+            'rotate', 'position', 'gameview', 'lerp_system', 'color']
         systems = self.gameworld.systems
         for each in systems_to_check:
             if each not in systems:

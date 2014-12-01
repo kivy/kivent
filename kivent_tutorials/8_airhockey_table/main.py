@@ -23,6 +23,7 @@ texture_manager.load_image('assets/png/particle.png')
 from kivent_cymunk.physics import CymunkPhysics
 from functools import partial
 
+import PSettings
 import sounds
 import menus
 import observer_actions
@@ -646,8 +647,9 @@ class TestGame(Widget):
         self.created_entities = created_entities = []
         entities = self.gameworld.entities
         #self.create_color_circle((1920.*.5, 1080.*.5), color=(0.5,0.5,0.5,0.5))
-        goal_height=560
-        goal_thickness=150
+        settingsDict = PSettings.settingsDict
+        goal_height=settingsDict['goal_height']
+        goal_thickness=settingsDict['goal_thickness']
         real_goal_height=goal_height-90
         real_goal_thickness=goal_thickness-50
         wall_height=(1080/2-goal_height/2.)
@@ -689,7 +691,8 @@ class TestGame(Widget):
             (real_goal_thickness, 450.), (1., 0., 0., .25), collision_type=5)
         x1 = 225
         y1 = 95
-        xnum=22#4-100?
+        xnum=settingsDict['airhole_xnum']#22#4-100?
+        airhole_radius=settingsDict['airhole_radius']#22#4-100?
         ynum=xnum*1060/1740+1
         xstep = (1920-x1*2)/float(xnum-1)
         ystep = (1080-y1*2)/float(ynum-1)
@@ -707,7 +710,7 @@ class TestGame(Widget):
         for x in range(xnum):
             for y in range(ynum):
                 pos = (x1 + xstep *x, y1 + ystep*y)
-                aairhole(make_hole(pos,60))
+                aairhole(make_hole(pos,airhole_radius))
         self.new_game()
     def makeVertMesh(self,all_verts, triangles,vert_data_count=6):
         #render_system = self.gameworld.systems['renderer']
@@ -1281,8 +1284,14 @@ class YourAppNameApp(App):
 
 if __name__ == '__main__':
     from kivy.utils import platform
-    if platform == 'android':pfile='/sdcard/kivocky.prof'
-    else:pfile='kivocky.prof'
+    if platform == 'android':
+        pfile='/sdcard/kivocky.prof'
+        PSettings.datadir = '/sdcard/'
+    else:
+        pfile='kivocky.prof'
+    PSettings.loadSettings()
+    simps.enable_particles = PSettings.settingsDict['enable_particles']
+    sounds.volume_multi = PSettings.settingsDict['volume_multi']
     import cProfile
     cProfile.run('YourAppNameApp().run()', pfile)
     #YourAppNameApp().run()

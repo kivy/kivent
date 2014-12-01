@@ -22,6 +22,7 @@ from kivy.core.window import Window
 from random import random
 
 import observer_actions
+import PSettings
 
 
 import json
@@ -199,26 +200,31 @@ class NewGamePanel(MirroredPanel):
         #b.pos_hint = {'y':.25+.125}
         bl = BoxLayout(orientation='horizontal')
 
+        settingsDict = PSettings.settingsDict
+        puck_max = settingsDict['puck_max']
+        paddle_max = settingsDict['paddle_max']
 
 
         paddlebl = BoxLayout(orientation='vertical')
         paddlebl.add_widget(Label(text='Paddles'))
-        paddlebl.add_widget(pButton(text='4', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
-        paddlebl.add_widget(pButton(text='3', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
+        for p in range(paddle_max,0,-1):
+            paddlebl.add_widget(pButton(text=str(p), size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
+        '''paddlebl.add_widget(pButton(text='3', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
         paddlebl.add_widget(pButton(text='2', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
         paddlebl.add_widget(pButton(text='1', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_players))
-
+        '''
         self.paddle_slider_a = s=Slider(orientation='vertical', min=1,max=4,value=1,step=1)
         s.bind(value=self.release_paddle_slider_a)
         bl.add_widget(paddlebl)
         
-        
+
         puckbl = BoxLayout(orientation='vertical')
         puckbl.add_widget(Label(text='Pucks'))
-        puckbl.add_widget(GreenButton(text='4', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
-        puckbl.add_widget(GreenButton(text='3', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
-        puckbl.add_widget(GreenButton(text='2', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
-        puckbl.add_widget(GreenButton(text='1', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        for p in range(paddle_max,0,-1):
+            puckbl.add_widget(GreenButton(text=str(p), size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        # puckbl.add_widget(GreenButton(text='3', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        # puckbl.add_widget(GreenButton(text='2', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
+        # puckbl.add_widget(GreenButton(text='1', size_hint=(.25,1),pos_hint={'x':.375},on_press=self.set_pucks))
 
 
         self.puck_slider = s=Slider(orientation='vertical', min=1,max=4,value=1,step=1)
@@ -432,6 +438,7 @@ class ObserverMenu(BoxLayout):
         bottomfl.rotation=0
 
         self.add_widget(bottomfl)
+        self.observer_points_per_second = PSettings.settingsDict['observer_points_per_second']
     def update_scores(self):
         gameref = self.gameref
 
@@ -465,8 +472,9 @@ class ObserverMenu(BoxLayout):
             self.topfl.selector.pos_hint={"x":actioncost/10000.,"y":0}
     def update(self, dt):
         gameref=self.gameref
-        gameref.bottom_points+=dt*100.
-        gameref.top_points+=dt*100.
+        observer_points_per_second = self.observer_points_per_second
+        gameref.bottom_points+=dt*observer_points_per_second
+        gameref.top_points+=dt*observer_points_per_second
         gameref.bottom_points=min(gameref.bottom_points,10000.)
         gameref.top_points=min(gameref.top_points,10000.)
         self.update_scores()

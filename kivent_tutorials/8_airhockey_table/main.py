@@ -673,14 +673,14 @@ class TestGame(Widget):
         #left goal walls
         self.draw_vwalls(20., wall_height, (goal_thickness, wall_middle), None, texture='lingrad_alt')
         self.draw_vwalls(20., wall_height, (goal_thickness, 1080-wall_middle), None, texture='lingrad_alt')
-        self.draw_vwalls(20., goal_height, (20, 1080/2), None, texture='lingrad_alt',segnum=3)
+        self.draw_vwalls(20., goal_height, (-10, 1080/2), None, texture='lingrad_alt',segnum=3)
         self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2+goal_height/2), None, texture='lingrad')
         self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2-goal_height/2), None, texture='lingrad')
 
         #right goal walls
         self.draw_vwalls(20., wall_height, (1920-goal_thickness, wall_middle), None, texture='lingrad_alt')
         self.draw_vwalls(20., wall_height, (1920-goal_thickness, 1080-wall_middle), None, texture='lingrad_alt')
-        self.draw_vwalls(20., goal_height, (1920-20, 1080/2), None, texture='lingrad_alt',segnum=3)
+        self.draw_vwalls(20., goal_height, (1920+10, 1080/2), None, texture='lingrad_alt',segnum=3)
         self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2+goal_height/2), None, texture='lingrad')
         self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2-goal_height/2), None, texture='lingrad')
 
@@ -692,11 +692,11 @@ class TestGame(Widget):
         #self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
 
         #draw goals
-        self.draw_goal((20.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height),
+        self.draw_goal((0.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height),
             (1., 0., 0., .5))
         self.red_goal_id=self.draw_goal((20.+real_goal_thickness/2., (1080.-real_goal_height)/2. + real_goal_height/2.), (real_goal_thickness, real_goal_height),
             (1., 0., 0., .25), collision_type=5)
-        self.draw_goal((1920. - (20.+goal_thickness/2.), (1080.-goal_height)/2. + goal_height/2.), 
+        self.draw_goal((1920. - (0.+goal_thickness/2.), (1080.-goal_height)/2. + goal_height/2.),
             (goal_thickness, goal_height), (0., 0., 1., .5))
         self.blue_goal_id = self.draw_goal((1920. - (20.+real_goal_thickness/2.), (1080.-450.)/2. + 450./2.),
             (real_goal_thickness, 450.), (0., 0., 1., .25), collision_type=5)

@@ -2,6 +2,8 @@ __author__ = 'chozabu'
 
 gameref = None
 
+enable_particles = 1
+
 from random import random
 
 particles = []
@@ -15,6 +17,7 @@ class particle:
         self.drag=drag
 
 def spawn_particles_at(pos, count=1, maxvel=10, color=(1,1,1,1), lifespan=1.,drag=.95):
+    if enable_particles==0:return
     for np in range(count):
         pid = create_visual(pos, color=color)
         ent = gameref.gameworld.entities[pid]

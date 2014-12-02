@@ -23,6 +23,7 @@ texture_manager.load_image('assets/png/particle.png')
 from kivent_cymunk.physics import CymunkPhysics
 from functools import partial
 
+import PSettings
 import sounds
 import menus
 import observer_actions
@@ -42,7 +43,7 @@ class TestGame(Widget):
 
     def ensure_startup(self):
         systems_to_check = ['map', 'physics', 'renderer', 'puck_renderer',
-            'rotate', 'position', 'gameview', 'lerp_system']
+            'rotate', 'position', 'gameview', 'lerp_system', 'color']
         systems = self.gameworld.systems
         for each in systems_to_check:
             if each not in systems:
@@ -153,7 +154,11 @@ class TestGame(Widget):
                 #self.observermenu.update_scores()
     def action_vortex(self,wp=None,touch=None):
         yspos = touch.spos[1]
-        vortex_id = self.create_floater(wp,mass=1000,collision_type=7,radius=100,color=(0.1,.1,0.1,0.75))#radius=points
+        if self.vortex_static:
+            mass = 0
+        else:
+            mass = 1000
+        vortex_id = self.create_floater(wp,mass=mass,collision_type=7,radius=self.vortex_radius,color=(0.1,.1,0.1,0.75))#radius=points
         pfunc = partial( self.remove_entity, vortex_id,0.)
         Clock.schedule_once(pfunc,7.5)
         self.pfuncs[vortex_id]=pfunc
@@ -356,8 +361,9 @@ class TestGame(Widget):
         #ent2_id = body2.data #goal
         #ents= = self.gameworld.entities
         # apos = entity.position
-        dvecx = (p2.x - p1.x) * body1.mass * 0.5
-        dvecy = (p2.y - p1.y) * body1.mass * 0.5
+        power = self.vortex_power
+        dvecx = (p2.x - p1.x) * body1.mass * power
+        dvecy = (p2.y - p1.y) * body1.mass * power
         body1.apply_impulse((dvecx, dvecy))
 
         return False
@@ -366,8 +372,10 @@ class TestGame(Widget):
         ent1_id = arbiter.shapes[0].body.data #puck
         ent2_id = arbiter.shapes[1].body.data #goal
         lerp_system = systems['lerp_system']
-        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'r', 1., .3,
+        lerp_system.add_lerp_to_entity(ent2_id, 'color', 'g', 1., .3,
             'float', callback=self.lerp_callback_goal_score)
+        lerp_system.add_lerp_to_entity(ent2_id, 'scale', 's', 1.02, .3,
+            'float')
         pp = arbiter.shapes[0].body.position
         ent = self.gameworld.entities[ent1_id]
         color = ent.color
@@ -524,6 +532,8 @@ class TestGame(Widget):
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
                 property_name, .50, .25, 'float', 
                 callback=self.lerp_callback_goal_score)
+            lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', .98, .25,
+                'float')
         elif final_value > .85:
             lerp_system.add_lerp_to_entity(entity_id, component_name, 
                 property_name, .40, .25, 'float', 
@@ -552,8 +562,10 @@ class TestGame(Widget):
                 property_name, .90, .5, 'float', 
                 callback=self.lerp_callback_goal_score)
         else:
-            lerp_system.add_lerp_to_entity(entity_id, component_name, 
+            lerp_system.add_lerp_to_entity(entity_id, component_name,
                 property_name, 0., 1., 'float', )
+            lerp_system.add_lerp_to_entity(entity_id, 'scale', 's', 1.0, .1,
+                'float')
         
 
     def lerp_callback_airhole(self, entity_id, component_name, property_name, 
@@ -636,6 +648,10 @@ class TestGame(Widget):
             ypos = float(yposd)/float(paddle_multiplier+1)
             a_paddle_id = self.create_paddle((1920.*.25, 1080.*ypos), color=(1.,0.,0.,1.),player=0)
             a_paddle_id = self.create_paddle((1920.*.75, 1080.*ypos), color=(0.,0.,1.,1.),player=1)
+        settingsDict = PSettings.settingsDict
+        self.vortex_power = settingsDict['vortex_power']
+        self.vortex_radius = settingsDict['vortex_radius']
+        self.vortex_static = settingsDict['vortex_static']
 
     def draw_some_stuff(self):
         size = Window.size
@@ -646,10 +662,11 @@ class TestGame(Widget):
         self.created_entities = created_entities = []
         entities = self.gameworld.entities
         #self.create_color_circle((1920.*.5, 1080.*.5), color=(0.5,0.5,0.5,0.5))
-        goal_height=560
-        goal_thickness=150
-        real_goal_height=goal_height-90
-        real_goal_thickness=goal_thickness-50
+        settingsDict = PSettings.settingsDict
+        goal_height=settingsDict['goal_height']
+        goal_thickness=settingsDict['goal_thickness']
+        real_goal_height=goal_height*.8
+        real_goal_thickness=goal_thickness*.6
         wall_height=(1080/2-goal_height/2.)
         wall_middle=wall_height/2.
 
@@ -660,36 +677,39 @@ class TestGame(Widget):
         self.draw_wall_decoration(20., 1080, (1920*0.6, 1080/2), (0., .5, 1., 0.3))
 
         #left goal walls
-        self.draw_vwalls(20., wall_height, (goal_thickness, wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_vwalls(20., wall_height, (goal_thickness, 1080-wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_vwalls(20., goal_height, (20, 1080/2), (0., 1., 0., 1.), texture='lingrad_alt',segnum=3)
-        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.), texture='lingrad')
-        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_vwalls(20., wall_height, (goal_thickness, wall_middle), None, texture='lingrad_alt')
+        self.draw_vwalls(20., wall_height, (goal_thickness, 1080-wall_middle), None, texture='lingrad_alt')
+        self.draw_vwalls(20., goal_height, (-10, 1080/2), None, texture='lingrad_alt',segnum=3)
+        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2+goal_height/2), None, texture='lingrad')
+        self.draw_wall(goal_thickness, 20., (goal_thickness/2., 1080/2-goal_height/2), None, texture='lingrad')
 
         #right goal walls
-        self.draw_vwalls(20., wall_height, (1920-goal_thickness, wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_vwalls(20., wall_height, (1920-goal_thickness, 1080-wall_middle), (0., 1., 0., 1.), texture='lingrad_alt')
-        self.draw_vwalls(20., goal_height, (1920-20, 1080/2), (0., 1., 0., 1.), texture='lingrad_alt',segnum=3)
-        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2+goal_height/2), (0., 1., 0., 1.), texture='lingrad')
-        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2-goal_height/2), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_vwalls(20., wall_height, (1920-goal_thickness, wall_middle), None, texture='lingrad_alt')
+        self.draw_vwalls(20., wall_height, (1920-goal_thickness, 1080-wall_middle), None, texture='lingrad_alt')
+        self.draw_vwalls(20., goal_height, (1920+10, 1080/2), None, texture='lingrad_alt',segnum=3)
+        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2+goal_height/2), None, texture='lingrad')
+        self.draw_wall(goal_thickness, 20., (1920-goal_thickness/2., 1080/2-goal_height/2), None, texture='lingrad')
 
 
         #top-bottom walls
-        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 10.), (0., 1., 0., 1.), texture='lingrad')
-        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), (0., 1., 0., 1.), texture='lingrad')
+        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 10.), None, texture='lingrad')
+        self.draw_walls(1920-goal_thickness*2., 20., (1920./2., 1080.-10.), None, texture='lingrad')
         #self.draw_wall(20., 1080., (10., 1080./2.), (0., 1., 0., 1.))
         #self.draw_wall(20., 1080., (1920.-10., 1080./2.), (0., 1., 0., 1.))
-        self.draw_goal((20.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height),
-            (0., 1., 0., 1.0))
+
+        #draw goals
+        self.draw_goal((0.+goal_thickness/2., (1080.-goal_height)/2. + goal_height/2.), (goal_thickness, goal_height),
+            (1., 0., 0., .5))
         self.red_goal_id=self.draw_goal((20.+real_goal_thickness/2., (1080.-real_goal_height)/2. + real_goal_height/2.), (real_goal_thickness, real_goal_height),
             (1., 0., 0., .25), collision_type=5)
-        self.draw_goal((1920. - (20.+goal_thickness/2.), (1080.-goal_height)/2. + goal_height/2.), 
-            (goal_thickness, goal_height), (0., 1., 0., 1.0))
+        self.draw_goal((1920. - (0.+goal_thickness/2.), (1080.-goal_height)/2. + goal_height/2.),
+            (goal_thickness, goal_height), (0., 0., 1., .5))
         self.blue_goal_id = self.draw_goal((1920. - (20.+real_goal_thickness/2.), (1080.-450.)/2. + 450./2.),
-            (real_goal_thickness, 450.), (1., 0., 0., .25), collision_type=5)
+            (real_goal_thickness, 450.), (0., 0., 1., .25), collision_type=5)
         x1 = 225
         y1 = 95
-        xnum=22#4-100?
+        xnum=settingsDict['airhole_xnum']#22#4-100?
+        airhole_radius=settingsDict['airhole_radius']#22#4-100?
         ynum=xnum*1060/1740+1
         xstep = (1920-x1*2)/float(xnum-1)
         ystep = (1080-y1*2)/float(ynum-1)
@@ -707,7 +727,7 @@ class TestGame(Widget):
         for x in range(xnum):
             for y in range(ynum):
                 pos = (x1 + xstep *x, y1 + ystep*y)
-                aairhole(make_hole(pos,60))
+                aairhole(make_hole(pos,airhole_radius))
         self.new_game()
     def makeVertMesh(self,all_verts, triangles,vert_data_count=6):
         #render_system = self.gameworld.systems['renderer']
@@ -863,6 +883,9 @@ class TestGame(Widget):
     def draw_wall(self, width, height, pos, color, mass=0, collision_type=2, texture='lingrad', angle=0):
         x_vel = 0 #randint(-100, 100)
         y_vel = 0 #randint(-100, 100)
+        if color==None:
+            xpp=pos[0]/1920.
+            color = (1.-xpp,0.,xpp,1.)
         angular_velocity = 0 #radians(randint(-150, -150))
         shape_dict = {'width': width, 'height': height, 
             'mass': mass, 'offset': (0, 0)}
@@ -1278,8 +1301,15 @@ class YourAppNameApp(App):
 
 if __name__ == '__main__':
     # from kivy.utils import platform
-    # if platform == 'android':pfile='/sdcard/kivocky.prof'
-    # else:pfile='kivocky.prof'
+    # if platform == 'android':
+    #     pfile='/sdcard/kivocky.prof'
+    #     PSettings.datadir = '/sdcard/'
+    # else:
+    #     pfile='kivocky.prof'
+    # PSettings.loadSettings()
+    # simps.enable_particles = PSettings.settingsDict['enable_particles']
+    # sounds.volume_multi = PSettings.settingsDict['volume_multi']
     # import cProfile
     # cProfile.run('YourAppNameApp().run()', pfile)
     YourAppNameApp().run()
+

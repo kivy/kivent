@@ -785,10 +785,10 @@ class GameView(GameSystem):
                         return
                     old_line = Vector(*touch.ud['start_pos']) - anchor
                     new_line = Vector(*touch.pos) - anchor
-                    if not old_line.length():   # div by zero
+                    if not old_line.length() or not new_line.length():   # div by zero
                         return
 
-                    new_scale = (new_line.length() / old_line.length()) * (
+                    new_scale = (old_line.length() / new_line.length()) * (
                         touch.ud['start_scale'])
                     if new_scale > self.scale_max:
                         self.camera_scale = self.scale_max

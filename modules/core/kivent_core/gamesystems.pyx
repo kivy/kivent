@@ -17,7 +17,6 @@ class Component(object):
     pass
 
 
-@cython.freelist(100)
 cdef class RotateComponent:
 
     def __cinit__(self, float r):
@@ -29,7 +28,6 @@ cdef class RotateComponent:
         def __set__(self, float value):
             self._r = value
 
-@cython.freelist(100)
 cdef class ScaleComponent:
 
     def __cinit__(self, float s):
@@ -41,7 +39,64 @@ cdef class ScaleComponent:
         def __set__(self, float value):
             self._s = value
 
-@cython.freelist(100)
+
+ctypedef struct PositionStruct:
+    float x
+    float y
+    float z
+
+cdef class PositionProcessor:
+    cdef int _count
+    cdef list _inactive
+    cdef PositionStruct* _components
+
+    def __cinit__(self):
+        self._count = 0
+        self._inactive = []
+        self._components = NULL
+
+    cdef void init_component(self, PositionStruct pos_struct, float x, float y,
+        float z):
+        pos_struct.x = x
+        pos_struct.y = y
+        pos_struct.z = z
+
+        
+
+    cdef void remove_component(self, int component_index):
+        pass
+        
+
+    def generate_component(self, tuple pos):
+        '''
+        Args:
+            pos (tuple): (float x, float y) 
+
+        Position system takes in a tuple: (x, y) and creates a component 
+        with x, y properties (_x, _y to access from cython)
+        '''
+        components = self._components
+        cdef PositionStruct pos_struct
+        index = self._inactive.pop()
+        if inactive_index is None:
+            pos_struct = PositionStruct()
+            #realloc mem, place in array
+            #get new index
+        else:
+            pos_struct = components[index]
+        cdef float x = pos[0]
+        cdef float y = pos[1]
+        cdef float z
+        if len(pos) == 3:
+            z = pos[2]
+        else:
+            z = 0.
+        self.init_component(pos_struct, x, y, z)
+        
+        new_component = PositionComponent.__new__(PositionComponent, x, y)
+        return new_component
+
+
 cdef class PositionComponent:
     
     def __cinit__(self, float x, float y):
@@ -60,7 +115,6 @@ cdef class PositionComponent:
         def __set__(self, float value):
             self._y = value
 
-@cython.freelist(100)
 cdef class ColorComponent:
     
     def __cinit__(self, float r, float g, float b, float a):
@@ -363,7 +417,6 @@ class GameMap(GameSystem):
         if self.gameworld.currentmap == self:
             self.gameworld.currentmap = None
 
-@cython.freelist(100)
 cdef class LerpObject:
 
     def __cinit__(self, str component_name, str property_name, float max_time,
@@ -422,7 +475,6 @@ cdef class LerpObject:
 cdef float lerp(float v0, float v1, float t):
     return (1. - t) * v0 + t * v1
 
-@cython.freelist(100)
 cdef class LerpComponent:
 
     def __cinit__(self):

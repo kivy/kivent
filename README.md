@@ -56,7 +56,7 @@ first get to a folder to clone a couple of projects, replace /path/to/ with /hom
 
     cd /path/to/
     git clone https://github.com/kivy/kivy.git
-    git clone git@github.com:tito/cymunk.git
+    git clone https://github.com/tito/cymunk.git
     git clone https://github.com/Kovak/KivEnt.git
 
 build kivy
@@ -110,12 +110,12 @@ and a physics example
 
     cd KivEnt/kivent_tutorials/3_adding_physics_objects/
     ln -s ../../modules/core/kivent_core/ kivent_core
-    ln -s ../../modules/core/kivent_cymunk/ kivent_cymunk
+    ln -s ../../modules/cymunk/kivent_cymunk/ kivent_cymunk
     python main.py
 
 and a game
 
     cd KivEnt/kivent_tutorials/8_airhockey_table/
     ln -s ../../modules/core/kivent_core/ kivent_core
-    ln -s ../../modules/core/kivent_cymunk/ kivent_cymunk
+    ln -s ../../modules/cymunk/kivent_cymunk/ kivent_cymunk
     python main.py

@@ -4,6 +4,7 @@ from cpython cimport bool
 cdef class TextureManager:
     cdef dict _textures
     cdef dict _keys
+    cdef dict _sizes
     cdef dict _uvs
     cdef dict _groups
 

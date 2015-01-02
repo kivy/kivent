@@ -1,5 +1,6 @@
 # cython: profile=True
 from kivy.uix.widget import Widget
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from kivy.properties import (StringProperty, ListProperty, NumericProperty, 
 DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
@@ -7,9 +8,7 @@ from functools import partial
 from kivy.graphics import RenderContext
 from gamesystems import GameSystem
 
-cdef float test = 0
-
-class Entity(object):
+cdef class Entity:
     '''Entity is a python object that will hold all of the components
     attached to that particular entity. GameWorld is responsible for creating
     and recycling entities. You should never create an Entity directly or 
@@ -25,10 +24,57 @@ class Entity(object):
 
 
     '''
+    cdef int _id
+    cdef int* _component_ids
+    cdef list _load_order
+    cdef int _component_count
+    cdef dict _systems
 
-    def __init__(self, entity_id):
-        self.entity_id = entity_id
-        self.load_order = []
+    def __cinit__(self, int entity_id, int component_count, dict systems):
+        self._id = entity_id
+        self._load_order = []
+        self._component_count = component_count
+        self._component_ids = component_ids = <int *>PyMem_Malloc(
+            component_count* sizeof(int))
+        self._systems = systems
+        if not component_ids:
+            raise MemoryError()
+
+    def __dealloc__(self):
+        if self._component_ids != NULL:
+            PyMem_Free(self._component_ids)
+
+    def __getattr__(self, name):
+        system = self._systems[name]
+        system_index = system.system_index
+        component_index = self._component_ids[system_index]
+        return system.components[component_index]
+
+    property entity_id:
+        def __get__(self):
+            return self._id
+
+    property component_count:
+
+        def __set__(self, int new_count):
+            if new_count == self._component_count:
+                return
+            new_data = <int *>PyMem_Realloc(self._component_ids, 
+                new_count * sizeof(int))
+            if not new_data:
+                raise MemoryError()
+            self._component_ids = new_data
+            self._component_count = new_count
+
+        def __get__(self):
+            return self._component_count
+
+    property load_order:
+        def __get__(self):
+            return self._load_order
+
+        def __set__(self, list value):
+            self._load_order = value
 
 
 class GameWorld(Widget):
@@ -80,6 +126,7 @@ class GameWorld(Widget):
         cdef list deactivated_entities
         cdef list entities_to_remove
         cdef dict systems
+        cdef list system_index
         self.canvas = RenderContext(use_parent_projection=True,
             use_parent_modelview=True)
         super(GameWorld, self).__init__(**kwargs)
@@ -89,6 +136,9 @@ class GameWorld(Widget):
         self.deactivated_entities = []
         self.entities_to_remove = []
         self.systems = {}
+        self.systems_index = []
+        self.unused_systems = []
+        self.system_count = 0
         self.state_callbacks = {}
 
 
@@ -265,6 +315,12 @@ class GameWorld(Widget):
         '''Used internally when entities are removed.'''
         self.deactivated_entities.append(entity_id)
 
+    def update_entity_component_arrays(self, int new_count):
+        cdef list entities = self.entities
+        cdef Entity entity
+        for entity in entities:
+            entity.component_count = new_count
+
     def update(self, dt):
         '''
         Args:
@@ -310,12 +366,28 @@ class GameWorld(Widget):
         Used to delete a GameSystem from the GameWorld'''
         systems = self.systems
         systems[system_id].on_delete_system()
+        system_index = self.get_system_index(system_id)
+        self.unused_systems.append(system_index)
+        self.systems_index[system_index] = None
         self.remove_widget(systems[system_id])
         del systems[system_id]
+
+    def get_system_index(self, system_id):
+        return self.systems_index.index(system_id)
 
     def add_system(self, widget, dt):
         '''Used internally by add_widget.'''
         self.systems[widget.system_id] = widget
+        unused_systems = self.unused_systems
+        free = unused_systems.pop()
+        if free is not None:
+            self.systems_index[free] = widget.system_id
+            widget.system_index = free
+        else:
+            self.systems_index.append(widget.system_id)
+            widget.system_index = self.system_count
+            self.system_count += 1
+            self.update_entity_component_arrays(self.system_count)
         widget.on_add_system()
 
     def add_widget(self, widget):

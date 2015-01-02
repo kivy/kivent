@@ -11,6 +11,7 @@ from kivy.graphics import RenderContext
 from kivy.graphics.transformation import Matrix
 cimport cython
 from kivy.vector import Vector
+from gameworld cimport Entity
 
 
 class Component(object):
@@ -180,6 +181,7 @@ class GameSystem(Widget):
     '''
 
     system_id = StringProperty('default_id')
+    system_index = NumericProperty(None)
     updateable = BooleanProperty(False)
     paused = BooleanProperty(False)
     gameworld = ObjectProperty(None)
@@ -193,6 +195,7 @@ class GameSystem(Widget):
         super(GameSystem, self).__init__(**kwargs)
         self.entity_ids = list()
         self.frame_time = 0.0
+        self.components = []
 
     def on_gameview(self, instance, value):
         if self.parent is not None:
@@ -248,8 +251,11 @@ class GameSystem(Widget):
             setattr(new_component, each, args[each])
         return new_component
 
-    def create_component(self, object entity, args):
-        setattr(entity, self.system_id, self.generate_component(args))
+    def create_component(self, Entity entity, args):
+        new_component = self.generate_component(args)
+        self.components.append(new_component)
+        #setup to reuse components, keep component_count
+        entity._component_ids[self.system_index] = len(self.components)
         self.entity_ids.append(entity.entity_id)
 
     def remove_entity(self, int entity_id):

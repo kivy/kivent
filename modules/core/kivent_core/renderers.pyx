@@ -29,6 +29,7 @@ cdef class TextureManager:
     def __init__(self):
         self._textures = {}
         self._keys = {}
+        self._sizes = {}
         self._uvs = {}
         self._groups = {}
 
@@ -70,6 +71,9 @@ cdef class TextureManager:
         except:
             return [0., 0., 1., 1.]
 
+    def get_size(self,tex_key):
+        return self._sizes[tex_key]
+
     def get_texture(self, tex_name):
         return self._textures[tex_name]
 
@@ -86,33 +90,35 @@ cdef class TextureManager:
             return atlas_name in self._groups and tex_key in self._groups[atlas_name]
 
     def load_atlas(self, source):
-        texture = CoreImage(
-            path.splitext(source)[0]+'-0.png', nocache=True).texture
-        name = path.splitext(path.basename(source))[0]
-        size = texture.size
-        cdef float w = <float>size[0]
-        cdef float h = <float>size[1]
+        dirname = path.dirname(source)
         with open(source, 'r') as data:
              atlas_data = json.load(data)
-        cdef dict keys = self._keys
-        cdef dict uvs = self._uvs
-        cdef list group_list = []
-        group_list_a = group_list.append
-        atlas_content = atlas_data[name+'-0.png']
-        cdef float x1, y1, x2, y2
-        if name not in self._textures:
+
+        for imgname in atlas_data:
+            texture = CoreImage(path.join(dirname,imgname), nocache=True).texture
+            name = str(path.basename(imgname))
+            size = texture.size
+            w = <float>size[0]
+            h = <float>size[1]
+            keys = self._keys
+            uvs = self._uvs
+            group_list = []
+            group_list_a = group_list.append
+            atlas_content = atlas_data[imgname]
+
+            if name in self._textures:
+                raise KeyError("'%s' already in textures"%name)
             self._textures[name] = texture
             for key in atlas_content:
                 key = <str>key
-                uv_data = atlas_content[key]
+                kx,ky,kw,kh = atlas_content[key]
                 self._keys[key] = name
-                x1, y1 = uv_data[0], uv_data[1]
-                x2, y2 = x1 + uv_data[2], y1 + uv_data[3]
+                self._sizes[key] = kw, kh
+                x1, y1 = kx, ky
+                x2, y2 = x1 + kw, y1 + kh
                 self._uvs[key] = [x1/w, 1.-y1/h, x2/w, 1.-y2/h] 
                 group_list_a(str(key))
             self._groups[name] = group_list
-        else:
-            raise KeyError()
 
 texture_manager = TextureManager()
 

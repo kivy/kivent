@@ -258,10 +258,9 @@ class GameWorld(Widget):
         for component in components_to_delete:
             delattr(entity, component)
         entity.load_order = []
-        Clock.schedule_once(partial(
-            self.add_entity_to_deactivated, entity_id), 1.0)
+        self.add_entity_to_deactivated(entity_id)
 
-    def add_entity_to_deactivated(self, int entity_id, dt):
+    def add_entity_to_deactivated(self, int entity_id):
         '''Used internally when entities are removed.'''
         self.deactivated_entities.append(entity_id)
 

@@ -2,6 +2,8 @@ KivEnt
 ======
 Project Website: http://www.kivent.org
 
+Mailing List: https://groups.google.com/forum/#!forum/kivent
+
 Documentation: http://www.kivent.org/docs  
 scroll down for extra detailed installation instructions
 

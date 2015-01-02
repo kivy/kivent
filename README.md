@@ -2,13 +2,15 @@ KivEnt
 ======
 Project Website: http://www.kivent.org
 
+Mailing List: https://groups.google.com/forum/#!forum/kivent
+
 Documentation: http://www.kivent.org/docs  
 scroll down for extra detailed installation instructions
 
 Warning Tutorials Out Dated! Will Fix Soon.  
 Update: 2_basic_app tutorial and sample_application up to date. 04/10/14
 
-Tutorial 3 now function, tutorial 4 partially finished. 04/17/14
+Tutorial 3 now functions, tutorial 4 partially finished. 04/17/14
 
 KivEnt is an Entity Based Game Engine for Kivy  
 https://github.com/Kovak/KivEnt/wiki/An-Introduction-to-KivEnt
@@ -56,7 +58,7 @@ first get to a folder to clone a couple of projects, replace /path/to/ with /hom
 
     cd /path/to/
     git clone https://github.com/kivy/kivy.git
-    git clone git@github.com:tito/cymunk.git
+    git clone https://github.com/tito/cymunk.git
     git clone https://github.com/Kovak/KivEnt.git
 
 build kivy
@@ -89,7 +91,7 @@ you should now be able to build kivent
     
 and kivent_cymunk (unless you *really* don't want physics)
 
-    cd KivEnt/modules/core
+    cd KivEnt/modules/cymunk
     ln -s ../core/kivent_core/ kivent_core
     python setup.py build_ext --inplace
     cd ../../..
@@ -110,12 +112,12 @@ and a physics example
 
     cd KivEnt/kivent_tutorials/3_adding_physics_objects/
     ln -s ../../modules/core/kivent_core/ kivent_core
-    ln -s ../../modules/core/kivent_cymunk/ kivent_cymunk
+    ln -s ../../modules/cymunk/kivent_cymunk/ kivent_cymunk
     python main.py
 
 and a game
 
     cd KivEnt/kivent_tutorials/8_airhockey_table/
     ln -s ../../modules/core/kivent_core/ kivent_core
-    ln -s ../../modules/core/kivent_cymunk/ kivent_cymunk
+    ln -s ../../modules/cymunk/kivent_cymunk/ kivent_cymunk
     python main.py

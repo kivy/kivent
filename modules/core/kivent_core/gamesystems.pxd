@@ -5,8 +5,8 @@ cdef class ColorComponent:
     cdef float _a
 
 cdef class PositionComponent:
-    cdef float _x
-    cdef float _y
+    cdef int _component_index
+    cdef PositionProcessor _processor
 
 cdef class ScaleComponent:
     cdef float _s
@@ -26,3 +26,16 @@ cdef class LerpObject:
 
 cdef class LerpComponent:
     cdef list _lerp_objects
+
+ctypedef struct PositionStruct:
+    float x
+    float y
+    float z
+
+cdef class PositionProcessor:
+    cdef int _count
+    cdef PositionStruct* _components
+    cdef PositionComponent generate_component(self)
+    cdef void clear_component(self, component_index)
+    cdef void init_component(self, PositionComponent component, 
+        float x, float y, float z)

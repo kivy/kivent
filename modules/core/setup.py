@@ -16,7 +16,8 @@ core_modules = {
     'kivent_core.gamesystems': ['kivent_core/gamesystems.pyx',],
     'kivent_core.gameworld': ['kivent_core/gameworld.pyx'],
     'kivent_core.renderers': ['kivent_core/renderers.pyx',],
-    'kivent_core.gamescreens': ['kivent_core/gamescreens.pyx']
+    'kivent_core.gamescreens': ['kivent_core/gamescreens.pyx'],
+    'kivent_core.entity': ['kivent_core/entity.pyx'],
     }
 
 core_modules_c = {
@@ -24,7 +25,8 @@ core_modules_c = {
     'kivent_core.gamesystems': ['kivent_core/gamesystems.c',],
     'kivent_core.gameworld': ['kivent_core/gameworld.c'],
     'kivent_core.renderers': ['kivent_core/renderers.c',],
-    'kivent_core.gamescreens': ['kivent_core/gamescreens.c']
+    'kivent_core.gamescreens': ['kivent_core/gamescreens.c'],
+    'kivent_core.entity': ['kivent_core/entity.c'],
     }
 
 
@@ -34,6 +36,7 @@ check_for_removal = [
     'kivent_core/gameworld.c',
     'kivent_core/gamescreens.c',
     'kivent_core/renderers.c',
+    'kivent_core/entity.c',
     ]
 
 def build_ext(ext_name, files, include_dirs=[]):

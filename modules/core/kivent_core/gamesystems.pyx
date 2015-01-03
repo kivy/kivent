@@ -11,7 +11,8 @@ from kivy.graphics import RenderContext
 from kivy.graphics.transformation import Matrix
 cimport cython
 from kivy.vector import Vector
-from gameworld cimport Entity
+from entity cimport Entity
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
 
 class Component(object):
@@ -41,80 +42,36 @@ cdef class ScaleComponent:
             self._s = value
 
 
-ctypedef struct PositionStruct:
-    float x
-    float y
-    float z
-
-cdef class PositionProcessor:
-    cdef int _count
-    cdef list _inactive
-    cdef PositionStruct* _components
-
-    def __cinit__(self):
-        self._count = 0
-        self._inactive = []
-        self._components = NULL
-
-    cdef void init_component(self, PositionStruct pos_struct, float x, float y,
-        float z):
-        pos_struct.x = x
-        pos_struct.y = y
-        pos_struct.z = z
-
-        
-
-    cdef void remove_component(self, int component_index):
-        pass
-        
-
-    def generate_component(self, tuple pos):
-        '''
-        Args:
-            pos (tuple): (float x, float y) 
-
-        Position system takes in a tuple: (x, y) and creates a component 
-        with x, y properties (_x, _y to access from cython)
-        '''
-        components = self._components
-        cdef PositionStruct pos_struct
-        index = self._inactive.pop()
-        if inactive_index is None:
-            pos_struct = PositionStruct()
-            #realloc mem, place in array
-            #get new index
-        else:
-            pos_struct = components[index]
-        cdef float x = pos[0]
-        cdef float y = pos[1]
-        cdef float z
-        if len(pos) == 3:
-            z = pos[2]
-        else:
-            z = 0.
-        self.init_component(pos_struct, x, y, z)
-        
-        new_component = PositionComponent.__new__(PositionComponent, x, y)
-        return new_component
-
-
 cdef class PositionComponent:
     
-    def __cinit__(self, float x, float y):
-        self._x = x
-        self._y = y
+    def __cinit__(self, int component_index, PositionProcessor processor):
+        self._component_index = component_index
+        self._processor = processor
+        
 
     property x:
         def __get__(self):
-            return self._x
+            cdef PositionStruct* component_data = self._processor._components
+            return component_data[self._component_index].x
         def __set__(self, float value):
-            self._x = value
+            cdef PositionStruct* component_data = self._processor._components
+            component_data[self._component_index].x = value
 
     property y:
         def __get__(self):
-            return self._y
+            cdef PositionStruct* component_data = self._processor._components
+            return component_data[self._component_index].y
         def __set__(self, float value):
-            self._y = value
+            cdef PositionStruct* component_data = self._processor._components
+            component_data[self._component_index].y = value
+
+    property z:
+        def __get__(self):
+            cdef PositionStruct* component_data = self._processor._components
+            return component_data[self._component_index].z
+        def __set__(self, float value):
+            cdef PositionStruct* component_data = self._processor._components
+            component_data[self._component_index].z = value
 
 cdef class ColorComponent:
     
@@ -187,15 +144,19 @@ class GameSystem(Widget):
     gameworld = ObjectProperty(None)
     gameview = StringProperty(None, allownone=True)
     update_time = NumericProperty(1./60.)
+    fields_to_clear = ListProperty([])
 
 
     def __init__(self, **kwargs):
         cdef list entity_ids
         cdef float frame_time
         super(GameSystem, self).__init__(**kwargs)
-        self.entity_ids = list()
+        self.entity_ids = []
         self.frame_time = 0.0
         self.components = []
+        self.component_count = 0
+        self.unused_components = []
+        self.entity_component_index = {}
 
     def on_gameview(self, instance, value):
         if self.parent is not None:
@@ -240,23 +201,38 @@ class GameSystem(Widget):
             self.update(update_time)
             self.frame_time -= update_time
 
-    def generate_component(self, args):
-        '''This function is called to generate a component. The default 
-        behavior is to take in a dict and turn all the keys, val pairs to 
-        attributes of an Entity object. Override this to create a custom
-        component or take in a different args format.
-        ''' 
-        new_component = Component()
+    
+
+    def init_component(self, component, args):
+        '''Used internally to initialize the component'''
         for each in args:
-            setattr(new_component, each, args[each])
-        return new_component
+            setattr(component, each, args[each])
+
+    def clear_component(self, component):
+        '''Used internally to recycle the component, every attribute listed
+        in **fields_to_clear** will be set to None by default'''
+        fields_to_clear = self.fields_to_clear
+        for each in fields_to_clear:
+            setattr(component, each, None)
 
     def create_component(self, Entity entity, args):
-        new_component = self.generate_component(args)
-        self.components.append(new_component)
-        #setup to reuse components, keep component_count
-        entity._component_ids[self.system_index] = len(self.components)
-        self.entity_ids.append(entity.entity_id)
+        unused_components = self.unused_components
+        components = self.components
+        entity_component_index = self.entity_component_index
+        entity_id = entity.entity_id
+        try:
+            free = unused_components.pop()
+            component = self.components[free]
+            index = free
+        except:
+            component = self.generate_component()
+            components.append(component)
+            index = self.component_count
+            self.component_count += 1
+        self.init_component(component, args)
+        entity._component_ids[self.system_index] = index
+        entity_component_index[entity_id] = index
+        self.entity_ids.append(entity_id)
 
     def remove_entity(self, int entity_id):
         '''
@@ -266,6 +242,12 @@ class GameSystem(Widget):
 
         Function used by GameWorld to remove an entity, you should ensure
         all data related to your component is cleaned up or recycled here'''
+        entity_component_index = self.entity_component_index
+        component_index = self.entity_component_index[entity_id]
+        component_to_clear = self.components[component_index]
+        self.clear_component(component_to_clear)
+        self.unused_components.append(component_index)
+        del entity_component_index[entity_id]
         self.entity_ids.remove(entity_id)
 
     def on_remove_system(self):
@@ -284,23 +266,113 @@ class GameSystem(Widget):
         pass
 
 
+cdef class PositionProcessor:
+    def __cinit__(self):
+        self._count = 0
+        self._components = NULL
+
+    def __dealloc__(self):
+        if self._components != NULL:
+            PyMem_Free(self._components)
+ 
+    cdef PositionComponent generate_component(self):
+        cdef PositionStruct* components = self._components
+        self._count += 1
+        if components is NULL:
+            components = <PositionStruct *>PyMem_Malloc(
+            self._count * sizeof(PositionStruct))
+        else:
+            components = <PositionStruct *>PyMem_Realloc(
+                components, self._count * sizeof(PositionStruct))
+        if components is NULL:
+            raise MemoryError()
+        self._components = components
+        cdef PositionComponent new_component = PositionComponent.__new__(
+            PositionComponent, self._count - 1, self)
+        return new_component
+
+    cdef void clear_component(self, component_index):
+        cdef PositionStruct component = self._components[component_index]
+        component.x = 0.
+        component.y = 0.
+        component.z = 0.
+
+    cdef void init_component(self, PositionComponent component, 
+        float x, float y, float z):
+        cdef PositionStruct* components = self._components
+        cdef int index = component._component_index
+        components[index].x = x
+        components[index].y = y
+        components[index].z = z
+
+
 class PositionSystem(GameSystem):
     '''PositionSystem is optimized to hold 2d location data for your entities.
     The rendering systems will be able to interact with this data using the
     underlying C structures rather than the Python objects.'''
 
-    def generate_component(self, tuple pos):
+    def __init__(self, **kwargs):
+        super(PositionSystem, self).__init__(**kwargs)
+        self.processor = PositionProcessor()
+
+    def generate_component(self):
+        '''This function is performed by PositionProcessor instead.
+        '''
+        raise NotImplementedError()
+
+    def init_component(self, component, args):
+        '''This function is performed by PositionProcessor instead.
+        '''
+        raise NotImplementedError()
+
+    def clear_component(self, component):
+        '''This function is performed by PositionProcessor instead.
+        '''
+        raise NotImplementedError()
+
+    def remove_entity(self, int entity_id):
         '''
         Args:
-            pos (tuple): (float x, float y) 
+            entity_id (int): the entity_id for the entity being removed
+            from the GameSystem
 
-        Position system takes in a tuple: (x, y) and creates a component 
-        with x, y properties (_x, _y to access from cython)
-        '''
-        x = pos[0]
-        y = pos[1]
-        new_component = PositionComponent.__new__(PositionComponent, x, y)
-        return new_component
+        Function used by GameWorld to remove an entity, you should ensure
+        all data related to your component is cleaned up or recycled here'''
+        cdef dict entity_component_index = self.entity_component_index
+        cdef int component_index = entity_component_index[entity_id]
+        cdef PositionProcessor processor = self.processor
+        processor.clear_component(component_index)
+        self.unused_components.append(component_index)
+        del entity_component_index[entity_id]
+        self.entity_ids.remove(entity_id)
+
+    def create_component(self, Entity entity, args):
+        cdef list unused_components = self.unused_components
+        cdef list components = self.components
+        cdef PositionProcessor processor = self.processor
+        cdef PositionComponent component
+        cdef dict entity_component_index = self.entity_component_index
+        cdef int entity_id = entity.entity_id
+        try:
+            free = unused_components.pop()
+            component = self.components[free]
+            index = free
+        except:
+            component = processor.generate_component()
+            components.append(component)
+            index = self.component_count
+            self.component_count += 1
+        cdef float x, y, z
+        print(args)
+        x, y = args[0], args[1]
+        try: 
+            z = args[2]
+        except:
+            z = 0.
+        processor.init_component(component, x, y, z)
+        entity._component_ids[self.system_index] = index
+        entity_component_index[entity_id] = index
+        self.entity_ids.append(entity_id)
 
 class ScaleSystem(GameSystem):
     '''ScaleSystem is optimized to hold a single scale float for your entities.

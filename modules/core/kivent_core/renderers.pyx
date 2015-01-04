@@ -29,6 +29,9 @@ cdef class TextureManager:
     def __init__(self):
         self._textures = {}
         self._keys = {}
+        self._key_index = {}
+        self._texkey_index = {}
+        self._key_count = 0
         self._sizes = {}
         self._uvs = {}
         self._groups = {}
@@ -37,10 +40,14 @@ cdef class TextureManager:
         texture = CoreImage(source, nocache=True).texture
         name = path.splitext(path.basename(source))[0]
         if name not in self._textures:
+            key_count = self._key_count
             self._textures[name] = texture
             self._keys[name] = name
+            self._key_index[key_count] = name
+            self._texkey_index[name] = key_count
             self._uvs[name] = [0., 0., 1., 1.]
             self._groups[name] = [name]
+            self._key_count += 1
         else:
             raise KeyError()
 
@@ -48,10 +55,14 @@ cdef class TextureManager:
         if name in self._textures:
             raise KeyError()
         else:
+            key_count = self._key_count
             self._textures[name] = texture
             self._keys[name] = name
+            self._key_index[key_count] = name
+            self._texkey_index[name] = key_count
             self._uvs[name] = [0., 0., 1., 1.]
             self._groups[name] = [name]
+            self._key_count += 1
 
     def unload_texture(self, name):
         if name not in self._textures:
@@ -59,7 +70,10 @@ cdef class TextureManager:
         else:
             texture_keys = self._groups[name]
             for key in texture_keys:
+                key_index = self._keys[name]
+                del self._key_index[key_index]
                 del self._uvs[key]
+                del self._texkey_index[name]
                 del self._keys[key]
             del self._groups[name]
             del self._textures[name]
@@ -79,6 +93,12 @@ cdef class TextureManager:
 
     def get_texture_from_key(self, tex_key):
         return self._textures[self._keys[tex_key]]
+
+    def get_texkey_from_index_key(self, index_key):
+        return self._key_index[index_key]
+
+    def get_index_key_from_texkey(self, texkey):
+        return self._texkey_index[texkey]
 
     def get_texname_from_texkey(self, tex_key):
         return self._keys[tex_key]
@@ -112,11 +132,15 @@ cdef class TextureManager:
             for key in atlas_content:
                 key = <str>key
                 kx,ky,kw,kh = atlas_content[key]
+                key_index = self._key_count
                 self._keys[key] = name
+                self._key_index[key_index] = key
+                self._texkey_index[key] = key_index
                 self._sizes[key] = kw, kh
                 x1, y1 = kx, ky
                 x2, y2 = x1 + kw, y1 + kh
                 self._uvs[key] = [x1/w, 1.-y1/h, x2/w, 1.-y2/h] 
+                self._key_count += 1
                 group_list_a(str(key))
             self._groups[name] = group_list
 

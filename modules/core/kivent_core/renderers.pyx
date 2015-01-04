@@ -19,6 +19,76 @@ from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE,
 cimport cython
 
 
+cdef class ModelManager:
+
+    def __init__(self):
+        self._meshes = []
+        self._keys = {}
+        self._mesh_count = 0
+        self._unused = []        
+
+    def load_textured_rectangle(self, width, height, texture_key):
+        cdef dict keys = self._keys
+        assert(texture_key not in keys)
+        vert_mesh = VertMesh(attribute_count, 4, 6)
+        uvs = texture_manager.get_uvs(texture_key)
+        vert_mesh.set_textured_rectangle(width, height, uvs)
+        try:
+            free = self._unused.pop()
+            self._meshes[free] = vert_mesh
+            index = free
+        except:
+            self._meshes.append(vert_mesh)
+            index = self._mesh_count
+            self._mesh_count += 1
+        keys[texture_key] = index
+
+    def vert_mesh_from_key(self, key):
+        return self._meshes[self.get_mesh_index(key)]
+
+    def get_mesh_index(self, key):
+        return self._keys[key]
+
+    def load_mesh(self, attribute_count, vert_count, index_count, key):
+        cdef dict keys = self._keys
+        assert(key not in keys)
+        vert_mesh = VertMesh(attribute_count, vert_count, index_count)
+        try:
+            free = self._unused.pop()
+            self._meshes[free] = vert_mesh
+            index = free
+        except:
+            self._meshes.append(vert_mesh)
+            index = self._mesh_count
+            self._mesh_count += 1
+        keys[key] = index
+
+    def copy_mesh(self, mesh_key, new_key):
+        cdef dict keys = self._keys
+        assert(new_key not in keys)
+        cdef VertMesh vert_mesh = self.meshes[keys[mesh_key]]
+        cdef VertMesh copy_mesh = VertMesh(attribute_count, 
+            vert_mesh._vert_count, vert_mesh._index_count)
+        copy_mesh.copy_vert_mesh(vert_mesh)
+        try:
+            free = self._unused.pop()
+            self._meshes[free] = vert_mesh
+            index = free
+        except:
+            self._meshes.append(vert_mesh)
+            index = self._mesh_count
+            self._mesh_count += 1
+        keys[new_key] = index
+        
+
+    def unload_mesh(self, mesh_key):
+        mesh_index = self._keys[mesh_key]
+        self._unused.append(mesh_index)
+        self._meshes[mesh_index] = None
+        del self._keys[mesh_key]
+
+
+
 cdef class TextureManager:
     '''The TextureManager handles the loading of all image resources into our
     game engine. Use **load_image** for image files and **load_atlas** for
@@ -107,7 +177,8 @@ cdef class TextureManager:
         if tex_key is None and atlas_name is None:#should this be or?
             return True
         else:
-            return atlas_name in self._groups and tex_key in self._groups[atlas_name]
+            return atlas_name in self._groups and tex_key in (
+                self._groups[atlas_name])
 
     def load_atlas(self, source):
         dirname = path.dirname(source)
@@ -115,7 +186,8 @@ cdef class TextureManager:
              atlas_data = json.load(data)
 
         for imgname in atlas_data:
-            texture = CoreImage(path.join(dirname,imgname), nocache=True).texture
+            texture = CoreImage(
+                path.join(dirname,imgname), nocache=True).texture
             name = str(path.basename(imgname))
             size = texture.size
             w = <float>size[0]
@@ -145,6 +217,58 @@ cdef class TextureManager:
             self._groups[name] = group_list
 
 texture_manager = TextureManager()
+model_manager = ModelManager()
+
+cdef class RenderProcessor:
+    def __cinit__(self):
+        self._count = 0
+        self._components = NULL
+
+    def __dealloc__(self):
+        if self._components != NULL:
+            PyMem_Free(self._components)
+ 
+    cdef RenderComponent generate_component(self):
+        cdef RenderStruct* components = self._components
+        self._count += 1
+        if components is NULL:
+            components = <RenderStruct *>PyMem_Malloc(
+            self._count * sizeof(RenderStruct))
+        else:
+            components = <RenderStruct *>PyMem_Realloc(
+                components, self._count * sizeof(RenderStruct))
+        if components is NULL:
+            raise MemoryError()
+        self._components = components
+        self.clear_component(self._count - 1)
+        cdef RenderComponent new_component = RenderComponent.__new__(
+            RenderComponent, self._count - 1, self)
+        return new_component
+
+    cdef void clear_component(self, int component_index):
+        cdef RenderStruct* components = self._components
+        components[component_index].attrib_count = 0
+        components[component_index].width = 0.
+        components[component_index].height = 0.
+        components[component_index].vert_index_key = -1
+        components[component_index].tex_index_key = -1
+        components[component_index].render = 0
+        components[component_index].batch_id = -1
+
+    cdef void init_component(self, int component_index, 
+        bool render, int attrib_count, int vert_index_key, 
+        int tex_index_key, float width, float height):
+        cdef RenderStruct* components = self._components
+        components[component_index].attrib_count = attrib_count
+        components[component_index].width = width
+        components[component_index].height = height
+        components[component_index].vert_index_key = vert_index_key
+        components[component_index].tex_index_key = tex_index_key
+        if render:
+            components[component_index].render = 1
+        else:
+            components[component_index].render = 0
+
 
 cdef class RenderComponent:
 

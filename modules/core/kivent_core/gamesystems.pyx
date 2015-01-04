@@ -356,6 +356,7 @@ cdef class PositionProcessor:
         if components is NULL:
             raise MemoryError()
         self._components = components
+        self.clear_component(self._count - 1)
         cdef PositionComponent new_component = PositionComponent.__new__(
             PositionComponent, self._count - 1, self)
         return new_component
@@ -428,6 +429,7 @@ cdef class ScaleProcessor:
         if components is NULL:
             raise MemoryError()
         self._components = components
+        self.clear_component(self._count - 1)
         cdef ScaleComponent new_component = ScaleComponent.__new__(
             ScaleComponent, self._count - 1, self)
         return new_component
@@ -506,6 +508,7 @@ cdef class RotateProcessor:
         if components is NULL:
             raise MemoryError()
         self._components = components
+        self.clear_component(self._count - 1)
         cdef RotateComponent new_component = RotateComponent.__new__(
             RotateComponent, self._count - 1, self)
         return new_component
@@ -569,6 +572,7 @@ cdef class ColorProcessor:
         if components is NULL:
             raise MemoryError()
         self._components = components
+        self.clear_component(self._count - 1)
         cdef ColorComponent new_component = ColorComponent.__new__(
             ColorComponent, self._count - 1, self)
         return new_component

@@ -22,6 +22,9 @@ cdef class Entity:
         self._component_count = component_count
         self._component_ids = component_ids = <int *>PyMem_Malloc(
             component_count* sizeof(int))
+        cdef int i
+        for i in range(component_count):
+            component_ids[i] = -1
         self._systems = systems
         if not component_ids:
             raise MemoryError()
@@ -51,6 +54,9 @@ cdef class Entity:
                 new_count * sizeof(int))
             if not new_data:
                 raise MemoryError()
+            cdef int i
+            for i in range(self._component_count, new_count):
+                new_data[i] = -1
             self._component_ids = new_data
             self._component_count = new_count
 

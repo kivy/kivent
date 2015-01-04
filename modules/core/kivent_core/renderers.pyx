@@ -122,7 +122,6 @@ cdef class TextureManager:
 
 texture_manager = TextureManager()
 
-@cython.freelist(100)
 cdef class RenderComponent:
 
     def __cinit__(self, bool render, str texture_key, 
@@ -655,7 +654,6 @@ class Renderer(GameSystem):
             vert_mesh=vert_mesh)
         return new_component
 
-@cython.freelist(20)
 cdef class RenderBatch:
 
     def __cinit__(self, int maximum_verts, int attribute_count, CMesh cmesh,
@@ -750,7 +748,6 @@ cdef class RenderBatch:
         self._index_count += index_change
         entity_counts[entity_id] = (new_vert_count, new_indices_count)
 
-@cython.freelist(100)
 cdef class VertMesh:
     '''The VertMesh represents a collection of **vertex_count** vertices, 
     all having **attribute_count** floating point data fields. The 

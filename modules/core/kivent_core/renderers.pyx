@@ -44,7 +44,6 @@ cdef class ModelManager:
             self._mesh_count += 1
         keys[texture_key] = index
 
-
     def vert_mesh_from_key(self, key):
         return self._meshes[self.get_mesh_index(key)]
 
@@ -82,7 +81,6 @@ cdef class ModelManager:
             self._mesh_count += 1
         keys[new_key] = index
         
-
     def unload_mesh(self, mesh_key):
         mesh_index = self._keys[mesh_key]
         self._unused.append(mesh_index)
@@ -149,7 +147,6 @@ cdef class TextureManager:
                 del self._keys[key]
             del self._groups[name]
             del self._textures[name]
-
 
     def get_uvs(self, tex_key):
         try:
@@ -294,7 +291,6 @@ cdef class RenderComponent:
         #         new_vert_mesh.copy_vert_mesh(vert_mesh)
 
 
-
     property width:
         def __get__(self):
             cdef RenderStruct* component_data = self._processor._components
@@ -340,10 +336,12 @@ cdef class RenderComponent:
                 set_vertex_attribute(2,1,h)
                 set_vertex_attribute(3,1,-h)
 
+
     property batch_id:
         def __get__(self):
             cdef RenderStruct* component_data = self._processor._components
             return component_data[self._component_index].batch_id
+
 
     property attribute_count:
         def __get__(self):
@@ -358,6 +356,7 @@ cdef class RenderComponent:
             cdef list meshes = model_manager._meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             vert_mesh.attribute_count = value
+
 
     property texture_key:
         def __get__(self):
@@ -390,16 +389,19 @@ cdef class RenderComponent:
             set_vertex_attribute(3, 2, u1)
             set_vertex_attribute(3, 3, v0)
 
+
     property render:
         def __get__(self):
             cdef RenderStruct* component_data = self._processor._components
             return component_data[self._component_index].render
+
         def __set__(self, bool value):
             cdef RenderStruct* component_data = self._processor._components
             if value:
                 component_data[self._component_index].render = 1
             else:
                 component_data[self._component_index].render = 0
+
 
     property vertex_count:
         def __get__(self):
@@ -418,6 +420,7 @@ cdef class RenderComponent:
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             vert_mesh.vertex_count = value
 
+
     property index_count:
         def __get__(self):
             cdef RenderStruct* component_data = self._processor._components
@@ -434,6 +437,7 @@ cdef class RenderComponent:
             cdef list meshes = model_manager._meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             vert_mesh.index_count = value
+
 
     property vert_mesh:
         def __get__(self):

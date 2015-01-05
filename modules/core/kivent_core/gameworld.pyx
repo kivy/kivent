@@ -298,7 +298,7 @@ class GameWorld(Widget):
         entities = self.entities
         er = self.remove_entity
         for entity in self.entities:
-            er(entity['id'])
+            er(entity.entity_id)
 
     def delete_system(self, system_id):
         '''

@@ -1,4 +1,5 @@
 from cmesh cimport CMesh
+from cpython cimport bool
 
 cdef class TextureManager:
     cdef dict _textures
@@ -35,7 +36,8 @@ cdef class RenderProcessor:
     cdef RenderComponent generate_component(self)
     cdef void clear_component(self, int component_index)
     cdef void init_component(self, int component_index, 
-        float x, float y, float z)
+        bool render, int attrib_count, int vert_index_key, 
+        int tex_index_key, float width, float height)
 
 cdef class RenderBatch:
     cdef list _entity_ids

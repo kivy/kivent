@@ -6,7 +6,7 @@ from kivy.clock import Clock
 from functools import partial
 from kivy.graphics import RenderContext
 from gamesystems import GameSystem
-from entity cimport Entity
+from entity cimport Entity, EntityProcessor
 
 class GameWorld(Widget):
     '''GameWorld is the manager of all Entities and GameSystems in your Game.
@@ -66,10 +66,12 @@ class GameWorld(Widget):
         self.deactivated_entities = []
         self.entities_to_remove = []
         self.systems = {}
+        self.system_count = 0
         self.systems_index = []
         self.unused_systems = []
-        self.system_count = 0
-        self.entities.append(Entity(0, self.system_count, self.systems))
+        cdef EntityProcessor processor = EntityProcessor(self.systems)
+        self.entity_processor = processor
+        self.entities.append(processor.generate_entity())
         self.state_callbacks = {}
 
 
@@ -170,7 +172,8 @@ class GameWorld(Widget):
     def create_entity(self):
         '''Used internally if there is not an entity currently available in
         deactivated_entities to create a new entity. Do not call directly.'''
-        entity = Entity(self.number_entities, self.system_count, self.systems)
+        cdef EntityProcessor processor = self.entity_processor
+        entity = processor.generate_entity()
         self.entities.append(entity)
         self.number_entities += 1
         return entity
@@ -230,27 +233,19 @@ class GameWorld(Widget):
         cdef dict systems = self.systems
         cdef str data
         cdef str component
-        ca = components_to_delete.append
+        cdef EntityProcessor processor = self.entity_processor
         load_order = entity.load_order
         load_order.reverse()
         for data_system in load_order:    
-            ca(data_system)
             systems[data_system].remove_entity(entity_id)
-        for component in components_to_delete:
-            system_index = self.get_system_index(component)
-            entity._component_ids[system_index] = -1
+        processor.clear_entity(entity_id)
         entity.load_order = []
-        self.add_entity_to_deactivated(entity_id)
-
-    def add_entity_to_deactivated(self, int entity_id):
-        '''Used internally when entities are removed.'''
         self.deactivated_entities.append(entity_id)
 
+
     def update_entity_component_arrays(self, int new_count):
-        cdef list entities = self.entities
-        cdef Entity entity
-        for entity in entities:
-            entity.component_count = new_count
+        cdef EntityProcessor processor = self.entity_processor
+        processor.system_count = new_count
 
     def update(self, dt):
         '''

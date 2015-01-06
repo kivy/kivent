@@ -1,5 +1,71 @@
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
+
+cdef class EntityProcessor:
+    def __cinit__(self, dict systems):
+        self._count = 0
+        self._system_count = 0
+        self._entity_index = NULL
+        self._systems = systems
+
+    def __dealloc__(self):
+        if self._entity_index != NULL:
+            PyMem_Free(self._entity_index)
+
+    property system_count:
+        def __get__(self):
+            return self._system_count
+        def __set__(self, int new_value):
+            cdef int* new_memory
+            cdef int* old_memory = self._entity_index
+            cdef int count = self._count
+            cdef int i
+            cdef int system_i
+            cdef int old_index
+            cdef int new_index
+            cdef int old_system_count = self._system_count
+            if old_system_count != new_value:
+                new_memory = <int *>PyMem_Malloc(
+                    self._count * new_value * sizeof(int))
+                if new_memory is NULL:
+                    raise MemoryError()
+                for i in range(0, count):
+                    for system_i in range(0, old_system_count):
+                        old_index = i * old_system_count + system_i
+                        new_index = i * new_value + system_i
+                        new_memory[new_index] = old_memory[old_index]
+                    for system_i in range(old_system_count, new_value):
+                        new_index = i * new_value + system_i
+                        new_memory[new_index] = -1
+            PyMem_Free(old_memory)
+            self._system_count = new_value
+            self._entity_index = new_memory
+
+    cdef Entity generate_entity(self):
+        cdef int* entity_index = self._entity_index
+        self._count += 1
+        if entity_index is NULL:
+            entity_index = <int *>PyMem_Malloc(
+                self._count * self._system_count * sizeof(int))
+        else:
+            entity_index = <int *>PyMem_Realloc(
+                entity_index, self._count * self._system_count * sizeof(int))
+        if entity_index is NULL:
+            raise MemoryError()
+        self._entity_index = entity_index
+        self.clear_entity(self._count - 1)
+        cdef Entity new_entity = Entity.__new__(Entity, self._count - 1, self)
+        return new_entity
+
+    cdef void clear_entity(self, int entity_id):
+        cdef int* entity_index = self._entity_index
+        cdef int system_count = self._system_count
+        cdef index_offset = system_count * entity_id
+        cdef int i
+        for i in range(index_offset, index_offset+system_count):
+            entity_index[i] = -1
+
+
 cdef class Entity:
     '''Entity is a python object that will hold all of the components
     attached to that particular entity. GameWorld is responsible for creating
@@ -16,52 +82,27 @@ cdef class Entity:
 
 
     '''
-    def __cinit__(self, int entity_id, int component_count, dict systems):
+    def __cinit__(self, int entity_id, EntityProcessor processor):
         self._id = entity_id
         self._load_order = []
-        self._component_count = component_count
-        self._component_ids = component_ids = <int *>PyMem_Malloc(
-            component_count* sizeof(int))
-        cdef int i
-        for i in range(component_count):
-            component_ids[i] = -1
-        self._systems = systems
-        if not component_ids:
-            raise MemoryError()
-
-    def __dealloc__(self):
-        if self._component_ids != NULL:
-            PyMem_Free(self._component_ids)
+        self._processor = processor
 
     def __getattr__(self, name):
-        system = self._systems[name]
-        system_index = system.system_index
-        component_index = self._component_ids[system_index]
+        cdef EntityProcessor processor = self._processor
+        system = processor._systems[name]
+        cdef int system_index = system.system_index
+        cdef int* entity_index = processor._entity_index
+        cdef int system_count = processor._system_count
+        cdef int offset_index = self._id * system_count + system_index
+        cdef int component_index = entity_index[offset_index]
         if component_index == -1:
             raise IndexError()
-        return system.components[component_index]
+        cdef list components = system.components
+        return components[component_index]
 
     property entity_id:
         def __get__(self):
             return self._id
-
-    property component_count:
-
-        def __set__(self, int new_count):
-            if new_count == self._component_count:
-                return
-            new_data = <int *>PyMem_Realloc(self._component_ids, 
-                new_count * sizeof(int))
-            if not new_data:
-                raise MemoryError()
-            cdef int i
-            for i in range(self._component_count, new_count):
-                new_data[i] = -1
-            self._component_ids = new_data
-            self._component_count = new_count
-
-        def __get__(self):
-            return self._component_count
 
     property load_order:
         def __get__(self):

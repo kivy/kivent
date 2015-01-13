@@ -57,6 +57,7 @@ cdef class VertMesh:
             PyMem_Free(self._indices)
 
     property index_count:
+
         def __set__(self, int new_count):
             if new_count == self._index_count:
                 return

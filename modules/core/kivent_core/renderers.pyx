@@ -14,6 +14,7 @@ from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE,
     GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
     glDisable)
 cimport cython
+from gamesystems cimport Processor
 from vertmesh cimport VertMesh
 
 
@@ -27,11 +28,13 @@ cdef class RenderComponent:
 
     property width:
         def __get__(self):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             return component_data[self._component_index].width
 
         def __set__(self, float value):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             height = component_data[index].height
             cdef int vert_mesh_index = component_data[index].vert_index_key
@@ -50,11 +53,13 @@ cdef class RenderComponent:
 
     property height:
         def __get__(self):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             return component_data[self._component_index].height
 
         def __set__(self, float value):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             width = component_data[index].width
             cdef int vert_mesh_index = component_data[index].vert_index_key
@@ -73,17 +78,20 @@ cdef class RenderComponent:
 
     property batch_id:
         def __get__(self):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             return component_data[self._component_index].batch_id
 
 
     property attribute_count:
         def __get__(self):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             return component_data[self._component_index].attrib_count
 
         def __set__(self, int value):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             component_data[index].attrib_count = value
             cdef int vert_mesh_index = component_data[index].vert_index_key
@@ -94,12 +102,14 @@ cdef class RenderComponent:
 
     property texture_key:
         def __get__(self):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             return texture_manager.get_texkey_from_index_key(
                 component_data[self._component_index].tex_index_key)
 
         def __set__(self, str value):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int tex_index_key = texture_manager.get_index_key_from_texkey(
                 value)
@@ -126,11 +136,13 @@ cdef class RenderComponent:
 
     property render:
         def __get__(self):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             return component_data[self._component_index].render
 
         def __set__(self, bool value):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             if value:
                 component_data[self._component_index].render = 1
             else:
@@ -139,7 +151,8 @@ cdef class RenderComponent:
 
     property vertex_count:
         def __get__(self):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
             cdef list meshes = model_manager._meshes
@@ -147,7 +160,8 @@ cdef class RenderComponent:
             return vert_mesh._vert_count
 
         def __set__(self, int value):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
             cdef list meshes = model_manager._meshes
@@ -157,7 +171,8 @@ cdef class RenderComponent:
 
     property index_count:
         def __get__(self):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
             cdef list meshes = model_manager._meshes
@@ -165,7 +180,8 @@ cdef class RenderComponent:
             return vert_mesh._index_count
 
         def __set__(self, int value):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
             cdef list meshes = model_manager._meshes
@@ -175,7 +191,8 @@ cdef class RenderComponent:
 
     property vert_mesh:
         def __get__(self):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
             cdef list meshes = model_manager._meshes
@@ -183,41 +200,30 @@ cdef class RenderComponent:
             return vert_mesh
 
         def __set__(self, str vert_mesh_key):
-            cdef RenderStruct* component_data = self._processor._components
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
             cdef new_index = model_manager.get_mesh_index(vert_mesh_key)
             component_data[index].vert_index_key = new_index
 
 
-cdef class RenderProcessor:
-    def __cinit__(self):
-        self._count = 0
-        self._components = NULL
-
-    def __dealloc__(self):
-        if self._components != NULL:
-            PyMem_Free(self._components)
+cdef class RenderProcessor(Processor):
+    def __cinit__(self, int preload_count):
+        self._components = PyMem_Malloc(preload_count * sizeof(RenderStruct))
  
     cdef RenderComponent generate_component(self):
-        cdef RenderStruct* components = self._components
         self._count += 1
-        if components is NULL:
-            components = <RenderStruct *>PyMem_Malloc(
-            self._count * sizeof(RenderStruct))
-        else:
-            components = <RenderStruct *>PyMem_Realloc(
-                components, self._count * sizeof(RenderStruct))
-        if components is NULL:
-            raise MemoryError()
-        self._components = components
+        cdef int count = self._count
+        if count > self._mem_count:
+            self.change_allocation(count + int(self._growth_rate*count))
         self.clear_component(self._count - 1)
         cdef RenderComponent new_component = RenderComponent.__new__(
             RenderComponent, self._count - 1, self)
         return new_component
 
     cdef void clear_component(self, int component_index):
-        cdef RenderStruct* components = self._components
+        cdef RenderStruct* components = <RenderStruct*>self._components
         components[component_index].attrib_count = 0
         components[component_index].width = 0.
         components[component_index].height = 0.
@@ -229,7 +235,7 @@ cdef class RenderProcessor:
     cdef void init_component(self, int component_index, 
         bool render, int attrib_count, int vert_index_key, 
         int tex_index_key, float width, float height):
-        cdef RenderStruct* components = self._components
+        cdef RenderStruct* components = <RenderStruct*>self._components
         components[component_index].attrib_count = attrib_count
         components[component_index].width = width
         components[component_index].height = height
@@ -239,6 +245,14 @@ cdef class RenderProcessor:
             components[component_index].render = 1
         else:
             components[component_index].render = 0
+
+    cdef void change_allocation(self, int new_count):
+        cdef void* components = PyMem_Realloc(self._components, 
+            new_count * sizeof(RenderStruct))
+        if components is NULL:
+            raise MemoryError()
+        self._components = components
+        self._mem_count = new_count
 
 
 class Renderer(GameSystem):
@@ -321,7 +335,8 @@ class Renderer(GameSystem):
         self._do_scale_index = -1
         self._do_center_x = 4
         self._do_center_y = 5
-        self.processor = RenderProcessor()
+        count = kwargs.get('prealloc_count', 10)
+        self.processor = RenderProcessor(count)
         with self.canvas.before:
             Callback(self._set_blend_func)
         with self.canvas.after:

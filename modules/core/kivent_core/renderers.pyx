@@ -14,7 +14,10 @@ from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE,
     GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
     glDisable)
 cimport cython
-from gamesystems cimport Processor
+from gamesystems cimport (Processor, PositionStruct, PositionProcessor,
+    ColorStruct, ColorProcessor, RotateStruct, RotateProcessor, ScaleStruct,
+    ScaleProcessor)
+from entity cimport EntityProcessor
 from vertmesh cimport VertMesh
 
 
@@ -38,7 +41,7 @@ cdef class RenderComponent:
             cdef int index = self._component_index
             height = component_data[index].height
             cdef int vert_mesh_index = component_data[index].vert_index_key
-            cdef list meshes = model_manager._meshes
+            cdef list meshes = model_manager.meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             cdef float w
             if value != 0 and height != 0:
@@ -63,7 +66,7 @@ cdef class RenderComponent:
             cdef int index = self._component_index
             width = component_data[index].width
             cdef int vert_mesh_index = component_data[index].vert_index_key
-            cdef list meshes = model_manager._meshes
+            cdef list meshes = model_manager.meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             cdef float h
             if width != 0 and value != 0:
@@ -82,6 +85,11 @@ cdef class RenderComponent:
                 <RenderStruct*>self._processor._components)
             return component_data[self._component_index].batch_id
 
+        def __set__(self, int value):
+            cdef RenderStruct* component_data = (
+                <RenderStruct*>self._processor._components)
+            component_data[self._component_index].batch_id = value
+
 
     property attribute_count:
         def __get__(self):
@@ -95,7 +103,7 @@ cdef class RenderComponent:
             cdef int index = self._component_index
             component_data[index].attrib_count = value
             cdef int vert_mesh_index = component_data[index].vert_index_key
-            cdef list meshes = model_manager._meshes
+            cdef list meshes = model_manager.meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             vert_mesh.attribute_count = value
 
@@ -115,13 +123,14 @@ cdef class RenderComponent:
                 value)
             cdef float u0, v0, u1, v1
             cdef list uv_list = texture_manager.get_uvs(value)
+            print(value, uv_list)
             u0 = uv_list[0]
             v0 = uv_list[1]
             u1 = uv_list[2]
             v1 = uv_list[3]
             component_data[index].tex_index_key = tex_index_key
             cdef int vert_mesh_index = component_data[index].vert_index_key
-            cdef list meshes = model_manager._meshes
+            cdef list meshes = model_manager.meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             set_vertex_attribute = vert_mesh.set_vertex_attribute
             set_vertex_attribute(0, 2, u0)
@@ -155,7 +164,7 @@ cdef class RenderComponent:
                 <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
-            cdef list meshes = model_manager._meshes
+            cdef list meshes = model_manager.meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             return vert_mesh._vert_count
 
@@ -164,7 +173,7 @@ cdef class RenderComponent:
                 <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
-            cdef list meshes = model_manager._meshes
+            cdef list meshes = model_manager.meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             vert_mesh.vertex_count = value
 
@@ -175,7 +184,7 @@ cdef class RenderComponent:
                 <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
-            cdef list meshes = model_manager._meshes
+            cdef list meshes = model_manager.meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             return vert_mesh._index_count
 
@@ -184,7 +193,7 @@ cdef class RenderComponent:
                 <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
-            cdef list meshes = model_manager._meshes
+            cdef list meshes = model_manager.meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             vert_mesh.index_count = value
 
@@ -195,7 +204,7 @@ cdef class RenderComponent:
                 <RenderStruct*>self._processor._components)
             cdef int index = self._component_index
             cdef int vert_mesh_index = component_data[index].vert_index_key
-            cdef list meshes = model_manager._meshes
+            cdef list meshes = model_manager.meshes
             cdef VertMesh vert_mesh = meshes[vert_mesh_index]
             return vert_mesh
 
@@ -335,7 +344,7 @@ class Renderer(GameSystem):
         self._do_scale_index = -1
         self._do_center_x = 4
         self._do_center_y = 5
-        count = kwargs.get('prealloc_count', 10)
+        count = kwargs.get('prealloc_count', 100)
         self.processor = RenderProcessor(count)
         with self.canvas.before:
             Callback(self._set_blend_func)
@@ -371,12 +380,14 @@ class Renderer(GameSystem):
         cdef int index = component._component_index
         cdef int attrib_count = self.attribute_count
         cdef RenderProcessor processor = self.processor
-        if 'texture_key' in args:
-            texture_key = args['texture_key']
+        if 'texture' in args:
+            texture_key = args['texture']
+
             tex_index_key = texture_manager.get_index_key_from_texkey(
                 texture_key)
+            print('texture key is ', texture_key, 'index key is', tex_index_key)
         else:
-            texture_key = None
+            texture_key = str(None)
             tex_index_key = -1
         if 'size' in args:
             w, h = args['size']
@@ -401,7 +412,7 @@ class Renderer(GameSystem):
             exists = model_manager.does_key_exist(mesh_key)
             if not exists:
                 model_manager.load_textured_rectangle(attrib_count, 
-                    w, h, mesh_key)
+                    w, h, texture_key, mesh_key)
             vert_index_key = model_manager.get_mesh_index(mesh_key)
 
         #either get model or create model with w/h/tex
@@ -457,18 +468,35 @@ class Renderer(GameSystem):
         if you would like to create a renderer with customized behavior.'''
         cdef list batches = self.batches
         cdef int num_batches = len(batches)
-        cdef str system_id = self.system_id
+        cdef int system_index = self.system_index
         cdef RenderBatch batch
         cdef object gameworld = self.gameworld
-        cdef object entity
+        cdef dict systems = gameworld.systems
         cdef int entity_id
-        cdef list entities = gameworld.entities
         cdef list entity_ids
-        cdef RenderComponent render_comp
-        cdef PositionComponent pos_comp
-        cdef RotateComponent rot_comp
-        cdef ScaleComponent scale_comp
-        cdef ColorComponent color_comp
+        cdef list meshes = model_manager.meshes
+        cdef EntityProcessor entity_processor = gameworld.entity_processor
+        cdef int sys_count = entity_processor._system_count
+        cdef RenderProcessor render_processor = self.processor
+        cdef RotateProcessor rotate_processor
+        cdef ColorProcessor color_processor
+        cdef ScaleProcessor scale_processor
+        position_system = systems['position']
+        cdef int position_index = position_system.system_index
+        cdef PositionProcessor pos_processor = position_system.processor
+        cdef PositionStruct* pos_comps = (
+            <PositionStruct*>pos_processor._components)
+        cdef RenderStruct* render_comps = (
+            <RenderStruct*>render_processor._components)
+        cdef RotateStruct* rot_comps
+        cdef ScaleStruct* scale_comps
+        cdef ColorStruct* color_comps
+        cdef int* entity_index = entity_processor._entity_index
+        cdef RenderStruct render_comp
+        cdef PositionStruct pos_comp
+        cdef RotateStruct rot_comp
+        cdef ScaleStruct scale_comp
+        cdef ColorStruct color_comp
         cdef int vert_offset
         cdef int attribute_count = self.attribute_count
         cdef int vertex_count
@@ -478,12 +506,6 @@ class Renderer(GameSystem):
         cdef int n
         cdef int attr_ind
         cdef int i
-        cdef float rot
-        cdef float s
-        cdef float r
-        cdef float g
-        cdef float b
-        cdef float a
         cdef bool do_rotate = self.do_rotate
         cdef bool do_scale = self.do_scale
         cdef bool do_color = self.do_color
@@ -495,7 +517,22 @@ class Renderer(GameSystem):
         cdef int b_index = self._do_b_index
         cdef int a_index = self._do_a_index
         cdef int scale_index = self._do_scale_index
-        cdef float x, y
+        cdef int rotate_index, color_index, s_index
+        if do_rotate:
+            rot_system = systems['rotate']
+            rotate_index = rot_system.system_index
+            rotate_processor = rot_system.processor
+            rot_comps = <RotateStruct*> rotate_processor._components
+        if do_scale:
+            scale_system = systems['scale']
+            s_index = scale_system.system_index
+            scale_processor = scale_system.processor
+            scale_comps = <ScaleStruct*> scale_processor._components
+        if do_color:
+            color_system = systems['color']
+            color_index = color_system.system_index
+            color_processor = color_system.processor
+            color_comps = <ColorStruct*> color_processor._components
         cdef VertMesh vert_mesh
         cdef float* batch_data
         cdef float* mesh_data
@@ -506,6 +543,9 @@ class Renderer(GameSystem):
         cdef int num_entities
         cdef int batch_ind
         cdef int ent_ind
+        cdef int entity_offset
+        cdef int rend_comp_index, scale_comp_index, pos_comp_index
+        cdef int rot_comp_index, color_comp_index
         for batch_ind in range(num_batches):
             batch = batches[batch_ind]
             batch.update_batch()
@@ -518,27 +558,26 @@ class Renderer(GameSystem):
             mesh_index_offset = 0
             for ent_ind in range(num_entities):
                 entity_id = entity_ids[ent_ind]
-                entity = entities[entity_id]
-                render_comp = getattr(entity, system_id)
-                vertex_count = render_comp.vertex_count
-                index_count = render_comp.index_count
-                if render_comp._render:
-                    pos_comp = entity.position
-                    x = pos_comp._x
-                    y = pos_comp._y
+                entity_offset = entity_id*sys_count
+                rend_comp_index = entity_index[entity_offset+system_index]
+                render_comp = render_comps[rend_comp_index]
+                vert_mesh = meshes[render_comp.vert_index_key]
+                vertex_count = vert_mesh._vert_count
+                index_count = vert_mesh._index_count
+                if render_comp.render:
+                    pos_comp_index = entity_index[entity_offset+position_index]
+                    pos_comp = pos_comps[pos_comp_index]
                     if do_rotate:
-                        rot_comp = entity.rotate
-                        rot = rot_comp._r
+                        rot_comp_index = entity_index[entity_offset+rot_index]
+                        rot_comp = rot_comps[rot_comp_index]
                     if do_scale:
-                        scale_comp = entity.scale
-                        s = scale_comp._s
+                        scale_comp_index = entity_index[
+                            entity_offset+s_index]
+                        scale_comp = scale_comps[scale_comp_index]
                     if do_color:
-                        color_comp = entity.color
-                        r = color_comp._r
-                        g = color_comp._g
-                        b = color_comp._b
-                        a = color_comp._a
-                    vert_mesh = render_comp._vert_mesh
+                        color_comp_index = entity_index[
+                            entity_offset+color_index]
+                        color_comp = color_comps[color_comp_index]
                     mesh_data = vert_mesh._data
                     mesh_indices = vert_mesh._indices
                     for i in range(index_count):
@@ -549,21 +588,21 @@ class Renderer(GameSystem):
                             mesh_index = n*attribute_count + attr_ind
                             data_index = mesh_index + vert_offset
                             if attr_ind == center_x_index:
-                                batch_data[data_index] = x
+                                batch_data[data_index] = pos_comp.x
                             elif attr_ind == center_y_index:
-                                batch_data[data_index] = y
+                                batch_data[data_index] = pos_comp.y
                             elif attr_ind == rot_index:
-                                batch_data[data_index] = rot
+                                batch_data[data_index] = rot_comp.r
                             elif attr_ind == r_index:
-                                batch_data[data_index] = r
+                                batch_data[data_index] = color_comp.r
                             elif attr_ind == b_index:
-                                batch_data[data_index] = b
+                                batch_data[data_index] = color_comp.b
                             elif attr_ind == g_index:
-                                batch_data[data_index] = g
+                                batch_data[data_index] = color_comp.g
                             elif attr_ind == a_index:
-                                batch_data[data_index] = a
+                                batch_data[data_index] = color_comp.a
                             elif attr_ind == scale_index:
-                                batch_data[data_index] = s
+                                batch_data[data_index] = scale_comp.sx
                             else:
                                 batch_data[data_index] = mesh_data[mesh_index]
                 else:
@@ -575,10 +614,10 @@ class Renderer(GameSystem):
             batch._cmesh.flag_update()
 
     def remove_entity(self, int entity_id):
-        cdef list entities = self.gameworld.entities
-        cdef object entity = entities[entity_id]
-        cdef RenderComponent render_comp = getattr(entity, self.system_id)
-        cdef int batch_id = render_comp._batch_id
+        cdef list components = self.components
+        cdef int component_index = self.entity_component_index[entity_id]
+        cdef RenderComponent render_comp = components[component_index]
+        cdef int batch_id = render_comp.batch_id
         cdef RenderBatch batch = self.batches[batch_id]
         batch.remove_entity(entity_id)
         super(Renderer, self).remove_entity(entity_id)
@@ -593,11 +632,11 @@ class Renderer(GameSystem):
     def update_entity_batch_counts(self, int entity_id):
         '''If you have changed the number of vertices or indices in your
         entities VertMesh, call this function'''
-        cdef list entities = self.gameworld.entities
         cdef list batches = self.batches
-        cdef object entity = entities[entity_id]
-        cdef RenderComponent render_comp = getattr(entity, self.system_id)
-        cdef int batch_id = render_comp._batch_id
+        cdef list components = self.components
+        cdef int component_index = self.entity_component_index[entity_id]
+        cdef RenderComponent render_comp = components[component_index]
+        cdef int batch_id = render_comp.batch_id
         cdef RenderBatch batch = batches[batch_id]
         batch.update_entity_counts(entity_id, render_comp.vertex_count, 
             render_comp.index_count)
@@ -610,22 +649,22 @@ class Renderer(GameSystem):
             rebatch_entity(entity_id)
 
     def remove_entity_from_batch(self, int entity_id):
-        cdef list entities = self.gameworld.entities
-        cdef object entity = entities[entity_id]
+        cdef list components = self.components
+        cdef int component_index = self.entity_component_index[entity_id]
+        cdef RenderComponent render_comp = components[component_index]
         cdef list batches = self.batches
-        cdef RenderComponent render_comp = getattr(entity, self.system_id)
-        cdef int batch_id = render_comp._batch_id
+        cdef int batch_id = render_comp.batch_id
         cdef RenderBatch batch = batches[batch_id]
         batch.remove_entity(entity_id)
 
     def rebatch_entity(self, int entity_id):
-        cdef list entities = self.gameworld.entities
-        cdef object entity = entities[entity_id]
         cdef list batches = self.batches
-        cdef RenderComponent render_comp = getattr(entity, self.system_id)
-        cdef int batch_id = render_comp._batch_id
+        cdef list components = self.components
+        cdef int component_index = self.entity_component_index[entity_id]
+        cdef RenderComponent render_comp = components[component_index]
+        cdef int batch_id = render_comp.batch_id
         cdef RenderBatch batch = batches[batch_id]
-        render_comp._attrib_count = self.attribute_count
+        render_comp.attribute_count = self.attribute_count
         batch.remove_entity(entity_id)
         self.batch_entity(entity_id, render_comp.vertex_count, 
             render_comp.index_count, render_comp._texture_key, render_comp)
@@ -637,16 +676,17 @@ class Renderer(GameSystem):
         if not try_existing:
             batch_id = self.create_new_batch(entity_id, self.maximum_vertices, 
                 self.attribute_count, vertex_count, index_count, texture_key)
-        render_comp._batch_id = batch_id
+        render_comp.batch_id = batch_id
 
     def create_component(self, object entity, args):
-        cdef RenderComponent render_comp = self.generate_component(args)
-        setattr(entity, self.system_id, render_comp)
+        super(Renderer, self).create_component(entity, args)
         cdef int entity_id = entity.entity_id
-        self.entity_ids.append(entity_id)
+        cdef list components = self.components
+        cdef int component_index = self.entity_component_index[entity_id]
+        cdef RenderComponent render_comp = components[component_index]
         cdef int vertex_count = render_comp.vertex_count
         cdef int index_count = render_comp.index_count
-        cdef str texture_key = render_comp._texture_key
+        cdef str texture_key = render_comp.texture_key
         self.batch_entity(entity_id, vertex_count, index_count, texture_key,
             render_comp)
 
@@ -688,40 +728,6 @@ class Renderer(GameSystem):
                 return True, batch._batch_id
         return False, None
 
-    def generate_component(self, dict entity_component_dict):
-        '''Renderers take in a dict containing a string 'texture' 
-        correspondingto the name of the texture in the atlas, and a size tuple 
-        of width, height if you would like to construct a textured quad. 
-        You may also create your own VertMesh and supply it for direct use or 
-        to be copied internally. In this case do not provide size, instead 
-        provide 'copy' and 'vert_mesh' fields in the creation args dict 
-        for your RenderComponent. You may also set 'render' at creation to 
-        determine whether entity should be drawn.
-        R'''
-        if 'texture' in entity_component_dict:
-            texture = entity_component_dict['texture']
-        else:
-            texture = None
-        if 'size' in entity_component_dict:
-            w, h = entity_component_dict['size']
-        else:
-            w, h = None, None
-        if 'copy' in entity_component_dict:
-            copy = entity_component_dict['copy']
-        else:
-            copy = False
-        if 'render' in entity_component_dict:
-            render = entity_component_dict['render']
-        else:
-            render = True
-        if 'vert_mesh' in entity_component_dict:
-            vert_mesh = entity_component_dict['vert_mesh']
-        else:
-            vert_mesh = None
-        new_component = RenderComponent.__new__(RenderComponent, render, 
-            texture, self.attribute_count, width=w, height=h, copy=copy,
-            vert_mesh=vert_mesh)
-        return new_component
 
 cdef class RenderBatch:
 

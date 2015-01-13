@@ -1,21 +1,6 @@
 from cmesh cimport CMesh
 from cpython cimport bool
-
-cdef class TextureManager:
-    cdef dict _textures
-    cdef dict _keys
-    cdef dict _sizes
-    cdef dict _uvs
-    cdef dict _groups
-    cdef dict _key_index
-    cdef dict _texkey_index
-    cdef int _key_count
-
-cdef class ModelManager:
-    cdef list _meshes
-    cdef dict _keys
-    cdef list _unused
-    cdef int _mesh_count
+from gamesystems cimport Processor
 
 cdef class RenderComponent:
     cdef int _component_index
@@ -30,14 +15,13 @@ ctypedef struct RenderStruct:
     float width
     float height
 
-cdef class RenderProcessor:
-    cdef int _count
-    cdef RenderStruct* _components
+cdef class RenderProcessor(Processor):
     cdef RenderComponent generate_component(self)
     cdef void clear_component(self, int component_index)
     cdef void init_component(self, int component_index, 
         bool render, int attrib_count, int vert_index_key, 
         int tex_index_key, float width, float height)
+    cdef void change_allocation(self, int new_count)
 
 cdef class RenderBatch:
     cdef list _entity_ids
@@ -55,9 +39,3 @@ cdef class RenderBatch:
     cdef CMesh _cmesh
     cdef int _batch_id
 
-cdef class VertMesh:
-    cdef int _attrib_count
-    cdef float* _data
-    cdef int _vert_count
-    cdef int _index_count
-    cdef unsigned short* _indices

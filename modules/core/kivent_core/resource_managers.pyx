@@ -9,12 +9,16 @@ cdef class ModelManager:
         self._meshes = []
         self._keys = {}
         self._mesh_count = 0
-        self._unused = []        
+        self._unused = []
+
+    property meshes:
+        def __get__(self):
+            return self._meshes  
 
     def load_textured_rectangle(self, attribute_count, 
-        width, height, texture_key):
+        width, height, texture_key, name):
         cdef dict keys = self._keys
-        assert(texture_key not in keys)
+        assert(name not in keys)
         vert_mesh = VertMesh(attribute_count, 4, 6)
         uvs = texture_manager.get_uvs(texture_key)
         vert_mesh.set_textured_rectangle(width, height, uvs)
@@ -26,7 +30,7 @@ cdef class ModelManager:
             self._meshes.append(vert_mesh)
             index = self._mesh_count
             self._mesh_count += 1
-        keys[texture_key] = index
+        keys[name] = index
 
     def does_key_exist(self, key):
         return key in self._keys
@@ -96,6 +100,7 @@ cdef class TextureManager:
     def load_image(self, source):
         texture = CoreImage(source, nocache=True).texture
         name = path.splitext(path.basename(source))[0]
+        name = str(name)
         if name not in self._textures:
             key_count = self._key_count
             self._textures[name] = texture
@@ -109,6 +114,7 @@ cdef class TextureManager:
             raise KeyError()
 
     def load_texture(self, name, texture):
+        name = str(name)
         if name in self._textures:
             raise KeyError()
         else:
@@ -188,7 +194,7 @@ cdef class TextureManager:
                 raise KeyError("'%s' already in textures"%name)
             self._textures[name] = texture
             for key in atlas_content:
-                key = <str>key
+                key = str(key)
                 kx,ky,kw,kh = atlas_content[key]
                 key_index = self._key_count
                 self._keys[key] = name

@@ -389,7 +389,7 @@ cdef class Processor:
 
     property mem_count:
         '''The number of components that have been allocated internally
-        in the **_components** array. Set to preallocate more memory,
+        in the **_components** array. Set to preallocate more me0mory,
         only accepts a value greater than the current mem_count'''
         def __get__(self):
             return self._mem_count
@@ -456,7 +456,7 @@ class PositionSystem(GameSystem):
 
     def __init__(self, **kwargs):
         super(PositionSystem, self).__init__(**kwargs)
-        count = kwargs.get('prealloc_count', 10)
+        count = kwargs.get('prealloc_count', 100)
         self.processor = PositionProcessor(count)
 
     def generate_component(self):
@@ -526,7 +526,7 @@ class ScaleSystem(GameSystem):
 
     def __init__(self, **kwargs):
         super(ScaleSystem, self).__init__(**kwargs)
-        count = kwargs.get('prealloc_count', 10)
+        count = kwargs.get('prealloc_count', 100)
         self.processor = ScaleProcessor(count)
 
     def generate_component(self):
@@ -598,7 +598,7 @@ class RotateSystem(GameSystem):
 
     def __init__(self, **kwargs):
         super(RotateSystem, self).__init__(**kwargs)
-        count = kwargs.get('prealloc_count', 10)
+        count = kwargs.get('prealloc_count', 100)
         self.processor = RotateProcessor(count)
 
     def generate_component(self):
@@ -662,7 +662,7 @@ class ColorSystem(GameSystem):
 
     def __init__(self, **kwargs):
         super(ColorSystem, self).__init__(**kwargs)
-        count = kwargs.get('prealloc_count', 10)
+        count = kwargs.get('prealloc_count', 100)
         self.processor = ColorProcessor(count)
 
     def generate_component(self):

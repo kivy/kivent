@@ -15,12 +15,22 @@ class TestGame(Widget):
         Clock.schedule_once(self.init_game, 1.0)
 
     def init_game(self, dt):
-        self.setup_map()
-        self.setup_states()
-        self.set_state()
-        self.draw_some_stuff()
-        Clock.schedule_interval(self.update, 0)
+        if self.ensure_startup():
+            self.setup_map()
+            self.setup_states()
+            self.set_state()
+            self.draw_some_stuff()
+            Clock.schedule_interval(self.update, 0)
+        else:
+            Clock.schedule_once(self.init_game)
 
+    def ensure_startup(self):
+        systems_to_check = ['map', 'renderer', 'position', 'gameview']
+        systems = self.gameworld.systems
+        for each in systems_to_check:
+            if each not in systems:
+                return False
+        return True
 
     def draw_some_stuff(self):
         create_dict = {
@@ -30,7 +40,7 @@ class TestGame(Widget):
         self.gameworld.init_entity(create_dict, ['position', 'renderer'])
         create_dict = {
             'position': (200., 275.),
-            'renderer': {'texture': 'star1', 'size': (64., 64.)},
+            'renderer': {'texture': 'star1', 'size': (50., 50.)},
         }
         self.gameworld.init_entity(create_dict, ['position', 'renderer'])
         create_dict = {

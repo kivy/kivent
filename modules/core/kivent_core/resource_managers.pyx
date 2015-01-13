@@ -28,6 +28,9 @@ cdef class ModelManager:
             self._mesh_count += 1
         keys[texture_key] = index
 
+    def does_key_exist(self, key):
+        return key in self._keys
+
     def vert_mesh_from_key(self, key):
         return self._meshes[self.get_mesh_index(key)]
 

@@ -8,6 +8,7 @@ from kivy.graphics import RenderContext, Callback
 from gamesystems import GameSystem
 from cmesh cimport CMesh
 from resource_managers import model_manager, texture_manager
+from resource_managers cimport ModelManager, TextureManager
 from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE, 
     GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
     GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
@@ -22,21 +23,6 @@ cdef class RenderComponent:
     def __cinit__(self, int component_index, RenderProcessor processor):
         self._component_index = component_index
         self._processor = processor
-        # if width is not None and height is not None:
-        #     self._width = width
-        #     self._height = height
-        #     self._vert_mesh = vert_mesh = VertMesh(attribute_count, 4, 6)
-        #     vert_mesh.set_textured_rectangle(width, height, 
-        #         texture_manager.get_uvs(texture_key))
-        # elif vert_mesh != None:
-        #     self._width = 0
-        #     self._height = 0
-        #     if not copy:
-        #         self._vert_mesh = vert_mesh
-        #     else:
-        #         self._vert_mesh = new_vert_mesh = VertMesh(attribute_count, 
-        #             vert_mesh._vert_count, vert_mesh._index_count)
-        #         new_vert_mesh.copy_vert_mesh(vert_mesh)
 
 
     property width:
@@ -372,8 +358,11 @@ class Renderer(GameSystem):
         cdef RenderProcessor processor = self.processor
         if 'texture_key' in args:
             texture_key = args['texture_key']
+            tex_index_key = texture_manager.get_index_key_from_texkey(
+                texture_key)
         else:
             texture_key = None
+            tex_index_key = -1
         if 'size' in args:
             w, h = args['size']
         else:
@@ -391,6 +380,14 @@ class Renderer(GameSystem):
             vert_index_key = model_manager.get_mesh_index(vert_mesh_key)
         else:
             vert_index_key = -1
+
+        if vert_index_key == -1:
+            mesh_key = str(attrib_count) + texture_key
+            exists = model_manager.does_key_exist(mesh_key)
+            if not exists:
+                model_manager.load_textured_rectangle(attrib_count, 
+                    w, h, mesh_key)
+            vert_index_key = model_manager.get_mesh_index(mesh_key)
 
         #either get model or create model with w/h/tex
         #if no tex set to -1

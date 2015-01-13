@@ -65,6 +65,13 @@ cdef class EntityProcessor:
         for i in range(index_offset, index_offset+system_count):
             entity_index[i] = -1
 
+    cdef void set_component(self, int entity_id, int component_id, 
+        int system_id):
+        cdef int* entity_index = self._entity_index
+        cdef int system_count = self._system_count
+        cdef int offset_index = entity_id * system_count + system_id
+        entity_index[offset_index] = component_id
+        
 
 cdef class Entity:
     '''Entity is a python object that will hold all of the components

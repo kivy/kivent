@@ -11,3 +11,4 @@ cdef class EntityProcessor:
     cdef dict _systems
     cdef Entity generate_entity(self)
     cdef void clear_entity(self, int entity_id)
+    cdef void set_component(self, int entity_id, int component_id, int system_id)

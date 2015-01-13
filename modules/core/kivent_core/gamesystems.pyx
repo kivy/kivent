@@ -11,7 +11,7 @@ from kivy.graphics import RenderContext
 from kivy.graphics.transformation import Matrix
 cimport cython
 from kivy.vector import Vector
-from entity cimport Entity
+from entity cimport Entity, EntityProcessor
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
 
@@ -27,10 +27,12 @@ cdef class RotateComponent:
 
     property r:
         def __get__(self):
-            cdef RotateStruct* component_data = self._processor._components
+            cdef RotateStruct* component_data = (
+                <RotateStruct*>self._processor._components)
             return component_data[self._component_index].r
         def __set__(self, float value):
-            cdef RotateStruct* component_data = self._processor._components
+            cdef RotateStruct* component_data = (
+                <RotateStruct*>self._processor._components)
             component_data[self._component_index].r = value
 
 cdef class ScaleComponent:
@@ -42,39 +44,47 @@ cdef class ScaleComponent:
     property s:
         def __get__(self):
             cdef int component_index = self._component_index
-            cdef ScaleStruct* component_data = self._processor._components
+            cdef ScaleStruct* component_data = (
+                <ScaleStruct*>self._processor._components)
             return ((component_data[component_index].sx + (
                 component_data[component_index].sy + (
                 component_data[component_index].sx)))/3.)
         def __set__(self, float value):
             cdef int component_index = self._component_index
-            cdef ScaleStruct* component_data = self._processor._components
+            cdef ScaleStruct* component_data = (
+                <ScaleStruct*>self._processor._components)
             component_data[component_index].sx = value
             component_data[component_index].sy = value
             component_data[component_index].sz = value
 
     property sx:
         def __get__(self):
-            cdef ScaleStruct* component_data = self._processor._components
+            cdef ScaleStruct* component_data = (
+                <ScaleStruct*>self._processor._components)
             return component_data[self._component_index].sx
         def __set__(self, float value):
-            cdef ScaleStruct* component_data = self._processor._components
+            cdef ScaleStruct* component_data = (
+                <ScaleStruct*>self._processor._components)
             component_data[self._component_index].sx = value
 
     property sy:
         def __get__(self):
-            cdef ScaleStruct* component_data = self._processor._components
+            cdef ScaleStruct* component_data = (
+                <ScaleStruct*>self._processor._components)
             return component_data[self._component_index].sy
         def __set__(self, float value):
-            cdef ScaleStruct* component_data = self._processor._components
+            cdef ScaleStruct* component_data = (
+                <ScaleStruct*>self._processor._components)
             component_data[self._component_index].sy = value
 
     property sz:
         def __get__(self):
-            cdef ScaleStruct* component_data = self._processor._components
+            cdef ScaleStruct* component_data = (
+                <ScaleStruct*>self._processor._components)
             return component_data[self._component_index].sz
         def __set__(self, float value):
-            cdef ScaleStruct* component_data = self._processor._components
+            cdef ScaleStruct* component_data = (
+                <ScaleStruct*>self._processor._components)
             component_data[self._component_index].sz = value
 
 
@@ -87,50 +97,62 @@ cdef class PositionComponent:
 
     property x:
         def __get__(self):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             return component_data[self._component_index].x
         def __set__(self, float value):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             component_data[self._component_index].x = value
 
     property y:
         def __get__(self):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             return component_data[self._component_index].y
         def __set__(self, float value):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             component_data[self._component_index].y = value
 
     property z:
         def __get__(self):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             return component_data[self._component_index].z
         def __set__(self, float value):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             component_data[self._component_index].z = value
 
     property lx:
         def __get__(self):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             return component_data[self._component_index].lx
         def __set__(self, float value):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             component_data[self._component_index].lx = value
 
     property ly:
         def __get__(self):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             return component_data[self._component_index].ly
         def __set__(self, float value):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             component_data[self._component_index].ly = value
 
     property lz:
         def __get__(self):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             return component_data[self._component_index].lz
         def __set__(self, float value):
-            cdef PositionStruct* component_data = self._processor._components
+            cdef PositionStruct* component_data = (
+                <PositionStruct*>self._processor._components)
             component_data[self._component_index].lz = value
 
 cdef class ColorComponent:
@@ -142,34 +164,42 @@ cdef class ColorComponent:
 
     property r:
         def __get__(self):
-            cdef ColorStruct* component_data = self._processor._components
+            cdef ColorStruct* component_data = (
+                <ColorStruct*>self._processor._components)
             return component_data[self._component_index].r
         def __set__(self, float value):
-            cdef ColorStruct* component_data = self._processor._components
+            cdef ColorStruct* component_data = (
+                <ColorStruct*>self._processor._components)
             component_data[self._component_index].r = value
 
     property g:
         def __get__(self):
-            cdef ColorStruct* component_data = self._processor._components
+            cdef ColorStruct* component_data = (
+                <ColorStruct*>self._processor._components)
             return component_data[self._component_index].g
         def __set__(self, float value):
-            cdef ColorStruct* component_data = self._processor._components
+            cdef ColorStruct* component_data = (
+                <ColorStruct*>self._processor._components)
             component_data[self._component_index].g = value
 
     property b:
         def __get__(self):
-            cdef ColorStruct* component_data = self._processor._components
+            cdef ColorStruct* component_data = (
+                <ColorStruct*>self._processor._components)
             return component_data[self._component_index].b
         def __set__(self, float value):
-            cdef ColorStruct* component_data = self._processor._components
+            cdef ColorStruct* component_data = (
+                <ColorStruct*>self._processor._components)
             component_data[self._component_index].b = value
 
     property a:
         def __get__(self):
-            cdef ColorStruct* component_data = self._processor._components
+            cdef ColorStruct* component_data = (
+                <ColorStruct*>self._processor._components)
             return component_data[self._component_index].a
         def __set__(self, float value):
-            cdef ColorStruct* component_data = self._processor._components
+            cdef ColorStruct* component_data = (
+                <ColorStruct*>self._processor._components)
             component_data[self._component_index].a = value
 
 
@@ -288,7 +318,10 @@ class GameSystem(Widget):
         unused_components = self.unused_components
         components = self.components
         entity_component_index = self.entity_component_index
-        entity_id = entity.entity_id
+        cdef int entity_id = entity._id
+        cdef int index
+        cdef int system_index = self.system_index
+        cdef EntityProcessor processor = entity._processor
         try:
             free = unused_components.pop()
             component = self.components[free]
@@ -299,7 +332,7 @@ class GameSystem(Widget):
             index = self.component_count
             self.component_count += 1
         self.init_component(component, args)
-        entity._component_ids[self.system_index] = index
+        processor.set_component(entity_id, index, system_index)
         entity_component_index[entity_id] = index
         self.entity_ids.append(entity_id)
 
@@ -314,6 +347,9 @@ class GameSystem(Widget):
         entity_component_index = self.entity_component_index
         component_index = self.entity_component_index[entity_id]
         component_to_clear = self.components[component_index]
+        cdef int system_index = self.system_index
+        cdef EntityProcessor processor = self.gameworld.entity_processor
+        processor.set_component(entity_id, -1, system_index)
         self.clear_component(component_to_clear)
         self.unused_components.append(component_index)
         del entity_component_index[entity_id]
@@ -334,35 +370,70 @@ class GameSystem(Widget):
         '''Function called when a system is deleted by gameworld'''
         pass
 
-
-cdef class PositionProcessor:
-    def __cinit__(self):
+cdef class Processor:
+    
+    def __cinit__(self, int preload_count):
         self._count = 0
+        self._mem_count = preload_count
+        self._growth_rate = .1
         self._components = NULL
 
     def __dealloc__(self):
         if self._components != NULL:
             PyMem_Free(self._components)
+
+    property count:
+        '''The number of components actually active in the system'''
+        def __get__(self):
+            return self._count
+
+    property mem_count:
+        '''The number of components that have been allocated internally
+        in the **_components** array. Set to preallocate more memory,
+        only accepts a value greater than the current mem_count'''
+        def __get__(self):
+            return self._mem_count
+
+        def __set__(self, int new_count):
+            assert(new_count > self._mem_count)
+            self.change_allocation(new_count)
+
+    property growth_rate:
+        '''When the Processor needs to allocate more memory it will allocate
+        by taking the current_count+1 + (growth_rate * current_count). The
+        growth_rate defaults to .1. 
+        '''
+        def __get__(self):
+            return self._growth_rate
+
+        def __set__(self, float value):
+            self._growth_rate = value
+
+
+cdef class PositionProcessor(Processor):
+    def __cinit__(self, int preload_count):
+        self._components = PyMem_Malloc(preload_count * sizeof(PositionStruct))
  
     cdef PositionComponent generate_component(self):
-        cdef PositionStruct* components = self._components
         self._count += 1
-        if components is NULL:
-            components = <PositionStruct *>PyMem_Malloc(
-            self._count * sizeof(PositionStruct))
-        else:
-            components = <PositionStruct *>PyMem_Realloc(
-                components, self._count * sizeof(PositionStruct))
-        if components is NULL:
-            raise MemoryError()
-        self._components = components
+        cdef int count = self._count
+        if count > self._mem_count:
+            self.change_allocation(count + int(self._growth_rate*count))
         self.clear_component(self._count - 1)
         cdef PositionComponent new_component = PositionComponent.__new__(
             PositionComponent, self._count - 1, self)
         return new_component
 
+    cdef void change_allocation(self, int new_count):
+        cdef void* components = PyMem_Realloc(self._components, 
+            new_count * sizeof(PositionStruct))
+        if components is NULL:
+            raise MemoryError()
+        self._components = components
+        self._mem_count = new_count
+
     cdef void clear_component(self, int component_index):
-        cdef PositionStruct* components = self._components
+        cdef PositionStruct* components = <PositionStruct*>self._components
         components[component_index].x = 0.
         components[component_index].y = 0.
         components[component_index].z = 0.
@@ -372,7 +443,7 @@ cdef class PositionProcessor:
 
     cdef void init_component(self, int component_index, 
         float x, float y, float z):
-        cdef PositionStruct* components = self._components
+        cdef PositionStruct* components = <PositionStruct*>self._components
         components[component_index].x = x
         components[component_index].y = y
         components[component_index].z = z
@@ -385,7 +456,8 @@ class PositionSystem(GameSystem):
 
     def __init__(self, **kwargs):
         super(PositionSystem, self).__init__(**kwargs)
-        self.processor = PositionProcessor()
+        count = kwargs.get('prealloc_count', 10)
+        self.processor = PositionProcessor(count)
 
     def generate_component(self):
         cdef PositionProcessor processor = self.processor
@@ -408,34 +480,30 @@ class PositionSystem(GameSystem):
         processor.clear_component(index)
 
 
-cdef class ScaleProcessor:
-    def __cinit__(self):
-        self._count = 0
-        self._components = NULL
-
-    def __dealloc__(self):
-        if self._components != NULL:
-            PyMem_Free(self._components)
+cdef class ScaleProcessor(Processor):
+    def __cinit__(self, int preload_count):
+        self._components = PyMem_Malloc(preload_count * sizeof(ScaleStruct))
  
     cdef ScaleComponent generate_component(self):
-        cdef ScaleStruct* components = self._components
         self._count += 1
-        if components is NULL:
-            components = <ScaleStruct *>PyMem_Malloc(
-            self._count * sizeof(ScaleStruct))
-        else:
-            components = <ScaleStruct *>PyMem_Realloc(
-                components, self._count * sizeof(ScaleStruct))
-        if components is NULL:
-            raise MemoryError()
-        self._components = components
+        cdef int count = self._count
+        if count > self._mem_count:
+            self.change_allocation(count + int(self._growth_rate*count))
         self.clear_component(self._count - 1)
         cdef ScaleComponent new_component = ScaleComponent.__new__(
             ScaleComponent, self._count - 1, self)
         return new_component
 
+    cdef void change_allocation(self, int new_count):
+        cdef void* components = PyMem_Realloc(self._components, 
+            new_count * sizeof(ScaleStruct))
+        if components is NULL:
+            raise MemoryError()
+        self._components = components
+        self._mem_count = new_count
+
     cdef void clear_component(self, int component_index):
-        cdef ScaleStruct* components = self._components
+        cdef ScaleStruct* components = <ScaleStruct*>self._components
         components[component_index].sx = 1.
         components[component_index].sy = 1.
         components[component_index].sz = 1.
@@ -443,7 +511,7 @@ cdef class ScaleProcessor:
 
     cdef void init_component(self, int component_index, 
         float sx, float sy, float sz):
-        cdef ScaleStruct* components = self._components
+        cdef ScaleStruct* components = <ScaleStruct*>self._components
         components[component_index].sx = sx
         components[component_index].sy = sy
         components[component_index].sz = sz
@@ -458,7 +526,8 @@ class ScaleSystem(GameSystem):
 
     def __init__(self, **kwargs):
         super(ScaleSystem, self).__init__(**kwargs)
-        self.processor = ScaleProcessor()
+        count = kwargs.get('prealloc_count', 10)
+        self.processor = ScaleProcessor(count)
 
     def generate_component(self):
         cdef ScaleProcessor processor = self.processor
@@ -486,40 +555,35 @@ class ScaleSystem(GameSystem):
         processor.clear_component(index)
 
 
-
-cdef class RotateProcessor:
-    def __cinit__(self):
-        self._count = 0
-        self._components = NULL
-
-    def __dealloc__(self):
-        if self._components != NULL:
-            PyMem_Free(self._components)
+cdef class RotateProcessor(Processor):
+    def __cinit__(self, int preload_count):
+        self._components = PyMem_Malloc(preload_count * sizeof(RotateStruct))
  
     cdef RotateComponent generate_component(self):
-        cdef RotateStruct* components = self._components
         self._count += 1
-        if components is NULL:
-            components = <RotateStruct *>PyMem_Malloc(
-            self._count * sizeof(RotateStruct))
-        else:
-            components = <RotateStruct *>PyMem_Realloc(
-                components, self._count * sizeof(RotateStruct))
+        cdef int count = self._count
+        if count > self._mem_count:
+            self.change_allocation(count + int(self._growth_rate*count))
+        self.clear_component(count - 1)
+        cdef RotateComponent new_component = RotateComponent.__new__(
+            RotateComponent, count - 1, self)
+        return new_component
+
+    cdef void change_allocation(self, int new_count):
+        cdef void* components = PyMem_Realloc(self._components, 
+            new_count * sizeof(RotateStruct))
         if components is NULL:
             raise MemoryError()
         self._components = components
-        self.clear_component(self._count - 1)
-        cdef RotateComponent new_component = RotateComponent.__new__(
-            RotateComponent, self._count - 1, self)
-        return new_component
+        self._mem_count = new_count
 
     cdef void clear_component(self, int component_index):
-        cdef RotateStruct* components = self._components
+        cdef RotateStruct* components = <RotateStruct*>self._components
         components[component_index].r = 0.
         components[component_index].lr = 0.
  
     cdef void init_component(self, int component_index, float r):
-        cdef RotateStruct* components = self._components
+        cdef RotateStruct* components = <RotateStruct*>self._components
         components[component_index].r = r
 
 
@@ -534,7 +598,8 @@ class RotateSystem(GameSystem):
 
     def __init__(self, **kwargs):
         super(RotateSystem, self).__init__(**kwargs)
-        self.processor = RotateProcessor()
+        count = kwargs.get('prealloc_count', 10)
+        self.processor = RotateProcessor(count)
 
     def generate_component(self):
         cdef RotateProcessor processor = self.processor
@@ -551,34 +616,22 @@ class RotateSystem(GameSystem):
         processor.clear_component(index)
 
 
-cdef class ColorProcessor:
-    def __cinit__(self):
-        self._count = 0
-        self._components = NULL
+cdef class ColorProcessor(Processor):
+    def __cinit__(self, int preload_count):
+        self._components = PyMem_Malloc(preload_count * sizeof(ColorStruct))
 
-    def __dealloc__(self):
-        if self._components != NULL:
-            PyMem_Free(self._components)
- 
     cdef ColorComponent generate_component(self):
-        cdef ColorStruct* components = self._components
         self._count += 1
-        if components is NULL:
-            components = <ColorStruct *>PyMem_Malloc(
-            self._count * sizeof(ColorStruct))
-        else:
-            components = <ColorStruct *>PyMem_Realloc(
-                components, self._count * sizeof(ColorStruct))
-        if components is NULL:
-            raise MemoryError()
-        self._components = components
+        cdef int count = self._count
+        if count > self._mem_count:
+            self.change_allocation(count + int(self._growth_rate*count))
         self.clear_component(self._count - 1)
         cdef ColorComponent new_component = ColorComponent.__new__(
             ColorComponent, self._count - 1, self)
         return new_component
 
     cdef void clear_component(self, int component_index):
-        cdef ColorStruct* components = self._components
+        cdef ColorStruct* components = <ColorStruct*>self._components
         components[component_index].r = 1.
         components[component_index].g = 1.
         components[component_index].b = 1.
@@ -586,11 +639,19 @@ cdef class ColorProcessor:
 
     cdef void init_component(self, int component_index, 
         float r, float g, float b, float a):
-        cdef ColorStruct* components = self._components
+        cdef ColorStruct* components = <ColorStruct*>self._components
         components[component_index].r = r
         components[component_index].g = g
         components[component_index].b = b
         components[component_index].a = a
+
+    cdef void change_allocation(self, int new_count):
+        cdef void* components = PyMem_Realloc(self._components, 
+            new_count * sizeof(ColorStruct))
+        if components is NULL:
+            raise MemoryError()
+        self._components = components
+        self._mem_count = new_count
 
 
 class ColorSystem(GameSystem):
@@ -598,6 +659,11 @@ class ColorSystem(GameSystem):
     Renderers expect this data to be between 0.0 and 1.0 for each float.
     The rendering systems will be able to interact with this data using the
     underlying C structures rather than the Python objects.'''
+
+    def __init__(self, **kwargs):
+        super(ColorSystem, self).__init__(**kwargs)
+        count = kwargs.get('prealloc_count', 10)
+        self.processor = ColorProcessor(count)
 
     def generate_component(self):
         cdef ColorProcessor processor = self.processor

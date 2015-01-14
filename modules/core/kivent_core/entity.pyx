@@ -2,10 +2,13 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
 
 cdef class EntityProcessor:
-    def __cinit__(self, dict systems):
+    def __cinit__(self, dict systems, int system_count, int start_count):
         self._count = 0
-        self._system_count = 0
-        self._entity_index = NULL
+        self._system_count = system_count
+        self._growth_rate = .25
+        self._entity_index = <int*>PyMem_Malloc( 
+            start_count * system_count * sizeof(int))
+        self._mem_count = start_count
         self._systems = systems
 
     def __dealloc__(self):
@@ -44,18 +47,20 @@ cdef class EntityProcessor:
     cdef Entity generate_entity(self):
         cdef int* entity_index = self._entity_index
         self._count += 1
-        if entity_index is NULL:
-            entity_index = <int *>PyMem_Malloc(
-                self._count * self._system_count * sizeof(int))
-        else:
-            entity_index = <int *>PyMem_Realloc(
-                entity_index, self._count * self._system_count * sizeof(int))
-        if entity_index is NULL:
-            raise MemoryError()
-        self._entity_index = entity_index
+        cdef int count = self._count
+        if count > self._mem_count:
+            self.change_allocation(count + int(self._growth_rate*count))
         self.clear_entity(self._count - 1)
         cdef Entity new_entity = Entity.__new__(Entity, self._count - 1, self)
         return new_entity
+
+    cdef void change_allocation(self, int new_count):
+        cdef int* entity_index = <int*>PyMem_Realloc(self._entity_index, 
+            new_count * self._system_count * sizeof(int))
+        if entity_index is NULL:
+            raise MemoryError()
+        self._entity_index = entity_index
+        self._mem_count = new_count
 
     cdef void clear_entity(self, int entity_id):
         cdef int* entity_index = self._entity_index

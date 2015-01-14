@@ -60,19 +60,28 @@ class GameWorld(Widget):
         cdef list system_index
         self.canvas = RenderContext(use_parent_projection=True,
             use_parent_modelview=True)
+        
+        system_count_hint = kwargs.get('system_count_hint', 10)
+        self.system_count = system_count_hint
+        self.systems_index = systems_index = []
+        self.systems = {}
+        self.unused_systems = unused_systems = []
+        unused_a = unused_systems.append
+        systems_a = systems_index.append
+        for x in range(system_count_hint):
+            systems_a(None)
+            unused_a(x)
         super(GameWorld, self).__init__(**kwargs)
         self.entities = []
         self.states = {}
         self.deactivated_entities = []
         self.entities_to_remove = []
-        self.systems = {}
-        self.system_count = 0
-        self.systems_index = []
-        self.unused_systems = []
-        cdef EntityProcessor processor = EntityProcessor(self.systems)
-        self.entity_processor = processor
-        self.entities.append(processor.generate_entity())
+        count = kwargs.get('prealloc_count', 100)
+        cdef EntityProcessor processor = EntityProcessor(self.systems, 
+            system_count_hint, count)
         self.state_callbacks = {}
+        self.entity_processor = processor
+        self.prealloc_entities(count)
 
 
     def add_state(self, state_name, screenmanager_screen=None, 
@@ -168,6 +177,15 @@ class GameWorld(Widget):
         if state_callback is not None:
             state_callback(value, self._last_state)
             self._last_state = value
+
+    def prealloc_entities(self, count):
+        cdef list deactivated_entities = self.deactivated_entities
+        create_entity = self.create_entity
+        deactivated_a = deactivated_entities.append
+        cdef Entity entity
+        for x in range(count):
+            entity = create_entity()
+            deactivated_a(entity.entity_id)
 
     def create_entity(self):
         '''Used internally if there is not an entity currently available in

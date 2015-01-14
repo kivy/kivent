@@ -241,6 +241,7 @@ class GameSystem(Widget):
     updateable = BooleanProperty(False)
     paused = BooleanProperty(False)
     gameworld = ObjectProperty(None)
+    do_components = BooleanProperty(True)
     gameview = StringProperty(None, allownone=True)
     update_time = NumericProperty(1./60.)
     fields_to_clear = ListProperty([])
@@ -256,6 +257,9 @@ class GameSystem(Widget):
         self.component_count = 0
         self.unused_components = []
         self.entity_component_index = {}
+        if self.do_components:
+            count = kwargs.get('prealloc_count', 100)
+            self.prealloc_components(count)
 
     def on_gameview(self, instance, value):
         if self.parent is not None:
@@ -313,6 +317,23 @@ class GameSystem(Widget):
         fields_to_clear = self.fields_to_clear
         for each in fields_to_clear:
             setattr(component, each, None)
+
+    def prealloc_components(self, component_count):
+        cdef list unused_components = self.unused_components
+        generate_component = self.generate_component
+        cdef list components = self.components
+        components_a = components.append
+        unused_a = unused_components.append
+        for x in range(component_count):
+            component = generate_component()
+            components_a(component)
+            unused_a(self.component_count)
+            self.component_count += 1
+
+    def generate_component(self):
+        return Component()
+
+
 
     def create_component(self, Entity entity, args):
         unused_components = self.unused_components
@@ -455,9 +476,10 @@ class PositionSystem(GameSystem):
     underlying C structures rather than the Python objects.'''
 
     def __init__(self, **kwargs):
-        super(PositionSystem, self).__init__(**kwargs)
         count = kwargs.get('prealloc_count', 100)
         self.processor = PositionProcessor(count)
+        super(PositionSystem, self).__init__(**kwargs)
+        
 
     def generate_component(self):
         cdef PositionProcessor processor = self.processor
@@ -525,9 +547,10 @@ class ScaleSystem(GameSystem):
     rates in different directions.'''
 
     def __init__(self, **kwargs):
-        super(ScaleSystem, self).__init__(**kwargs)
         count = kwargs.get('prealloc_count', 100)
         self.processor = ScaleProcessor(count)
+        super(ScaleSystem, self).__init__(**kwargs)
+        
 
     def generate_component(self):
         cdef ScaleProcessor processor = self.processor
@@ -597,9 +620,10 @@ class RotateSystem(GameSystem):
     '''
 
     def __init__(self, **kwargs):
-        super(RotateSystem, self).__init__(**kwargs)
         count = kwargs.get('prealloc_count', 100)
         self.processor = RotateProcessor(count)
+        super(RotateSystem, self).__init__(**kwargs)
+        
 
     def generate_component(self):
         cdef RotateProcessor processor = self.processor
@@ -661,9 +685,10 @@ class ColorSystem(GameSystem):
     underlying C structures rather than the Python objects.'''
 
     def __init__(self, **kwargs):
-        super(ColorSystem, self).__init__(**kwargs)
         count = kwargs.get('prealloc_count', 100)
         self.processor = ColorProcessor(count)
+        super(ColorSystem, self).__init__(**kwargs)
+        
 
     def generate_component(self):
         cdef ColorProcessor processor = self.processor
@@ -706,6 +731,7 @@ class GameMap(GameSystem):
     window_size = ListProperty((0., 0.))
     margins = ListProperty((0., 0.))
     map_color = ListProperty((1., 1., 1., 1.))
+    do_components = BooleanProperty(False)
     default_margins = ListProperty((0., 0.))
 
     def on_map_size(self, instance, value):
@@ -1009,6 +1035,7 @@ class GameView(GameSystem):
     camera_speed_multiplier = NumericProperty(1.0)
     render_system_order = ListProperty([])
     move_speed_multiplier = NumericProperty(1.0)
+    do_components = BooleanProperty(False)
 
     def __init__(self, **kwargs):
         super(GameView, self).__init__(**kwargs)

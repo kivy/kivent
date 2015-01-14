@@ -123,7 +123,6 @@ cdef class RenderComponent:
                 value)
             cdef float u0, v0, u1, v1
             cdef list uv_list = texture_manager.get_uvs(value)
-            print(value, uv_list)
             u0 = uv_list[0]
             v0 = uv_list[1]
             u1 = uv_list[2]
@@ -333,6 +332,8 @@ class Renderer(GameSystem):
         self.canvas = RenderContext(use_parent_projection=True)
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
+        count = kwargs.get('prealloc_count', 100)
+        self.processor = RenderProcessor(count)
         super(Renderer, self).__init__(**kwargs)
         self.batches = []
         self.vertex_format = self.calculate_vertex_format()
@@ -344,8 +345,7 @@ class Renderer(GameSystem):
         self._do_scale_index = -1
         self._do_center_x = 4
         self._do_center_y = 5
-        count = kwargs.get('prealloc_count', 100)
-        self.processor = RenderProcessor(count)
+        
         with self.canvas.before:
             Callback(self._set_blend_func)
         with self.canvas.after:
@@ -385,7 +385,6 @@ class Renderer(GameSystem):
 
             tex_index_key = texture_manager.get_index_key_from_texkey(
                 texture_key)
-            print('texture key is ', texture_key, 'index key is', tex_index_key)
         else:
             texture_key = str(None)
             tex_index_key = -1

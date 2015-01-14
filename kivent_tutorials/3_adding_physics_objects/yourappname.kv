@@ -4,20 +4,27 @@ TestGame:
 
 <TestGame>:
     gameworld: gameworld
+    app: app
+    system_count_hint: 8
+    prealloc_count: 25000
     GameWorld:
         id: gameworld
         gamescreenmanager: gamescreenmanager
         PositionSystem:
             system_id: 'position'
             gameworld: gameworld
+            prealloc_count: 25000
         RotateSystem:
             system_id: 'rotate'
             gameworld: gameworld
+            prealloc_count: 25000
         ColorSystem:
             system_id: 'color'
+            prealloc_count: 25000
             gameworld: gameworld
         ScaleSystem:
             system_id: 'scale'
+            prealloc_count: 25000
             gameworld: gameworld
         GameView:
             system_id: 'gameview'
@@ -33,16 +40,9 @@ TestGame:
             system_id: 'map'
             map_size: root.size
             gameworld: gameworld
-        CymunkTouchSystem:
-            system_id: 'touch_system'
-            gameworld: gameworld
-            size: root.size
-            pos: root.pos
-            max_force: 300000.
-            gameview_name: 'gameview'
-            physics_system: 'physics'
         Renderer:
             gameworld: gameworld
+            prealloc_count: 25000
             system_id: 'renderer'
             gameview: 'gameview'
             do_rotate: True
@@ -50,6 +50,7 @@ TestGame:
             do_scale: True
             shader_source: 'assets/glsl/positioncolorrotatescaleshader.glsl'
         CymunkPhysics:
+            prealloc_count: 25000
             gameworld: root.gameworld
             system_id: 'physics'
     GameScreenManager:
@@ -65,4 +66,26 @@ TestGame:
 <MainScreen@GameScreen>:
     name: 'main'
     FloatLayout:
+        Button:
+            text: 'Draw Some Stuff'
+            size_hint: (.2, .1)
+            pos_hint: {'x': .025, 'y': .025}
+            on_release: app.root.draw_some_stuff()
+        DebugPanel:
+            size_hint: (.2, .1)
+            pos_hint: {'x': .225, 'y': .025}
+        Label:
+            text: str(app.count)
+            size_hint: (.2, .1)
+            font_size: 24
+            pos_hint: {'x': .425, 'y': .025}
 
+<DebugPanel>:
+    Label:
+        pos: root.pos
+        size: root.size
+        font_size: root.size[1]*.5
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1)
+        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'

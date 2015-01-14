@@ -6,7 +6,9 @@ from random import randint, choice
 from math import radians, pi, sin, cos
 import kivent_core
 import kivent_cymunk
-from kivent_core.renderers import texture_manager, VertMesh
+from kivent_core.resource_managers import texture_manager
+from kivent_core.vertmesh import VertMesh
+from kivy.properties import StringProperty, NumericProperty
 
 texture_manager.load_atlas('assets/background_objects.atlas')
 
@@ -17,7 +19,7 @@ class TestGame(Widget):
 
     def ensure_startup(self):
         systems_to_check = ['map', 'physics', 'renderer', 
-            'rotate', 'position', 'gameview']
+            'rotate', 'position', 'gameview', 'scale', 'color']
         systems = self.gameworld.systems
         for each in systems_to_check:
             if each not in systems:
@@ -29,10 +31,12 @@ class TestGame(Widget):
             self.setup_map()
             self.setup_states()
             self.set_state()
-            self.draw_some_stuff()
-            Clock.schedule_interval(self.update, 0)
+            Clock.schedule_interval(self.update, 1./60.)
         else:
             Clock.schedule_once(self.init_game)
+
+    def draw_game(self):
+        self.draw_some_stuff()
 
     def destroy_created_entity(self, dt):
         ent_id = self.created_entities.pop()
@@ -41,21 +45,21 @@ class TestGame(Widget):
 
     def draw_some_stuff(self):
         size = Window.size
-        self.created_entities = created_entities = []
-        entities = self.gameworld.entities
-        for x in range(50):
-            pos = (randint(0, size[0]), randint(0, size[1]))
-            ent_id = self.create_asteroid(pos)
-            created_entities.append(ent_id)
-        Clock.schedule_interval(self.destroy_created_entity, 1.)
+        w, h = size[0], size[1]
+        create_asteroid = self.create_asteroid
+        for x in range(500):
+            pos = (randint(0, w), randint(0, h))
+            ent_id = create_asteroid(pos)
+        self.app.count += 500
+        #Clock.schedule_interval(self.destroy_created_entity, 1.)
 
 
     def create_asteroid(self, pos):
-        x_vel = randint(-100, 100)
-        y_vel = randint(-100, 100)
+        x_vel = randint(-500, 500)
+        y_vel = randint(-500, 500)
         angle = radians(randint(-360, 360))
         angular_velocity = radians(randint(-150, -150))
-        shape_dict = {'inner_radius': 0, 'outer_radius': 32, 
+        shape_dict = {'inner_radius': 0, 'outer_radius': 3, 
             'mass': 50, 'offset': (0, 0)}
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
             'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
@@ -68,18 +72,16 @@ class TestGame(Widget):
             'ang_vel_limit': radians(200), 
             'mass': 50, 'col_shapes': col_shapes}
         create_component_dict = {'physics': physics_component, 
-            'renderer': {'texture': 'asteroid1', 
-            'size': (64, 64),
+            'renderer': {'texture': 'star1', 
+            'size': (6, 6),
             'render': True}, 
             'position': pos, 'rotate': 0, 'color': (1., 1., 1., 1.),
             'scale': 1.}
-        component_order = ['position', 'rotate', 'color',
-            'physics', 'renderer', 'scale']
+        component_order = ['position', 'rotate', 'color', 'renderer', 'scale', 'physics']
         return self.gameworld.init_entity(create_component_dict, component_order)
 
     def setup_map(self):
         gameworld = self.gameworld
-        print(gameworld.systems)
         gameworld.currentmap = gameworld.systems['map']
 
     def update(self, dt):
@@ -96,7 +98,20 @@ class TestGame(Widget):
         self.gameworld.state = 'main'
 
 
+class DebugPanel(Widget):
+    fps = StringProperty(None)
+
+    def __init__(self, **kwargs):
+        super(DebugPanel, self).__init__(**kwargs)
+        Clock.schedule_once(self.update_fps)
+
+    def update_fps(self,dt):
+        self.fps = str(int(Clock.get_fps()))
+        Clock.schedule_once(self.update_fps, .05)
+
 class YourAppNameApp(App):
+    count = NumericProperty(0)
+
     def build(self):
         Window.clearcolor = (0, 0, 0, 1.)
 

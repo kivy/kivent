@@ -392,7 +392,7 @@ class Renderer(GameSystem):
             unused_a(self.component_count)
             self.component_count += 1
 
-    def init_component(self, RenderComponent component, args):
+    def init_component(self, RenderComponent component, int entity_id, args):
         cdef float w, h
         cdef int vert_index_key, tex_index_key
         cdef bool copy, render
@@ -586,7 +586,8 @@ class Renderer(GameSystem):
                     pos_comp_index = entity_index[entity_offset+position_index]
                     pos_comp = pos_comps[pos_comp_index]
                     if do_rotate:
-                        rot_comp_index = entity_index[entity_offset+rot_index]
+                        rot_comp_index = entity_index[
+                            entity_offset+rotate_index]
                         rot_comp = rot_comps[rot_comp_index]
                     if do_scale:
                         scale_comp_index = entity_index[
@@ -685,7 +686,7 @@ class Renderer(GameSystem):
         render_comp.attribute_count = self.attribute_count
         batch.remove_entity(entity_id)
         self.batch_entity(entity_id, render_comp.vertex_count, 
-            render_comp.index_count, render_comp._texture_key, render_comp)
+            render_comp.index_count, render_comp.texture_key, render_comp)
 
     def batch_entity(self, int entity_id, int vertex_count, int index_count, 
         str texture_key, RenderComponent render_comp):

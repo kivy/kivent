@@ -307,7 +307,7 @@ class GameSystem(Widget):
 
     
 
-    def init_component(self, component, args):
+    def init_component(self, component, entity_id, args):
         '''Used internally to initialize the component'''
         for each in args:
             setattr(component, each, args[each])
@@ -360,7 +360,7 @@ class GameSystem(Widget):
             components.append(component)
             index = self.component_count
             self.component_count += 1
-        self.init_component(component, args)
+        self.init_component(component, entity_id, args)
         processor.set_component(entity_id, index, system_index)
         entity_component_index[entity_id] = index
         self.entity_ids.append(entity_id)
@@ -513,7 +513,7 @@ class PositionSystem(GameSystem):
         cdef PositionProcessor processor = self.processor
         return processor.generate_component()
 
-    def init_component(self, PositionComponent component, args):
+    def init_component(self, PositionComponent component, int entity_id, args):
         cdef int index = component._component_index
         cdef PositionProcessor processor = self.processor
         cdef float x, y, z
@@ -603,7 +603,7 @@ class ScaleSystem(GameSystem):
         cdef ScaleProcessor processor = self.processor
         return processor.generate_component()
 
-    def init_component(self, ScaleComponent component, args):
+    def init_component(self, ScaleComponent component, int entity_id, args):
         cdef float sx, sy, sz
         cdef int index = component._component_index
         cdef ScaleProcessor processor = self.processor
@@ -695,7 +695,8 @@ class RotateSystem(GameSystem):
         cdef RotateProcessor processor = self.processor
         return processor.generate_component()
 
-    def init_component(self, RotateComponent component, float args):
+    def init_component(self, RotateComponent component, 
+        int entity_id, float args):
         cdef int index = component._component_index
         cdef RotateProcessor processor = self.processor
         processor.init_component(index, args)
@@ -780,7 +781,7 @@ class ColorSystem(GameSystem):
         cdef ColorProcessor processor = self.processor
         return processor.generate_component()
 
-    def init_component(self, ColorComponent component, args):
+    def init_component(self, ColorComponent component, int entity_id, args):
         cdef int index = component._component_index
         cdef float r, g, b, a
         r, g, b, a = args[0], args[1], args[2], args[3]
@@ -963,7 +964,7 @@ class LerpSystem(GameSystem):
         new_component = LerpComponent.__new__(LerpComponent)
         return new_component
 
-    def init_component(self, component, args):
+    def init_component(self, component, entity_id, args):
         '''Used internally to initialize the component'''
         pass
 

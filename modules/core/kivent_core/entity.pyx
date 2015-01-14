@@ -26,13 +26,14 @@ cdef class EntityProcessor:
             cdef int system_i
             cdef int old_index
             cdef int new_index
+            cdef int mem_count = self._mem_count
             cdef int old_system_count = self._system_count
             if old_system_count != new_value:
                 new_memory = <int *>PyMem_Malloc(
-                    self._count * new_value * sizeof(int))
+                    mem_count * new_value * sizeof(int))
                 if new_memory is NULL:
                     raise MemoryError()
-                for i in range(0, count):
+                for i in range(0, mem_count):
                     for system_i in range(0, old_system_count):
                         old_index = i * old_system_count + system_i
                         new_index = i * new_value + system_i
@@ -40,6 +41,8 @@ cdef class EntityProcessor:
                     for system_i in range(old_system_count, new_value):
                         new_index = i * new_value + system_i
                         new_memory[new_index] = -1
+
+
             PyMem_Free(old_memory)
             self._system_count = new_value
             self._entity_index = new_memory

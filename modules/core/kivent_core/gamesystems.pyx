@@ -245,6 +245,7 @@ class GameSystem(Widget):
     gameview = StringProperty(None, allownone=True)
     update_time = NumericProperty(1./60.)
     fields_to_clear = ListProperty([])
+    prealloc_count = NumericProperty(100)
 
 
     def __init__(self, **kwargs):
@@ -318,13 +319,20 @@ class GameSystem(Widget):
         for each in fields_to_clear:
             setattr(component, each, None)
 
+    def on_prealloc_count(self, instance, value):
+        if self.do_components:
+            self.prealloc_components(value)
+
     def prealloc_components(self, component_count):
         cdef list unused_components = self.unused_components
         generate_component = self.generate_component
         cdef list components = self.components
         components_a = components.append
         unused_a = unused_components.append
-        for x in range(component_count):
+        current_count = len(components)
+        if component_count < current_count:
+            return
+        for x in range(current_count, component_count):
             component = generate_component()
             components_a(component)
             unused_a(self.component_count)
@@ -434,6 +442,7 @@ cdef class Processor:
 cdef class PositionProcessor(Processor):
     def __cinit__(self, int preload_count):
         self._components = PyMem_Malloc(preload_count * sizeof(PositionStruct))
+        self._mem_count = preload_count
  
     cdef PositionComponent generate_component(self):
         self._count += 1
@@ -481,6 +490,25 @@ class PositionSystem(GameSystem):
         super(PositionSystem, self).__init__(**kwargs)
         
 
+    def prealloc_components(self, component_count):
+        cdef list unused_components = self.unused_components
+        generate_component = self.generate_component
+        cdef list components = self.components
+        components_a = components.append
+        unused_a = unused_components.append
+        new_count = int(component_count)
+        cdef PositionProcessor processor = self.processor
+        current_count = processor._mem_count
+        if new_count < current_count:
+            return
+        elif current_count < new_count:
+            processor.change_allocation(new_count)
+        for x in range(current_count, new_count):
+            component = generate_component()
+            components_a(component)
+            unused_a(self.component_count)
+            self.component_count += 1
+        
     def generate_component(self):
         cdef PositionProcessor processor = self.processor
         return processor.generate_component()
@@ -551,6 +579,25 @@ class ScaleSystem(GameSystem):
         self.processor = ScaleProcessor(count)
         super(ScaleSystem, self).__init__(**kwargs)
         
+
+    def prealloc_components(self, component_count):
+        cdef list unused_components = self.unused_components
+        generate_component = self.generate_component
+        cdef list components = self.components
+        components_a = components.append
+        unused_a = unused_components.append
+        new_count = int(component_count)
+        cdef ScaleProcessor processor = self.processor
+        current_count = processor._mem_count
+        if new_count < current_count:
+            return
+        elif current_count < new_count:
+            processor.change_allocation(new_count)
+        for x in range(current_count, new_count):
+            component = generate_component()
+            components_a(component)
+            unused_a(self.component_count)
+            self.component_count += 1
 
     def generate_component(self):
         cdef ScaleProcessor processor = self.processor
@@ -623,6 +670,25 @@ class RotateSystem(GameSystem):
         count = kwargs.get('prealloc_count', 100)
         self.processor = RotateProcessor(count)
         super(RotateSystem, self).__init__(**kwargs)
+
+    def prealloc_components(self, component_count):
+        cdef list unused_components = self.unused_components
+        generate_component = self.generate_component
+        cdef list components = self.components
+        components_a = components.append
+        unused_a = unused_components.append 
+        new_count = int(component_count)
+        cdef RotateProcessor processor = self.processor
+        current_count = processor._mem_count
+        if new_count < current_count:
+            return
+        elif current_count < new_count:
+            processor.change_allocation(new_count)
+        for x in range(current_count, new_count):
+            component = generate_component()
+            components_a(component)
+            unused_a(self.component_count)
+            self.component_count += 1
         
 
     def generate_component(self):
@@ -688,6 +754,26 @@ class ColorSystem(GameSystem):
         count = kwargs.get('prealloc_count', 100)
         self.processor = ColorProcessor(count)
         super(ColorSystem, self).__init__(**kwargs)
+
+    def prealloc_components(self, component_count):
+        cdef list unused_components = self.unused_components
+        generate_component = self.generate_component
+        cdef list components = self.components
+        components_a = components.append
+        unused_a = unused_components.append
+        
+        new_count = int(component_count)
+        cdef ColorProcessor processor = self.processor
+        current_count = processor._mem_count
+        if new_count < current_count:
+            return
+        elif current_count < new_count:
+            processor.change_allocation(new_count)
+        for x in range(current_count, new_count):
+            component = generate_component()
+            components_a(component)
+            unused_a(self.component_count)
+            self.component_count += 1
         
 
     def generate_component(self):

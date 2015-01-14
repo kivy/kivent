@@ -373,6 +373,25 @@ class Renderer(GameSystem):
         cdef RenderProcessor processor = self.processor
         return processor.generate_component()
 
+    def prealloc_components(self, component_count):
+        cdef list unused_components = self.unused_components
+        generate_component = self.generate_component
+        cdef list components = self.components
+        components_a = components.append
+        unused_a = unused_components.append
+        new_count = int(component_count)
+        cdef RenderProcessor processor = self.processor
+        current_count = processor._mem_count
+        if new_count < current_count:
+            return
+        elif current_count < new_count:
+            processor.change_allocation(new_count)
+        for x in range(current_count, new_count):
+            component = generate_component()
+            components_a(component)
+            unused_a(self.component_count)
+            self.component_count += 1
+
     def init_component(self, RenderComponent component, args):
         cdef float w, h
         cdef int vert_index_key, tex_index_key

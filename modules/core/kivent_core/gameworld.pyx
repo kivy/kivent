@@ -49,6 +49,8 @@ class GameWorld(Widget):
     number_entities = NumericProperty(1)
     gamescreenmanager = ObjectProperty(None)
     currentmap = ObjectProperty(None, allownone = True)
+    prealloc_count = NumericProperty(100)
+    system_count_hint = NumericProperty(1)
  
     
     def __init__(self, **kwargs):
@@ -61,7 +63,9 @@ class GameWorld(Widget):
         self.canvas = RenderContext(use_parent_projection=True,
             use_parent_modelview=True)
         
-        system_count_hint = kwargs.get('system_count_hint', 10)
+
+        super(GameWorld, self).__init__(**kwargs)
+        system_count_hint = kwargs.get('system_count_hint', 1)
         self.system_count = system_count_hint
         self.systems_index = systems_index = []
         self.systems = {}
@@ -71,7 +75,6 @@ class GameWorld(Widget):
         for x in range(system_count_hint):
             systems_a(None)
             unused_a(x)
-        super(GameWorld, self).__init__(**kwargs)
         self.entities = []
         self.states = {}
         self.deactivated_entities = []
@@ -82,7 +85,6 @@ class GameWorld(Widget):
         self.state_callbacks = {}
         self.entity_processor = processor
         self.prealloc_entities(count)
-
 
     def add_state(self, state_name, screenmanager_screen=None, 
         systems_added=None, systems_removed=None, systems_paused=None, 
@@ -178,12 +180,39 @@ class GameWorld(Widget):
             state_callback(value, self._last_state)
             self._last_state = value
 
+    def on_system_count_hint(self, instance, value):
+        unused_systems = self.unused_systems
+        systems_index = self.systems_index
+        unused_a = unused_systems.append
+        systems_a = systems_index.append
+        cdef EntityProcessor processor = self.entity_processor
+        cdef int system_count = processor._system_count
+        cdef int count = int(value)
+        if count < system_count:
+            return
+        elif system_count < count:
+            processor.system_count = count
+            self.system_count = count
+        for x in range(system_count, count):
+            systems_a(None)
+            unused_a(x)
+
+    def on_prealloc_count(self, instance, value):
+        self.prealloc_entities(value)
+
     def prealloc_entities(self, count):
         cdef list deactivated_entities = self.deactivated_entities
         create_entity = self.create_entity
         deactivated_a = deactivated_entities.append
         cdef Entity entity
-        for x in range(count):
+        cdef EntityProcessor processor = self.entity_processor
+        cdef int new_count = int(count)
+        cdef int mem_count = processor._mem_count
+        if new_count < mem_count:
+            return
+        elif mem_count < new_count:
+            processor.change_allocation(new_count)
+        for x in range(mem_count, new_count):
             entity = create_entity()
             deactivated_a(entity.entity_id)
 
@@ -309,11 +338,13 @@ class GameWorld(Widget):
 
         Used to delete a GameSystem from the GameWorld'''
         systems = self.systems
-        systems[system_id].on_delete_system()
-        system_index = self.get_system_index(system_id)
-        self.unused_systems.append(system_index)
-        self.systems_index[system_index] = None
-        self.remove_widget(systems[system_id])
+        system = systems[system_id]
+        system.on_delete_system()
+        if system.do_components:
+            system_index = self.get_system_index(system_id)
+            self.unused_systems.append(system_index)
+            self.systems_index[system_index] = None
+        self.remove_widget(system)
         del systems[system_id]
 
     def get_system_index(self, system_id):
@@ -321,7 +352,12 @@ class GameWorld(Widget):
 
     def add_system(self, widget, dt):
         '''Used internally by add_widget.'''
+        if widget.system_id in self.systems:
+            return
         self.systems[widget.system_id] = widget
+        widget.on_add_system()
+        if not widget.do_components:
+            return
         unused_systems = self.unused_systems
         try:
             free = unused_systems.pop()
@@ -332,7 +368,7 @@ class GameWorld(Widget):
             widget.system_index = self.system_count
             self.system_count += 1
             self.update_entity_component_arrays(self.system_count)
-        widget.on_add_system()
+        
 
     def add_widget(self, widget):
         systems = self.systems

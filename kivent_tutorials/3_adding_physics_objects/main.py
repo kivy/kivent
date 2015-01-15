@@ -47,10 +47,10 @@ class TestGame(Widget):
         size = Window.size
         w, h = size[0], size[1]
         create_asteroid = self.create_asteroid
-        for x in range(500):
+        for x in range(1000):
             pos = (randint(0, w), randint(0, h))
             ent_id = create_asteroid(pos)
-        self.app.count += 500
+        self.app.count += 1000
         #Clock.schedule_interval(self.destroy_created_entity, 1.)
 
 
@@ -77,8 +77,10 @@ class TestGame(Widget):
             'render': True}, 
             'position': pos, 'rotate': 0, 'color': (1., 1., 1., 1.),
             'scale': 1.}
-        component_order = ['position', 'rotate', 'color', 'renderer', 'scale', 'physics']
-        return self.gameworld.init_entity(create_component_dict, component_order)
+        component_order = ['position', 'rotate', 'color', 'renderer', 
+            'scale', 'physics']
+        return self.gameworld.init_entity(
+            create_component_dict, component_order)
 
     def setup_map(self):
         gameworld = self.gameworld

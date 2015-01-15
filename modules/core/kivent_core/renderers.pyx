@@ -259,6 +259,8 @@ cdef class RenderProcessor(Processor):
             new_count * sizeof(RenderStruct))
         if components is NULL:
             raise MemoryError()
+        print('Render system now taking up', new_count, sizeof(RenderStruct),
+            new_count*sizeof(RenderStruct)/1000)
         self._components = components
         self._mem_count = new_count
 

@@ -13,18 +13,18 @@ TestGame:
         PositionSystem:
             system_id: 'position'
             gameworld: gameworld
-            prealloc_count: 25000
+            prealloc_count: 2000
         RotateSystem:
             system_id: 'rotate'
             gameworld: gameworld
-            prealloc_count: 25000
+            prealloc_count: 2000
         ColorSystem:
             system_id: 'color'
-            prealloc_count: 25000
+            prealloc_count: 2000
             gameworld: gameworld
         ScaleSystem:
             system_id: 'scale'
-            prealloc_count: 25000
+            prealloc_count: 2000
             gameworld: gameworld
         GameView:
             system_id: 'gameview'
@@ -42,7 +42,7 @@ TestGame:
             gameworld: gameworld
         Renderer:
             gameworld: gameworld
-            prealloc_count: 25000
+            prealloc_count: 2000
             system_id: 'renderer'
             gameview: 'gameview'
             do_rotate: True
@@ -50,7 +50,7 @@ TestGame:
             do_scale: True
             shader_source: 'assets/glsl/positioncolorrotatescaleshader.glsl'
         CymunkPhysics:
-            prealloc_count: 25000
+            prealloc_count: 2000
             gameworld: root.gameworld
             system_id: 'physics'
     GameScreenManager:

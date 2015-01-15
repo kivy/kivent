@@ -70,6 +70,8 @@ cdef class PhysicsProcessor(Processor):
             new_count * sizeof(PhysicsStruct))
         if components is NULL:
             raise MemoryError()
+        print('Physics system now taking up', new_count, sizeof(PhysicsStruct),
+            new_count*sizeof(PhysicsStruct)/1000)
         self._components = components
         self._mem_count = new_count
 

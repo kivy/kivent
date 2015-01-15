@@ -91,10 +91,10 @@ class CymunkTouchSystem(GameSystem):
             ignore_groups=self.ignore_groups)
         if len(touched_ids) > 0:
             entity_id = touched_ids[0]
-            
             creation_dict = {system_id: 
                 {'entity_id': entity_id, 'touch_pos': converted_pos,
-                'max_force': max_force, 'max_bias':max_bias}, 'position': converted_pos}
+                'max_force': max_force, 'max_bias':max_bias}, 
+                'position': converted_pos}
             touch_ent = gameworld.init_entity(creation_dict, ['position', 
                 system_id])
             touch.ud['ent_id'] = touch_ent

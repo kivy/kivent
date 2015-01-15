@@ -256,7 +256,7 @@ class GameSystem(Widget):
         self.frame_time = 0.0
         self.components = []
         self.component_count = 0
-        self.unused_components = []
+        self.unused_components = unused_components = []
         self.entity_component_index = {}
         if self.do_components:
             count = kwargs.get('prealloc_count', 100)
@@ -352,7 +352,7 @@ class GameSystem(Widget):
         cdef int system_index = self.system_index
         cdef EntityProcessor processor = entity._processor
         try:
-            free = unused_components.pop()
+            free = unused_components.pop(0)
             component = self.components[free]
             index = free
         except:
@@ -459,6 +459,8 @@ cdef class PositionProcessor(Processor):
             new_count * sizeof(PositionStruct))
         if components is NULL:
             raise MemoryError()
+        print('Position system now taking up', new_count, sizeof(PositionStruct),
+            new_count*sizeof(PositionStruct)/1000)
         self._components = components
         self._mem_count = new_count
 
@@ -549,6 +551,8 @@ cdef class ScaleProcessor(Processor):
             new_count * sizeof(ScaleStruct))
         if components is NULL:
             raise MemoryError()
+        print('Scale system now taking up', new_count, sizeof(ScaleStruct),
+            new_count*sizeof(ScaleStruct)/1000)
         self._components = components
         self._mem_count = new_count
 
@@ -644,6 +648,8 @@ cdef class RotateProcessor(Processor):
             new_count * sizeof(RotateStruct))
         if components is NULL:
             raise MemoryError()
+        print('Rotate system now taking up', new_count, sizeof(RotateStruct),
+            new_count*sizeof(RotateStruct)/1000)
         self._components = components
         self._mem_count = new_count
 
@@ -741,6 +747,8 @@ cdef class ColorProcessor(Processor):
             new_count * sizeof(ColorStruct))
         if components is NULL:
             raise MemoryError()
+        print('Color system now taking up', new_count, sizeof(ColorStruct),
+            new_count*sizeof(ColorStruct)/1000)
         self._components = components
         self._mem_count = new_count
 

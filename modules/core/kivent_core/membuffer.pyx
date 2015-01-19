@@ -57,21 +57,15 @@ def test_pool(size_in_kb, size_of_pool):
     master_buffer.allocate_memory()
     cdef MemoryPool memory_pool = MemoryPool(
         size_of_pool, master_buffer, sizeof(Test), 10000)
-    cdef Test* data
     cdef Test* test_mem
-    cdef Test* read_data
     cdef Test* read_mem
-    cdef MemoryBlock memory_block
     cdef unsigned int x
     indices = []
     i_a = indices.append
     for x in range(600):
         index = memory_pool.get_free_slot()
         i_a(index)
-        memory_block = memory_pool.get_memory_block_from_index(index)
-        #print('memblock', memory_pool.get_block_from_index(index))
-        data = <Test*>memory_block.data
-        test_mem = &data[memory_pool.get_slot_index_from_index(index)]
+        test_mem = <Test*>memory_pool.get_pointer(index)
         test_mem.x = float(index)
         test_mem.y = float(index)
         #print(test_mem.x, test_mem.y)
@@ -81,26 +75,163 @@ def test_pool(size_in_kb, size_of_pool):
 
     for x in range(350):
         index = memory_pool.get_free_slot()
-        memory_block = memory_pool.get_memory_block_from_index(index)
-        data = <Test*>memory_block.data
-        test_mem = &data[memory_pool.get_slot_index_from_index(index)]
+        test_mem = <Test*>memory_pool.get_pointer(index)
         test_mem.x = float(index)
         test_mem.y = float(index)
 
 
     for index in indices:
-        memory_block = memory_pool.get_memory_block_from_index(index)
-        read_data = <Test*>memory_block.data
-        #print('memblock', memory_pool.get_block_from_index(x))
-        read_mem = &read_data[memory_pool.get_slot_index_from_index(index)]
+        read_mem = <Test*>memory_pool.get_pointer(index)
+        print(read_mem.x, read_mem.y)
         assert(read_mem.x==index)
         assert(read_mem.y==index)
 
 
-cdef class ReservedMemoryPool:
-    cdef unsigned int count
+def test_zone(size_in_kb, pool_block_size, general_count, test_count):
+    reserved_spec = {
+        'general': 5000,
+        'test': 1000,
+    }
+    master_buffer = Buffer(size_in_kb, 1024, 1)
+    master_buffer.allocate_memory()
+    cdef MemoryZone memory_zone = MemoryZone(pool_block_size, master_buffer,
+        sizeof(Test), reserved_spec)
+
+    cdef int index
+    cdef list indices = []
+    i_a = indices.append
+    cdef Test* test_mem
+    cdef int i
+    for x in range(general_count):
+        index = memory_zone.get_free_slot('general')
+        i_a(index)
+        test_mem = <Test*>memory_zone.get_pointer(index)
+        test_mem.x = float(index)
+        test_mem.y = float(index)
+
+    for x in range(test_count):
+        index = memory_zone.get_free_slot('test')
+        i_a(index)
+        test_mem = <Test*>memory_zone.get_pointer(index)
+        test_mem.x = float(index)
+        test_mem.y = float(index)
+
+    for i in indices:
+        test_mem = <Test*>memory_zone.get_pointer(i)
+        assert(test_mem.x==float(i))
+        assert(test_mem.y==float(i))
+
+
+cdef class MemoryZone:
+    cdef unsigned int block_size_in_kb
     cdef dict memory_pools
-    cdef unsigned int used
+    cdef list reserved_ranges
+    cdef unsigned int count
+    cdef list reserved_names
+    cdef unsigned int reserved_count
+    cdef Buffer master_buffer
+
+    def __cinit__(self, unsigned int block_size_in_kb, Buffer master_buffer,
+        unsigned int type_size, dict desired_counts):
+        self.count = 0
+        self.block_size_in_kb = block_size_in_kb
+        self.reserved_count = 0
+        self.master_buffer = master_buffer
+        self.memory_pools = memory_pools = {}
+        cdef str key
+        self.reserved_names = reserved_names = []
+        re_a = reserved_names.append
+        cdef MemoryPool pool
+        cdef unsigned int pool_count
+        cdef unsigned int index
+        self.reserved_ranges = reserved_ranges = []
+        range_a = reserved_ranges.append
+        for key in desired_counts:
+            re_a(key)
+            index = self.count
+            memory_pools[self.reserved_count] = pool = MemoryPool(
+                block_size_in_kb, master_buffer, type_size, 
+                desired_counts[key])
+            self.reserved_count += 1
+            pool_count = pool.block_count * pool.slots_per_block
+            range_a((index, index+pool_count-1))
+            self.count += pool_count
+
+    cdef unsigned int get_pool_index_from_index(self, unsigned int index):
+        cdef list reserved_ranges = self.reserved_ranges
+        cdef tuple reserve
+        cdef unsigned int reserved_count = self.reserved_count
+        cdef unsigned int i, start, end
+        for i in range(reserved_count):
+            reserve = reserved_ranges[i]
+            start = reserve[0]
+            end = reserve[1]
+            if start <= index <= end:
+                return i
+
+    cdef unsigned int remove_pool_offset(self, unsigned int index,
+        unsigned int pool_index):
+        cdef list reserved_ranges = self.reserved_ranges
+        cdef unsigned int start = reserved_ranges[pool_index][0]
+        return index - start
+        
+    cdef unsigned int add_pool_offset(self, unsigned int index,
+        unsigned int pool_index):
+        cdef list reserved_ranges = self.reserved_ranges
+        cdef unsigned int start = reserved_ranges[pool_index][0]
+        return index + start
+
+    cdef MemoryPool get_pool_from_pool_index(self, unsigned int pool_index):
+        return self.memory_pools[pool_index]
+
+    cdef unsigned int get_block_from_index(self, unsigned int index):
+        cdef unsigned int pool_index = self.get_pool_index_from_index(index)
+        cdef unsigned int uadjusted_index = self.remove_pool_offset(index,
+            pool_index)
+        cdef MemoryPool pool = self.get_pool_from_pool_index(pool_index)
+        return pool.get_block_from_index(uadjusted_index)
+
+    cdef unsigned int get_slot_index_from_index(self, unsigned int index):
+        cdef unsigned int pool_index = self.get_pool_index_from_index(index)
+        cdef unsigned int unadjusted_index = self.remove_pool_offset(index,
+            pool_index)
+        cdef MemoryPool pool = self.get_pool_from_pool_index(pool_index)
+        return pool.get_slot_index_from_index(unadjusted_index)
+
+    cdef MemoryBlock get_memory_block_from_index(self, unsigned int index):
+        cdef unsigned int pool_index = self.get_pool_index_from_index(index)
+        cdef unsigned int unadjusted_index = self.remove_pool_offset(index,
+            pool_index)
+        cdef MemoryPool pool = self.get_pool_from_pool_index(pool_index)
+        return pool.get_memory_block_from_index(unadjusted_index)
+
+    cdef unsigned int get_index_from_slot_block_pool_index(self, 
+        unsigned int slot_index, unsigned int block_index, 
+        unsigned int pool_index):
+        cdef MemoryPool pool = self.get_pool_from_pool_index(pool_index)
+        cdef unsigned int adjusted = (pool.get_index_from_slot_index_and_block(
+            slot_index, block_index))
+        return self.add_pool_offset(adjusted, pool_index)
+        
+    cdef unsigned int get_free_slot(self, str reserved_hint) except -1:
+        cdef unsigned int pool_index = self.reserved_names.index(reserved_hint)
+        cdef MemoryPool pool = self.get_pool_from_pool_index(pool_index)
+        cdef unsigned int unadjusted_index = pool.get_free_slot()
+        return self.add_pool_offset(unadjusted_index, pool_index)
+
+    cdef void free_slot(self, unsigned int index):
+        cdef unsigned int pool_index = self.get_pool_index_from_index(index)
+        cdef unsigned int unadjusted_index = self.remove_pool_offset(index,
+            pool_index)
+        cdef MemoryPool pool = self.get_pool_from_pool_index(pool_index)
+        pool.free_slot(unadjusted_index)
+
+    cdef void* get_pointer(self, unsigned int index):
+        cdef unsigned int pool_index = self.get_pool_index_from_index(index)
+        cdef unsigned int unadjusted_index = self.remove_pool_offset(index,
+            pool_index)
+        cdef MemoryPool pool = self.get_pool_from_pool_index(pool_index)
+        return pool.get_pointer(unadjusted_index)
 
 
 
@@ -141,7 +272,6 @@ cdef class MemoryPool:
             mem_block.allocate_memory_with_buffer(master_block)
             mem_blocks_a(mem_block)
 
-
     cdef unsigned int get_block_from_index(self, unsigned int index):
         return index // self.slots_per_block 
 
@@ -155,7 +285,14 @@ cdef class MemoryPool:
         unsigned int slot_index, unsigned int block_index):
         return (block_index * self.slots_per_block) + slot_index
 
-    cdef unsigned int get_free_slot(self):
+    cdef void* get_pointer(self, unsigned int index):
+        cdef MemoryBlock mem_block = self.get_memory_block_from_index(index)
+        cdef char* data = <char*>mem_block.data
+        cdef unsigned int slot_index = self.get_slot_index_from_index(index)
+        cdef unsigned int type_size = self.type_size
+        return &data[slot_index*type_size]
+
+    cdef unsigned int get_free_slot(self) except -1:
         cdef unsigned int index
         cdef unsigned int block_index
         cdef MemoryBlock mem_block
@@ -176,7 +313,6 @@ cdef class MemoryPool:
             if mem_block.free_block_count == 0:
                 free_blocks.remove(block_index)
         return self.get_index_from_slot_index_and_block(index, block_index)
-
 
     cdef void free_slot(self, unsigned int index):
         cdef unsigned int block_index = self.get_block_from_index(index)

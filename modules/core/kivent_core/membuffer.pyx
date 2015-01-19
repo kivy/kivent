@@ -380,7 +380,7 @@ cdef class Buffer:
         if self.data != NULL:
             PyMem_Free(self.data)
 
-    cdef unsigned int add_data(self, unsigned int block_count):
+    cdef unsigned int add_data(self, unsigned int block_count) except -1:
         cdef unsigned int largest_free_block = 0
         cdef unsigned int index
         cdef unsigned int data_in_free = self.data_in_free
@@ -395,8 +395,6 @@ cdef class Buffer:
             index = self.used_count
             self.used_count += block_count
         else:
-            print('Not enough room inside your buffer', 
-                block_count, tail_count)
             raise MemoryError()
         return index
 

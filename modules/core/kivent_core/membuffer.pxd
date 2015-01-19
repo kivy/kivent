@@ -11,7 +11,7 @@ cdef class Buffer:
     cdef unsigned int data_in_free
     cdef unsigned int real_size
     cdef unsigned int size_of_blocks
-    cdef unsigned int add_data(self, unsigned int block_count)
+    cdef unsigned int add_data(self, unsigned int block_count) except -1
     cdef void remove_data(self, unsigned int block_index, 
         unsigned int block_count)
     cdef unsigned int get_largest_free_block(self)

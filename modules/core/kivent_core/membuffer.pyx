@@ -202,9 +202,9 @@ cdef class MemoryZone:
         unsigned int slot_index, unsigned int block_index, 
         unsigned int pool_index):
         cdef MemoryPool pool = self.get_pool_from_pool_index(pool_index)
-        cdef unsigned int adjusted = (pool.get_index_from_slot_index_and_block(
-            slot_index, block_index))
-        return self.add_pool_offset(adjusted, pool_index)
+        cdef unsigned int unadjusted = (
+            pool.get_index_from_slot_index_and_block(slot_index, block_index))
+        return self.add_pool_offset(unadjusted, pool_index)
         
     cdef unsigned int get_free_slot(self, str reserved_hint) except -1:
         cdef unsigned int pool_index = self.reserved_names.index(reserved_hint)
@@ -225,7 +225,6 @@ cdef class MemoryZone:
             pool_index)
         cdef MemoryPool pool = self.get_pool_from_pool_index(pool_index)
         return pool.get_pointer(unadjusted_index)
-
 
 
 cdef class MemoryPool:

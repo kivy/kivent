@@ -1,5 +1,6 @@
 import cmesh
 import entity
+import cwidget
 import resource_managers
 import vertmesh
 import gamesystems

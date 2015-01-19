@@ -9,7 +9,6 @@ def test_buffer(size_in_kb):
     master_buffer = Buffer(size_in_kb, 1024, 1)
     master_buffer.allocate_memory()
     
-    print('master counter: ', master_buffer.block_count)
     mem_blocks = []
     for x in range(8):
         mem_blocks.append(test_block(master_buffer, x))

@@ -30,10 +30,9 @@ def test_buffer(size_in_kb):
 
     
 def test_block_read(MemoryBlock mem_block, float block_index):
-    cdef Test* data = <Test*>mem_block.data
     cdef Test* mem_test
     for i in range(mem_block.block_count):
-        mem_test = &data[i]
+        mem_test = <Test*>mem_block.get_pointer(i)
         assert(mem_test.x==block_index)
         assert(mem_test.y==block_index)
     
@@ -41,12 +40,8 @@ def test_block(master_buffer, float block_index):
     cdef Test* mem_test
     mem_block_1 = MemoryBlock(1, 16, sizeof(Test))
     mem_block_1.allocate_memory_with_buffer(master_buffer)
-    cdef Test* data = <Test*>mem_block_1.data
-    print(sizeof(Test), mem_block_1.block_count)
-    
-    
     for i in range(mem_block_1.block_count):
-        mem_test = &data[i]
+        mem_test = <Test*>mem_block_1.get_pointer(i)
         mem_test.x = block_index
         mem_test.y = block_index
     
@@ -82,7 +77,6 @@ def test_pool(size_in_kb, size_of_pool):
 
     for index in indices:
         read_mem = <Test*>memory_pool.get_pointer(index)
-        print(read_mem.x, read_mem.y)
         assert(read_mem.x==index)
         assert(read_mem.y==index)
 
@@ -349,6 +343,10 @@ cdef class MemoryBlock(Buffer):
     cdef void deallocate_memory(self):
         pass
 
+    cdef void* get_pointer(self, unsigned int block_index):
+        cdef char* data = <char*>self.data
+        return &data[block_index*self.type_size]
+
 
 cdef class Buffer:
 
@@ -405,7 +403,8 @@ cdef class Buffer:
         self.free_block_count += 1
 
     cdef void* get_pointer(self, unsigned int block_index):
-        return &self.data[block_index*self.size_of_blocks]
+        cdef char* data = <char*>self.data
+        return &data[block_index*self.size_of_blocks]
 
     cdef unsigned int get_largest_free_block(self):
         cdef unsigned int free_block_count = self.free_block_count

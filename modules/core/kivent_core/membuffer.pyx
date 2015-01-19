@@ -281,10 +281,8 @@ cdef class MemoryPool:
 
     cdef void* get_pointer(self, unsigned int index):
         cdef MemoryBlock mem_block = self.get_memory_block_from_index(index)
-        cdef char* data = <char*>mem_block.data
         cdef unsigned int slot_index = self.get_slot_index_from_index(index)
-        cdef unsigned int type_size = self.type_size
-        return &data[slot_index*type_size]
+        return mem_block.get_pointer(slot_index)
 
     cdef unsigned int get_free_slot(self) except -1:
         cdef unsigned int index

@@ -1,11 +1,11 @@
 # cython: profile=True
 from kivy.uix.widget import Widget
+from cwidget cimport CWidget
 from kivy.properties import (StringProperty, ListProperty, 
     NumericProperty, DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 from math import fabs
 from kivy.core.window import Window
-from kivy.uix.effectwidget import EffectWidget
 from functools import partial
 from kivy.graphics import RenderContext
 from kivy.graphics.transformation import Matrix
@@ -13,7 +13,7 @@ cimport cython
 from kivy.vector import Vector
 from entity cimport Entity, EntityProcessor
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
-
+from kivy.factory import Factory
 
 class Component(object):
     pass
@@ -204,8 +204,7 @@ cdef class ColorComponent:
 
 
 
-
-class GameSystem(Widget):
+class GameSystem(CWidget):
     '''GameSystem is the part of your game that holds the logic to operate 
     on the data of your Entity's components. They keep track of the entity_id
     of each entity that has a component for the system. The GameSystem is 
@@ -1351,3 +1350,10 @@ class GameView(GameSystem):
 
         return distance_x, distance_y
 
+Factory.register('GameSystem', cls=GameSystem)
+Factory.register('PositionSystem', cls=PositionSystem)
+Factory.register('RotateSystem', cls=RotateSystem)
+Factory.register('ColorSystem', cls=ColorSystem)
+Factory.register('ScaleSystem', cls=ScaleSystem)
+Factory.register('GameView', cls=GameView)
+Factory.register('GameMap', cls=GameMap)

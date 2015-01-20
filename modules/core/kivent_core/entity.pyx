@@ -1,4 +1,157 @@
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+from membuffer cimport (MemComponent, ZoneIndex, MemoryZone, Buffer, 
+    MemoryBlock)
+from system_manager cimport system_manager
+
+cdef class Entity(MemComponent):
+    '''Entity is a python object that will hold all of the components
+    attached to that particular entity. GameWorld is responsible for creating
+    and recycling entities. You should never create an Entity directly or 
+    modify an entity_id.
+    
+    **Attributes:**
+        **entity_id** (int): The entity_id will be assigned on creation by the
+        GameWorld. You will use this number to refer to the entity throughout
+        your Game. 
+
+        **load_order** (list): The load order is the order in which GameSystem
+        components should be initialized.
+
+
+    '''
+    def __cinit__(self, MemoryBlock memory_block, unsigned int index,
+            unsigned int offset):
+        self._load_order = []
+
+
+    def __getattr__(self, name):
+        cdef unsigned int system_index = system_manager.get_system_index(name)
+        system = system_manager.get_system(name)
+        cdef unsigned int* pointer = <unsigned int*>self.pointer
+        cdef unsigned int component_index = pointer[system_index]
+        if component_index == -1:
+            raise IndexError()
+        cdef list components = system.get_component(component_index)
+        return components[component_index]
+
+    property entity_id:
+        def __get__(self):
+            return self._id
+
+    property load_order:
+        def __get__(self):
+            return self._load_order
+
+        def __set__(self, list value):
+            self._load_order = value
+
+
+cdef class entrange:
+    cdef unsigned int start
+    cdef unsigned int end
+    cdef Entities entities
+
+    def __init__(self, Entities entities, start=0, end=None):
+        cdef MemoryZone memory_zone = entities.memory_zone
+        cdef unsigned int zone_count = memory_zone.count
+        self.entities = entities
+        self.start = start
+        if end > zone_count or end is None:
+            self.end = zone_count
+        else:
+            self.end = end
+    
+    def __iter__(self):
+        return entrange_iter(self.entities, self.start, self.end)
+
+cdef class entrange_iter:
+    cdef Entities entities
+    cdef unsigned int current
+    cdef unsigned int end
+
+    def __init__(self, Entities entities, start, end):
+        self.entities = entities
+        self.current = start
+        self.end = end
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        
+        cdef Entities entities = self.entities
+        cdef MemoryZone memory_zone = entities.memory_zone
+        cdef ZoneIndex zone_index = entities.zone_index
+        cdef unsigned int current = self.current
+        cdef unsigned int pool_index, used
+        cdef Entity entity
+
+        if current > self.end:
+            raise StopIteration
+        else:
+            pool_index = memory_zone.get_pool_index_from_index(current)
+            used = memory_zone.get_pool_end_from_pool_index(pool_index)
+            
+            entity = zone_index.get_component_from_index(current)
+            if current >= used:
+                self.current = memory_zone.get_start_of_pool(pool_index+1)
+                return self.next()
+            else:
+                self.current += 1
+                return zone_index.get_component_from_index(current)
+
+
+def test_entities(size_in_kb, pool_block_size, general_count, test_count):
+    reserved_spec = {
+        'general': 200,
+        'test': 200,
+    }
+    master_buffer = Buffer(size_in_kb, 1024, 1)
+    master_buffer.allocate_memory()
+    cdef Entities entities = Entities(master_buffer, 8, pool_block_size,
+        reserved_spec)
+    cdef unsigned int index
+    cdef list indices = []
+    i_a = indices.append
+    cdef Entity entity
+    cdef MemoryZone memory_zone = entities.memory_zone
+    cdef int x
+    
+    for x in range(general_count):
+        index = memory_zone.get_free_slot('general')
+        i_a(index)
+        entity = entities[index]
+        print(entity._id, index, 'in creation')
+
+    for x in range(test_count):
+        index = memory_zone.get_free_slot('test')
+        i_a(index)
+        entity = entities[index]
+        print(entity._id, index, 'in creation')
+        
+    for entity in entrange(entities):
+        print entity._id
+
+
+cdef class Entities:
+    cdef MemoryZone memory_zone
+    cdef ZoneIndex zone_index
+    
+    def __cinit__(self, Buffer master_buffer, unsigned int system_count, 
+        unsigned int block_size, dict reserved_spec):
+        cdef MemoryZone memory_zone = MemoryZone(block_size, 
+            master_buffer, sizeof(int)*system_count, reserved_spec)
+        cdef ZoneIndex zone_index = ZoneIndex(memory_zone, Entity)
+        self.zone_index = zone_index
+        self.memory_zone = memory_zone
+
+    def __getitem__(self, index):
+        return self.zone_index.get_component_from_index(index)
+
+    def __getslice__(self, index_1, index_2):
+        cdef ZoneIndex zone_index = self.zone_index
+        get_component_from_index = zone_index.get_component_from_index
+        return [get_component_from_index(i) for i in range(index_1, index_2)]
 
 
 cdef class EntityProcessor:
@@ -6,8 +159,6 @@ cdef class EntityProcessor:
         self._count = 0
         self._system_count = system_count
         self._growth_rate = .25
-        self._entity_index = <int*>PyMem_Malloc( 
-            start_count * system_count * sizeof(int))
         self._mem_count = start_count
         self._systems = systems
 
@@ -18,34 +169,6 @@ cdef class EntityProcessor:
     property system_count:
         def __get__(self):
             return self._system_count
-        def __set__(self, int new_value):
-            cdef int* new_memory
-            cdef int* old_memory = self._entity_index
-            cdef int count = self._count
-            cdef int i
-            cdef int system_i
-            cdef int old_index
-            cdef int new_index
-            cdef int mem_count = self._mem_count
-            cdef int old_system_count = self._system_count
-            if old_system_count != new_value:
-                new_memory = <int *>PyMem_Malloc(
-                    mem_count * new_value * sizeof(int))
-                if new_memory is NULL:
-                    raise MemoryError()
-                for i in range(0, mem_count):
-                    for system_i in range(0, old_system_count):
-                        old_index = i * old_system_count + system_i
-                        new_index = i * new_value + system_i
-                        new_memory[new_index] = old_memory[old_index]
-                    for system_i in range(old_system_count, new_value):
-                        new_index = i * new_value + system_i
-                        new_memory[new_index] = -1
-
-
-            PyMem_Free(old_memory)
-            self._system_count = new_value
-            self._entity_index = new_memory
 
     cdef Entity generate_entity(self):
         cdef int* entity_index = self._entity_index
@@ -81,47 +204,3 @@ cdef class EntityProcessor:
         entity_index[offset_index] = component_id
         
 
-cdef class Entity:
-    '''Entity is a python object that will hold all of the components
-    attached to that particular entity. GameWorld is responsible for creating
-    and recycling entities. You should never create an Entity directly or 
-    modify an entity_id.
-    
-    **Attributes:**
-        **entity_id** (int): The entity_id will be assigned on creation by the
-        GameWorld. You will use this number to refer to the entity throughout
-        your Game. 
-
-        **load_order** (list): The load order is the order in which GameSystem
-        components should be initialized.
-
-
-    '''
-    def __cinit__(self, int entity_id, EntityProcessor processor):
-        self._id = entity_id
-        self._load_order = []
-        self._processor = processor
-
-    def __getattr__(self, name):
-        cdef EntityProcessor processor = self._processor
-        system = processor._systems[name]
-        cdef int system_index = system.system_index
-        cdef int* entity_index = processor._entity_index
-        cdef int system_count = processor._system_count
-        cdef int offset_index = self._id * system_count + system_index
-        cdef int component_index = entity_index[offset_index]
-        if component_index == -1:
-            raise IndexError()
-        cdef list components = system.components
-        return components[component_index]
-
-    property entity_id:
-        def __get__(self):
-            return self._id
-
-    property load_order:
-        def __get__(self):
-            return self._load_order
-
-        def __set__(self, list value):
-            self._load_order = value

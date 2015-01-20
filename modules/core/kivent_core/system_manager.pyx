@@ -1,0 +1,74 @@
+cdef class ZoneConfig:
+
+    def __cinit__(self, str name, unsigned int count):
+        self.count = count
+        self.zone_name = name
+        self.systems = []
+
+
+cdef class SystemConfig:
+
+    def __cinit__(self):
+        self.zone_configs = {}
+
+    def get_config_dict(self, system_name):
+        cdef ZoneConfig zone_config
+        cdef dict zone_configs = self.zone_configs
+        cdef return_dict = {}
+        for zone_config in zone_configs:
+            if system_name in zone_configs.gamesystems:
+                if system_name not in return_dict:
+                    return_dict[system_name] = zone_config.count
+        if 'general' not in return_dict:
+            return_dict['general'] = DEFAULT_COUNT
+
+
+    def add_system_to_zone(self, system_name, zone_name):
+        cdef ZoneConfig config = self.zone_configs
+        cdef list systems = config.systems
+        assert(system_name not in systems)
+        self.systems.append(system_name)
+
+    def add_zone(self, zone_name, count):
+        assert(zone_name not in self.zone_configs)
+        self.zone_configs[zone_name] = ZoneConfig(zone_name, count)
+
+
+cdef class SystemManager:
+
+    def __cinit__(self):
+        self.systems = {}
+        self.system_count = DEFAULT_SYSTEM_COUNT
+        self.current_count = 0
+        self.system_index = {}
+        self.update_order = []
+        self.system_config = SystemConfig()
+
+    cdef unsigned int get_system_index(self, str system_name):
+        return self.system_index[system_name]
+
+    def set_system_count(self, unsigned int system_count):
+        self.system_count = system_count
+
+    def get_system(self, system_name):
+        return self.systems[system_name]
+
+    def add_system(self, system_name, system):
+        assert(self.current_count < self.system_count)
+        self.systems[system_name] = system
+        self.system_index[system_name] = self.current_count
+        self.current_count += 1
+
+    def remove_system(self, system_name):
+        del self.systems[system_name]
+        self.current_count -= 1
+
+    def configure_system_allocation(self, system_name):
+        system = self.systems[system_name]
+        zones = system.get_desired_zones()
+        cdef SystemConfig system_config = self.system_config 
+        for zone in zones:
+            system_config.add_system_to_zone(system_name, zone)
+
+
+cdef SystemManager system_manager = SystemManager()

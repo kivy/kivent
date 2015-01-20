@@ -22,6 +22,7 @@ core_modules = {
     'kivent_core.vertmesh': ['kivent_core/vertmesh.pyx'],
     'kivent_core.membuffer': ['kivent_core/membuffer.pyx'],
     'kivent_core.cwidget': ['kivent_core/cwidget.pyx'],
+    'kivent_core.system_manager': ['kivent_core/system_manager.pyx'],
     }
 
 core_modules_c = {
@@ -35,6 +36,7 @@ core_modules_c = {
     'kivent_core.vertmesh': ['kivent_core/vertmesh.c'],
     'kivent_core.membuffer': ['kivent_core/membuffer.c'],
     'kivent_core.cwidget': ['kivent_core/cwidget.c'],
+    'kivent_core.system_manager': ['kivent_core/system_manager.c'],
     }
 
 
@@ -49,6 +51,7 @@ check_for_removal = [
     'kivent_core/vertmesh.c',
     'kivent_core/membuffer.c',
     'kivent_core/cwidget.c',
+    'kivent_core/system_manager.c',
     ]
 
 def build_ext(ext_name, files, include_dirs=[]):

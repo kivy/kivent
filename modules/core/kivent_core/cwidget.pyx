@@ -14,6 +14,7 @@ from itertools import islice
 from kivy.uix.widget import (_widget_destructors, WidgetException, 
     _widget_destructor, Widget, WidgetMetaclass)
 
+
 cdef class CWidget(EventDispatcher):
     '''Widget class. See module documentation for more information.
 
@@ -41,8 +42,7 @@ cdef class CWidget(EventDispatcher):
         The constructor now accepts on_* arguments to automatically bind
         callbacks to properties or events, as in the Kv language.
     '''
-    cdef object _context
-    cdef object canvas
+
     '''Canvas of the widget.
 
     The canvas is a graphics object that contains all the drawing instructions
@@ -60,21 +60,32 @@ cdef class CWidget(EventDispatcher):
 
     __metaclass__ = WidgetMetaclass
     __events__ = ('on_touch_down', 'on_touch_move', 'on_touch_up')
-    _proxy_ref = None
+
     property canvas:
         def __get__(self):
             return self.canvas
         def __set__(self, new_canvas):
             self.canvas = new_canvas
-            
+
+    property _proxy_ref:
+        def __get__(self):
+            return self._proxy_ref
+        def __set__(self, value):
+            self._proxy_ref = value
+
+    property _context:
+        def __get__(self):
+            return self._context
+        def __set__(self, value):
+            self._context = value
+
     def __init__(self, **kwargs):
         # Before doing anything, ensure the windows exist.
         EventLoop.ensure_window()
-
+        cdef unsigned int test = -1
         # Assign the default context of the widget creation.
-        if not hasattr(self, '_context'):
-            self._context = get_current_context()
-
+        self._context = get_current_context()
+        self._proxy_ref = None
         super(CWidget, self).__init__(**kwargs)
 
         # Create the default canvas if it does not exist.
@@ -938,3 +949,5 @@ cdef class CWidget(EventDispatcher):
     :attr:`disabled` is a :class:`~kivy.properties.BooleanProperty` and
     defaults to False.
     '''
+
+Factory.register('CWidget', cls=CWidget)

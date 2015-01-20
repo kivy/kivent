@@ -1,7 +1,7 @@
-cdef class Entity:
-    cdef int _id
+from membuffer cimport MemComponent
+
+cdef class Entity(MemComponent):
     cdef list _load_order
-    cdef EntityProcessor _processor
 
 
 cdef class EntityProcessor:

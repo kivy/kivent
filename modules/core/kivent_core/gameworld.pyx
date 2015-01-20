@@ -1,12 +1,17 @@
 # cython: profile=True
-from kivy.uix.widget import Widget
+from kivy.uix.widget import Widget, WidgetException
 from kivy.properties import (StringProperty, ListProperty, NumericProperty, 
 DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 from functools import partial
 from kivy.graphics import RenderContext
 from gamesystems import GameSystem
+from cwidget cimport CWidget
 from entity cimport Entity, EntityProcessor
+from system_manager cimport system_manager
+from membuffer cimport Buffer
+
+
 
 class GameWorld(Widget):
     '''GameWorld is the manager of all Entities and GameSystems in your Game.
@@ -26,9 +31,6 @@ class GameWorld(Widget):
         **gamescreenmanager** (ObjectProperty): Reference to the 
         GameScreenManager your game will use for UI screens.
 
-        **currentmap** (ObjectProperty): Reference to the current GameMap 
-        object
-
         **entities** (list): entities is a list of all entity objects, 
         entity_id corresponds to position in this list.
 
@@ -46,45 +48,45 @@ class GameWorld(Widget):
 
     '''
     state = StringProperty('initial')
-    number_entities = NumericProperty(1)
+    number_entities = NumericProperty(0)
     gamescreenmanager = ObjectProperty(None)
-    currentmap = ObjectProperty(None, allownone = True)
-    prealloc_count = NumericProperty(100)
-    system_count_hint = NumericProperty(1)
+    zones = DictProperty({})
+    size_of_gameworld = NumericProperty(16384)
+    size_of_entity_block = NumericProperty(1)
+    update_time = NumericProperty(1./60.)
  
     
     def __init__(self, **kwargs):
-        cdef list entities
-        cdef dict states
-        cdef list deactivated_entities
-        cdef list entities_to_remove
-        cdef dict systems
-        cdef list system_index
         self.canvas = RenderContext(use_parent_projection=True,
             use_parent_modelview=True)
-        
-
         super(GameWorld, self).__init__(**kwargs)
-        system_count_hint = kwargs.get('system_count_hint', 1)
-        self.system_count = system_count_hint
-        self.systems_index = systems_index = []
-        self.systems = {}
-        self.unused_systems = unused_systems = []
-        unused_a = unused_systems.append
-        systems_a = systems_index.append
-        for x in range(system_count_hint):
-            systems_a(None)
-            unused_a(x)
-        self.entities = []
         self.states = {}
-        self.deactivated_entities = []
-        self.entities_to_remove = []
-        count = kwargs.get('prealloc_count', 100)
-        cdef EntityProcessor processor = EntityProcessor(self.systems, 
-            system_count_hint, count)
-        self.state_callbacks = {}
-        self.entity_processor = processor
-        self.prealloc_entities(count)
+
+    def ensure_startup(self, list_of_systems):
+        cdef dict systems = system_manager.systems
+        for each in list_of_systems:
+            if each not in systems:
+                return False
+        return True
+
+    def allocate_gameworld(self):
+        self._buffer = Buffer(self.size_of_gameworld, 1024, 1)
+        zones = self.zones
+        if 'default' not in zones:
+            zones['default'] = 10000
+        total_count = 0
+        for key in zones:
+            count = zones[key]
+            total_count += count
+
+    def init_gameworld(self, list_of_systems, callback):
+        if self.ensure_startup():
+            self.allocate_gameworld()
+            Clock.schedule_interval(self.update, self.update_time)
+            callback()
+        else:
+            Clock.schedule_once(
+                lambda dt: self.init_gameworld(list_of_systems, callback))
 
     def add_state(self, state_name, screenmanager_screen=None, 
         systems_added=None, systems_removed=None, systems_paused=None, 
@@ -180,42 +182,6 @@ class GameWorld(Widget):
             state_callback(value, self._last_state)
             self._last_state = value
 
-    def on_system_count_hint(self, instance, value):
-        unused_systems = self.unused_systems
-        systems_index = self.systems_index
-        unused_a = unused_systems.append
-        systems_a = systems_index.append
-        cdef EntityProcessor processor = self.entity_processor
-        cdef int system_count = processor._system_count
-        cdef int count = int(value)
-        if count < system_count:
-            return
-        elif system_count < count:
-            processor.system_count = count
-            self.system_count = count
-        for x in range(system_count, count):
-            systems_a(None)
-            unused_a(x)
-
-    def on_prealloc_count(self, instance, value):
-        self.prealloc_entities(value)
-
-    def prealloc_entities(self, count):
-        cdef list deactivated_entities = self.deactivated_entities
-        create_entity = self.create_entity
-        deactivated_a = deactivated_entities.append
-        cdef Entity entity
-        cdef EntityProcessor processor = self.entity_processor
-        cdef int new_count = int(count)
-        cdef int mem_count = processor._mem_count
-        if new_count < mem_count:
-            return
-        elif mem_count < new_count:
-            processor.change_allocation(new_count)
-        for x in range(mem_count, new_count):
-            entity = create_entity()
-            deactivated_a(entity.entity_id)
-
     def create_entity(self):
         '''Used internally if there is not an entity currently available in
         deactivated_entities to create a new entity. Do not call directly.'''
@@ -288,11 +254,6 @@ class GameWorld(Widget):
         processor.clear_entity(entity_id)
         entity.load_order = []
         self.deactivated_entities.append(entity_id)
-
-
-    def update_entity_component_arrays(self, int new_count):
-        cdef EntityProcessor processor = self.entity_processor
-        processor.system_count = new_count
 
     def update(self, dt):
         '''
@@ -370,12 +331,55 @@ class GameWorld(Widget):
             self.update_entity_component_arrays(self.system_count)
         
 
-    def add_widget(self, widget):
+    def add_widget(self, widget, index=0, canvas=None):
         systems = self.systems
         if isinstance(widget, GameSystem):
             if widget.system_id not in systems:
                 Clock.schedule_once(partial(self.add_system, widget))
-        super(GameWorld, self).add_widget(widget)
+        if not (isinstance(widget, Widget) or isinstance(widget, CWidget)):
+            raise WidgetException(
+                'add_widget() can be used only with instances'
+                ' of the Widget class.')
+
+        widget = widget.__self__
+        if widget is self:
+            raise WidgetException(
+                'Widget instances cannot be added to themselves.')
+        parent = widget.parent
+        # Check if the widget is already a child of another widget.
+        if parent:
+            raise WidgetException('Cannot add %r, it already has a parent %r'
+                                  % (widget, parent))
+        widget.parent = parent = self
+        # Child will be disabled if added to a disabled parent.
+        if parent.disabled:
+            widget.disabled = True
+
+        canvas = self.canvas.before if canvas == 'before' else \
+            self.canvas.after if canvas == 'after' else self.canvas
+
+        if index == 0 or len(self.children) == 0:
+            self.children.insert(0, widget)
+            canvas.add(widget.canvas)
+        else:
+            canvas = self.canvas
+            children = self.children
+            if index >= len(children):
+                index = len(children)
+                next_index = 0
+            else:
+                next_child = children[index]
+                next_index = canvas.indexof(next_child.canvas)
+                if next_index == -1:
+                    next_index = canvas.length()
+                else:
+                    next_index += 1
+
+            children.insert(index, widget)
+            # We never want to insert widget _before_ canvas.before.
+            if next_index == 0 and canvas.has_before:
+                next_index = 1
+            canvas.insert(next_index, widget.canvas)
         
     def remove_widget(self, widget):
         if isinstance(widget, GameSystem):

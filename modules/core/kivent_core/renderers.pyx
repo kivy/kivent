@@ -19,6 +19,7 @@ from gamesystems cimport (Processor, PositionStruct, PositionProcessor,
     ScaleProcessor)
 from entity cimport EntityProcessor
 from vertmesh cimport VertMesh
+from kivy.factory import Factory
 
 
 
@@ -847,3 +848,4 @@ cdef class RenderBatch:
 
 
 
+Factory.register('Renderer', cls=Renderer)

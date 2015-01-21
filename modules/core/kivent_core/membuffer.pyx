@@ -80,6 +80,101 @@ cdef class ZoneIndex:
         return block_index.block_objects[slot_i]
 
 
+cdef class IndexedMemoryZone:
+    
+    def __cinit__(self, Buffer master_buffer, unsigned int block_size, 
+        unsigned int component_size, dict reserved_spec, ComponentToCreate):
+        cdef MemoryZone memory_zone = MemoryZone(block_size, 
+            master_buffer, component_size, reserved_spec)
+        cdef ZoneIndex zone_index = ZoneIndex(memory_zone, ComponentToCreate)
+        self.zone_index = zone_index
+        self.memory_zone = memory_zone
+
+    def __getitem__(self, index):
+        return self.zone_index.get_component_from_index(index)
+
+    cdef void* get_pointer_to_component(self, unsigned int index):
+        return self.memory_zone.get_pointer(index)
+
+    def __getslice__(self, index_1, index_2):
+        cdef ZoneIndex zone_index = self.zone_index
+        get_component_from_index = zone_index.get_component_from_index
+        return [get_component_from_index(i) for i in range(index_1, index_2)]
+
+
+cdef class memrange:
+    '''Use memrange to iterate a IndexedMemoryZone object and return
+    the python active game entities, an active memory object is one that is
+    either in use or previously used and now waiting in the free list.
+    Memory objects that have never been allocated are skipped
+    Args:
+
+        memory_index IndexedMemoryZone
+
+        start int
+
+        end int
+
+        zone str
+
+        You must reference an IndexedMemoryZone, by default we will iterate
+        through all the memory. The area of memory iterated can be controlled
+        with options *start* and *end*, or you can provide the name of one of 
+        the reserved zones to iterate that specific memory area.
+    '''
+
+    def __init__(self, IndexedMemoryZone memory_index, start=0, 
+        end=None, zone=None):
+        cdef MemoryZone memory_zone = memory_index.memory_zone
+        cdef unsigned int zone_count = memory_zone.count
+        self.memory_index = memory_index
+        if zone is not None:
+            start, end = memory_zone.get_pool_range(
+                memory_zone.get_pool_index_from_name(zone))
+        elif end > zone_count or end is None:
+            end = zone_count
+        self.start = start
+        self.end = end
+
+    def __iter__(self):
+        return memrange_iter(self.memory_index, self.start, self.end)
+
+cdef class memrange_iter:
+
+    def __init__(self, IndexedMemoryZone memory_index, start, end):
+        self.memory_index = memory_index
+        self.current = start
+        self.end = end
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        
+        cdef IndexedMemoryZone memory_index = self.memory_index
+        cdef MemoryZone memory_zone = memory_index.memory_zone
+        cdef ZoneIndex zone_index = memory_index.zone_index
+        cdef unsigned int current = self.current
+        cdef unsigned int pool_index, used
+        cdef void* pointer
+
+        if current > self.end:
+            raise StopIteration
+        else:
+            pool_index = memory_zone.get_pool_index_from_index(current)
+            used = memory_zone.get_pool_end_from_pool_index(pool_index)
+            if current >= used:
+                self.current = memory_zone.get_start_of_pool(pool_index+1)
+                return self.next()
+            else:
+                pointer = memory_zone.get_pointer(current)
+                self.current += 1
+                if <unsigned int>pointer == -1:
+                    print('not valid entity')
+                    return self.next()
+                return zone_index.get_component_from_index(current)
+
+
 cdef class Buffer:
 
     def __cinit__(self, unsigned int size_in_blocks, 
@@ -133,6 +228,8 @@ cdef class Buffer:
         self.free_blocks.append((block_index, block_count))
         self.data_in_free += block_count
         self.free_block_count += 1
+        if self.free_block_count == self.used_count:
+            self.clear()
 
     cdef void* get_pointer(self, unsigned int block_index):
         cdef char* data = <char*>self.data
@@ -190,6 +287,7 @@ cdef class Buffer:
         self.used_count = 0
         self.free_blocks = []
         self.free_block_count = 0
+        self.data_in_free = 0
 
 
 cdef class MemoryBlock(Buffer):
@@ -232,6 +330,8 @@ cdef class MemoryPool:
         self.count = slots_per_block * block_count
         self.slots_per_block = slots_per_block
         self.block_count = block_count
+        print('pool has ', block_count, 'taking up', 
+            block_size_in_kb*block_count)
         self.master_buffer = master_buffer
         cdef MemoryBlock master_block 
         self.master_block = master_block = MemoryBlock(block_count,
@@ -293,9 +393,15 @@ cdef class MemoryPool:
         mem_block = mem_blocks[block_index]
         mem_block.remove_data(slot_index, 1)
         self.free_count += 1
+        if self.free_count == self.used:
+            self.clear()
         if block_index not in free_blocks:
             free_blocks.append(block_index)
-            
+
+    cdef void clear(self):
+        self.blocks_with_free_space = []
+        self.used = 0
+        self.free_count = 0  
 
 cdef class MemoryZone:
 
@@ -324,6 +430,10 @@ cdef class MemoryZone:
             pool_count = pool.block_count * pool.slots_per_block
             range_a((index, index+pool_count-1))
             self.count += pool_count
+            print(key, pool_count, index, index+pool_count-1)
+
+    cdef unsigned int get_pool_index_from_name(self, str zone_name):
+        return self.reserved_names.index(zone_name)
 
     cdef unsigned int get_pool_index_from_index(self, unsigned int index):
         cdef list reserved_ranges = self.reserved_ranges
@@ -348,6 +458,9 @@ cdef class MemoryZone:
         cdef list reserved_ranges = self.reserved_ranges
         cdef unsigned int start = reserved_ranges[pool_index][0]
         return index + start
+
+    cdef tuple get_pool_range(self, unsigned int pool_index):
+        return self.reserved_ranges[pool_index]
 
     cdef unsigned int get_start_of_pool(self, unsigned int pool_index):
         if pool_index >= self.reserved_count:
@@ -611,3 +724,50 @@ def test_zone_index(size_in_kb, pool_block_size, general_count, test_count):
         test_mem = zone_index.get_component_from_index(i)
         assert(test_mem.x==float(i))
         assert(test_mem.y==float(i))
+
+def test_indexed_memory_zone(size_in_kb, pool_block_size, 
+    general_count, test_count):
+    reserved_spec = {
+        'general': 200,
+        'test': 200,
+    }
+    master_buffer = Buffer(size_in_kb, 1024, 1)
+    master_buffer.allocate_memory()
+    cdef IndexedMemoryZone memory_index = IndexedMemoryZone(master_buffer, 
+        pool_block_size, sizeof(int)*8, reserved_spec, MemComponent)
+    cdef IndexedMemoryZone memory_index_2 = IndexedMemoryZone(master_buffer, 
+        pool_block_size, sizeof(Test), {'general': 200}, MemComponent)
+    cdef unsigned int index
+    cdef list indices = []
+    i_a = indices.append
+    cdef MemComponent entity
+    cdef MemoryZone memory_zone = memory_index.memory_zone
+    cdef MemoryZone memory_zone_2 = memory_index_2.memory_zone
+    cdef int x
+    cdef int* pointer
+    cdef int i
+    for x in range(general_count):
+        index = memory_zone.get_free_slot('test')
+        i_a(index)
+        pointer = <int*>memory_zone.get_pointer(index)
+        for i in range(8):
+            print(pointer[i])
+        entity = memory_index[index]
+        print(entity._id, index, 'in creation')
+
+    for x in range(test_count):
+        index = memory_zone.get_free_slot('general')
+        i_a(index)
+        index2 = memory_zone_2.get_free_slot('general')
+        entity = memory_index[index]
+        print(entity._id, index, 'in creation')
+        entity = memory_index_2[index2]
+        print(entity._id, index, 'in creation 2')
+        
+    for entity in memrange(memory_index):
+        print entity._id
+
+    for entity in memrange(memory_index, zone='test'):
+        print entity._id
+
+

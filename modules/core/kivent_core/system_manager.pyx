@@ -1,3 +1,6 @@
+cdef unsigned int DEFAULT_SYSTEM_COUNT = 10
+cdef unsigned int DEFAULT_COUNT = 1000
+
 cdef class ZoneConfig:
 
     def __cinit__(self, str name, unsigned int count):
@@ -15,19 +18,21 @@ cdef class SystemConfig:
         cdef ZoneConfig zone_config
         cdef dict zone_configs = self.zone_configs
         cdef return_dict = {}
-        for zone_config in zone_configs:
-            if system_name in zone_configs.gamesystems:
-                if system_name not in return_dict:
-                    return_dict[system_name] = zone_config.count
+        for config_name in zone_configs:
+            zone_config = zone_configs[config_name]
+            if system_name in zone_config.systems:
+                if zone_config.zone_name not in return_dict:
+                    return_dict[zone_config.zone_name] = zone_config.count
         if 'general' not in return_dict:
             return_dict['general'] = DEFAULT_COUNT
+        return return_dict
 
 
     def add_system_to_zone(self, system_name, zone_name):
-        cdef ZoneConfig config = self.zone_configs
+        cdef ZoneConfig config = self.zone_configs[zone_name]
         cdef list systems = config.systems
         assert(system_name not in systems)
-        self.systems.append(system_name)
+        systems.append(system_name)
 
     def add_zone(self, zone_name, count):
         assert(zone_name not in self.zone_configs)
@@ -39,33 +44,43 @@ cdef class SystemManager:
     def __cinit__(self):
         self.systems = {}
         self.system_count = DEFAULT_SYSTEM_COUNT
+        print(DEFAULT_SYSTEM_COUNT)
         self.current_count = 0
         self.system_index = {}
         self.update_order = []
         self.system_config = SystemConfig()
 
+    def add_zone(self, zone_name, count):
+        self.system_config.add_zone(zone_name, count)
+
     cdef unsigned int get_system_index(self, str system_name):
-        return self.system_index[system_name]
+        return self.system_index[system_name] 
 
     def set_system_count(self, unsigned int system_count):
         self.system_count = system_count
 
     def get_system(self, system_name):
-        return self.systems[system_name]
+        return self.systems[self.get_system_index(system_name)]
 
     def add_system(self, system_name, system):
+        print(self.current_count, self.system_count)
         assert(self.current_count < self.system_count)
-        self.systems[system_name] = system
+        self.systems[self.current_count] = system
         self.system_index[system_name] = self.current_count
         self.current_count += 1
 
+    def get_system_config_dict(self, system_name):
+        return self.system_config.get_config_dict(system_name)
+
     def remove_system(self, system_name):
-        del self.systems[system_name]
+        cdef unsigned int system_index = self.get_system_index(system_name)
+        del self.systems[system_index]
+        del self.system_index[system_name]
         self.current_count -= 1
 
     def configure_system_allocation(self, system_name):
-        system = self.systems[system_name]
-        zones = system.get_desired_zones()
+        system = self.get_system(system_name)
+        zones = system.zones
         cdef SystemConfig system_config = self.system_config 
         for zone in zones:
             system_config.add_system_to_zone(system_name, zone)

@@ -5,12 +5,32 @@ DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 from functools import partial
 from kivy.graphics import RenderContext
-from gamesystems import GameSystem
+from gamesystems import GameSystem, PositionSystem2D
 from cwidget cimport CWidget
-from entity cimport Entity, EntityProcessor
-from system_manager cimport system_manager
-from membuffer cimport Buffer
+from entity cimport Entity, EntityManager
+from system_manager cimport system_manager, DEFAULT_SYSTEM_COUNT
+from membuffer cimport Buffer, memrange
 
+def test_gameworld():
+
+    gameworld = GameWorld()
+    gameworld.zones = {'test': 1000, 'general': 1000, 'test2': 1000}
+    pos_system = PositionSystem2D()
+    pos_system.system_id = 'position'
+    pos_system.zones = ['test', 'general']
+    gameworld.add_system(pos_system)
+    gameworld.allocate()
+    entity = gameworld.entities[0]
+    print(entity.entity_id)
+    init_entity = gameworld.init_entity
+    for x in range(150):
+        component_list = ['position']
+        creation_dict = {'position': (10., 10.)}
+        print('making entity', x)
+        ent_id = init_entity(creation_dict, component_list)
+        print(ent_id)
+    for entity in memrange(gameworld.entities):
+        print(entity.entity_id, entity.position.x, entity.position.y)
 
 
 class GameWorld(Widget):
@@ -37,9 +57,6 @@ class GameWorld(Widget):
         **states** (dict): states is a dict of lists of system_ids with keys 
         'systems_added','systems_removed', 'systems_paused', 'systems_unpaused'
 
-        **deactivated_entities** (list): list that contains all entity_ids not 
-        currently in use
-
         **entities_to_remove** (list): list of entity_ids that will be cleaned 
         up in the next cleanup update tick
 
@@ -48,12 +65,12 @@ class GameWorld(Widget):
 
     '''
     state = StringProperty('initial')
-    number_entities = NumericProperty(0)
     gamescreenmanager = ObjectProperty(None)
     zones = DictProperty({})
-    size_of_gameworld = NumericProperty(16384)
-    size_of_entity_block = NumericProperty(1)
+    size_of_gameworld = NumericProperty(1024)
+    size_of_entity_block = NumericProperty(4)
     update_time = NumericProperty(1./60.)
+    system_count = NumericProperty(None)
  
     
     def __init__(self, **kwargs):
@@ -61,32 +78,61 @@ class GameWorld(Widget):
             use_parent_modelview=True)
         super(GameWorld, self).__init__(**kwargs)
         self.states = {}
+        self.state_callbacks = {}
+        self.entity_manager = None
+        self.entities = None
+        self._system_count = DEFAULT_SYSTEM_COUNT
+        self.entities_to_remove = []
+        self.master_buffer = None
 
     def ensure_startup(self, list_of_systems):
-        cdef dict systems = system_manager.systems
+        cdef dict system_index = system_manager.system_index
         for each in list_of_systems:
-            if each not in systems:
+            if each not in system_index:
                 return False
         return True
 
-    def allocate_gameworld(self):
-        self._buffer = Buffer(self.size_of_gameworld, 1024, 1)
+    def allocate(self):
+        self.master_buffer = master_buffer = Buffer(
+            self.size_of_gameworld, 1024, 1)
+        master_buffer.allocate_memory()
         zones = self.zones
-        if 'default' not in zones:
-            zones['default'] = 10000
-        total_count = 0
+        if 'general' not in zones:
+            zones['general'] = 10000
+        cdef dict copy_from_obs_dict = {}
         for key in zones:
-            count = zones[key]
-            total_count += count
+            copy_from_obs_dict[key] = zones[key]
+            system_manager.add_zone(key, zones[key])
+        system_count = self.system_count
+        if system_count is None:
+            system_count = self._system_count
+        self.entity_manager = entity_manager = EntityManager(master_buffer, 
+            self.size_of_entity_block, copy_from_obs_dict, system_count)
+        self.entities = entity_manager.memory_index
+        system_names = system_manager.system_index
+        systems = system_manager.systems
+        for name in system_names:
+            system_manager.configure_system_allocation(name)
+            config_dict = system_manager.get_system_config_dict(name)
+            print(name, config_dict)
+            system_id = system_names[name]
+            system = systems[system_id]
+            if system.do_components:
+                system.allocate(master_buffer, config_dict)
 
-    def init_gameworld(self, list_of_systems, callback):
-        if self.ensure_startup():
-            self.allocate_gameworld()
+
+    def init_gameworld(self, list_of_systems, callback=None):
+        if self.ensure_startup(list_of_systems):
+            self.allocate()
             Clock.schedule_interval(self.update, self.update_time)
-            callback()
+            print(callback)
+            if callback is not None:
+                print('doing callback')
+                callback()
         else:
             Clock.schedule_once(
-                lambda dt: self.init_gameworld(list_of_systems, callback))
+                lambda dt: self.init_gameworld(list_of_systems, 
+                    callback=callback))
 
     def add_state(self, state_name, screenmanager_screen=None, 
         systems_added=None, systems_removed=None, systems_paused=None, 
@@ -152,14 +198,13 @@ class GameWorld(Widget):
 
         gamescreenmanager = self.gamescreenmanager
         gamescreenmanager.state = value
-        systems = self.systems
         children = self.children
         for system in state_dict['systems_added']:
-            _system = systems[system]
+            _system = system_manager.get_system(system)
             if _system in children:
                 pass
             elif _system.gameview is not None:
-                gameview_system = systems[_system.gameview]
+                gameview_system = system_manager.get_system(_system.gameview)
                 if _system in gameview_system.children:
                     pass
                 else:
@@ -167,31 +212,32 @@ class GameWorld(Widget):
             else:
                 self.add_widget(_system)
         for system in state_dict['systems_removed']:
-            _system = systems[system]
+            _system = system_manager.get_system(system)
             if _system.gameview is not None:
-                gameview = systems[_system.gameview]
+                gameview = system_manager.get_system(_system.gameview)
                 gameview.remove_widget(_system)
             elif _system in children:
                 self.remove_widget(_system)
         for system in state_dict['systems_paused']:
-            systems[system].paused = True
+            _system = system_manager.get_system(system)
+            _system.paused = True
         for system in state_dict['systems_unpaused']:
-            systems[system].paused = False
+            _system = system_manager.get_system(system)
+            _system.paused = False
         state_callback = self.state_callbacks[value]
         if state_callback is not None:
             state_callback(value, self._last_state)
             self._last_state = value
 
-    def create_entity(self):
+    def get_entity(self, str zone):
         '''Used internally if there is not an entity currently available in
         deactivated_entities to create a new entity. Do not call directly.'''
-        cdef EntityProcessor processor = self.entity_processor
-        entity = processor.generate_entity()
-        self.entities.append(entity)
-        self.number_entities += 1
-        return entity
+        cdef EntityManager entity_manager = self.entity_manager
+        entity_id = entity_manager.generate_entity(zone)
+        return entity_id
 
-    def init_entity(self, dict components_to_use, list component_order):
+    def init_entity(self, dict components_to_use, list component_order,
+        zone='general'):
         '''
         Args:
             components_to_use (dict): A dict where keys are the system_id and
@@ -206,17 +252,17 @@ class GameWorld(Widget):
         entity_id of the created entity. components_to_use is a dict of 
         system_id, args to generate_component function. component_order is
         the order in which the components should be initialized'''
-        cdef list deactivated_entities = self.deactivated_entities
-        if deactivated_entities == []:
-            entity = self.create_entity()
-        else:
-            entity = self.entities[deactivated_entities.pop()]
-        cdef dict systems = self.systems
+        cdef unsigned int entity_id = self.get_entity(zone)
+        cdef Entity entity = self.entities[entity_id]
         entity.load_order = component_order
+        cdef unsigned int system_id
         for component in component_order:
-            systems[component].create_component(entity, 
-                components_to_use[component])
-        return entity.entity_id
+            system = system_manager.get_system(component)
+            system_id = system_manager.get_system_index(component)
+            component_id = system.create_component(
+                entity_id, zone, components_to_use[component])
+            entity.set_component(component_id, system_id)
+        return entity_id
 
     def timed_remove_entity(self, int entity_id, dt):
         '''
@@ -239,21 +285,15 @@ class GameWorld(Widget):
 
         This function immediately removes an entity from the gameworld.
         '''
-        if entity_id in self.deactivated_entities:
-            return
         cdef Entity entity = self.entities[entity_id]
-        cdef list components_to_delete = []
         cdef dict systems = self.systems
-        cdef str data
-        cdef str component
-        cdef EntityProcessor processor = self.entity_processor
+        cdef EntityManager entity_manager = self.entity_manager
         load_order = entity.load_order
         load_order.reverse()
         for data_system in load_order:    
             systems[data_system].remove_entity(entity_id)
-        processor.clear_entity(entity_id)
         entity.load_order = []
-        self.deactivated_entities.append(entity_id)
+        entity_manager.remove_entity(entity_id)
 
     def update(self, dt):
         '''
@@ -311,31 +351,19 @@ class GameWorld(Widget):
     def get_system_index(self, system_id):
         return self.systems_index.index(system_id)
 
-    def add_system(self, widget, dt):
+    def add_system(self, widget):
         '''Used internally by add_widget.'''
-        if widget.system_id in self.systems:
+        system_index = system_manager.system_index
+        if widget.system_id in system_index:
             return
-        self.systems[widget.system_id] = widget
+        system_manager.add_system(widget.system_id, widget)
         widget.on_add_system()
-        if not widget.do_components:
-            return
-        unused_systems = self.unused_systems
-        try:
-            free = unused_systems.pop()
-            self.systems_index[free] = widget.system_id
-            widget.system_index = free
-        except:
-            self.systems_index.append(widget.system_id)
-            widget.system_index = self.system_count
-            self.system_count += 1
-            self.update_entity_component_arrays(self.system_count)
-        
 
     def add_widget(self, widget, index=0, canvas=None):
-        systems = self.systems
+        systems = system_manager.system_index
         if isinstance(widget, GameSystem):
             if widget.system_id not in systems:
-                Clock.schedule_once(partial(self.add_system, widget))
+                Clock.schedule_once(lambda dt: self.add_system(widget))
         if not (isinstance(widget, Widget) or isinstance(widget, CWidget)):
             raise WidgetException(
                 'add_widget() can be used only with instances'

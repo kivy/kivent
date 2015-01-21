@@ -1,6 +1,22 @@
 from cpython cimport bool
 
 
+cdef class IndexedMemoryZone:
+    cdef MemoryZone memory_zone
+    cdef ZoneIndex zone_index
+
+    cdef void* get_pointer_to_component(self, unsigned int index)
+
+cdef class memrange_iter:
+    cdef IndexedMemoryZone memory_index
+    cdef unsigned int current
+    cdef unsigned int end
+
+cdef class memrange:
+    cdef unsigned int start
+    cdef unsigned int end
+    cdef IndexedMemoryZone memory_index
+
 cdef class Buffer:
     cdef unsigned int block_count
     cdef unsigned int size
@@ -57,6 +73,7 @@ cdef class MemoryPool:
     cdef void* get_pointer(self, unsigned int index)
     cdef unsigned int get_free_slot(self) except -1
     cdef void free_slot(self, unsigned int index)
+    cdef void clear(self)
 
 
 cdef class MemoryZone:
@@ -86,6 +103,8 @@ cdef class MemoryZone:
     cdef void* get_pointer(self, unsigned int index)
     cdef unsigned int get_pool_end_from_pool_index(self, unsigned int index)
     cdef unsigned int get_start_of_pool(self, unsigned int pool_index)
+    cdef tuple get_pool_range(self, unsigned int pool_index)
+    cdef unsigned int get_pool_index_from_name(self, str zone_name)
 
 
 cdef class MemComponent:

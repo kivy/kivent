@@ -1,5 +1,5 @@
-cdef unsigned int DEFAULT_COUNT = 10000
-cdef unsigned int DEFAULT_SYSTEM_COUNT = 10
+cdef unsigned int DEFAULT_SYSTEM_COUNT
+cdef unsigned int DEFAULT_COUNT
 
 cdef class ZoneConfig:
     cdef str zone_name

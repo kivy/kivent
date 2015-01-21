@@ -1,74 +1,59 @@
-cdef class Processor:
-    cdef int _count
-    cdef int _mem_count
-    cdef float _growth_rate
-    cdef void* _components
+from membuffer cimport (MemComponent, MemoryBlock, IndexedMemoryZone)
+from cwidget cimport CWidget
 
-cdef class ColorComponent:
-    cdef int _component_index
-    cdef ColorProcessor _processor
+cdef class GameSystem(CWidget):
+    cdef float _frame_time
+
+cdef class StaticMemGameSystem(GameSystem):
+    cdef IndexedMemoryZone components
+
+cdef class PositionSystem2D(StaticMemGameSystem):
+    pass
+
+cdef class ScaleSystem2D(StaticMemGameSystem):
+    pass
+
+cdef class RotateSystem2D(StaticMemGameSystem):
+    pass
+
+cdef class PositionComponent(MemComponent):
+    pass
+
+cdef class ColorSystem(StaticMemGameSystem):
+    pass
+
+cdef class PositionComponent2D(MemComponent):
+    pass
+
+cdef class ColorComponent(MemComponent):
+    pass
+
+cdef class RotateComponent2D(MemComponent):
+    pass
+
+cdef class ScaleComponent2D(MemComponent):
+    pass
+
+ctypedef struct PositionStruct2D:
+    unsigned int entity_id
+    float x
+    float y
 
 ctypedef struct ColorStruct:
+    unsigned int entity_id
     float r
     float g
     float b
     float a
 
-cdef class ColorProcessor(Processor):
-    cdef ColorComponent generate_component(self)
-    cdef void clear_component(self, int component_index)
-    cdef void init_component(self, int component_index, 
-        float r, float g, float b, float a)
-    cdef void change_allocation(self, int new_count)
-
-cdef class PositionComponent:
-    cdef int _component_index
-    cdef PositionProcessor _processor
-
-ctypedef struct PositionStruct:
-    float x
-    float y
-    float z
-    float lx
-    float ly
-    float lz
-
-cdef class PositionProcessor(Processor):
-    cdef PositionComponent generate_component(self)
-    cdef void clear_component(self, int component_index)
-    cdef void init_component(self, int component_index, 
-        float x, float y, float z)
-    cdef void change_allocation(self, int new_count)
-
-cdef class ScaleComponent:
-    cdef int _component_index
-    cdef ScaleProcessor _processor
-
-ctypedef struct ScaleStruct:
+ctypedef struct ScaleStruct2D:
+    unsigned int entity_id
     float sx
     float sy
-    float sz
 
-cdef class ScaleProcessor(Processor):
-    cdef ScaleComponent generate_component(self)
-    cdef void clear_component(self, int component_index)
-    cdef void init_component(self, int component_index, 
-        float sx, float sy, float sz)
-    cdef void change_allocation(self, int new_count)
-
-cdef class RotateComponent:
-    cdef int _component_index
-    cdef RotateProcessor _processor
-
-ctypedef struct RotateStruct:
+ctypedef struct RotateStruct2D:
+    unsigned int entity_id
     float r
-    float lr
-
-cdef class RotateProcessor(Processor):
-    cdef RotateComponent generate_component(self)
-    cdef void clear_component(self, int component_index)
-    cdef void init_component(self, int component_index, float r)
-    cdef void change_allocation(self, int new_count)
 
 cdef class LerpObject:
     cdef str _component

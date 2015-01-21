@@ -3,9 +3,9 @@ import entity
 import cwidget
 import resource_managers
 import vertmesh
-import gamesystems
-import gameworld
-import renderers
+#import gamesystems
+#import gameworld
+#import renderers
 import gamescreens
 import membuffer
 import system_manager

@@ -1,12 +1,13 @@
 from cmesh cimport CMesh
 from cpython cimport bool
-from gamesystems cimport Processor
+from gamesystems cimport StaticMemGameSystem
+from membuffer cimport MemComponent
 
-cdef class RenderComponent:
-    cdef int _component_index
-    cdef RenderProcessor _processor
+cdef class RenderComponent(MemComponent):
+    pass
 
 ctypedef struct RenderStruct:
+    unsigned int entity_id
     int tex_index_key
     int vert_index_key
     bint render
@@ -14,14 +15,6 @@ ctypedef struct RenderStruct:
     int batch_id
     float width
     float height
-
-cdef class RenderProcessor(Processor):
-    cdef RenderComponent generate_component(self)
-    cdef void clear_component(self, int component_index)
-    cdef void init_component(self, int component_index, 
-        bool render, int attrib_count, int vert_index_key, 
-        int tex_index_key, float width, float height)
-    cdef void change_allocation(self, int new_count)
 
 cdef class RenderBatch:
     cdef list _entity_ids

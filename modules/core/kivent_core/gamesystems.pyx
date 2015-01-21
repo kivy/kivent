@@ -137,9 +137,9 @@ cdef class GameSystem(CWidget):
     def generate_component(self):
         return Component()
 
-    def create_component(self, entity_id, zone, *args, **kwargs):
+    def create_component(self, entity_id, zone, *args):
         component_index = self.get_component(zone)
-        self.init_component(component_index, entity_id, *args, **kwargs)
+        self.init_component(component_index, entity_id, *args)
         return component_index
 
     def remove_component(self, int component_index):
@@ -226,11 +226,9 @@ cdef class PositionSystem2D(StaticMemGameSystem):
     underlying C structures rather than the Python objects.'''
         
     def init_component(self, unsigned int component_index, 
-        unsigned int entity_id, *args, **kwargs):
-        print(args)
-        tup = args[0]
-        cdef float x = tup[0]
-        cdef float y = tup[1]
+        unsigned int entity_id, args):
+        cdef float x = args[0]
+        cdef float y = args[1]
         cdef MemoryZone memory_zone = self.components.memory_zone
         cdef PositionStruct2D* component = <PositionStruct2D*>(
             memory_zone.get_pointer(component_index))

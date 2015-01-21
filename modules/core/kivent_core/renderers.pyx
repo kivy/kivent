@@ -271,6 +271,7 @@ cdef class Renderer(StaticMemGameSystem):
         print('in startup')
         super(Renderer, self).__init__(**kwargs)
         print('finish super')
+        self.attribute_count = 4
         self.batches = []
         print('calculating vertex before')
         self.vertex_format = self.calculate_vertex_format()
@@ -283,7 +284,7 @@ cdef class Renderer(StaticMemGameSystem):
         self._do_scale_index = -1
         self._do_center_x = 4
         self._do_center_y = 5
-        self.attribute_count = 4
+        
         with self.canvas.before:
             Callback(self._set_blend_func)
         with self.canvas.after:
@@ -305,6 +306,7 @@ cdef class Renderer(StaticMemGameSystem):
         self.update(dt)
 
     def on_shader_source(self, instance, value):
+        print('setting shader to', value)
         self.canvas.shader.source = value
 
     def clear_component(self, unsigned int component_index):
@@ -342,34 +344,36 @@ cdef class Renderer(StaticMemGameSystem):
         else:
             pointer.render = 0
 
-    def init_component(self, unsigned int index, unsigned int entity_id, *args,
-        **kwargs):
+    def init_component(self, unsigned int index, unsigned int entity_id, 
+        args):
         cdef float w, h
         cdef int vert_index_key, tex_index_key
         cdef bool copy, render
         cdef int attrib_count = self.attribute_count
-        if 'texture' in kwargs:
-            texture_key = kwargs['texture']
+        args = args[0]
+        if 'texture' in args:
+            texture_key = args['texture']
 
             tex_index_key = texture_manager.get_index_key_from_texkey(
                 texture_key)
+
         else:
             texture_key = str(None)
             tex_index_key = -1
-        if 'size' in kwargs:
-            w, h = kwargs['size']
+        if 'size' in args:
+            w, h = args['size']
         else:
             w, h = 0., 0.
-        if 'copy' in kwargs:
-            copy = kwargs['copy']
+        if 'copy' in args:
+            copy = args['copy']
         else:
             copy = False
-        if 'render' in kwargs:
-            render = kwargs['render']
+        if 'render' in args:
+            render = args['render']
         else:
             render = True
-        if 'vert_mesh_key' in kwargs:
-            vert_mesh_key = kwargs['vert_mesh_key']
+        if 'vert_mesh_key' in args:
+            vert_mesh_key = args['vert_mesh_key']
             vert_index_key = model_manager.get_mesh_index(vert_mesh_key)
         else:
             vert_index_key = -1
@@ -562,6 +566,7 @@ cdef class Renderer(StaticMemGameSystem):
                                 batch_data[data_index] = scale_comp.sx
                             else:
                                 batch_data[data_index] = mesh_data[mesh_index]
+
                 else:
                     for i in range(index_count):
                         batch_indices[i+index_offset] = -1
@@ -657,6 +662,7 @@ cdef class Renderer(StaticMemGameSystem):
         cdef str texture_key = render_comp.texture_key
         self.batch_entity(entity_id, vertex_count, index_count, texture_key,
             render_comp)
+        return component_index
 
     def create_new_batch(self, int entity_id, int max_verts, 
         int attribute_count, int vertex_count, int index_count, 

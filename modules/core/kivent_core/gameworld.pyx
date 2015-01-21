@@ -261,6 +261,7 @@ class GameWorld(Widget):
             system_id = system_manager.get_system_index(component)
             component_id = system.create_component(
                 entity_id, zone, components_to_use[component])
+            print(component_id, system_id)
             entity.set_component(component_id, system_id)
         return entity_id
 
@@ -306,10 +307,10 @@ class GameWorld(Widget):
         Typically you will call this function using either Clock.schedule_once
         or Clock.schedule_interval
         '''
-        cdef dict systems = self.systems
+        cdef dict systems = system_manager.systems
         cdef object system
-        for system_name in systems:
-            system = systems[system_name]
+        for system_index in systems:
+            system = systems[system_index]
             if system.updateable and not system.paused:
                 system._update(dt)
         Clock.schedule_once(self.remove_entities)

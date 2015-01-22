@@ -15,12 +15,12 @@ do_clear_existing = True
 
 cymunk_modules = {
     'kivent_cymunk.physics': ['kivent_cymunk/physics.pyx',],
-    'kivent_cymunk.interaction': ['kivent_cymunk/interaction.pyx',],
+    #'kivent_cymunk.interaction': ['kivent_cymunk/interaction.pyx',],
 }
 
 cymunk_modules_c = {
     'kivent_cymunk.physics': ['kivent_cymunk/physics.c',],
-    'kivent_cymunk.interaction': ['kivent_cymunk/interaction.c',],
+    #'kivent_cymunk.interaction': ['kivent_cymunk/interaction.c',],
 }
 
 check_for_removal = [

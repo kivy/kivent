@@ -105,6 +105,7 @@ cdef class MemoryZone:
     cdef unsigned int get_start_of_pool(self, unsigned int pool_index)
     cdef tuple get_pool_range(self, unsigned int pool_index)
     cdef unsigned int get_pool_index_from_name(self, str zone_name)
+    cdef unsigned int get_pool_offset(self, unsigned int pool_index)
 
 
 cdef class MemComponent:

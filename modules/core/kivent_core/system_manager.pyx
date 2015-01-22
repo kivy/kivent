@@ -1,5 +1,5 @@
-cdef unsigned int DEFAULT_SYSTEM_COUNT = 10
-cdef unsigned int DEFAULT_COUNT = 1000
+cdef unsigned int DEFAULT_SYSTEM_COUNT = 8
+cdef unsigned int DEFAULT_COUNT = 30000
 
 cdef class ZoneConfig:
 
@@ -23,6 +23,7 @@ cdef class SystemConfig:
             if system_name in zone_config.systems:
                 if zone_config.zone_name not in return_dict:
                     return_dict[zone_config.zone_name] = zone_config.count
+        print(return_dict, 'in zone config', system_name)
         if 'general' not in return_dict:
             return_dict['general'] = DEFAULT_COUNT
         return return_dict

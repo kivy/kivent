@@ -137,9 +137,9 @@ cdef class GameSystem(CWidget):
     def generate_component(self):
         return Component()
 
-    def create_component(self, entity_id, zone, *args):
+    def create_component(self, entity_id, zone, args):
         component_index = self.get_component(zone)
-        self.init_component(component_index, entity_id, *args)
+        self.init_component(component_index, entity_id, args)
         return component_index
 
     def remove_component(self, int component_index):
@@ -291,7 +291,14 @@ cdef class ScaleSystem2D(StaticMemGameSystem):
     rates in different directions.'''
 
     def init_component(self, unsigned int component_index, 
-        unsigned int entity_id, float sx, float sy):
+        unsigned int entity_id, args):
+        cdef float sx, sy
+        if isinstance(args, tuple):
+            sx = args[0]
+            sy = args[1]
+        else:
+            sx = args
+            sy = args
         cdef MemoryZone memory_zone = self.components.memory_zone
         cdef ScaleStruct2D* component = <ScaleStruct2D*>(
             memory_zone.get_pointer(component_index))
@@ -409,7 +416,11 @@ cdef class ColorSystem(StaticMemGameSystem):
     '''
 
     def init_component(self, unsigned int component_index, 
-        unsigned int entity_id, float r, float g, float b, float a):
+        unsigned int entity_id, args):
+        cdef float r = args[0]
+        cdef float g = args[1]
+        cdef float b = args[2]
+        cdef float a = args[3]
         cdef MemoryZone memory_zone = self.components.memory_zone
         cdef ColorStruct* component = <ColorStruct*>memory_zone.get_pointer(
             component_index)
@@ -801,7 +812,7 @@ class GameView(GameSystem):
             super(GameView, self).add_widget(widget, index=index)
             system_index = system_manager.system_index
             if widget.system_id not in system_index:
-                Clock.schedule_once(partial(gameworld.add_system, widget))
+                Clock.schedule_once(lambda dt: gameworld.add_system(widget))
         else:
             super(GameView, self).add_widget(widget)
         

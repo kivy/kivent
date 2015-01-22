@@ -8,8 +8,8 @@ from kivy.graphics import RenderContext
 from gamesystems import GameSystem, PositionSystem2D
 from cwidget cimport CWidget
 from entity cimport Entity, EntityManager
-from system_manager cimport system_manager, DEFAULT_SYSTEM_COUNT
-from membuffer cimport Buffer, memrange
+from system_manager cimport system_manager, DEFAULT_SYSTEM_COUNT, DEFAULT_COUNT
+from membuffer cimport Buffer, memrange, IndexedMemoryZone, MemoryZone
 
 def test_gameworld():
 
@@ -68,7 +68,7 @@ class GameWorld(Widget):
     gamescreenmanager = ObjectProperty(None)
     zones = DictProperty({})
     size_of_gameworld = NumericProperty(1024)
-    size_of_entity_block = NumericProperty(4)
+    size_of_entity_block = NumericProperty(16)
     update_time = NumericProperty(1./60.)
     system_count = NumericProperty(None)
  
@@ -93,12 +93,15 @@ class GameWorld(Widget):
         return True
 
     def allocate(self):
-        self.master_buffer = master_buffer = Buffer(
-            self.size_of_gameworld, 1024, 1)
+        cdef Buffer master_buffer = Buffer(self.size_of_gameworld, 1024, 1)
+        self.master_buffer = master_buffer
         master_buffer.allocate_memory()
+        real_size_in_kb = master_buffer.real_size//1024
         zones = self.zones
+        print(zones)
         if 'general' not in zones:
-            zones['general'] = 10000
+            zones['general'] = DEFAULT_COUNT
+
         cdef dict copy_from_obs_dict = {}
         for key in zones:
             copy_from_obs_dict[key] = zones[key]
@@ -111,23 +114,32 @@ class GameWorld(Widget):
         self.entities = entity_manager.memory_index
         system_names = system_manager.system_index
         systems = system_manager.systems
+        cdef MemoryZone memory_zone
+        cdef IndexedMemoryZone memory_index
+        total_count = 0
         for name in system_names:
             system_manager.configure_system_allocation(name)
             config_dict = system_manager.get_system_config_dict(name)
-            print(name, config_dict)
             system_id = system_names[name]
             system = systems[system_id]
             if system.do_components:
                 system.allocate(master_buffer, config_dict)
+                memory_index = system.components
+                memory_zone = memory_index.memory_zone
+                memory_count = memory_zone.block_size_in_kb*memory_zone.count
+                total_count += memory_count
+                print(name, 'system size in kb is',memory_count)
+
+        print('We will need', total_count, 'for game, we have', 
+            real_size_in_kb)
+        assert(real_size_in_kb > total_count)
 
 
     def init_gameworld(self, list_of_systems, callback=None):
         if self.ensure_startup(list_of_systems):
             self.allocate()
             Clock.schedule_interval(self.update, self.update_time)
-            print(callback)
             if callback is not None:
-                print('doing callback')
                 callback()
         else:
             Clock.schedule_once(
@@ -261,7 +273,6 @@ class GameWorld(Widget):
             system_id = system_manager.get_system_index(component)
             component_id = system.create_component(
                 entity_id, zone, components_to_use[component])
-            print(component_id, system_id)
             entity.set_component(component_id, system_id)
         return entity_id
 

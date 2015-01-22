@@ -2,21 +2,23 @@
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk
-from kivent_core.gamesystems import GameSystem
-from kivent_core.gamesystems cimport (Processor, PositionProcessor, 
-    PositionStruct, RotateProcessor, RotateStruct)
-from kivent_core.entity cimport Entity, EntityProcessor
+from kivent_core.gamesystems cimport (PositionStruct2D, RotateStruct2D,
+    PositionSystem2D, RotateSystem2D)
+from kivent_core.entity cimport Entity
 from cymunk cimport (Space, BB, Body, Shape, Circle, BoxShape, 
     Vec2d, Poly, Segment, cpBody, cpVect)
 from libc.math cimport M_PI_2
 cimport cython
-from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+from kivy.factory import Factory
+from kivent_core.gamesystems cimport StaticMemGameSystem
+from kivent_core.membuffer cimport (MemComponent, IndexedMemoryZone, 
+    MemoryZone, Buffer, MemoryBlock)
+from kivent_core.system_manager cimport system_manager
 
-cdef class PhysicsComponent:
+cdef class PhysicsComponent(MemComponent):
 
-    def __cinit__(self, int component_index, PhysicsProcessor processor):
-        self._component_index = component_index
-        self._processor = processor
+    def __cinit__(self, MemoryBlock memory_block, unsigned int index,
+            unsigned int offset):
         self._body = None
         self._shapes = []
         self._shape_type = 'None'
@@ -43,39 +45,8 @@ cdef class PhysicsComponent:
         def __set__(self, str value):
             self._shape_type = value
 
-cdef class PhysicsProcessor(Processor):
-    def __cinit__(self, int preload_count):
-        self._components = PyMem_Malloc(preload_count * sizeof(PhysicsStruct))
 
-    cdef PhysicsComponent generate_component(self):
-        self._count += 1
-        cdef int count = self._count
-        if count > self._mem_count:
-            self.change_allocation(count + int(self._growth_rate*count))
-        self.clear_component(self._count - 1)
-        cdef PhysicsComponent new_component = PhysicsComponent.__new__(
-            PhysicsComponent, self._count - 1, self)
-        return new_component
-
-    cdef void clear_component(self, int component_index):
-        cdef PhysicsStruct* components = <PhysicsStruct*>self._components
-        components[component_index].body = NULL
-
-    cdef void init_component(self, int component_index, cpBody* body):
-        cdef PhysicsStruct* components = <PhysicsStruct*>self._components
-        components[component_index].body = body
-
-    cdef void change_allocation(self, int new_count):
-        cdef void* components = PyMem_Realloc(self._components, 
-            new_count * sizeof(PhysicsStruct))
-        if components is NULL:
-            raise MemoryError()
-        print('Physics system now taking up', new_count, sizeof(PhysicsStruct),
-            new_count*sizeof(PhysicsStruct)/1000)
-        self._components = components
-        self._mem_count = new_count
-
-class CymunkPhysics(GameSystem):
+cdef class CymunkPhysics(StaticMemGameSystem):
     '''CymunkPhysics is a GameSystem that interacts with the Cymunk Port of
     the Chipmunk2d Physics Engine. Check the docs for Chipmunk2d to get an
     overview of how to work with Cymunk. https://chipmunk-physics.net/
@@ -104,25 +75,23 @@ class CymunkPhysics(GameSystem):
 
     '''
     system_id = StringProperty('cymunk_physics')
-    space = ObjectProperty(None)
     gravity = ListProperty((0, 0))
     updateable = BooleanProperty(True)
     iterations = NumericProperty(2)
     sleep_time_threshold = NumericProperty(5.0)
     collision_slop = NumericProperty(.25)
     damping = NumericProperty(1.0)
-
+    cdef list bb_query_result
+    cdef list on_screen_result
+    cdef list segment_query_result
+    cdef Space space
 
     def __init__(self, **kwargs):
-        cdef list bb_query_result
-        cdef list on_screen_result
-        cdef list segment_query_result
-        count = kwargs.get('prealloc_count', 100)
-        self.processor = PhysicsProcessor(count)
+
         super(CymunkPhysics, self).__init__(**kwargs)
-        self.bb_query_result = list()
-        self.segment_query_result = list()
-        self.on_screen_result = list()
+        self.bb_query_result = []
+        self.segment_query_result = []
+        self.on_screen_result = []
         self.init_physics()
         
     def add_collision_handler(self, int type_a, int type_b, begin_func=None, 
@@ -177,7 +146,6 @@ class CymunkPhysics(GameSystem):
 
     def init_physics(self):
         '''Internal function that handles initalizing the Cymunk Space'''
-        cdef Space space
         self.space = space = Space()
         space.iterations = self.iterations
         space.gravity = self.gravity
@@ -244,32 +212,31 @@ class CymunkPhysics(GameSystem):
         self.bb_query_result = []
         space.space_bb_query(bb)
         return self.bb_query_result
-
-    def prealloc_components(self, component_count):
-        cdef list unused_components = self.unused_components
-        generate_component = self.generate_component
-        cdef list components = self.components
-        components_a = components.append
-        unused_a = unused_components.append
-        new_count = int(component_count)
-        cdef PhysicsProcessor processor = self.processor
-        current_count = processor._mem_count
-        if new_count < current_count:
-            return
-        elif current_count < new_count:
-            processor.change_allocation(new_count)
-        for x in range(current_count, new_count):
-            component = generate_component()
-            components_a(component)
-            unused_a(self.component_count)
-            self.component_count += 1
         
-    def generate_component(self):
-        cdef PhysicsProcessor processor = self.processor
-        return processor.generate_component()
 
-    def init_component(self, PhysicsComponent component, int entity_id, 
-        dict entity_component_dict):
+    cdef void _init_component(self, unsigned int component_index, 
+        unsigned int entity_id, cpBody* body):
+        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef PhysicsStruct* component = <PhysicsStruct*>(
+            memory_zone.get_pointer(component_index))
+        component.entity_id = entity_id
+        component.body = body
+
+    cdef void _clear_component(self, unsigned int component_index):
+        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef PhysicsStruct* pointer = <PhysicsStruct*>memory_zone.get_pointer(
+            component_index)
+        pointer.entity_id = -1
+        pointer.body = NULL
+
+    def allocate(self, Buffer master_buffer, dict reserve_spec):
+        self.components = IndexedMemoryZone(master_buffer, 
+            self.size_of_component_block, sizeof(PhysicsStruct), 
+            reserve_spec, PhysicsComponent)
+
+
+    def init_component(self, unsigned int component_index, 
+        unsigned int entity_id, dict entity_component_dict):
         '''
         Args:
             entity_component_dict (dict): dict containing the kwargs
@@ -296,8 +263,8 @@ class CymunkPhysics(GameSystem):
         shape_type.
 
         '''
-        cdef int index = component._component_index
-        cdef PhysicsProcessor processor = self.processor
+        cdef unsigned int index = component_index
+        cdef PhysicsComponent component = self.components[index]
         cdef dict shape = entity_component_dict['col_shapes'][0]
         cdef list cshapes = entity_component_dict['col_shapes']
         cdef float moment
@@ -379,104 +346,126 @@ class CymunkPhysics(GameSystem):
         component._body = body
         component._shapes = shapes
         component._shape_type = shape_type
-        processor.init_component(index, body._body)
+        self._init_component(index, entity_id, body._body)
 
-    def clear_component(self, PhysicsComponent component):
-        cdef int index = component._component_index
+
+    def clear_component(self, unsigned int component_index):
+        cdef PhysicsComponent component = self.components[component_index]
         component._body = None
         component._shapes = []
         component._shape_type = 'None'
-        cdef PhysicsProcessor processor = self.processor
-        processor.clear_component(index)
+        self._clear_component(component_index)
 
-    def create_component(self, Entity entity, args):
-        super(CymunkPhysics, self).create_component(
-            entity, args)
-        cdef int entity_id = entity.entity_id
+    def create_component(self, unsigned int entity_id, zone, args):
+        component_index = super(CymunkPhysics, self).create_component(
+            entity_id, zone, args)
         gameworld = self.gameworld
-        cdef dict systems = gameworld.systems
-        rotate_system = systems['rotate']
-        position_system = systems['position']
-        cdef PositionProcessor pos_processor = position_system.processor
-        cdef RotateProcessor rot_processor = rotate_system.processor
-        cdef PositionStruct* pos_comps = (
-            <PositionStruct*>pos_processor._components)
-        cdef RotateStruct* rot_comps = (
-            <RotateStruct*>rot_processor._components)
-        cdef int rotate_index = rotate_system.system_index
-        cdef EntityProcessor entity_processor = entity._processor
-        cdef int* entity_index = entity_processor._entity_index
-        cdef int pos_index = position_system.system_index
-        cdef int phys_index = self.system_index
-        cdef PhysicsProcessor processor = self.processor
-        cdef PhysicsStruct* physics_comps = (
-            <PhysicsStruct*>processor._components)
-        cdef int sys_count = entity_processor._system_count
-        cdef int entity_offset = entity_id*sys_count
-        cdef int pos_comp_index = entity_index[entity_offset + pos_index]
-        cdef int rot_comp_index = entity_index[entity_offset + rotate_index]
-        cdef int physics_comp_index = entity_index[entity_offset + phys_index]
-        cdef cpBody* body = physics_comps[physics_comp_index].body
-        rot_comps[rot_comp_index].r = body.a
+        cdef RotateSystem2D rotate_system
+        cdef PositionSystem2D position_system
+        cdef IndexedMemoryZone entities = gameworld.entities
+        rotate_system = system_manager.get_system('rotate')
+        position_system = system_manager.get_system('position')
+        cdef unsigned int rotate_index = system_manager.get_system_index(
+            'rotate')
+        cdef unsigned int pos_index = system_manager.get_system_index(
+            'position')
+        cdef unsigned int phys_index = system_manager.get_system_index(
+            self.system_id)
+        cdef MemoryZone entity_memory = entities.memory_zone
+        cdef MemoryZone pos_memory = position_system.components.memory_zone
+        cdef MemoryZone rot_memory = rotate_system.components.memory_zone
+        cdef MemoryZone physics_memory = self.components.memory_zone
+        cdef unsigned int* entity = <unsigned int*>(
+            entity_memory.get_pointer(entity_id))
+        cdef unsigned int pos_comp_index = entity[pos_index+1]
+        cdef unsigned int rot_comp_index = entity[rotate_index+1]
+        cdef unsigned int physics_comp_index = entity[phys_index+1]
+        cdef PositionStruct2D* pos_comp = (
+            <PositionStruct2D*>pos_memory.get_pointer(pos_comp_index))
+        cdef RotateStruct2D* rot_comp = (
+            <RotateStruct2D*>rot_memory.get_pointer(rot_comp_index))
+        cdef PhysicsStruct* physics_comp = <PhysicsStruct*>(
+            physics_memory.get_pointer(component_index))
+        cdef cpBody* body = physics_comp.body
+        rot_comp.r = body.a
         cdef cpVect p_position = body.p
-        pos_comps[pos_comp_index].x = p_position.x
-        pos_comps[pos_comp_index].y = p_position.y
+        pos_comp.x = p_position.x
+        pos_comp.y = p_position.y
+        return component_index
 
-    def remove_entity(self, int entity_id):
+    def remove_component(self, unsigned int component_index):
         cdef Space space = self.space
-        cdef list components = self.components
-        cdef int component_index = self.entity_component_index[entity_id]
-        cdef PhysicsComponent system_data = components[component_index]
+        cdef PhysicsComponent component = self.components[component_index]
         cdef Shape shape
-        cdef Body body = system_data._body
-        for shape in system_data._shapes:
+        cdef Body body = component._body
+        for shape in component._shapes:
             space.remove(shape)
         if not body.is_static:
             space.remove(body)
-        super(CymunkPhysics, self).remove_entity(entity_id)
+        super(CymunkPhysics, self).remove_component(component_index)
 
     def update(self, dt):
         '''Handles update of the cymunk space and updates the rendering 
         component data for position and rotate components. '''
-        space = self.space
-        space.step(dt)
+        self.space.step(dt)
         gameworld = self.gameworld
-        cdef dict systems = gameworld.systems
-        rotate_system = systems['rotate']
-        position_system = systems['position']
-        cdef PositionProcessor pos_processor = position_system.processor
-        cdef RotateProcessor rot_processor = rotate_system.processor
-        cdef PositionStruct* pos_comps = (
-            <PositionStruct*>pos_processor._components)
-        cdef RotateStruct* rot_comps = (
-            <RotateStruct*>rot_processor._components)
-        cdef int rotate_index = rotate_system.system_index
-        cdef EntityProcessor entity_processor = gameworld.entity_processor
-        cdef int* entity_index = entity_processor._entity_index
-        cdef int pos_index = position_system.system_index
-        cdef int phys_index = self.system_index
-        cdef PhysicsProcessor processor = self.processor
-        cdef PhysicsStruct* physics_comps = (
-            <PhysicsStruct*>processor._components)
-        cdef int sys_count = entity_processor._system_count
-        cdef int entity_offset
-        cdef int pos_comp_index
-        cdef int rot_comp_index
-        cdef int physics_comp_index
+        cdef RotateSystem2D rotate_system
+        cdef PositionSystem2D position_system
+        cdef IndexedMemoryZone entities = self.gameworld.entities
+        rotate_system = system_manager.get_system('rotate')
+        position_system = system_manager.get_system('position')
+        cdef unsigned int rotate_index = system_manager.get_system_index(
+            'rotate')
+        cdef unsigned int pos_index = system_manager.get_system_index(
+            'position')
+        cdef unsigned int phys_index = system_manager.get_system_index(
+            self.system_id)
+        cdef MemoryZone entity_memory = entities.memory_zone
+        cdef MemoryZone pos_memory = position_system.components.memory_zone
+        cdef MemoryZone rot_memory = rotate_system.components.memory_zone
+        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef unsigned int* entity
+        cdef unsigned int pos_comp_index = entity[pos_index+1]
+        cdef unsigned int rot_comp_index = entity[rotate_index+1]
+        cdef unsigned int physics_comp_index = entity[phys_index+1]
+        cdef PositionStruct2D* pos_comp
+        cdef RotateStruct2D* rot_comp
+        cdef PhysicsStruct* physics_comp
         cdef cpBody* body
         cdef cpVect p_position
-        cdef list entity_ids = self.entity_ids
-        cdef int count = len(entity_ids)
-        cdef int entity_id
-        cdef int i
-        for i in range(count):
-            entity_id = entity_ids[i]
-            entity_offset = entity_id*sys_count
-            pos_comp_index = entity_index[entity_offset + pos_index]
-            rot_comp_index = entity_index[entity_offset + rotate_index]
-            physics_comp_index = entity_index[entity_offset + phys_index]
-            body = physics_comps[physics_comp_index].body
-            p_position = body.p
-            pos_comps[pos_comp_index].x = p_position.x
-            pos_comps[pos_comp_index].y = p_position.y
-            rot_comps[rot_comp_index].r = body.a
+        
+        cdef unsigned int entity_id
+        cdef unsigned int pool_index, used
+        cdef void* pointer
+        cdef unsigned int current
+        cdef unsigned int offset
+        cdef dict memory_pools = memory_zone.memory_pools
+
+        for pool_index in memory_pools:
+            used = memory_zone.get_pool_end_from_pool_index(pool_index)
+            current = 0
+            offset = memory_zone.get_pool_offset(pool_index)
+            for current in range(used):
+                component_index = current + offset
+                physics_comp = <PhysicsStruct*>memory_zone.get_pointer(
+                    component_index)
+                
+                entity_id = physics_comp.entity_id
+                if entity_id == -1:
+                    continue
+                entity = <unsigned int*>(entity_memory.get_pointer(entity_id))
+                pos_comp_index = entity[pos_index+1]
+                rot_comp_index = entity[rotate_index+1]
+                pos_comp = <PositionStruct2D*>pos_memory.get_pointer(
+                    pos_comp_index)
+                rot_comp = <RotateStruct2D*>rot_memory.get_pointer(
+                    rot_comp_index)
+                body = physics_comp.body
+                rot_comp.r = body.a
+                p_position = body.p
+                pos_comp.x = p_position.x
+                pos_comp.y = p_position.y
+            
+
+
+Factory.register('CymunkPhysics', cls=CymunkPhysics)

@@ -1,3 +1,4 @@
+# cython: profile=True
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from cpython cimport bool
 
@@ -170,7 +171,6 @@ cdef class memrange_iter:
                 pointer = memory_zone.get_pointer(current)
                 self.current += 1
                 if <unsigned int>pointer == -1:
-                    print('not valid entity')
                     return self.next()
                 return zone_index.get_component_from_index(current)
 
@@ -430,7 +430,6 @@ cdef class MemoryZone:
             pool_count = pool.block_count * pool.slots_per_block
             range_a((index, index+pool_count-1))
             self.count += pool_count
-            print(key, pool_count, index, index+pool_count-1)
 
     cdef unsigned int get_pool_index_from_name(self, str zone_name):
         return self.reserved_names.index(zone_name)
@@ -458,6 +457,9 @@ cdef class MemoryZone:
         cdef list reserved_ranges = self.reserved_ranges
         cdef unsigned int start = reserved_ranges[pool_index][0]
         return index + start
+
+    cdef unsigned int get_pool_offset(self, unsigned int pool_index):
+        return self.reserved_ranges[pool_index][0]
 
     cdef tuple get_pool_range(self, unsigned int pool_index):
         return self.reserved_ranges[pool_index]

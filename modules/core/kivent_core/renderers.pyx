@@ -495,6 +495,7 @@ cdef class Renderer(StaticMemGameSystem):
         cdef int batch_ind
         cdef int ent_ind
         cdef int entity_offset
+        cdef unsigned int entity_id
         cdef RenderStruct* render_comp
         cdef unsigned int* entity
         cdef PositionStruct2D* pos_comp
@@ -516,7 +517,8 @@ cdef class Renderer(StaticMemGameSystem):
             vert_offset = 0
             mesh_index_offset = 0
             for ent_ind in range(num_entities):
-                entity = <unsigned int*>entity_memory.get_pointer(ent_ind)
+                entity_id = entity_ids[ent_ind]
+                entity = <unsigned int*>entity_memory.get_pointer(entity_id)
                 rend_comp_index = entity[system_index+1]
                 render_comp = <RenderStruct*>render_memory.get_pointer(
                     rend_comp_index)

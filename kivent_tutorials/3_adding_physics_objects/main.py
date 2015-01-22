@@ -6,34 +6,32 @@ from random import randint, choice
 from math import radians, pi, sin, cos
 import kivent_core
 import kivent_cymunk
+from kivent_core.gameworld import GameWorld
 from kivent_core.resource_managers import texture_manager
 from kivent_core.vertmesh import VertMesh
+from kivent_core.renderers import Renderer
+from kivent_core.gamesystems import (PositionSystem2D, RotateSystem2D)
 from kivy.properties import StringProperty, NumericProperty
+import cProfile
+
+
 
 texture_manager.load_atlas('assets/background_objects.atlas')
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
-        Clock.schedule_once(self.init_game)
+        self.gameworld.init_gameworld(['map', 'physics', 'renderer', 
+            'rotate', 'position', 'gameview', 'scale', 'color'],
+            callback=self.init_game)
+        print('gameworld inited')
 
-    def ensure_startup(self):
-        systems_to_check = ['map', 'physics', 'renderer', 
-            'rotate', 'position', 'gameview', 'scale', 'color']
-        systems = self.gameworld.systems
-        for each in systems_to_check:
-            if each not in systems:
-                return False
-        return True
+    def init_game(self):
+        print('in setup')
+        self.setup_states()
+        self.set_state()
 
-    def init_game(self, dt):
-        if self.ensure_startup():
-            self.setup_map()
-            self.setup_states()
-            self.set_state()
-            Clock.schedule_interval(self.update, 1./60.)
-        else:
-            Clock.schedule_once(self.init_game)
+
 
     def draw_game(self):
         self.draw_some_stuff()
@@ -120,3 +118,4 @@ class YourAppNameApp(App):
 
 if __name__ == '__main__':
     YourAppNameApp().run()
+    #cProfile.run('YourAppNameApp().run()', 'prof.prof')

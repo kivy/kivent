@@ -2,56 +2,44 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
-
+from random import randint
 import kivent_core
+from kivent_core.gameworld import GameWorld
+from kivent_core.gamesystems import PositionSystem2D
 from kivent_core.renderers import texture_manager
-
+import cProfile
 texture_manager.load_atlas('assets/background_objects.atlas')
 texture_manager.load_image('assets/ship7.png')
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
+        print('here')
         super(TestGame, self).__init__(**kwargs)
-        Clock.schedule_once(self.init_game, 1.0)
+        print('before gameworld init')
+        self.gameworld.init_gameworld(
+            ['map', 'renderer', 'position', 'gameview'],
+            callback=self.init_game)
+        print('gameworld inited')
 
-    def init_game(self, dt):
-        if self.ensure_startup():
-            self.setup_map()
-            self.setup_states()
-            self.set_state()
-            self.draw_some_stuff()
-            Clock.schedule_interval(self.update, 0)
-        else:
-            Clock.schedule_once(self.init_game)
+    def init_game(self):
+        print('in setup')
+        self.setup_states()
+        self.set_state()
+        self.draw_some_stuff()
 
-    def ensure_startup(self):
-        systems_to_check = ['map', 'renderer', 'position', 'gameview']
-        systems = self.gameworld.systems
-        for each in systems_to_check:
-            if each not in systems:
-                return False
-        return True
 
     def draw_some_stuff(self):
-        create_dict = {
-            'position': (200., 200.),
-            'renderer': {'texture': 'asteroid1', 'size': (64., 64.)},
-        }
-        self.gameworld.init_entity(create_dict, ['position', 'renderer'])
-        create_dict = {
-            'position': (200., 275.),
-            'renderer': {'texture': 'star1', 'size': (50., 50.)},
-        }
-        self.gameworld.init_entity(create_dict, ['position', 'renderer'])
-        create_dict = {
-            'position': (100., 275.),
-            'renderer': {'texture': 'ship7', 'size': (100., 64.)},
-        }
-        self.gameworld.init_entity(create_dict, ['position', 'renderer'])
+        print('drawing some stuff')
+        init_entity = self.gameworld.init_entity
+        for x in range(500000):
+            pos = randint(0, 800), randint(0, 800)
+            create_dict = {
+                'position': pos,
+                'renderer': {'texture': 'star1', 'size': (16., 16.)},
+            }
+            init_entity(create_dict, ['position', 'renderer'])
 
-    def setup_map(self):
-        gameworld = self.gameworld
-        gameworld.currentmap = gameworld.systems['map']
+
 
     def update(self, dt):
         self.gameworld.update(dt)
@@ -73,4 +61,5 @@ class YourAppNameApp(App):
 
 
 if __name__ == '__main__':
-    YourAppNameApp().run()
+    #YourAppNameApp().run()
+    cProfile.run('YourAppNameApp().run()', 'prof.prof')

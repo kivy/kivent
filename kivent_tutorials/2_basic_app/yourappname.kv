@@ -4,12 +4,16 @@ TestGame:
 
 <TestGame>:
     gameworld: gameworld
+    test: 'test'
     GameWorld:
         id: gameworld
         gamescreenmanager: gamescreenmanager
-        PositionSystem:
+        size_of_gameworld: 4194303
+        zones: {'general': 500000}
+        PositionSystem2D:
             system_id: 'position'
             gameworld: gameworld
+            zones: ['general']
         GameView:
             system_id: 'gameview'
             focus_entity: False
@@ -18,12 +22,17 @@ TestGame:
             pos: root.pos
             do_scroll: False
             size: root.size
+            currentmap: map
         Renderer:
             gameworld: gameworld
             system_id: 'renderer'
             gameview: 'gameview'
+            maximum_vertices: 30000
+            zones: ['general']
+            on_parent: print('in rendener', self.parent)
             shader_source: 'assets/shaders/positionshader.glsl'
         GameMap:
+            id: map
             system_id: 'map'
             map_size: root.size
             gameworld: gameworld

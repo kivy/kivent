@@ -5,27 +5,27 @@ TestGame:
 <TestGame>:
     gameworld: gameworld
     app: app
-    system_count_hint: 8
-    prealloc_count: 25000
     GameWorld:
         id: gameworld
         gamescreenmanager: gamescreenmanager
-        PositionSystem:
+        size_of_gameworld: 1000000
+        zones: {'general': 20000}
+        PositionSystem2D:
             system_id: 'position'
             gameworld: gameworld
-            prealloc_count: 2000
-        RotateSystem:
+            zones: ['general']
+        RotateSystem2D:
             system_id: 'rotate'
             gameworld: gameworld
-            prealloc_count: 2000
+            zones: ['general']
         ColorSystem:
             system_id: 'color'
-            prealloc_count: 2000
             gameworld: gameworld
-        ScaleSystem:
+            zones: ['general']
+        ScaleSystem2D:
             system_id: 'scale'
-            prealloc_count: 2000
             gameworld: gameworld
+            zones: ['general']
         GameView:
             system_id: 'gameview'
             focus_entity: False
@@ -35,24 +35,26 @@ TestGame:
             do_scroll: False
             do_scroll_lock: False
             size: root.size
+            currentmap: map
             camera_scale: 1.0
         GameMap:
+            id: map
             system_id: 'map'
             map_size: root.size
             gameworld: gameworld
         Renderer:
             gameworld: gameworld
-            prealloc_count: 2000
             system_id: 'renderer'
             gameview: 'gameview'
+            zones: ['general']
             do_rotate: True
             do_color: True
             do_scale: True
             shader_source: 'assets/glsl/positioncolorrotatescaleshader.glsl'
         CymunkPhysics:
-            prealloc_count: 2000
             gameworld: root.gameworld
             system_id: 'physics'
+            zones: ['general']
     GameScreenManager:
         id: gamescreenmanager
         size: root.size

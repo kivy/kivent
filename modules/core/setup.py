@@ -8,6 +8,15 @@ try:
     have_cython = True
 except ImportError:
     have_cython = False
+import sys
+
+platform = sys.platform
+if platform == 'win32':
+	cstdarg = '-std=gnu99'
+	libraries=['opengl32', 'glu32','glew32']
+else:
+	cstdarg = '-std=c99'
+        libraries=[]
 
 do_clear_existing = True
 
@@ -56,7 +65,8 @@ check_for_removal = [
 
 def build_ext(ext_name, files, include_dirs=[]):
     return Extension(ext_name, files, include_dirs,
-        extra_compile_args=['-std=c99', '-ffast-math',])
+        extra_compile_args=[cstdarg, '-ffast-math',],
+        libraries=libraries)
 
 extensions = []
 cymunk_extensions = []

@@ -96,7 +96,7 @@ class GameWorld(Widget):
         cdef Buffer master_buffer = Buffer(self.size_of_gameworld, 1024, 1)
         self.master_buffer = master_buffer
         master_buffer.allocate_memory()
-        real_size_in_kb = master_buffer.real_size//1024
+        cdef unsigned int real_size_in_kb = master_buffer.real_size//1024
         zones = self.zones
         print(zones)
         if 'general' not in zones:

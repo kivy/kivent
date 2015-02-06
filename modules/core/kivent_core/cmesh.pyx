@@ -1,5 +1,6 @@
 # cython: profile=True
-from kivy.graphics.vertex cimport VertexFormat, vertex_attr_t
+from kivy.graphics.vertex cimport vertex_attr_t, VertexFormat
+from kivy.graphics.vertex import VertexFormatException
 from kivy.graphics.instructions cimport VertexInstruction, getActiveContext
 from kivy.graphics.vbo cimport VBO, VertexBatch
 from kivy.logger import Logger
@@ -8,98 +9,181 @@ from kivy.graphics.context cimport Context, get_context
 from kivy.graphics.shader cimport Shader
 from kivy.graphics.vbo cimport default_vertex
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+from cython cimport Py_ssize_t
+cdef extern from "Python.h":
+    ctypedef int Py_intptr_t
+from kivy.graphics.c_opengl cimport GL_FLOAT, GLfloat
 
 include "opcodes.pxi"
+include "common.pxi"
+cdef short V_NEEDGEN = 1 << 0
+cdef short V_NEEDUPLOAD = 1 << 1
+cdef short V_HAVEID = 1 << 2
 
-# cdef short V_NEEDGEN = 1 << 0
-# cdef short V_NEEDUPLOAD = 1 << 1
-# cdef short V_HAVEID = 1 << 2
+cdef VertexFormat4F* tmp
+tmp = <VertexFormat4F*>NULL
+cdef Py_ssize_t offset
+pos_offset = <Py_ssize_t> (<Py_intptr_t>(tmp.pos) - <Py_intptr_t>(tmp))
+uvs_offset = <Py_ssize_t> (<Py_intptr_t>(tmp.uvs) - <Py_intptr_t>(tmp))
 
-
-
-# cdef class KEVBO:
-#     '''
-#     .. versionchanged:: 1.6.0
-#         VBO now no longer has a fixed vertex format. If no VertexFormat is given
-#         at initialization, the default vertex format is used.
-#     '''
-
-#     def __cinit__(self, VertexFormat vertex_format=None):
-#         self.usage  = GL_STREAM_DRAW
-#         self.target = GL_ARRAY_BUFFER
-#         if vertex_format is None:
-#             vertex_format = default_vertex
-#         self.vertex_format = vertex_format
-#         self.format = vertex_format.vattr
-#         self.format_count = vertex_format.vattr_count
-#         self.format_size = vertex_format.vbytesize
-#         self.flags = V_NEEDGEN | V_NEEDUPLOAD
-#         self._data_size = 0
-#         self._size_last_frame = 0
-
-#     def __dealloc__(self):
-#         get_context().dealloc_vbo(self)
+vertex_format = [
+    ('pos', '2', 'float', pos_offset), 
+    ('uvs', '2', 'float', uvs_offset),
+    ]
 
 
-#     cdef int have_id(self):
-#         return self.flags & V_HAVEID
+cdef class KEVertexFormat(VertexFormat):
+    '''VertexFormat is used to describe the layout of the vertex data stored 
+    in vertex arrays/vbo's.
 
-#     cdef void update_buffer(self):
-#         # generate VBO if not done yet
-#         if self.flags & V_NEEDGEN:
-#             glGenBuffers(1, &self.id)
-#             self.flags &= ~V_NEEDGEN
-#             self.flags |= V_HAVEID
-#         cdef int data_size = self._data_size * self.format_size
-#         cdef void* data_ptr = self._data_pointer
-#         cdef int size_last_frame = self._size_last_frame
-#         # if the size doesn't match, we need to reupload the whole data
-#         glBindBuffer(GL_ARRAY_BUFFER, self.id)
-#         if data_size != size_last_frame:
-#             glBufferData(GL_ARRAY_BUFFER, data_size, data_ptr, self.usage)
-#             self.flags &= ~V_NEEDUPLOAD
-#         # if size match, update only what is needed
-#         elif self.flags & V_NEEDUPLOAD:
-#             glBufferSubData(GL_ARRAY_BUFFER, 0, data_size, data_ptr)
-#             self.flags &= ~V_NEEDUPLOAD
-#         self._size_last_frame = data_size
+    .. versionadded:: 1.6.0
+    '''
+    def __cinit__(self, size_in_bytes, *fmt):
+        self.attr_offsets = NULL
 
-#     cdef void set_data(self, int data_size, void* data_ptr):
-#         self.flags |= V_NEEDUPLOAD
-#         self._data_size = data_size
-#         self._data_pointer = data_ptr
+    def __dealloc__(self):
+        if self.vattr != NULL:
+            PyMem_Free(self.vattr)
+            self.vattr = NULL
+        if self.attr_offsets != NULL:
+            PyMem_Free(self.attr_offsets)
+            self.attr_offsets = NULL
 
-#     cdef void clear_data(self):
-#         self._data_size = 0
-#         self._size_last_frame = 0
-#         self._data_pointer = NULL
+    def __init__(self, size_in_bytes, *fmt):
+        cdef vertex_attr_t *attr
+        cdef Py_ssize_t* attr_offsets
+        cdef int index, size
+        cdef Py_ssize_t offset
 
-#     cdef void bind(self):
-#         cdef Shader shader = getActiveContext()._shader
-#         cdef vertex_attr_t *attr
-#         cdef int offset = 0, i
-#         self.update_buffer()
-#         glBindBuffer(GL_ARRAY_BUFFER, self.id)
-#         shader.bind_vertex_format(self.vertex_format)
-#         for i in xrange(self.format_count):
-#             attr = &self.format[i]
-#             if attr.per_vertex == 0:
-#                 continue
-#             glVertexAttribPointer(attr.index, attr.size, attr.type,
-#                     GL_FALSE, <GLsizei>self.format_size, <GLvoid*><long>offset)
-#             offset += attr.bytesize
+        if not fmt:
+            raise VertexFormatException('No format specified')
 
-#     cdef void unbind(self):
-#         glBindBuffer(GL_ARRAY_BUFFER, 0)
+        self.last_shader = None
+        self.vattr_count = len(fmt)
+        self.vattr = <vertex_attr_t *>PyMem_Malloc(
+            sizeof(vertex_attr_t) * self.vattr_count)
+
+        if self.vattr == NULL:
+            raise MemoryError()
+        self.attr_offsets = attr_offsets = <Py_ssize_t*>PyMem_Malloc(
+            sizeof(Py_ssize_t)*self.vattr_count)
+        if self.attr_offsets == NULL:
+            raise MemoryError()
+
+        index = 0
+        for name, size, tp, offset in fmt:
+            attr = &self.vattr[index]
+            attr_offsets[index] = offset
+            # fill the vertex format
+            attr.per_vertex = 1
+            attr.name = <bytes>name
+            attr.index = 0 # will be set by the shader itself
+            attr.size = size
+
+            # only float is accepted as attribute format
+            if tp == 'float':
+                attr.type = GL_FLOAT
+                attr.bytesize = sizeof(GLfloat) * size
+            else:
+                raise VertexFormatException('Unknow format type %r' % tp)
+
+            # adjust the size, and prepare for the next iteration.
+            index += 1
+            self.vsize += attr.size
+        self.vbytesize = size_in_bytes
+
+    cdef void bind(self):
+        cdef Shader shader = getActiveContext()._shader
+        cdef vertex_attr_t *attr
+        cdef vertex_attr_t* vattr = self.vattr
+        cdef Py_ssize_t* offsets = self.attr_offsets
+        cdef unsigned int vbytesize = self.vbytesize
+        cdef int i
+        shader.bind_vertex_format(self)
+        for i in xrange(self.vattr_count):
+            attr = &vattr[i]
+            if attr.per_vertex == 0:
+                continue
+            glVertexAttribPointer(attr.index, attr.size, attr.type,
+                    GL_FALSE, <GLsizei>vbytesize, 
+                    <GLvoid*><long>offsets[i])
 
 
-#     cdef void reload(self):
-#         self.flags = V_NEEDUPLOAD | V_NEEDGEN
-#         self._size_last_frame = 0
 
-#     def __repr__(self):
-#         return '<VBO at %x id=%r>' % (
-#                 id(self), self.id if self.flags & V_HAVEID else None)
+
+
+
+
+cdef class FixedVBO:
+    '''
+    This is a VBO that has a fixed size for the amount of vertex data.
+    '''
+
+    def __cinit__(self, unsigned int data_size, unsigned int vertex_size, 
+        VertexFormat vertex_format=None):
+        self.usage  = GL_STREAM_DRAW
+        self.target = GL_ARRAY_BUFFER
+        if vertex_format is None:
+            vertex_format = default_vertex
+        self.vertex_format = vertex_format
+        self.flags = V_NEEDGEN | V_NEEDUPLOAD
+        self._data_size = 0
+        self._size_last_frame = 0
+
+    def __dealloc__(self):
+        get_context().dealloc_vbo(self)
+
+
+    cdef int have_id(self):
+        return self.flags & V_HAVEID
+
+    cdef void update_buffer(self):
+        # generate VBO if not done yet
+        if self.flags & V_NEEDGEN:
+            glGenBuffers(1, &self.id)
+            self.flags &= ~V_NEEDGEN
+            self.flags |= V_HAVEID
+        cdef int data_size = self._data_size * self.format_size
+        cdef void* data_ptr = self._data_pointer
+        cdef int size_last_frame = self._size_last_frame
+        # if the size doesn't match, we need to reupload the whole data
+        glBindBuffer(GL_ARRAY_BUFFER, self.id)
+        if data_size != size_last_frame:
+            glBufferData(GL_ARRAY_BUFFER, data_size, data_ptr, self.usage)
+            self.flags &= ~V_NEEDUPLOAD
+        # if size match, update only what is needed
+        elif self.flags & V_NEEDUPLOAD:
+            glBufferSubData(GL_ARRAY_BUFFER, 0, data_size, data_ptr)
+            self.flags &= ~V_NEEDUPLOAD
+        self._size_last_frame = data_size
+
+    cdef void set_data(self, int data_size, void* data_ptr):
+        self.flags |= V_NEEDUPLOAD
+        self._data_size = data_size
+        self._data_pointer = data_ptr
+
+    cdef void clear_data(self):
+        self._data_size = 0
+        self._size_last_frame = 0
+        self._data_pointer = NULL
+
+    cdef void bind(self):
+
+        self.update_buffer()
+        glBindBuffer(GL_ARRAY_BUFFER, self.id)
+        self.vertex_format.bind()
+
+    cdef void unbind(self):
+        glBindBuffer(GL_ARRAY_BUFFER, 0)
+
+
+    cdef void reload(self):
+        self.flags = V_NEEDUPLOAD | V_NEEDGEN
+        self._size_last_frame = 0
+
+    def __repr__(self):
+        return '<VBO at %x id=%r>' % (
+                id(self), self.id if self.flags & V_HAVEID else None)
 
 # cdef class OrphaningVBO:
 #     '''
@@ -437,7 +521,8 @@ cdef class CMesh(VertexInstruction):
         VertexInstruction.__init__(self, **kwargs)
         fmt = kwargs.get('fmt')
         if fmt is not None:
-            self.vertex_format = VertexFormat(*fmt)
+            self.vertex_format = KEVertexFormat(24, *fmt)
+            print('using KEVertexFormat')
             self._obatch = VertexBatch(vbo=VBO(self.vertex_format))
             #, vbo_2=VBO(                self.vertex_format))
         self.mode = kwargs.get('mode') or 'points'

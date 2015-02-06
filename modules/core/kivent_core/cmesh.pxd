@@ -4,26 +4,31 @@ from kivy.graphics.c_opengl cimport *
 from kivy.graphics.vbo cimport VBO, VertexBatch
 from cpython cimport bool
 
-# cdef class KEVBO:
-#     cdef object __weakref__
-#     cdef int _data_size
-#     cdef void* _data_pointer
-#     cdef int _size_last_frame
-#     cdef GLuint id
-#     cdef int usage
-#     cdef int target
-#     cdef vertex_attr_t *format
-#     cdef long format_count
-#     cdef long format_size
-#     cdef short flags
-#     cdef VertexFormat vertex_format
-#     cdef int have_id(self)
-#     cdef void update_buffer(self)
-#     cdef void set_data(self, int data_size, void* data_ptr)
-#     cdef void clear_data(self)
-#     cdef void bind(self)
-#     cdef void unbind(self)
-#     cdef void reload(self)
+ctypedef struct VertexFormat4F:
+    GLfloat[2] pos
+    GLfloat[2] uvs
+
+cdef class KEVertexFormat(VertexFormat):
+    cdef Py_ssize_t* attr_offsets
+    cdef void bind(self)
+
+cdef class FixedVBO:
+    cdef object __weakref__
+    cdef int _data_size
+    cdef void* _data_pointer
+    cdef int _size_last_frame
+    cdef GLuint id
+    cdef int usage
+    cdef int target
+    cdef short flags
+    cdef KEVertexFormat vertex_format
+    cdef int have_id(self)
+    cdef void update_buffer(self)
+    cdef void set_data(self, int data_size, void* data_ptr)
+    cdef void clear_data(self)
+    cdef void bind(self)
+    cdef void unbind(self)
+    cdef void reload(self)
 
 
 

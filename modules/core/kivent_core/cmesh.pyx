@@ -108,28 +108,73 @@ cdef class KEVertexFormat(VertexFormat):
                     GL_FALSE, <GLsizei>vbytesize, 
                     <GLvoid*><long>offsets[i])
 
+cdef class Batch:
+    cdef list frame_data
+    cdef unsigned int current_frame
+    cdef unsigned int frame_count
 
 
+    def get_vbo_frame_to_draw(self):
+        pass
+
+    def get_index_vbo_frame_to_draw(self):
+        pass
+
+    def draw_frame(self):
+        pass
 
 
+cdef class BatchManager:
+    cdef MemoryBlock batch_block
+    cdef MemoryBlock indices_block
+    cdef list batches
+    cdef dict batch_groups
+    cdef unsigned int active_batches
+    cdef unsgined int max_batches
+    cdef unsigned int slots_per_block
+    cdef KEVertexFormat vertex_format
+
+    def __cinit__(self, unsigned int vbo_size_in_kb, unsigned int batch_count,
+        unsigned int frame_count, KEVertexFormat vertex_format, 
+        Buffer master_buffer):
+        cdef MemoryBlock batch_block, indices_block
+        cdef unsigned int size_in_bytes = vbo_size_in_kb * 1024
+        cdef unsigned int type_size = vertex_format.vbytesize
+        cdef unsigned int slots_per_block = size_in_bytes // type_size
+        cdef unsigned int block_count = frame_count*batch_count
+        cdef unsigned int indices_size_in_kb = (
+            slots_per_block * sizeof(unsigned int))
+        cdef unsigned int indices_size_in_bytes = indices_size_in_kb * 1024
+        self.batch_block = batch_block = MemoryBlock(block_count,
+            vbo_size_in_kb, size_in_bytes)
+        self.indices_block = indices_block = MemoryBlock(block_count,
+            indices_size_in_kb, indices_size_in_bytes)
+        self.vertex_format = vertex_format
+        self.slots_per_block = slots_per_block
+        self.batch_groups = {}
+        self.batches = []
+        self.active_batches = 0
+        self.max_batches = batch_count
+
+cdef class FixedFrameData: #think about name
+
+    #has 2 fixedvbo, one for index, one for vertices
+    #
 
 
 cdef class FixedVBO:
+    cdef MemoryBlock memory_block
     '''
     This is a VBO that has a fixed size for the amount of vertex data.
     '''
 
-    def __cinit__(self, unsigned int data_size, unsigned int vertex_size, 
-        VertexFormat vertex_format=None):
+    def __cinit__(self, VertexFormat vertex_format, MemoryBlock memory_block):
         self.usage  = GL_STREAM_DRAW
         self.target = GL_ARRAY_BUFFER
-        if vertex_format is None:
-            vertex_format = default_vertex
         self.vertex_format = vertex_format
         self.flags = V_NEEDGEN | V_NEEDUPLOAD
-        self._data_size = 0
-        self._size_last_frame = 0
-
+        self.memory_block = memory_block
+        
     def __dealloc__(self):
         get_context().dealloc_vbo(self)
 
@@ -137,10 +182,16 @@ cdef class FixedVBO:
     cdef int have_id(self):
         return self.flags & V_HAVEID
 
+    cdef void generate_buffer(self):
+        glGenBuffers(1, &self.id)
+        glBindBuffer(GL_ARRAY_BUFFER, self.id)
+        glBufferData(
+            GL_ARRAY_BUFFER, self.memory_block.real_size, NULL, self.usage)
+
     cdef void update_buffer(self):
         # generate VBO if not done yet
         if self.flags & V_NEEDGEN:
-            glGenBuffers(1, &self.id)
+            self.generate_buffer()
             self.flags &= ~V_NEEDGEN
             self.flags |= V_HAVEID
         cdef int data_size = self._data_size * self.format_size

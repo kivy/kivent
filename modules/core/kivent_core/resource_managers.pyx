@@ -88,89 +88,92 @@ cdef class TextureManager:
     making your own instance.'''
 
     def __init__(self):
+        #maps texkey to textures
         self._textures = {}
+        #maps string names to texkeys
         self._keys = {}
+        #maps texkey to string names
         self._key_index = {}
+        #maps texkey to actual texture key (for atlas)
         self._texkey_index = {}
         self._key_count = 0
+        #map texkey to w, h of texture
         self._sizes = {}
+        #maps texkey to list of uvs
         self._uvs = {}
+        #maps actual texture key to all subtexture texkey (for atlas)
         self._groups = {}
 
     def load_image(self, source):
         texture = CoreImage(source, nocache=True).texture
         name = path.splitext(path.basename(source))[0]
         name = str(name)
-        if name not in self._textures:
-            key_count = self._key_count
-            self._textures[name] = texture
-            self._keys[name] = name
-            self._key_index[key_count] = name
-            self._texkey_index[name] = key_count
-            self._uvs[name] = [0., 0., 1., 1.]
-            self._groups[name] = [name]
-            self._key_count += 1
-        else:
+        if name in self._keys:
             raise KeyError()
+        else:
+            key_count = self._key_count
+            size = texture.size
+            self._textures[key_count] = texture
+            self._keys[name] = key_count
+            self._sizes[key_count] = size
+            self._key_index[key_count] = name
+            self._texkey_index[key_count] = key_count
+            self._uvs[key_count] = [0., 0., 1., 1.]
+            self._groups[key_count] = [key_count]
+            self._key_count += 1
+        return key_count
 
     def load_texture(self, name, texture):
         name = str(name)
-        if name in self._textures:
+        if name in self._keys:
             raise KeyError()
         else:
             key_count = self._key_count
-            self._textures[name] = texture
-            self._keys[name] = name
+            self._textures[key_count] = texture
+            size = texture.size
+            self._sizes[key_count] = size
+            self._keys[name] = key_count
             self._key_index[key_count] = name
-            self._texkey_index[name] = key_count
-            self._uvs[name] = [0., 0., 1., 1.]
-            self._groups[name] = [name]
+            self._texkey_index[key_count] = key_count
+            self._uvs[key_count] = [0., 0., 1., 1.]
+            self._groups[key_count] = [key_count]
             self._key_count += 1
+        return key_count
 
     def unload_texture(self, name):
-        if name not in self._textures:
+        if name not in self._keys:
             raise KeyError()
         else:
-            texture_keys = self._groups[name]
+            key_index = self._keys[name]
+            texture_keys = self._groups[key_index]
             for key in texture_keys:
-                key_index = self._keys[name]
-                del self._key_index[key_index]
+                name = self._key_index[key]
+                del self._key_index[key]
                 del self._uvs[key]
-                del self._texkey_index[name]
-                del self._keys[key]
-            del self._groups[name]
-            del self._textures[name]
+                del self._texkey_index[key]
+                del self._keys[name]
+                del self._sizes[key]
+            del self._groups[key_index]
+            del self._textures[key_index]
+
 
     def get_uvs(self, tex_key):
-        try:
-            return self._uvs[tex_key]
-        except:
-            return [0., 0., 1., 1.]
+        return self._uvs[tex_key]
 
     def get_size(self,tex_key):
         return self._sizes[tex_key]
 
-    def get_texture(self, tex_name):
-        return self._textures[tex_name]
+    def get_texture(self, tex_key):
+        return self._textures[tex_key]
 
-    def get_texture_from_key(self, tex_key):
-        return self._textures[self._keys[tex_key]]
-
-    def get_texkey_from_index_key(self, index_key):
-        return self._key_index[index_key]
-
-    def get_index_key_from_texkey(self, texkey):
-        return self._texkey_index[texkey]
+    def get_groupkey_from_texkey(self, tex_key):
+        return self._texkey_index[index_key]
 
     def get_texname_from_texkey(self, tex_key):
-        return self._keys[tex_key]
+        return self._key_index[tex_key]
 
-    def get_texkey_in_group(self, tex_key, atlas_name):
-        if tex_key is None and atlas_name is None:#should this be or?
-            return True
-        else:
-            return atlas_name in self._groups and tex_key in (
-                self._groups[atlas_name])
+    def get_texkey_in_group(self, tex_key, group_key):
+        return tex_key in self._groups[group_key]
 
     def load_atlas(self, source):
         dirname = path.dirname(source)
@@ -186,27 +189,23 @@ cdef class TextureManager:
             h = <float>size[1]
             keys = self._keys
             uvs = self._uvs
-            group_list = []
-            group_list_a = group_list.append
             atlas_content = atlas_data[imgname]
-
-            if name in self._textures:
-                raise KeyError("'%s' already in textures"%name)
-            self._textures[name] = texture
+            atlas_key = self.load_texture(name, texture)
+            group_list = self._groups[atlas_key]
+            group_list_a = group_list.append
             for key in atlas_content:
                 key = str(key)
                 kx,ky,kw,kh = atlas_content[key]
                 key_index = self._key_count
-                self._keys[key] = name
+                self._keys[key] = key_index
                 self._key_index[key_index] = key
-                self._texkey_index[key] = key_index
-                self._sizes[key] = kw, kh
+                self._texkey_index[key_index] = atlas_key
+                self._sizes[key_index] = kw, kh
                 x1, y1 = kx, ky
                 x2, y2 = x1 + kw, y1 + kh
-                self._uvs[key] = [x1/w, 1.-y1/h, x2/w, 1.-y2/h] 
+                self._uvs[key_index] = [x1/w, 1.-y1/h, x2/w, 1.-y2/h] 
                 self._key_count += 1
-                group_list_a(str(key))
-            self._groups[name] = group_list
+                group_list_a(key_index)
 
 texture_manager = TextureManager()
 model_manager = ModelManager()

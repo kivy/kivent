@@ -8,8 +8,8 @@ TestGame:
     GameWorld:
         id: gameworld
         gamescreenmanager: gamescreenmanager
-        size_of_gameworld: 4194303
-        zones: {'general': 500000}
+        size_of_gameworld: 512
+        zones: {'general': 8000}
         PositionSystem2D:
             system_id: 'position'
             gameworld: gameworld
@@ -27,7 +27,6 @@ TestGame:
             gameworld: gameworld
             system_id: 'renderer'
             gameview: 'gameview'
-            maximum_vertices: 30000
             zones: ['general']
             on_parent: print('in rendener', self.parent)
             shader_source: 'assets/shaders/positionshader.glsl'
@@ -49,4 +48,19 @@ TestGame:
 <MainScreen@GameScreen>:
     name: 'main'
     FloatLayout:
+        DebugPanel:
+            size_hint: (.2, .1)
+            pos_hint: {'x': .225, 'y': .025}
+
+
+
+<DebugPanel>:
+    Label:
+        pos: root.pos
+        size: root.size
+        font_size: root.size[1]*.5
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1)
+        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'
 

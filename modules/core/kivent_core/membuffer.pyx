@@ -94,7 +94,7 @@ cdef class IndexedMemoryZone:
     def __getitem__(self, index):
         return self.zone_index.get_component_from_index(index)
 
-    cdef void* get_pointer_to_component(self, unsigned int index):
+    cdef void* get_pointer(self, unsigned int index):
         return self.memory_zone.get_pointer(index)
 
     def __getslice__(self, index_1, index_2):

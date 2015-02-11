@@ -5,7 +5,7 @@ cdef class IndexedMemoryZone:
     cdef MemoryZone memory_zone
     cdef ZoneIndex zone_index
 
-    cdef void* get_pointer_to_component(self, unsigned int index)
+    cdef void* get_pointer(self, unsigned int index)
 
 cdef class memrange_iter:
     cdef IndexedMemoryZone memory_index

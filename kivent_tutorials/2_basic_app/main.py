@@ -7,6 +7,7 @@ import kivent_core
 from kivent_core.gameworld import GameWorld
 from kivent_core.gamesystems import PositionSystem2D
 from kivent_core.renderers import texture_manager
+from kivy.properties import StringProperty
 import cProfile
 texture_manager.load_atlas('assets/background_objects.atlas')
 texture_manager.load_image('assets/ship7.png')
@@ -31,7 +32,7 @@ class TestGame(Widget):
     def draw_some_stuff(self):
         print('drawing some stuff')
         init_entity = self.gameworld.init_entity
-        for x in range(500000):
+        for x in range(5000):
             pos = randint(0, 800), randint(0, 800)
             create_dict = {
                 'position': pos,
@@ -53,6 +54,17 @@ class TestGame(Widget):
 
     def set_state(self):
         self.gameworld.state = 'main'
+
+class DebugPanel(Widget):
+    fps = StringProperty(None)
+
+    def __init__(self, **kwargs):
+        super(DebugPanel, self).__init__(**kwargs)
+        Clock.schedule_once(self.update_fps)
+
+    def update_fps(self,dt):
+        self.fps = str(int(Clock.get_fps()))
+        Clock.schedule_once(self.update_fps, .05)
 
 
 class YourAppNameApp(App):

@@ -20,7 +20,8 @@ cdef class ModelManager:
         cdef dict keys = self._keys
         assert(name not in keys)
         vert_mesh = VertMesh(attribute_count, 4, 6)
-        uvs = texture_manager.get_uvs(texture_key)
+        texkey = texture_manager.get_texkey_from_name(texture_key)
+        uvs = texture_manager.get_uvs(texkey)
         vert_mesh.set_textured_rectangle(width, height, uvs)
         try:
             free = self._unused.pop()
@@ -156,6 +157,9 @@ cdef class TextureManager:
             del self._groups[key_index]
             del self._textures[key_index]
 
+    def get_texkey_from_name(self, name):
+        return self._keys[name]
+
 
     def get_uvs(self, tex_key):
         return self._uvs[tex_key]
@@ -167,7 +171,7 @@ cdef class TextureManager:
         return self._textures[tex_key]
 
     def get_groupkey_from_texkey(self, tex_key):
-        return self._texkey_index[index_key]
+        return self._texkey_index[tex_key]
 
     def get_texname_from_texkey(self, tex_key):
         return self._key_index[tex_key]

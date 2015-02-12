@@ -297,13 +297,14 @@ class GameWorld(Widget):
 
         This function immediately removes an entity from the gameworld.
         '''
+
         cdef Entity entity = self.entities[entity_id]
-        cdef dict systems = self.systems
         cdef EntityManager entity_manager = self.entity_manager
         load_order = entity.load_order
         load_order.reverse()
-        for data_system in load_order:    
-            systems[data_system].remove_entity(entity_id)
+        for system_name in load_order:    
+            system_manager.get_system(system_name).remove_component(
+                entity.get_component_index(system_name))
         entity.load_order = []
         entity_manager.remove_entity(entity_id)
 
@@ -340,7 +341,7 @@ class GameWorld(Widget):
         '''Used to clear every entity in the GameWorld.'''
         entities = self.entities
         er = self.remove_entity
-        for entity in self.entities:
+        for entity in memrange(self.entities):
             er(entity.entity_id)
 
     def delete_system(self, system_id):

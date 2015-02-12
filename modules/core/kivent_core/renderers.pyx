@@ -291,19 +291,24 @@ cdef class Renderer(StaticMemGameSystem):
         pointer.vert_index = -1
         pointer.ind_index = -1
 
-    def allocate(self, Buffer master_buffer, dict reserve_spec):
-        self.components = IndexedMemoryZone(master_buffer, 
-            self.size_of_component_block, sizeof(RenderStruct), 
-            reserve_spec, RenderComponent)
+    cdef void setup_batch_manager(self, Buffer master_buffer):
         cdef KEVertexFormat batch_vertex_format = KEVertexFormat(
             sizeof(VertexFormat4F), *vertex_format)
         self.batch_manager = BatchManager(
             self.size_of_batches, self.max_batches, self.frame_count, 
             batch_vertex_format, master_buffer, 'triangles', self.canvas)
 
+    def allocate(self, Buffer master_buffer, dict reserve_spec):
+        self.components = IndexedMemoryZone(master_buffer, 
+            self.size_of_component_block, sizeof(RenderStruct), 
+            reserve_spec, RenderComponent)
+        self.setup_batch_manager(master_buffer)
+        
+
     cdef void _init_component(self, unsigned int component_index, 
         unsigned int entity_id, bool render, unsigned int attrib_count, 
         unsigned int vert_index_key, unsigned int texkey):
+        
         cdef MemoryZone memory_zone = self.components.memory_zone
         cdef RenderStruct* pointer = <RenderStruct*>memory_zone.get_pointer(
             component_index)
@@ -345,7 +350,6 @@ cdef class Renderer(StaticMemGameSystem):
             vert_index_key = model_manager.get_mesh_index(vert_mesh_key)
         else:
             vert_index_key = -1
-
         if vert_index_key == -1:
             mesh_key = str(attrib_count) + texture_key
             exists = model_manager.does_key_exist(mesh_key)
@@ -375,6 +379,7 @@ cdef class Renderer(StaticMemGameSystem):
         cdef float* mesh_data
         cdef VertexFormat4F* vertex
         cdef unsigned short* mesh_indices
+        cdef int entity_count
 
         
         cdef object gameworld = self.gameworld
@@ -433,15 +438,13 @@ cdef class Renderer(StaticMemGameSystem):
                 mesh_instruction = batch.mesh_instruction
                 mesh_instruction.flag_update()
 
-    def remove_entity(self, unsigned int entity_id):
+    def remove_component(self, unsigned int component_id):
         cdef IndexedMemoryZone components = self.components
-        cdef IndexedMemoryZone entities = self.gameworld.entities
-        cdef Entity entity = entities[entity_id]
-        cdef unsigned int component_index = entity.get_component_index(
-            self.system_id)
-        self._unbatch_entity(entity_id, <RenderStruct*>components.get_pointer(
-            component_index))
-        super(Renderer, self).remove_entity(entity_id)
+        cdef RenderStruct* pointer = <RenderStruct*>components.get_pointer(
+            component_id)
+        self._unbatch_entity(pointer.entity_id, pointer)
+        
+        super(Renderer, self).remove_component(component_id)
 
     def unbatch_entity(self, unsigned int entity_id):
         cdef IndexedMemoryZone components = self.components

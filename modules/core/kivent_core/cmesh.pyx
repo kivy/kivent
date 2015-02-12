@@ -195,6 +195,7 @@ cdef class Batch:
     cdef void clear_frames(self):
         cdef FixedFrameData frame
         cdef list frame_data = self.frame_data
+        self.entity_ids = []
         for frame in frame_data:
             frame.return_memory()
         del frame_data[:]
@@ -216,6 +217,8 @@ cdef class BatchManager:
         cdef unsigned int block_count = frame_count*batch_count
         self.batch_block = batch_block = MemoryBlock(block_count,
             vbo_size_in_kb, size_in_bytes)
+        print('batch will have # verts', vert_slots_per_block, 'be', vbo_size_in_kb,
+            'total size is', vbo_size_in_kb*block_count)
         batch_block.allocate_memory_with_buffer(master_buffer)
         self.indices_block = indices_block = MemoryBlock(block_count,
             vbo_size_in_kb, size_in_bytes)
@@ -327,6 +330,8 @@ cdef class BatchManager:
         cdef Batch batch = self.batches[batch_id]
         batch.remove_entity(entity_id, num_verts, vert_index, num_indices,
             ind_index)
+        if batch.check_empty():
+            self.remove_batch(batch_id)
 
     cdef list get_vbos(self):
         cdef unsigned int i
@@ -396,7 +401,11 @@ cdef class FixedVBO:
         self.data_size = memory_block.real_size
         
     def __dealloc__(self):
-        get_context().dealloc_vbo(self)
+        cdef Context context = get_context()
+        if self.have_id():
+            arr = context.lr_vbo
+            arr.append(self.id)
+            context.trigger_gl_dealloc()
 
     cdef int have_id(self):
         return self.flags & V_HAVEID  

@@ -35,6 +35,18 @@ for module_name in memory_handlers:
         memory_handlers_file + module_name + '.c']
     check_for_removal.append(memory_handlers_file + module_name + '.c')
 
+rendering_prefix = 'kivent_core.rendering.'
+rendering_file = 'kivent_core/rendering/'
+rendering = ['vertex_format', 'fixedvbo', 'cmesh', 'batching', 'vertex_format',
+    'frame_objects', 'vertmesh', 'vertex_formats']
+
+for module_name in rendering:
+    core_modules[rendering_prefix+module_name] = [
+        rendering_file + module_name + '.pyx']
+    core_modules_c[rendering_prefix+module_name] = [
+        rendering_file + module_name + '.c']
+    check_for_removal.append(rendering_file + module_name + '.c')
+
 
 # core_modules = {
 #     # 'kivent_core.cmesh': ['kivent_core/cmesh.pyx',],
@@ -131,6 +143,6 @@ setup(
     packages=[
         'kivent_core',
         'kivent_core.memory_handlers',
+        'kivent_core.rendering',
         ],
-    package_dir={'kivent_core': 'kivent_core',
-        'kivent_core.memory_handlers': 'kivent_core/memory_handlers'})
+    package_dir={'kivent_core': 'kivent_core'})

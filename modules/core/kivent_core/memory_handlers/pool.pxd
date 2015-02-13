@@ -1,7 +1,6 @@
 from membuffer cimport Buffer
 from block cimport MemoryBlock
 
-
 cdef class MemoryPool:
     cdef unsigned int count
     cdef list memory_blocks

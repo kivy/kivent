@@ -1,21 +1,21 @@
 import json
 from os import path
 from kivy.core.image import Image as CoreImage
-from vertmesh cimport VertMesh
+from kivent_core.rendering.vertmesh cimport VertMesh
 
 cdef class ModelManager:
 
-    def __init__(self):
+    def __init__(ModelManager self):
         self._meshes = []
         self._keys = {}
         self._mesh_count = 0
         self._unused = []
 
     property meshes:
-        def __get__(self):
+        def __get__(ModelManager self):
             return self._meshes  
 
-    def load_textured_rectangle(self, attribute_count, 
+    def load_textured_rectangle(ModelManager self, attribute_count, 
         width, height, texture_key, name):
         cdef dict keys = self._keys
         assert(name not in keys)
@@ -33,16 +33,17 @@ cdef class ModelManager:
             self._mesh_count += 1
         keys[name] = index
 
-    def does_key_exist(self, key):
+    def does_key_exist(ModelManager self, key):
         return key in self._keys
 
-    def vert_mesh_from_key(self, key):
+    def vert_mesh_from_key(ModelManager self, key):
         return self._meshes[self.get_mesh_index(key)]
 
-    def get_mesh_index(self, key):
+    def get_mesh_index(ModelManager self, key):
         return self._keys[key]
 
-    def load_mesh(self, attribute_count, vert_count, index_count, key):
+    def load_mesh(ModelManager self, attribute_count, vert_count, index_count, 
+        key):
         cdef dict keys = self._keys
         assert(key not in keys)
         vert_mesh = VertMesh(attribute_count, vert_count, index_count)
@@ -56,7 +57,7 @@ cdef class ModelManager:
             self._mesh_count += 1
         keys[key] = index
 
-    def copy_mesh(self, mesh_key, new_key):
+    def copy_mesh(ModelManager self, mesh_key, new_key):
         cdef dict keys = self._keys
         assert(new_key not in keys)
         cdef VertMesh vert_mesh = self.meshes[keys[mesh_key]]
@@ -73,7 +74,7 @@ cdef class ModelManager:
             self._mesh_count += 1
         keys[new_key] = index
         
-    def unload_mesh(self, mesh_key):
+    def unload_mesh(ModelManager self, mesh_key):
         mesh_index = self._keys[mesh_key]
         self._unused.append(mesh_index)
         self._meshes[mesh_index] = None
@@ -88,7 +89,7 @@ cdef class TextureManager:
     atlas files. Prefer to access kivent.renderers.texture_manager than
     making your own instance.'''
 
-    def __init__(self):
+    def __init__(TextureManager self):
         #maps texkey to textures
         self._textures = {}
         #maps string names to texkeys
@@ -105,7 +106,7 @@ cdef class TextureManager:
         #maps actual texture key to all subtexture texkey (for atlas)
         self._groups = {}
 
-    def load_image(self, source):
+    def load_image(TextureManager self, source):
         texture = CoreImage(source, nocache=True).texture
         name = path.splitext(path.basename(source))[0]
         name = str(name)
@@ -124,7 +125,7 @@ cdef class TextureManager:
             self._key_count += 1
         return key_count
 
-    def load_texture(self, name, texture):
+    def load_texture(TextureManager self, name, texture):
         name = str(name)
         if name in self._keys:
             raise KeyError()
@@ -141,7 +142,7 @@ cdef class TextureManager:
             self._key_count += 1
         return key_count
 
-    def unload_texture(self, name):
+    def unload_texture(TextureManager self, name):
         if name not in self._keys:
             raise KeyError()
         else:
@@ -157,29 +158,29 @@ cdef class TextureManager:
             del self._groups[key_index]
             del self._textures[key_index]
 
-    def get_texkey_from_name(self, name):
+    def get_texkey_from_name(TextureManager self, name):
         return self._keys[name]
 
 
-    def get_uvs(self, tex_key):
+    def get_uvs(TextureManager self, tex_key):
         return self._uvs[tex_key]
 
-    def get_size(self,tex_key):
+    def get_size(TextureManager self, tex_key):
         return self._sizes[tex_key]
 
-    def get_texture(self, tex_key):
+    def get_texture(TextureManager self, tex_key):
         return self._textures[tex_key]
 
-    def get_groupkey_from_texkey(self, tex_key):
+    def get_groupkey_from_texkey(TextureManager self, tex_key):
         return self._texkey_index[tex_key]
 
-    def get_texname_from_texkey(self, tex_key):
+    def get_texname_from_texkey(TextureManager self, tex_key):
         return self._key_index[tex_key]
 
-    def get_texkey_in_group(self, tex_key, group_key):
+    def get_texkey_in_group(TextureManager self, tex_key, group_key):
         return tex_key in self._groups[group_key]
 
-    def load_atlas(self, source):
+    def load_atlas(TextureManager self, source):
         dirname = path.dirname(source)
         with open(source, 'r') as data:
              atlas_data = json.load(data)

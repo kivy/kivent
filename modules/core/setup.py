@@ -47,6 +47,26 @@ for module_name in rendering:
         rendering_file + module_name + '.c']
     check_for_removal.append(rendering_file + module_name + '.c')
 
+managers_prefix = 'kivent_core.managers.'
+managers_file = 'kivent_core/managers/'
+managers = ['resource_managers', 'system_manager', 'entity_manager']
+
+for module_name in managers:
+    core_modules[managers_prefix+module_name] = [
+        managers_file + module_name + '.pyx']
+    core_modules_c[managers_prefix+module_name] = [
+        managers_file + module_name + '.c']
+    check_for_removal.append(managers_file + module_name + '.c')
+
+core_prefix = 'kivent_core.'
+core_file = 'kivent_core/'
+core = ['entity']
+
+for module_name in core:
+    core_modules[core_prefix+module_name] = [core_file + module_name + '.pyx']
+    core_modules_c[core_prefix+module_name] = [core_file + module_name + '.c']
+    check_for_removal.append(core_file + module_name + '.c')
+
 
 # core_modules = {
 #     # 'kivent_core.cmesh': ['kivent_core/cmesh.pyx',],
@@ -144,5 +164,6 @@ setup(
         'kivent_core',
         'kivent_core.memory_handlers',
         'kivent_core.rendering',
+        'kivent_core.managers'
         ],
     package_dir={'kivent_core': 'kivent_core'})

@@ -1,5 +1,5 @@
 cdef unsigned int DEFAULT_SYSTEM_COUNT = 8
-cdef unsigned int DEFAULT_COUNT = 30000
+cdef unsigned int DEFAULT_COUNT = 10000
 
 cdef class ZoneConfig:
 

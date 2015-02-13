@@ -10,7 +10,6 @@ cdef class ZoneConfig:
 cdef class SystemConfig:
     cdef dict zone_configs
 
-
 cdef class SystemManager:
     cdef dict systems
     cdef dict zones

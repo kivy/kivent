@@ -20,48 +20,67 @@ else:
 
 do_clear_existing = True
 
-core_modules = {
-    'kivent_core.cmesh': ['kivent_core/cmesh.pyx',],
-    'kivent_core.gamesystems': ['kivent_core/gamesystems.pyx',],
-    'kivent_core.gameworld': ['kivent_core/gameworld.pyx'],
-    'kivent_core.renderers': ['kivent_core/renderers.pyx',],
-    'kivent_core.gamescreens': ['kivent_core/gamescreens.pyx'],
-    'kivent_core.entity': ['kivent_core/entity.pyx'],
-    'kivent_core.resource_managers': ['kivent_core/resource_managers.pyx'],
-    'kivent_core.vertmesh': ['kivent_core/vertmesh.pyx'],
-    'kivent_core.membuffer': ['kivent_core/membuffer.pyx'],
-    'kivent_core.cwidget': ['kivent_core/cwidget.pyx'],
-    'kivent_core.system_manager': ['kivent_core/system_manager.pyx'],
-    }
+core_modules = {}
+core_modules_c = {}
+check_for_removal = []
+memory_handlers_prefix = 'kivent_core.memory_handlers.'
+memory_handlers_file = 'kivent_core/memory_handlers/'
+memory_handlers = ['block', 'membuffer', 'indexing', 'pool', 'utils', 'zone',
+    'tests']
 
-core_modules_c = {
-    'kivent_core.cmesh': ['kivent_core/cmesh.c',],
-    'kivent_core.gamesystems': ['kivent_core/gamesystems.c',],
-    'kivent_core.gameworld': ['kivent_core/gameworld.c'],
-    'kivent_core.renderers': ['kivent_core/renderers.c',],
-    'kivent_core.gamescreens': ['kivent_core/gamescreens.c'],
-    'kivent_core.entity': ['kivent_core/entity.c'],
-    'kivent_core.resource_managers': ['kivent_core/resource_managers.c'],
-    'kivent_core.vertmesh': ['kivent_core/vertmesh.c'],
-    'kivent_core.membuffer': ['kivent_core/membuffer.c'],
-    'kivent_core.cwidget': ['kivent_core/cwidget.c'],
-    'kivent_core.system_manager': ['kivent_core/system_manager.c'],
-    }
+for module_name in memory_handlers:
+    core_modules[memory_handlers_prefix+module_name] = [
+        memory_handlers_file + module_name + '.pyx']
+    core_modules_c[memory_handlers_prefix+module_name] = [
+        memory_handlers_file + module_name + '.c']
+    check_for_removal.append(memory_handlers_file + module_name + '.c')
 
 
-check_for_removal = [
-    'kivent_core/cmesh.c',
-    'kivent_core/gamesystems.c',
-    'kivent_core/gameworld.c',
-    'kivent_core/gamescreens.c',
-    'kivent_core/renderers.c',
-    'kivent_core/entity.c',
-    'kivent_core/resource_managers.c',
-    'kivent_core/vertmesh.c',
-    'kivent_core/membuffer.c',
-    'kivent_core/cwidget.c',
-    'kivent_core/system_manager.c',
-    ]
+# core_modules = {
+#     # 'kivent_core.cmesh': ['kivent_core/cmesh.pyx',],
+#     # 'kivent_core.gamesystems': ['kivent_core/gamesystems.pyx',],
+#     # 'kivent_core.gameworld': ['kivent_core/gameworld.pyx'],
+#     # 'kivent_core.renderers': ['kivent_core/renderers.pyx',],
+#     # 'kivent_core.gamescreens': ['kivent_core/gamescreens.pyx'],
+#     # 'kivent_core.entity': ['kivent_core/entity.pyx'],
+#     # 'kivent_core.resource_managers': ['kivent_core/resource_managers.pyx'],
+#     # 'kivent_core.vertmesh': ['kivent_core/vertmesh.pyx'],
+#     #'kivent_core.membuffer': ['kivent_core/membuffer.pyx'],
+#     'kivent_core.memory_handlers.buffer': ['kivent_core/memory_handlers/buffer.pyx'],
+#     # 'kivent_core.cwidget': ['kivent_core/cwidget.pyx'],
+#     # 'kivent_core.system_manager': ['kivent_core/system_manager.pyx'],
+#     }
+
+# core_modules_c = {
+#     # 'kivent_core.cmesh': ['kivent_core/cmesh.c',],
+#     # 'kivent_core.gamesystems': ['kivent_core/gamesystems.c',],
+#     # 'kivent_core.gameworld': ['kivent_core/gameworld.c'],
+#     # 'kivent_core.renderers': ['kivent_core/renderers.c',],
+#     # 'kivent_core.gamescreens': ['kivent_core/gamescreens.c'],
+#     # 'kivent_core.entity': ['kivent_core/entity.c'],
+#     # 'kivent_core.resource_managers': ['kivent_core/resource_managers.c'],
+#     # 'kivent_core.vertmesh': ['kivent_core/vertmesh.c'],
+#     'kivent_core.memory_handlers.buffer': ['kivent_core/memory_handlers/buffer.c'],
+#     #'kivent_core.membuffer': ['kivent_core/membuffer.c'],
+#     # 'kivent_core.cwidget': ['kivent_core/cwidget.c'],
+#     # 'kivent_core.system_manager': ['kivent_core/system_manager.c'],
+#     }
+
+
+# check_for_removal = [
+#     'kivent_core/cmesh.c',
+#     'kivent_core/gamesystems.c',
+#     'kivent_core/gameworld.c',
+#     'kivent_core/gamescreens.c',
+#     'kivent_core/renderers.c',
+#     'kivent_core/entity.c',
+#     'kivent_core/memory_handlers/buffer.c'
+#     'kivent_core/resource_managers.c',
+#     'kivent_core/vertmesh.c',
+#     #'kivent_core/membuffer.c',
+#     'kivent_core/cwidget.c',
+#     'kivent_core/system_manager.c',
+#     ]
 
 def build_ext(ext_name, files, include_dirs=[]):
     return Extension(ext_name, files, include_dirs,
@@ -111,5 +130,7 @@ setup(
     cmdclass=cmdclass,
     packages=[
         'kivent_core',
+        'kivent_core.memory_handlers',
         ],
-    package_dir={'kivent_core': 'kivent_core'})
+    package_dir={'kivent_core': 'kivent_core',
+        'kivent_core.memory_handlers': 'kivent_core/memory_handlers'})

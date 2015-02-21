@@ -20,99 +20,49 @@ else:
 
 do_clear_existing = True
 
+prefixes = {
+    'core': 'kivent_core.',
+    'memory_handlers': 'kivent_core.memory_handlers.',
+    'rendering': 'kivent_core.rendering.',
+    'managers': 'kivent_core.managers.',
+    'uix': 'kivent_core.uix.',
+    'systems': 'kivent_core.systems.'
+}
+
+file_prefixes = {
+    'core': 'kivent_core/',
+    'memory_handlers': 'kivent_core/memory_handlers/',
+    'rendering': 'kivent_core/rendering/',
+    'managers': 'kivent_core/managers/',
+    'uix': 'kivent_core/uix/',
+    'systems': 'kivent_core/systems/'
+}
+
+modules = {
+    'core': ['entity'],
+    'memory_handlers': ['block', 'membuffer', 'indexing', 'pool', 'utils', 
+        'zone', 'tests'],
+    'rendering': ['vertex_format', 'fixedvbo', 'cmesh', 'batching', 
+        'vertex_format', 'frame_objects', 'vertmesh', 'vertex_formats'],
+    'managers': ['resource_managers', 'system_manager', 'entity_manager'],
+    'uix': ['cwidget'],
+    'systems': ['gamesystem', 'staticmemgamesystem', 'position_systems',
+        'gameview', 'scale_systems'],
+
+}
 core_modules = {}
 core_modules_c = {}
 check_for_removal = []
-memory_handlers_prefix = 'kivent_core.memory_handlers.'
-memory_handlers_file = 'kivent_core/memory_handlers/'
-memory_handlers = ['block', 'membuffer', 'indexing', 'pool', 'utils', 'zone',
-    'tests']
 
-for module_name in memory_handlers:
-    core_modules[memory_handlers_prefix+module_name] = [
-        memory_handlers_file + module_name + '.pyx']
-    core_modules_c[memory_handlers_prefix+module_name] = [
-        memory_handlers_file + module_name + '.c']
-    check_for_removal.append(memory_handlers_file + module_name + '.c')
+for name in modules:
+    file_prefix = file_prefixes[name]
+    prefix = prefixes[name]
+    module_files = modules[name]
+    for module_name in module_files:
+        core_modules[prefix+module_name] = [file_prefix + module_name + '.pyx']
+        core_modules_c[prefix+module_name] = [file_prefix + module_name + '.c']
+        check_for_removal.append(file_prefix + module_name + '.c')
 
-rendering_prefix = 'kivent_core.rendering.'
-rendering_file = 'kivent_core/rendering/'
-rendering = ['vertex_format', 'fixedvbo', 'cmesh', 'batching', 'vertex_format',
-    'frame_objects', 'vertmesh', 'vertex_formats']
-
-for module_name in rendering:
-    core_modules[rendering_prefix+module_name] = [
-        rendering_file + module_name + '.pyx']
-    core_modules_c[rendering_prefix+module_name] = [
-        rendering_file + module_name + '.c']
-    check_for_removal.append(rendering_file + module_name + '.c')
-
-managers_prefix = 'kivent_core.managers.'
-managers_file = 'kivent_core/managers/'
-managers = ['resource_managers', 'system_manager', 'entity_manager']
-
-for module_name in managers:
-    core_modules[managers_prefix+module_name] = [
-        managers_file + module_name + '.pyx']
-    core_modules_c[managers_prefix+module_name] = [
-        managers_file + module_name + '.c']
-    check_for_removal.append(managers_file + module_name + '.c')
-
-core_prefix = 'kivent_core.'
-core_file = 'kivent_core/'
-core = ['entity']
-
-for module_name in core:
-    core_modules[core_prefix+module_name] = [core_file + module_name + '.pyx']
-    core_modules_c[core_prefix+module_name] = [core_file + module_name + '.c']
-    check_for_removal.append(core_file + module_name + '.c')
-
-
-# core_modules = {
-#     # 'kivent_core.cmesh': ['kivent_core/cmesh.pyx',],
-#     # 'kivent_core.gamesystems': ['kivent_core/gamesystems.pyx',],
-#     # 'kivent_core.gameworld': ['kivent_core/gameworld.pyx'],
-#     # 'kivent_core.renderers': ['kivent_core/renderers.pyx',],
-#     # 'kivent_core.gamescreens': ['kivent_core/gamescreens.pyx'],
-#     # 'kivent_core.entity': ['kivent_core/entity.pyx'],
-#     # 'kivent_core.resource_managers': ['kivent_core/resource_managers.pyx'],
-#     # 'kivent_core.vertmesh': ['kivent_core/vertmesh.pyx'],
-#     #'kivent_core.membuffer': ['kivent_core/membuffer.pyx'],
-#     'kivent_core.memory_handlers.buffer': ['kivent_core/memory_handlers/buffer.pyx'],
-#     # 'kivent_core.cwidget': ['kivent_core/cwidget.pyx'],
-#     # 'kivent_core.system_manager': ['kivent_core/system_manager.pyx'],
-#     }
-
-# core_modules_c = {
-#     # 'kivent_core.cmesh': ['kivent_core/cmesh.c',],
-#     # 'kivent_core.gamesystems': ['kivent_core/gamesystems.c',],
-#     # 'kivent_core.gameworld': ['kivent_core/gameworld.c'],
-#     # 'kivent_core.renderers': ['kivent_core/renderers.c',],
-#     # 'kivent_core.gamescreens': ['kivent_core/gamescreens.c'],
-#     # 'kivent_core.entity': ['kivent_core/entity.c'],
-#     # 'kivent_core.resource_managers': ['kivent_core/resource_managers.c'],
-#     # 'kivent_core.vertmesh': ['kivent_core/vertmesh.c'],
-#     'kivent_core.memory_handlers.buffer': ['kivent_core/memory_handlers/buffer.c'],
-#     #'kivent_core.membuffer': ['kivent_core/membuffer.c'],
-#     # 'kivent_core.cwidget': ['kivent_core/cwidget.c'],
-#     # 'kivent_core.system_manager': ['kivent_core/system_manager.c'],
-#     }
-
-
-# check_for_removal = [
-#     'kivent_core/cmesh.c',
-#     'kivent_core/gamesystems.c',
-#     'kivent_core/gameworld.c',
-#     'kivent_core/gamescreens.c',
-#     'kivent_core/renderers.c',
-#     'kivent_core/entity.c',
-#     'kivent_core/memory_handlers/buffer.c'
-#     'kivent_core/resource_managers.c',
-#     'kivent_core/vertmesh.c',
-#     #'kivent_core/membuffer.c',
-#     'kivent_core/cwidget.c',
-#     'kivent_core/system_manager.c',
-#     ]
 
 def build_ext(ext_name, files, include_dirs=[]):
     return Extension(ext_name, files, include_dirs,
@@ -164,6 +114,8 @@ setup(
         'kivent_core',
         'kivent_core.memory_handlers',
         'kivent_core.rendering',
-        'kivent_core.managers'
+        'kivent_core.managers',
+        'kivent_core.systems',
+        'kivent_core.uix'
         ],
     package_dir={'kivent_core': 'kivent_core'})

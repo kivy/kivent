@@ -1,9 +1,9 @@
-from staticmemgamesystem cimport StaticMemGameSystem
-from kivent_core.memory_handlers.indexing cimport MemComponent
+from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.factory import Factory
+from kivy.properties import ObjectProperty, NumericProperty
 
 
 cdef class ScaleComponent2D(MemComponent):
@@ -45,6 +45,8 @@ cdef class ScaleSystem2D(StaticMemGameSystem):
     underlying C structures rather than the Python objects. This object will
     potentially change in the future to support scaling at different
     rates in different directions.'''
+    type_size = NumericProperty(sizeof(ScaleStruct2D))
+    component_type = ObjectProperty(ScaleComponent2D)
 
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, args):
@@ -69,11 +71,6 @@ cdef class ScaleSystem2D(StaticMemGameSystem):
         pointer.entity_id = -1
         pointer.sx = 1.
         pointer.sy = 1.
-
-    def allocate(self, Buffer master_buffer, dict reserve_spec):
-        self.components = IndexedMemoryZone(master_buffer, 
-            self.size_of_component_block, sizeof(ScaleStruct2D), 
-            reserve_spec, ScaleComponent2D)
 
 
 Factory.register('ScaleSystem2D', cls=ScaleSystem2D)

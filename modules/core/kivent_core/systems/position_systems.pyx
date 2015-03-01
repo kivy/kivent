@@ -1,9 +1,9 @@
-from staticmemgamesystem cimport StaticMemGameSystem
-from kivent_core.memory_handlers.indexing cimport MemComponent
+from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.factory import Factory
+from kivy.properties import ObjectProperty, NumericProperty
 
 
 cdef class PositionComponent2D(MemComponent):
@@ -39,6 +39,8 @@ cdef class PositionSystem2D(StaticMemGameSystem):
     '''PositionSystem is optimized to hold location data for your entities.
     The rendering systems will be able to interact with this data using the
     underlying C structures rather than the Python objects.'''
+    type_size = NumericProperty(sizeof(PositionStruct2D))
+    component_type = ObjectProperty(PositionComponent2D)
         
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, args):
@@ -58,11 +60,6 @@ cdef class PositionSystem2D(StaticMemGameSystem):
         pointer.entity_id = -1
         pointer.x = 0.
         pointer.y = 0.
-
-    def allocate(self, Buffer master_buffer, dict reserve_spec):
-        self.components = IndexedMemoryZone(master_buffer, 
-            self.size_of_component_block, sizeof(PositionStruct2D), 
-            reserve_spec, PositionComponent2D)
 
 
 Factory.register('PositionSystem2D', cls=PositionSystem2D)

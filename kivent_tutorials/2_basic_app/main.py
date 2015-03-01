@@ -5,8 +5,10 @@ from kivy.core.window import Window
 from random import randint
 import kivent_core
 from kivent_core.gameworld import GameWorld
-from kivent_core.gamesystems import PositionSystem2D
-from kivent_core.renderers import texture_manager
+from kivent_core.systems.position_systems import PositionSystem2D
+from kivent_core.systems.gameview import GameView
+from kivent_core.systems.renderers import Renderer
+from kivent_core.managers.resource_managers import texture_manager
 from kivy.properties import StringProperty
 import cProfile
 texture_manager.load_atlas('assets/background_objects.atlas')
@@ -32,14 +34,14 @@ class TestGame(Widget):
     def draw_some_stuff(self):
         print('drawing some stuff')
         init_entity = self.gameworld.init_entity
-        for x in range(5000):
+        for x in range(100000):
             pos = randint(0, 800), randint(0, 800)
             create_dict = {
                 'position': pos,
-                'renderer': {'texture': 'star1', 'size': (16., 16.)},
+                'renderer': {'texture': 'star1', 'size': (3., 3.)},
             }
-            init_entity(create_dict, ['position', 'renderer'])
-
+            ent = init_entity(create_dict, ['position', 'renderer'])
+            #print(self.gameworld.entity_manager.get_entity_ids(ent))
 
 
     def update(self, dt):
@@ -73,5 +75,6 @@ class YourAppNameApp(App):
 
 
 if __name__ == '__main__':
-    #YourAppNameApp().run()
-    cProfile.run('YourAppNameApp().run()', 'prof.prof')
+    YourAppNameApp().run()
+    
+    # cProfile.run('YourAppNameApp().run()', 'prof.prof')

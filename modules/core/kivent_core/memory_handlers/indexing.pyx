@@ -3,17 +3,6 @@ from zone cimport MemoryZone
 from pool cimport MemoryPool
 from membuffer cimport Buffer
 
-cdef class MemComponent:
-    '''The base for a cdef extension that will work with the MemoryBlock 
-    memory management system. Will store a pointer to the actual data, 
-    and the index of the slot. All of the Python accessible components (and 
-    the Entity class) inherit from this class.''' 
-
-    def __cinit__(MemComponent self, MemoryBlock memory_block, 
-        unsigned int index, unsigned int offset):
-        self._id = index + offset
-        self.pointer = memory_block.get_pointer(index)
-
 
 cdef class BlockIndex:
     '''Ties a single MemoryBlock to a set of block_count MemComponent objects
@@ -21,7 +10,7 @@ cdef class BlockIndex:
 
     def __cinit__(BlockIndex self, MemoryBlock memory_block, 
         unsigned int offset, ComponentToCreate):
-        cdef unsigned int count = memory_block.block_count
+        cdef unsigned int count = memory_block.size
         self.block_objects = block_objects = []
         block_a = block_objects.append
         cdef unsigned int i
@@ -50,7 +39,7 @@ cdef class PoolIndex:
         for i in range(count):
             block = blocks[i]
             block_ind_a(BlockIndex(block, offset, ComponentToCreate))
-            offset += block.block_count
+            offset += block.size
 
     property block_indices:
         def __get__(PoolIndex self):
@@ -101,8 +90,12 @@ cdef class IndexedMemoryZone:
     def __getitem__(IndexedMemoryZone self, int index):
         return self.zone_index.get_component_from_index(index)
 
-    cdef void* get_pointer(IndexedMemoryZone self, unsigned int index):
+    cdef void* get_pointer(
+        IndexedMemoryZone self, unsigned int index) except NULL:
         return self.memory_zone.get_pointer(index)
+
+    cdef unsigned int get_size(self):
+        return self.memory_zone.get_size()
 
     def __getslice__(IndexedMemoryZone self, int index_1, int index_2):
         cdef ZoneIndex zone_index = self.zone_index

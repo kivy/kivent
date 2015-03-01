@@ -8,12 +8,15 @@ TestGame:
     GameWorld:
         id: gameworld
         gamescreenmanager: gamescreenmanager
-        size_of_gameworld: 512
-        zones: {'general': 8000}
+        size_of_gameworld: 100*1024
+        size_of_entity_block: 128
+        system_count: 2
+        zones: {'general': 100000}
         PositionSystem2D:
             system_id: 'position'
             gameworld: gameworld
             zones: ['general']
+            size_of_component_block: 128
         GameView:
             system_id: 'gameview'
             focus_entity: False
@@ -28,7 +31,9 @@ TestGame:
             system_id: 'renderer'
             gameview: 'gameview'
             zones: ['general']
-            on_parent: print('in rendener', self.parent)
+            frame_count: 2
+            size_of_batches: 512
+            size_of_component_block: 128
             shader_source: 'assets/shaders/positionshader.glsl'
         GameMap:
             id: map

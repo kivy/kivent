@@ -3,7 +3,7 @@ from membuffer cimport Buffer
 from zone cimport MemoryZone
 from pool cimport MemoryPool
 from utils cimport memrange
-from indexing cimport IndexedMemoryZone, ZoneIndex, MemComponent, BlockIndex 
+from indexing cimport IndexedMemoryZone, ZoneIndex, BlockIndex
 
 ctypedef struct Test:
     float x
@@ -34,6 +34,21 @@ cdef class TestComponent:
         def __set__(self, float new_value):
             cdef Test* pointer = <Test*>self.pointer
             pointer.y = new_value
+
+def test_buffer_allocations(self, tmin, tmax):
+    for x in range(tmin, tmax):
+        try:
+            test_buffer(x)
+        except Exception as e:
+            print(x, e)
+
+def test_multi_buffer(self, num_buffers, size_in_kb):
+    buffers = []
+    for x in range(num_buffers):
+        new_buffer = Buffer(size_in_kb, 1, 1)
+        new_buffer.allocate_memory()
+        buffers.append(new_buffer)
+    return buffers
 
 
 def test_buffer(size_in_kb):
@@ -208,13 +223,13 @@ def test_indexed_memory_zone(size_in_kb, pool_block_size,
     master_buffer = Buffer(size_in_kb, 1024, 1)
     master_buffer.allocate_memory()
     cdef IndexedMemoryZone memory_index = IndexedMemoryZone(master_buffer, 
-        pool_block_size, sizeof(int)*8, reserved_spec, MemComponent)
+        pool_block_size, sizeof(int)*8, reserved_spec, TestComponent)
     cdef IndexedMemoryZone memory_index_2 = IndexedMemoryZone(master_buffer, 
-        pool_block_size, sizeof(Test), {'general': 200}, MemComponent)
+        pool_block_size, sizeof(Test), {'general': 200}, TestComponent)
     cdef unsigned int index
     cdef list indices = []
     i_a = indices.append
-    cdef MemComponent entity
+    cdef TestComponent entity
     cdef MemoryZone memory_zone = memory_index.memory_zone
     cdef MemoryZone memory_zone_2 = memory_index_2.memory_zone
     cdef int x

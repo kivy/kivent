@@ -23,12 +23,16 @@ cdef class EntityManager:
         for i in range(system_count):
             pointer[i] = -1
 
+    cdef unsigned int get_size(self):
+        return self.memory_index.get_size()
+
     cdef void set_component(EntityManager self, unsigned int entity_id, 
         unsigned int component_id, unsigned int system_id):
+
         cdef MemoryZone memory_zone = self.memory_index.memory_zone
         cdef unsigned int* pointer = <unsigned int*>(
             memory_zone.get_pointer(entity_id))
-        pointer[system_id] = component_id
+        pointer[system_id+1] = component_id
 
     cdef void set_entity_active(EntityManager self, unsigned int entity_id):
         cdef MemoryZone memory_zone = self.memory_index.memory_zone
@@ -36,13 +40,19 @@ cdef class EntityManager:
             memory_zone.get_pointer(entity_id))
         pointer[0] = entity_id
 
-    cdef unsigned int generate_entity(EntityManager self, zone):
+    cdef unsigned int generate_entity(EntityManager self, zone) except -1:
         cdef IndexedMemoryZone memory_index = self.memory_index
         cdef MemoryZone memory_zone = memory_index.memory_zone
         cdef unsigned int new_id = memory_zone.get_free_slot(zone)
         self.clear_entity(new_id)
         self.set_entity_active(new_id)
         return new_id
+
+    def get_entity_ids(self, entity_id):
+        cdef unsigned int* pointer = <unsigned int*>(
+            self.memory_index.memory_zone.get_pointer(entity_id))
+        return [pointer[x] for x in range(self.system_count)]
+
 
     cdef void remove_entity(EntityManager self, unsigned int entity_id):
         cdef MemoryZone memory_zone = self.memory_index.memory_zone

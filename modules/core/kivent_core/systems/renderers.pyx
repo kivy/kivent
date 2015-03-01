@@ -1,28 +1,39 @@
 # cython: profile=True
-from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from cpython cimport bool
-from kivy.properties import (BooleanProperty, StringProperty, NumericProperty)
+from kivy.properties import (BooleanProperty, StringProperty, NumericProperty,
+    ListProperty)
 from kivy.graphics import RenderContext, Callback
-from cmesh cimport CMesh, VertexFormat4F, BatchManager, Batch, KEVertexFormat
-from cmesh import vertex_format
-from resource_managers import model_manager, texture_manager
-from resource_managers cimport ModelManager, TextureManager
+from kivent_core.rendering.vertex_formats cimport VertexFormat4F, VertexFormat7F
+from kivent_core.rendering.vertex_formats import (vertex_format_4f, 
+    vertex_format_7f)
+from kivent_core.rendering.vertex_format cimport KEVertexFormat
+from kivent_core.rendering.cmesh cimport CMesh
+from kivent_core.rendering.batching cimport BatchManager, IndexedBatch
+from kivent_core.managers.resource_managers import (model_manager, 
+    texture_manager)
+from kivent_core.managers.resource_managers cimport ModelManager, TextureManager
 from kivy.graphics.opengl import (glEnable, glBlendFunc, GL_SRC_ALPHA, GL_ONE, 
     GL_ZERO, GL_SRC_COLOR, GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA, 
     GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
     glDisable)
 cimport cython
 from kivy.graphics.c_opengl cimport GLfloat, GLushort
-from gamesystems cimport (StaticMemGameSystem, ColorStruct, PositionStruct2D,
-    PositionSystem2D, RotateStruct2D, RotateSystem2D, ScaleStruct2D,
-    ScaleSystem2D, ColorSystem)
-from entity cimport Entity
-from vertmesh cimport VertMesh
+from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
+from kivent_core.systems.position_systems cimport PositionStruct2D
+from kivent_core.systems.rotate_systems cimport RotateStruct2D
+from kivent_core.systems.scale_systems cimport ScaleStruct2D
+from kivent_core.systems.color_systems cimport ColorStruct
+from kivent_core.entity cimport Entity
+from kivent_core.rendering.vertmesh cimport VertMesh
 from kivy.factory import Factory
 from libc.math cimport fabs
-from membuffer cimport (MemComponent, MemoryZone, IndexedMemoryZone, Buffer,
-    memrange)
-from system_manager cimport system_manager
+from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
+from kivent_core.memory_handlers.zone cimport MemoryZone
+from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivent_core.managers.system_manager cimport system_manager
+from kivent_core.systems.staticmemgamesystem cimport ComponentPointerAggregator
+from kivent_core.memory_handlers.block cimport MemoryBlock
+from kivy.properties import ObjectProperty, NumericProperty
 
 
 cdef class RenderComponent(MemComponent):
@@ -238,17 +249,19 @@ cdef class Renderer(StaticMemGameSystem):
     renderable = BooleanProperty(True)
     max_batches = NumericProperty(20)
     size_of_batches = NumericProperty(256)
+    vertex_format_size = NumericProperty(sizeof(VertexFormat4F))
     frame_count = NumericProperty(2)
+    smallest_vertex_count = NumericProperty(4)
+    system_names = ListProperty(['renderer', 'position'])
     shader_source = StringProperty('positionshader.glsl')
     blend_factor_source = NumericProperty(GL_SRC_ALPHA)
     blend_factor_dest = NumericProperty(GL_ONE_MINUS_SRC_ALPHA)
     reset_blend_factor_source = NumericProperty(GL_SRC_ALPHA)
     reset_blend_factor_dest = NumericProperty(GL_ONE_MINUS_SRC_ALPHA)
-    cdef unsigned int attribute_count
-    cdef BatchManager batch_manager
-    cdef KEVertexFormat vertex_format
+    type_size = NumericProperty(sizeof(RenderStruct))
+    component_type = ObjectProperty(RenderComponent)
 
-
+    
     def __init__(self, **kwargs):
         self.canvas = RenderContext(use_parent_projection=True)
         if 'shader_source' in kwargs:
@@ -291,24 +304,43 @@ cdef class Renderer(StaticMemGameSystem):
         pointer.vert_index = -1
         pointer.ind_index = -1
 
-    cdef void setup_batch_manager(self, Buffer master_buffer):
+    cdef void* setup_batch_manager(self, Buffer master_buffer) except NULL:
         cdef KEVertexFormat batch_vertex_format = KEVertexFormat(
-            sizeof(VertexFormat4F), *vertex_format)
+            sizeof(VertexFormat4F), *vertex_format_4f)
         self.batch_manager = BatchManager(
             self.size_of_batches, self.max_batches, self.frame_count, 
-            batch_vertex_format, master_buffer, 'triangles', self.canvas)
+            batch_vertex_format, master_buffer, 'triangles', self.canvas,
+            self.gameworld.entities, [x for x in self.system_names], 
+            self.smallest_vertex_count)
+        return <void*>self.batch_manager
 
     def allocate(self, Buffer master_buffer, dict reserve_spec):
-        self.components = IndexedMemoryZone(master_buffer, 
-            self.size_of_component_block, sizeof(RenderStruct), 
-            reserve_spec, RenderComponent)
+        super(Renderer, self).allocate(master_buffer, reserve_spec)
         self.setup_batch_manager(master_buffer)
-        
 
-    cdef void _init_component(self, unsigned int component_index, 
-        unsigned int entity_id, bool render, unsigned int attrib_count, 
-        unsigned int vert_index_key, unsigned int texkey):
+    def get_system_size(self):
+        return super(
+            Renderer, self).get_system_size() + self.batch_manager.get_size()
+
+    def get_size_estimate(self, dict reserve_spec):
+        cdef unsigned int total = super(Renderer, self).get_size_estimate(
+            reserve_spec)
+        cdef unsigned int count = len(self.system_names)
+        cdef unsigned int vsize_in_bytes = self.size_of_batches * 1024
+        cdef unsigned int vtype_size = self.vertex_format_size
+        cdef unsigned int vert_slots_per_block = vsize_in_bytes // vtype_size
+        cdef unsigned int ent_per_batch = (
+            vert_slots_per_block // self.smallest_vertex_count)
+
+        cdef unsigned int size_per_ent = sizeof(void*) * count
+        pointer_size_in_kb = (
+            (self.max_batches * ent_per_batch * size_per_ent) // 1024) + 1
+        return total + pointer_size_in_kb + (
+            self.max_batches * self.size_of_batches * self.frame_count * 2)
         
+    cdef void* _init_component(self, unsigned int component_index, 
+        unsigned int entity_id, bool render, unsigned int attrib_count, 
+        unsigned int vert_index_key, unsigned int texkey) except NULL:
         cdef MemoryZone memory_zone = self.components.memory_zone
         cdef RenderStruct* pointer = <RenderStruct*>memory_zone.get_pointer(
             component_index)
@@ -321,6 +353,7 @@ cdef class Renderer(StaticMemGameSystem):
         else:
             pointer.render = 0
         self._batch_entity(entity_id, pointer)
+        return pointer
         
     def init_component(self, unsigned int index, unsigned int entity_id, 
         args):
@@ -357,7 +390,6 @@ cdef class Renderer(StaticMemGameSystem):
                 model_manager.load_textured_rectangle(attrib_count, 
                     w, h, texture_key, mesh_key)
             vert_index_key = model_manager.get_mesh_index(mesh_key)
-
         self._init_component(index, entity_id, render, attrib_count,
             vert_index_key, texkey)
 
@@ -365,10 +397,8 @@ cdef class Renderer(StaticMemGameSystem):
         '''Update function where all drawing of entities is performed. 
         Override this method in combination with calculate_vertex_format
         if you would like to create a renderer with customized behavior.'''
-        cdef Batch batch
-        cdef list batches, entity_ids
-        cdef unsigned int* entity
-        cdef unsigned int entity_id, rend_comp_index, pos_comp_index
+        cdef IndexedBatch batch
+        cdef list batches
         cdef unsigned int batch_key
         cdef unsigned int index_offset, vert_offset
         cdef RenderStruct* render_comp
@@ -379,47 +409,40 @@ cdef class Renderer(StaticMemGameSystem):
         cdef float* mesh_data
         cdef VertexFormat4F* vertex
         cdef unsigned short* mesh_indices
-        cdef int entity_count
+        cdef unsigned int used, i, real_index, component_count
 
-        
-        cdef object gameworld = self.gameworld
+        cdef ComponentPointerAggregator entity_components
         cdef int attribute_count = self.attribute_count
-        cdef IndexedMemoryZone entities = gameworld.entities
         cdef BatchManager batch_manager = self.batch_manager
         cdef dict batch_groups = batch_manager.batch_groups
-        cdef dict systems = system_manager.systems
         cdef list meshes = model_manager.meshes
-        cdef unsigned int position_index = system_manager.get_system_index(
-            'position')
-        cdef unsigned int system_index = system_manager.get_system_index(
-            self.system_id)
-        cdef PositionSystem2D pos_system = systems[position_index]
-        cdef MemoryZone render_memory = self.components.memory_zone
-        cdef MemoryZone entity_memory = entities.memory_zone
-        cdef MemoryZone pos_memory = pos_system.components.memory_zone
         cdef CMesh mesh_instruction
+        cdef MemoryBlock components_block
+        cdef void** component_data
     
         for batch_key in batch_groups:
             batches = batch_groups[batch_key]
             for batch in batches:
-                entity_ids = batch.entity_ids
+                entity_components = batch.entity_components
+                components_block = entity_components.memory_block
+                used = components_block.used_count
+                component_count = entity_components.count
+                component_data = <void**>components_block.data
                 frame_data = <VertexFormat4F*>batch.get_vbo_frame_to_draw()
                 frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
                 index_offset = 0
-                for entity_id in entity_ids:
-                    entity = <unsigned int*>entity_memory.get_pointer(
-                        entity_id)
-                    rend_comp_index = entity[system_index+1]
-                    render_comp = <RenderStruct*>render_memory.get_pointer(
-                        rend_comp_index)
+                for i in range(used):
+                    real_index = i * component_count
+                    if component_data[real_index] == NULL:
+                        continue
+                    render_comp = <RenderStruct*>component_data[real_index+0]
                     vert_offset = render_comp.vert_index
                     vert_mesh = meshes[render_comp.vert_index_key]
                     vertex_count = vert_mesh._vert_count
                     index_count = vert_mesh._index_count
                     if render_comp.render:
-                        pos_comp_index = entity[position_index+1]
-                        pos_comp = <PositionStruct2D*>(
-                            pos_memory.get_pointer(pos_comp_index))
+                        pos_comp = <PositionStruct2D*>component_data[
+                            real_index+1]
                         mesh_data = vert_mesh._data
                         mesh_indices = vert_mesh._indices
                         for i in range(index_count):
@@ -455,8 +478,8 @@ cdef class Renderer(StaticMemGameSystem):
         self._unbatch_entity(entity_id, <RenderStruct*>components.get_pointer(
             component_index))
 
-    cdef void _unbatch_entity(self, unsigned int entity_id, 
-        RenderStruct* component_data):
+    cdef void* _unbatch_entity(self, unsigned int entity_id, 
+        RenderStruct* component_data) except NULL:
         cdef list meshes = model_manager.meshes
         cdef VertMesh vert_mesh = meshes[component_data.vert_index_key]
         cdef unsigned int vert_count = vert_mesh._vert_count
@@ -467,6 +490,7 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.batch_id = -1
         component_data.vert_index = -1
         component_data.ind_index = -1
+        return component_data
 
     def batch_entity(self, unsigned int entity_id):
         cdef IndexedMemoryZone components = self.components
@@ -477,8 +501,8 @@ cdef class Renderer(StaticMemGameSystem):
         self._batch_entity(entity_id, <RenderStruct*>components.get_pointer(
             component_index))
 
-    cdef void _batch_entity(self, unsigned int entity_id, 
-        RenderStruct* component_data):
+    cdef void* _batch_entity(self, unsigned int entity_id, 
+        RenderStruct* component_data) except NULL:
         cdef list meshes = model_manager.meshes
         cdef tuple batch_indices
         cdef VertMesh vert_mesh = meshes[component_data.vert_index_key]
@@ -491,6 +515,95 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.batch_id = batch_indices[0]
         component_data.vert_index = batch_indices[1]
         component_data.ind_index = batch_indices[2]
-        
+        return component_data
+
+cdef class PhysicsRenderer(Renderer):
+    system_names = ListProperty(['physics_renderer', 'position',
+        'rotate'])
+    system_id = StringProperty('physics_renderer')
+    vertex_format_size = NumericProperty(sizeof(VertexFormat7F))
+    
+    cdef void* setup_batch_manager(self, Buffer master_buffer) except NULL:
+        cdef KEVertexFormat batch_vertex_format = KEVertexFormat(
+            sizeof(VertexFormat7F), *vertex_format_7f)
+        self.batch_manager = BatchManager(
+            self.size_of_batches, self.max_batches, self.frame_count, 
+            batch_vertex_format, master_buffer, 'triangles', self.canvas,
+            self.gameworld.entities, [x for x in self.system_names], 
+            self.smallest_vertex_count)
+        return <void*>self.batch_manager
+
+    def update(self, dt):
+        '''Update function where all drawing of entities is performed. 
+        Override this method in combination with calculate_vertex_format
+        if you would like to create a renderer with customized behavior.'''
+        cdef IndexedBatch batch
+        cdef list batches
+        cdef unsigned int batch_key
+        cdef unsigned int index_offset, vert_offset
+        cdef RenderStruct* render_comp
+        cdef PositionStruct2D* pos_comp
+        cdef RotateStruct2D* rot_comp
+        cdef VertexFormat7F* frame_data
+        cdef GLushort* frame_indices
+        cdef VertMesh vert_mesh
+        cdef float* mesh_data
+        cdef VertexFormat7F* vertex
+        cdef unsigned short* mesh_indices
+        cdef unsigned int used, i, real_index, component_count, x, y
+
+        cdef ComponentPointerAggregator entity_components
+        cdef int attribute_count = self.attribute_count
+        cdef BatchManager batch_manager = self.batch_manager
+        cdef dict batch_groups = batch_manager.batch_groups
+        cdef list meshes = model_manager.meshes
+        cdef CMesh mesh_instruction
+        cdef MemoryBlock components_block
+        cdef void** component_data
+        cdef bool exists = True
+        for batch_key in batch_groups:
+            batches = batch_groups[batch_key]
+            for batch in batches:
+                entity_components = batch.entity_components
+                components_block = entity_components.memory_block
+                used = components_block.used_count
+                component_count = entity_components.count
+                component_data = <void**>components_block.data
+                frame_data = <VertexFormat7F*>batch.get_vbo_frame_to_draw()
+                frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
+                index_offset = 0
+                for i in range(components_block.size):
+                    real_index = i * component_count
+                    if component_data[real_index] == NULL:
+                        continue
+                    render_comp = <RenderStruct*>component_data[real_index+0]
+                    #print('rendering', render_comp.entity_id)
+                    vert_offset = render_comp.vert_index
+                    vert_mesh = meshes[render_comp.vert_index_key]
+                    vertex_count = vert_mesh._vert_count
+                    index_count = vert_mesh._index_count
+                    if render_comp.render:
+                        pos_comp = <PositionStruct2D*>component_data[
+                            real_index+1]
+                        mesh_data = vert_mesh._data
+                        rot_comp = <RotateStruct2D*>component_data[real_index+2]
+                        mesh_indices = vert_mesh._indices
+                        for y in range(index_count):
+                            frame_indices[y+index_offset] = (
+                                mesh_indices[y] + vert_offset)
+                        for n in range(vertex_count):
+                            vertex = &frame_data[n + vert_offset]
+                            vertex.pos[0] = mesh_data[n*attribute_count]
+                            vertex.pos[1] = mesh_data[n*attribute_count+1]
+                            vertex.uvs[0] = mesh_data[n*attribute_count+2]
+                            vertex.uvs[1] = mesh_data[n*attribute_count+3]
+                            vertex.rot[0] = rot_comp.r
+                            vertex.rot[1] = pos_comp.x
+                            vertex.rot[2] = pos_comp.y
+                        index_offset += index_count
+                batch.set_index_count_for_frame(index_offset)
+                mesh_instruction = batch.mesh_instruction
+                mesh_instruction.flag_update()
 
 Factory.register('Renderer', cls=Renderer)
+Factory.register('PhysicsRenderer', cls=PhysicsRenderer)

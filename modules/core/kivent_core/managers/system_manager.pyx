@@ -23,7 +23,6 @@ cdef class SystemConfig:
             if system_name in zone_config.systems:
                 if zone_config.zone_name not in return_dict:
                     return_dict[zone_config.zone_name] = zone_config.count
-        print(return_dict, 'in zone config', system_name)
         if 'general' not in return_dict:
             return_dict['general'] = DEFAULT_COUNT
         return return_dict
@@ -45,8 +44,8 @@ cdef class SystemManager:
     def __cinit__(self):
         self.systems = {}
         self.system_count = DEFAULT_SYSTEM_COUNT
-        print(DEFAULT_SYSTEM_COUNT)
         self.current_count = 0
+        self.first_non_component_index = DEFAULT_SYSTEM_COUNT
         self.system_index = {}
         self.update_order = []
         self.system_config = SystemConfig()
@@ -59,16 +58,22 @@ cdef class SystemManager:
 
     def set_system_count(self, unsigned int system_count):
         self.system_count = system_count
+        self.first_non_component_index = system_count
 
     def get_system(self, system_name):
         return self.systems[self.get_system_index(system_name)]
 
     def add_system(self, system_name, system):
-        print(self.current_count, self.system_count)
-        assert(self.current_count < self.system_count)
-        self.systems[self.current_count] = system
-        self.system_index[system_name] = self.current_count
-        self.current_count += 1
+        if system.do_components == False:
+            self.system_index[system_name] = self.first_non_component_index
+            self.systems[self.first_non_component_index] = system
+            self.first_non_component_index += 1
+        else:
+            assert(self.current_count < self.system_count)
+            self.systems[self.current_count] = system
+            system.system_index = self.current_count
+            self.system_index[system_name] = self.current_count
+            self.current_count += 1
 
     def get_system_config_dict(self, system_name):
         return self.system_config.get_config_dict(system_name)

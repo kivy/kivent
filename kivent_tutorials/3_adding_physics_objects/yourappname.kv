@@ -8,8 +8,8 @@ TestGame:
     GameWorld:
         id: gameworld
         gamescreenmanager: gamescreenmanager
-        size_of_gameworld: 1000000
-        zones: {'general': 20000}
+        size_of_gameworld: 100*1024
+        zones: {'general': 5000}
         PositionSystem2D:
             system_id: 'position'
             gameworld: gameworld
@@ -42,18 +42,13 @@ TestGame:
             system_id: 'map'
             map_size: root.size
             gameworld: gameworld
-        Renderer:
+        PhysicsRenderer:
             gameworld: gameworld
-            system_id: 'renderer'
             gameview: 'gameview'
             zones: ['general']
-            do_rotate: True
-            do_color: True
-            do_scale: True
-            shader_source: 'assets/glsl/positioncolorrotatescaleshader.glsl'
+            shader_source: 'assets/glsl/positionrotateshader.glsl'
         CymunkPhysics:
             gameworld: root.gameworld
-            system_id: 'physics'
             zones: ['general']
     GameScreenManager:
         id: gamescreenmanager

@@ -39,15 +39,16 @@ file_prefixes = {
 }
 
 modules = {
-    'core': ['entity'],
+    'core': ['entity', 'gameworld'],
     'memory_handlers': ['block', 'membuffer', 'indexing', 'pool', 'utils', 
         'zone', 'tests'],
     'rendering': ['vertex_format', 'fixedvbo', 'cmesh', 'batching', 
         'vertex_format', 'frame_objects', 'vertmesh', 'vertex_formats'],
     'managers': ['resource_managers', 'system_manager', 'entity_manager'],
-    'uix': ['cwidget'],
+    'uix': ['cwidget', 'gamescreens'],
     'systems': ['gamesystem', 'staticmemgamesystem', 'position_systems',
-        'gameview', 'scale_systems'],
+        'gameview', 'scale_systems', 'rotate_systems', 'color_systems',
+        'gamemap', 'renderers'],
 
 }
 core_modules = {}

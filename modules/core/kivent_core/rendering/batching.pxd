@@ -1,20 +1,23 @@
 from kivy.graphics.c_opengl cimport GLuint
 from kivent_core.memory_handlers.block cimport MemoryBlock
+from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
+from kivent_core.memory_handlers.membuffer cimport Buffer
 from vertex_format cimport KEVertexFormat
 from cpython cimport bool
 from frame_objects cimport FixedFrameData
+from kivent_core.systems.staticmemgamesystem cimport ComponentPointerAggregator
 from kivent_core.managers.resource_managers import texture_manager
 
 
 cdef class IndexedBatch:
     cdef list frame_data
-    cdef list entity_ids
     cdef unsigned int current_frame
     cdef unsigned int frame_count
     cdef int tex_key
     cdef unsigned int batch_id
     cdef GLuint mode
     cdef object mesh_instruction
+    cdef ComponentPointerAggregator entity_components
 
     cdef tuple add_entity(IndexedBatch self, unsigned int entity_id, 
         unsigned int num_verts, unsigned int num_indices)
@@ -49,17 +52,23 @@ cdef class BatchManager:
     cdef GLuint mode
     cdef KEVertexFormat vertex_format
     cdef object canvas
+    cdef IndexedMemoryZone entities
+    cdef list system_names
+    cdef Buffer master_buffer
+    cdef unsigned int ent_per_batch
 
     cdef void set_mode(self, str mode)
     cdef str get_mode(self)
-    cdef IndexedBatch create_batch(self, int tex_key)
+    cdef unsigned int get_size(self)
+    cdef unsigned int get_size_of_component_pointers(self)
+    cdef unsigned int create_batch(self, int tex_key) except -1
     cdef void remove_batch(self, unsigned int batch_id)
     cdef IndexedBatch get_batch_with_space(self, int tex_key, 
         unsigned int num_verts, unsigned int num_indices)
     cdef tuple batch_entity(self, unsigned int entity_id, int tex_key,
         unsigned int num_verts, unsigned int num_indices)
-    cdef void unbatch_entity(self, unsigned int entity_id, 
+    cdef bint unbatch_entity(self, unsigned int entity_id, 
         unsigned int batch_id, unsigned int num_verts, 
         unsigned int num_indices, unsigned int vert_index,
-        unsigned int ind_index)
+        unsigned int ind_index) except 0
     cdef list get_vbos(self)

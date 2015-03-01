@@ -1,4 +1,5 @@
 from kivy.app import App
+print('imported kivy')
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
@@ -7,12 +8,14 @@ from math import radians, pi, sin, cos
 import kivent_core
 import kivent_cymunk
 from kivent_core.gameworld import GameWorld
-from kivent_core.resource_managers import texture_manager
-from kivent_core.vertmesh import VertMesh
-from kivent_core.renderers import Renderer
-from kivent_core.gamesystems import (PositionSystem2D, RotateSystem2D)
+from kivent_core.managers.resource_managers import texture_manager
+from kivent_core.rendering.vertmesh import VertMesh
+from kivent_core.systems.renderers import PhysicsRenderer
+from kivent_core.systems.position_systems import PositionSystem2D
+from kivent_core.systems.rotate_systems import RotateSystem2D
 from kivy.properties import StringProperty, NumericProperty
 import cProfile
+from functools import partial
 
 
 
@@ -21,7 +24,9 @@ texture_manager.load_atlas('assets/background_objects.atlas')
 class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
-        self.gameworld.init_gameworld(['map', 'physics', 'renderer', 
+        print('start app')
+        self.gameworld.init_gameworld(['map', 'cymunk_physics', 
+            'physics_renderer', 
             'rotate', 'position', 'gameview', 'scale', 'color'],
             callback=self.init_game)
         print('gameworld inited')
@@ -36,20 +41,21 @@ class TestGame(Widget):
     def draw_game(self):
         self.draw_some_stuff()
 
-    def destroy_created_entity(self, dt):
-        ent_id = self.created_entities.pop()
-        if ent_id is not None:
-            self.gameworld.systems['renderer'].rebatch_entity(ent_id)
+    def destroy_created_entity(self, ent_id, dt):
+        self.gameworld.remove_entity(ent_id)
+        self.app.count -= 1
 
     def draw_some_stuff(self):
         size = Window.size
         w, h = size[0], size[1]
         create_asteroid = self.create_asteroid
-        for x in range(1000):
+        for x in range(100):
             pos = (randint(0, w), randint(0, h))
             ent_id = create_asteroid(pos)
-        self.app.count += 1000
-        #Clock.schedule_interval(self.destroy_created_entity, 1.)
+            Clock.schedule_once(partial(self.destroy_created_entity, ent_id), 1.)
+            #print(self.gameworld.entity_manager.get_entity_ids(ent_id))
+        self.app.count += 100
+        
 
 
     def create_asteroid(self, pos):
@@ -69,14 +75,14 @@ class TestGame(Widget):
             'vel_limit': 250, 
             'ang_vel_limit': radians(200), 
             'mass': 50, 'col_shapes': col_shapes}
-        create_component_dict = {'physics': physics_component, 
-            'renderer': {'texture': 'star1', 
+        create_component_dict = {'cymunk_physics': physics_component, 
+            'physics_renderer': {'texture': 'star1', 
             'size': (6, 6),
             'render': True}, 
             'position': pos, 'rotate': 0, 'color': (1., 1., 1., 1.),
             'scale': 1.}
-        component_order = ['position', 'rotate', 'color', 'renderer', 
-            'scale', 'physics']
+        component_order = ['position', 'rotate', 'color', 'physics_renderer', 
+            'scale', 'cymunk_physics']
         return self.gameworld.init_entity(
             create_component_dict, component_order)
 
@@ -89,9 +95,9 @@ class TestGame(Widget):
 
     def setup_states(self):
         self.gameworld.add_state(state_name='main', 
-            systems_added=['renderer'],
+            systems_added=['physics_renderer'],
             systems_removed=[], systems_paused=[],
-            systems_unpaused=['renderer'],
+            systems_unpaused=['physics_renderer'],
             screenmanager_screen='main')
 
     def set_state(self):
@@ -117,5 +123,5 @@ class YourAppNameApp(App):
 
 
 if __name__ == '__main__':
-    YourAppNameApp().run()
-    #cProfile.run('YourAppNameApp().run()', 'prof.prof')
+    #YourAppNameApp().run()
+    cProfile.run('YourAppNameApp().run()', 'prof.prof')

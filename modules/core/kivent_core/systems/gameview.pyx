@@ -6,6 +6,8 @@ from kivy.vector import Vector
 from kivent_core.managers.system_manager cimport system_manager
 from kivy.graphics.transformation import Matrix
 from kivy.graphics import RenderContext
+from kivy.factory import Factory
+
 
 cdef class GameView(GameSystem):
     '''GameView provides a simple camera system that will control the rendering
@@ -295,3 +297,6 @@ cdef class GameView(GameSystem):
             distance_y = y + h - cy - mh  - marg_y
 
         return distance_x, distance_y
+
+
+Factory.register('GameView', cls=GameView)

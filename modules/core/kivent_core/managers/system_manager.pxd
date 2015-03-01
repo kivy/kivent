@@ -15,6 +15,7 @@ cdef class SystemManager:
     cdef dict zones
     cdef dict system_index
     cdef list update_order
+    cdef unsigned int first_non_component_index
     cdef unsigned int system_count
     cdef unsigned int current_count
     cdef SystemConfig system_config

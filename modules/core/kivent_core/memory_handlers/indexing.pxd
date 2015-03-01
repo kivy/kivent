@@ -1,9 +1,5 @@
 from zone cimport MemoryZone
 
-cdef class MemComponent:
-    cdef void* pointer
-    cdef unsigned int _id
-
 
 cdef class BlockIndex:
     cdef list block_objects
@@ -22,4 +18,5 @@ cdef class IndexedMemoryZone:
     cdef MemoryZone memory_zone
     cdef ZoneIndex zone_index
 
-    cdef void* get_pointer(self, unsigned int index)
+    cdef void* get_pointer(self, unsigned int index) except NULL
+    cdef unsigned int get_size(self)

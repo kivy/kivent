@@ -1,37 +1,41 @@
-from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from cpython cimport bool
+from libc.stdlib cimport malloc, free
 
 cdef class Buffer:
 
-    def __cinit__(Buffer self, unsigned int size_in_blocks, 
-        unsigned int size_of_blocks, unsigned int type_size):
-        cdef unsigned int size_in_bytes = (
-            size_in_blocks * size_of_blocks * 1024)
+    def __cinit__(self, unsigned int size_in_blocks, unsigned int type_size,
+        unsigned int master_block_size):
+        cdef unsigned int size_in_bytes = size_in_blocks * master_block_size
         self.used_count = 0
         self.data = NULL
         self.free_block_count = 0
-        self.block_count = size_in_bytes // type_size
-        self.size = size_in_blocks
-        self.size_of_blocks = size_of_blocks * 1024
+        self.size = size_in_bytes // type_size
         self.real_size = size_in_bytes
         self.type_size = type_size
+        self.size_in_blocks = size_in_blocks
         self.free_blocks = []
         self.data_in_free = 0
 
-    def __dealloc__(Buffer self):
+    def __dealloc__(self):
         self.free_blocks = None
-        self.block_count = 0
+        self.size = 0
         self.free_block_count = 0
         self.deallocate_memory()
 
-    cdef void allocate_memory(Buffer self):
-        self.data = PyMem_Malloc(self.real_size)
+    cdef bool check_empty(self):
+        return self.used_count == 0
 
-    cdef void deallocate_memory(Buffer self):
+    cdef void* allocate_memory(self) except NULL:
+        self.data = malloc(self.real_size)
+        if self.data == NULL:
+            raise MemoryError()
+        return self.data
+
+    cdef void deallocate_memory(self):
         if self.data != NULL:
-            PyMem_Free(self.data)
+            free(self.data)
 
-    cdef unsigned int add_data(Buffer self, unsigned int block_count) except -1:
+    cdef unsigned int add_data(self, unsigned int block_count) except -1:
         cdef unsigned int largest_free_block = 0
         cdef unsigned int index
         cdef unsigned int data_in_free = self.data_in_free
@@ -49,19 +53,19 @@ cdef class Buffer:
             raise MemoryError()
         return index
 
-    cdef void remove_data(Buffer self, unsigned int block_index, 
+    cdef void remove_data(self, unsigned int block_index, 
         unsigned int block_count):
         self.free_blocks.append((block_index, block_count))
         self.data_in_free += block_count
         self.free_block_count += 1
-        if self.free_block_count == self.used_count:
+        if self.data_in_free >= self.used_count:
             self.clear()
 
-    cdef void* get_pointer(Buffer self, unsigned int block_index):
+    cdef void* get_pointer(self, unsigned int block_index) except NULL:
         cdef char* data = <char*>self.data
-        return &data[block_index*self.size_of_blocks]
+        return &data[block_index*self.type_size]
 
-    cdef unsigned int get_largest_free_block(Buffer self):
+    cdef unsigned int get_largest_free_block(self):
         cdef unsigned int free_block_count = self.free_block_count
         cdef unsigned int i
         cdef tuple free_block
@@ -75,7 +79,7 @@ cdef class Buffer:
                 largest_block_count = block_count
         return largest_block_count
 
-    cdef unsigned int get_first_free_block_that_fits(Buffer self, 
+    cdef unsigned int get_first_free_block_that_fits(self, 
         unsigned int block_count):
         cdef unsigned int free_block_count = self.free_block_count
         cdef unsigned int i
@@ -96,18 +100,18 @@ cdef class Buffer:
                 self.free_block_count += 1
                 return index
 
-    cdef unsigned int get_blocks_on_tail(Buffer self):
-        return self.block_count - self.used_count
+    cdef unsigned int get_blocks_on_tail(self):
+        return self.size - self.used_count
 
-    cdef bool can_fit_data(Buffer self, unsigned int block_count):
+    cdef bool can_fit_data(self, unsigned int block_count):
         cdef unsigned int blocks_on_tail = self.get_blocks_on_tail()
         cdef unsigned int largest_free = self.get_largest_free_block()
-        if block_count < blocks_on_tail or block_count < largest_free:
+        if block_count <= blocks_on_tail or block_count <= largest_free:
             return True
         else:
             return False
 
-    cdef void clear(Buffer self):
+    cdef void clear(self):
         '''Clear the whole buffer and mark all blocks as available.
         '''
         self.used_count = 0

@@ -4,7 +4,7 @@ from kivy.properties import (StringProperty, ListProperty,
 from kivent_core.managers.system_manager cimport system_manager
 from kivy.clock import Clock
 from kivy.factory import Factory
-
+from kivent_core.managers.entity_manager cimport EntityManager
 
 class Component(object):
     
@@ -128,6 +128,12 @@ cdef class GameSystem(CWidget):
 
     def create_component(self, entity_id, zone, args):
         component_index = self.get_component(zone)
+        cdef EntityManager entity_manager = self.gameworld.entity_manager
+        cdef unsigned int system_index = self.system_index
+        #print('creating component', entity_id, component_index, system_index,
+        #    self)
+        entity_manager.set_component(entity_id, component_index, 
+            system_index)
         self.init_component(component_index, entity_id, args)
         return component_index
 

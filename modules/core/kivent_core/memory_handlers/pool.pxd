@@ -13,14 +13,13 @@ cdef class MemoryPool:
     cdef unsigned int block_count
     cdef unsigned int slots_per_block
     
-    cdef unsigned int get_block_from_index(MemoryPool self, unsigned int index)
-    cdef unsigned int get_slot_index_from_index(MemoryPool self, 
-        unsigned int index)
-    cdef MemoryBlock get_memory_block_from_index(MemoryPool self, 
-        unsigned int index)
-    cdef unsigned int get_index_from_slot_index_and_block(MemoryPool self, 
+    cdef unsigned int get_block_from_index(self, unsigned int index)
+    cdef unsigned int get_slot_index_from_index(self, unsigned int index)
+    cdef MemoryBlock get_memory_block_from_index(self, unsigned int index)
+    cdef unsigned int get_index_from_slot_index_and_block(self, 
         unsigned int slot_index, unsigned int block_index)
-    cdef void* get_pointer(MemoryPool self, unsigned int index)
-    cdef unsigned int get_free_slot(MemoryPool self) except -1
-    cdef void free_slot(MemoryPool self, unsigned int index)
-    cdef void clear(MemoryPool self)
+    cdef void* get_pointer(self, unsigned int index) except NULL
+    cdef unsigned int get_free_slot(self) except -1
+    cdef void free_slot(self, unsigned int index)
+    cdef void clear(self)
+    cdef unsigned int get_size(self)

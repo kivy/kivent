@@ -2,18 +2,23 @@
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk
-from kivent_core.gamesystems cimport (PositionStruct2D, RotateStruct2D,
-    PositionSystem2D, RotateSystem2D)
+from kivent_core.systems.position_systems cimport (PositionStruct2D, 
+    PositionSystem2D)
+from kivent_core.systems.rotate_systems cimport RotateStruct2D, RotateSystem2D
 from kivent_core.entity cimport Entity
 from cymunk cimport (Space, BB, Body, Shape, Circle, BoxShape, 
     Vec2d, Poly, Segment, cpBody, cpVect)
 from libc.math cimport M_PI_2
 cimport cython
 from kivy.factory import Factory
-from kivent_core.gamesystems cimport StaticMemGameSystem
-from kivent_core.membuffer cimport (MemComponent, IndexedMemoryZone, 
-    MemoryZone, Buffer, MemoryBlock)
-from kivent_core.system_manager cimport system_manager
+from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem, 
+    ComponentPointerAggregator, MemComponent)
+from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivent_core.memory_handlers.block cimport MemoryBlock
+from kivent_core.memory_handlers.zone cimport MemoryZone
+from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
+from kivent_core.managers.system_manager cimport system_manager
+
 
 cdef class PhysicsComponent(MemComponent):
 
@@ -22,6 +27,11 @@ cdef class PhysicsComponent(MemComponent):
         self._body = None
         self._shapes = []
         self._shape_type = 'None'
+
+    property entity_id:
+        def __get__(self):
+            cdef PhysicsStruct* data = <PhysicsStruct*>self.pointer
+            return data.entity_id
 
     property body:
         def __get__(self):
@@ -81,10 +91,11 @@ cdef class CymunkPhysics(StaticMemGameSystem):
     sleep_time_threshold = NumericProperty(5.0)
     collision_slop = NumericProperty(.25)
     damping = NumericProperty(1.0)
-    cdef list bb_query_result
-    cdef list on_screen_result
-    cdef list segment_query_result
-    cdef Space space
+    type_size = NumericProperty(sizeof(PhysicsStruct))
+    component_type = ObjectProperty(PhysicsComponent)
+    processor = BooleanProperty(True)
+    system_names = ListProperty(['cymunk_physics','position', 'rotate'])
+
 
     def __init__(self, **kwargs):
 
@@ -214,26 +225,22 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         return self.bb_query_result
         
 
-    cdef void _init_component(self, unsigned int component_index, 
-        unsigned int entity_id, cpBody* body):
+    cdef unsigned int _init_component(self, unsigned int component_index, 
+        unsigned int entity_id, cpBody* body) except -1:
         cdef MemoryZone memory_zone = self.components.memory_zone
         cdef PhysicsStruct* component = <PhysicsStruct*>(
             memory_zone.get_pointer(component_index))
         component.entity_id = entity_id
         component.body = body
+        return self.entity_components.add_entity(entity_id)
 
-    cdef void _clear_component(self, unsigned int component_index):
+    cdef int _clear_component(self, unsigned int component_index) except 0:
         cdef MemoryZone memory_zone = self.components.memory_zone
         cdef PhysicsStruct* pointer = <PhysicsStruct*>memory_zone.get_pointer(
             component_index)
         pointer.entity_id = -1
         pointer.body = NULL
-
-    def allocate(self, Buffer master_buffer, dict reserve_spec):
-        self.components = IndexedMemoryZone(master_buffer, 
-            self.size_of_component_block, sizeof(PhysicsStruct), 
-            reserve_spec, PhysicsComponent)
-
+        return 1
 
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, dict entity_component_dict):
@@ -402,6 +409,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
             space.remove(shape)
         if not body.is_static:
             space.remove(body)
+        self.entity_components.remove_entity(component.entity_id)
         super(CymunkPhysics, self).remove_component(component_index)
 
     def update(self, dt):
@@ -409,62 +417,30 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         component data for position and rotate components. '''
         self.space.step(dt)
         gameworld = self.gameworld
-        cdef RotateSystem2D rotate_system
-        cdef PositionSystem2D position_system
-        cdef IndexedMemoryZone entities = self.gameworld.entities
-        rotate_system = system_manager.get_system('rotate')
-        position_system = system_manager.get_system('position')
-        cdef unsigned int rotate_index = system_manager.get_system_index(
-            'rotate')
-        cdef unsigned int pos_index = system_manager.get_system_index(
-            'position')
-        cdef unsigned int phys_index = system_manager.get_system_index(
-            self.system_id)
-        cdef MemoryZone entity_memory = entities.memory_zone
-        cdef MemoryZone pos_memory = position_system.components.memory_zone
-        cdef MemoryZone rot_memory = rotate_system.components.memory_zone
-        cdef MemoryZone memory_zone = self.components.memory_zone
-        cdef unsigned int* entity
-        cdef unsigned int pos_comp_index = entity[pos_index+1]
-        cdef unsigned int rot_comp_index = entity[rotate_index+1]
-        cdef unsigned int physics_comp_index = entity[phys_index+1]
+
+        cdef void** component_data = <void**>(
+            self.entity_components.memory_block.data)
+        cdef unsigned int component_count = self.entity_components.count
+        cdef unsigned int used= self.entity_components.memory_block.size
+        cdef unsigned int i, real_index
         cdef PositionStruct2D* pos_comp
         cdef RotateStruct2D* rot_comp
         cdef PhysicsStruct* physics_comp
         cdef cpBody* body
         cdef cpVect p_position
         
-        cdef unsigned int entity_id
-        cdef unsigned int pool_index, used
-        cdef void* pointer
-        cdef unsigned int current
-        cdef unsigned int offset
-        cdef dict memory_pools = memory_zone.memory_pools
-
-        for pool_index in memory_pools:
-            used = memory_zone.get_pool_end_from_pool_index(pool_index)
-            current = 0
-            offset = memory_zone.get_pool_offset(pool_index)
-            for current in range(used):
-                component_index = current + offset
-                physics_comp = <PhysicsStruct*>memory_zone.get_pointer(
-                    component_index)
-                
-                entity_id = physics_comp.entity_id
-                if entity_id == -1:
-                    continue
-                entity = <unsigned int*>(entity_memory.get_pointer(entity_id))
-                pos_comp_index = entity[pos_index+1]
-                rot_comp_index = entity[rotate_index+1]
-                pos_comp = <PositionStruct2D*>pos_memory.get_pointer(
-                    pos_comp_index)
-                rot_comp = <RotateStruct2D*>rot_memory.get_pointer(
-                    rot_comp_index)
-                body = physics_comp.body
-                rot_comp.r = body.a
-                p_position = body.p
-                pos_comp.x = p_position.x
-                pos_comp.y = p_position.y
+        for i in range(used):
+            real_index = i*component_count
+            if component_data[real_index] == NULL:
+                continue
+            physics_comp = <PhysicsStruct*>component_data[real_index]
+            pos_comp = <PositionStruct2D*>component_data[real_index+1]
+            rot_comp = <RotateStruct2D*>component_data[real_index+2]
+            body = physics_comp.body
+            rot_comp.r = body.a
+            p_position = body.p
+            pos_comp.x = p_position.x
+            pos_comp.y = p_position.y
             
 
 

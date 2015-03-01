@@ -5,11 +5,19 @@ DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 from functools import partial
 from kivy.graphics import RenderContext
-from gamesystems import GameSystem, PositionSystem2D
-from cwidget cimport CWidget
-from entity cimport Entity, EntityManager
-from system_manager cimport system_manager, DEFAULT_SYSTEM_COUNT, DEFAULT_COUNT
-from membuffer cimport Buffer, memrange, IndexedMemoryZone, MemoryZone
+from kivent_core.systems.gamesystem cimport GameSystem
+from kivent_core.systems.position_systems cimport PositionSystem2D
+from kivent_core.uix.cwidget cimport CWidget
+from kivent_core.entity cimport Entity
+from kivent_core.managers.entity_manager cimport EntityManager
+from kivent_core.managers.system_manager cimport (system_manager, 
+    DEFAULT_SYSTEM_COUNT, DEFAULT_COUNT)
+from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivent_core.memory_handlers.zone cimport MemoryZone
+from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
+from kivent_core.memory_handlers.utils cimport memrange
+from kivy.logger import Logger
+debug = True
 
 def test_gameworld():
 
@@ -31,6 +39,10 @@ def test_gameworld():
         print(ent_id)
     for entity in memrange(gameworld.entities):
         print(entity.entity_id, entity.position.x, entity.position.y)
+
+
+class GameWorldOutOfSpaceError(Exception):
+    pass
 
 
 class GameWorld(Widget):
@@ -93,15 +105,15 @@ class GameWorld(Widget):
         return True
 
     def allocate(self):
-        cdef Buffer master_buffer = Buffer(self.size_of_gameworld, 1024, 1)
+        cdef Buffer master_buffer = Buffer(self.size_of_gameworld*1024, 
+            1, 1)
         self.master_buffer = master_buffer
+
         master_buffer.allocate_memory()
-        cdef unsigned int real_size_in_kb = master_buffer.real_size//1024
+        cdef unsigned int real_size = master_buffer.real_size
         zones = self.zones
-        print(zones)
         if 'general' not in zones:
             zones['general'] = DEFAULT_COUNT
-
         cdef dict copy_from_obs_dict = {}
         for key in zones:
             copy_from_obs_dict[key] = zones[key]
@@ -109,6 +121,7 @@ class GameWorld(Widget):
         system_count = self.system_count
         if system_count is None:
             system_count = self._system_count
+        system_manager.set_system_count(system_count)
         self.entity_manager = entity_manager = EntityManager(master_buffer, 
             self.size_of_entity_block, copy_from_obs_dict, system_count)
         self.entities = entity_manager.memory_index
@@ -116,24 +129,33 @@ class GameWorld(Widget):
         systems = system_manager.systems
         cdef MemoryZone memory_zone
         cdef IndexedMemoryZone memory_index
-        total_count = 0
+        total_count = entity_manager.get_size()
         for name in system_names:
             system_manager.configure_system_allocation(name)
             config_dict = system_manager.get_system_config_dict(name)
             system_id = system_names[name]
             system = systems[system_id]
             if system.do_components:
+                size_estimate = system.get_size_estimate(config_dict)
+                if total_count//1024 + size_estimate > real_size//1024:
+                    raise GameWorldOutOfSpaceError(('System Name: {name} will ' 
+                        'need {size_estimate} KiB, we have only: ' 
+                        '{left} KiB').format(name=name, 
+                        size_estimate=str(size_estimate), 
+                        left=str((real_size-total_count)//1024),
+                        ))
+
                 system.allocate(master_buffer, config_dict)
-                memory_index = system.components
-                memory_zone = memory_index.memory_zone
-                memory_count = memory_zone.block_size_in_kb*memory_zone.count
-                total_count += memory_count
-                print(name, 'system size in kb is',memory_count)
+                system_size = system.get_system_size()
+                Logger.info(('Kivent: {system_name} allocated {system_size} '  
+                    'KiB').format(system_name=str(name), 
+                    system_size=str(system_size//1024)))
+                total_count += system_size
 
-        print('We will need', total_count, 'for game, we have', 
-            real_size_in_kb)
-        assert(real_size_in_kb > total_count)
 
+        Logger.info(('KivEnt: We will need {total_count} KiB for game, we ' +
+            'have {real_size} KiB').format(total_count=str(total_count//1024), 
+                real_size=str(real_size//1024)))
 
     def init_gameworld(self, list_of_systems, callback=None):
         if self.ensure_startup(list_of_systems):
@@ -268,12 +290,18 @@ class GameWorld(Widget):
         cdef Entity entity = self.entities[entity_id]
         entity.load_order = component_order
         cdef unsigned int system_id
+        if debug:
+            debug_str = 'KivEnt: Entity {entity_id} created with components: '
         for component in component_order:
             system = system_manager.get_system(component)
             system_id = system_manager.get_system_index(component)
             component_id = system.create_component(
                 entity_id, zone, components_to_use[component])
-            entity.set_component(component_id, system_id)
+            if debug:
+                debug_str += component + ': ' + str(component_id) + ', '
+
+        if debug:
+            Logger.debug((debug_str).format(entity_id=str(entity_id)))
         return entity_id
 
     def timed_remove_entity(self, int entity_id, dt):
@@ -289,7 +317,7 @@ class GameWorld(Widget):
         '''
         self.entities_to_remove.append(entity_id)
 
-    def remove_entity(self, int entity_id):
+    def remove_entity(self, unsigned int entity_id):
         '''
         Args:
             entity_id (int): The entity_id of the Entity to be removed from
@@ -301,8 +329,8 @@ class GameWorld(Widget):
         cdef Entity entity = self.entities[entity_id]
         cdef EntityManager entity_manager = self.entity_manager
         load_order = entity.load_order
-        load_order.reverse()
-        for system_name in load_order:    
+        entity._load_order.reverse() 
+        for system_name in load_order:
             system_manager.get_system(system_name).remove_component(
                 entity.get_component_index(system_name))
         entity.load_order = []

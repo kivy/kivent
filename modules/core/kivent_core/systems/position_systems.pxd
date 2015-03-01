@@ -1,5 +1,4 @@
-from kivent_core.memory_handlers.indexing cimport MemComponent
-from staticmemgamesystem cimport StaticMemGameSystem
+from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 
 
 ctypedef struct PositionStruct2D:

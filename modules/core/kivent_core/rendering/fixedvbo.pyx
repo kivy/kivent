@@ -73,7 +73,6 @@ cdef class FixedVBO:
 
     cdef void bind(FixedVBO self):
         self.update_buffer()
-        glBindBuffer(self.target, self.id)
         self.vertex_format.bind()
 
     cdef void unbind(FixedVBO self):

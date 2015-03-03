@@ -577,7 +577,6 @@ cdef class PhysicsRenderer(Renderer):
                     if component_data[real_index] == NULL:
                         continue
                     render_comp = <RenderStruct*>component_data[real_index+0]
-                    #print('rendering', render_comp.entity_id)
                     vert_offset = render_comp.vert_index
                     vert_mesh = meshes[render_comp.vert_index_key]
                     vertex_count = vert_mesh._vert_count

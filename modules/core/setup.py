@@ -41,7 +41,7 @@ file_prefixes = {
 modules = {
     'core': ['entity', 'gameworld'],
     'memory_handlers': ['block', 'membuffer', 'indexing', 'pool', 'utils', 
-        'zone', 'tests'],
+        'zone', 'tests', 'zonedblock'],
     'rendering': ['vertex_format', 'fixedvbo', 'cmesh', 'batching', 
         'vertex_format', 'frame_objects', 'vertmesh', 'vertex_formats'],
     'managers': ['resource_managers', 'system_manager', 'entity_manager'],

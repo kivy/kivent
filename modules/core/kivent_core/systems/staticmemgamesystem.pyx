@@ -4,6 +4,7 @@ from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivy.properties import (NumericProperty, ObjectProperty, ListProperty,
     BooleanProperty)
 from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivent_core.memory_handlers.zonedblock cimport ZonedBlock
 from gamesystem cimport GameSystem
 from kivent_core.managers.system_manager cimport system_manager
 from cpython cimport bool
@@ -99,6 +100,74 @@ cdef class StaticMemGameSystem(GameSystem):
         '''Not implemented for StaticMemGameSystem. Use this function to setup
         the clearing of a component's values for recycling'''
         pass
+
+
+cdef class ZonedAggregator:
+    
+    def __cinit__(self, list system_names, list zone_counts,
+        IndexedMemoryZone entities, Buffer master_buffer): 
+        self.count = len(system_names)
+        cdef unsigned int total = 0
+        for zone_name, count in zone_counts:
+            total += count
+        self.total = total
+        self.entities = entities
+        self.system_names = system_names
+        self.entity_block_index = {}
+        cdef unsigned int size_per_ent = sizeof(void*) * self.count
+        self.memory_block = ZonedBlock(size_per_ent, zone_counts)
+        self.memory_block.allocate_memory_with_buffer(master_buffer)
+        self.clear()
+
+    cdef bool check_empty(self):
+        return self.memory_block.check_empty()
+
+    cdef void free(self):
+        self.memory_block.remove_from_buffer()
+
+    cdef unsigned int get_size(self):
+        return self.memory_block.size
+
+    cdef void clear(self):
+        cdef void** data = <void**>self.memory_block.data
+        self.memory_block.clear()
+        cdef unsigned int i
+        for i in range(self.total*self.count):
+            data[i] = NULL
+        
+    cdef int remove_entity(self, unsigned int entity_id) except 0:
+        cdef unsigned int block_index = self.entity_block_index[entity_id]
+        cdef unsigned int adjusted_index = block_index * self.count
+        cdef void** data = <void**>self.memory_block.data
+        cdef unsigned int i
+        for i in range(self.count):
+            data[adjusted_index+i] = NULL
+        self.memory_block.remove_data(block_index, 1)
+        del self.entity_block_index[entity_id]
+        return 1
+
+    cdef unsigned int add_entity(self, unsigned int entity_id, 
+        str zone_name) except -1:
+        cdef unsigned int block_index = self.memory_block.add_data(1, zone_name)
+        cdef unsigned int* entity = <unsigned int*>self.entities.get_pointer(
+            entity_id)
+        cdef unsigned int adjusted_index = block_index * self.count
+        self.entity_block_index[entity_id] = block_index
+        cdef unsigned int system_index, component_index, pointer_loc
+        cdef StaticMemGameSystem system
+        cdef unsigned int i
+        cdef str system_name
+        cdef MemoryZone memory_zone
+        cdef void** data = <void**>self.memory_block.data
+        cdef dict systems = system_manager.systems
+        for i, system_name in enumerate(self.system_names):
+            pointer_loc = adjusted_index + i
+            system_index = system_manager.get_system_index(system_name)
+            component_index = entity[system_index+1]
+            system = systems[system_index]
+            memory_zone = system.components.memory_zone
+            data[pointer_loc] = memory_zone.get_pointer(component_index)
+        return adjusted_index
 
 
 cdef class ComponentPointerAggregator:

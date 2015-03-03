@@ -17,7 +17,7 @@ from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.utils cimport memrange
 from kivy.logger import Logger
-debug = True
+debug = False
 
 def test_gameworld():
 

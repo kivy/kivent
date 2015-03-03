@@ -1,6 +1,7 @@
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from gamesystem cimport GameSystem
 from kivent_core.memory_handlers.block cimport MemoryBlock
+from kivent_core.memory_handlers.zonedblock cimport ZonedBlock
 from cpython cimport bool
 
 
@@ -12,6 +13,22 @@ cdef class MemComponent:
 cdef class StaticMemGameSystem(GameSystem):
     cdef IndexedMemoryZone components
     cdef ComponentPointerAggregator entity_components
+
+cdef class ZonedAggregator:
+    cdef ZonedBlock memory_block
+    cdef unsigned int count
+    cdef unsigned int total
+    cdef dict entity_block_index
+    cdef IndexedMemoryZone entities
+    cdef list system_names
+
+    cdef bool check_empty(self)
+    cdef void free(self)
+    cdef unsigned int get_size(self)
+    cdef void clear(self)
+    cdef int remove_entity(self, unsigned int entity_id) except 0
+    cdef unsigned int add_entity(self, unsigned int entity_id, 
+        str zone_name) except -1
 
 
 cdef class ComponentPointerAggregator:

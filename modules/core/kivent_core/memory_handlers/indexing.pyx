@@ -87,8 +87,18 @@ cdef class IndexedMemoryZone:
         self.zone_index = zone_index
         self.memory_zone = memory_zone
 
-    def __getitem__(IndexedMemoryZone self, int index):
-        return self.zone_index.get_component_from_index(index)
+    def __getitem__(self, value):
+        cdef ZoneIndex zone_index
+        if isinstance(value, slice):
+            zone_index = self.zone_index
+            get_component_from_index = zone_index.get_component_from_index
+            step = value.step
+            if step is None:
+                step = 1
+            return [get_component_from_index(i) for i in range(value.start,
+                value.stop, step)]
+        else:
+            return self.zone_index.get_component_from_index(value)
 
     cdef void* get_pointer(
         IndexedMemoryZone self, unsigned int index) except NULL:
@@ -96,8 +106,3 @@ cdef class IndexedMemoryZone:
 
     cdef unsigned int get_size(self):
         return self.memory_zone.get_size()
-
-    def __getslice__(IndexedMemoryZone self, int index_1, int index_2):
-        cdef ZoneIndex zone_index = self.zone_index
-        get_component_from_index = zone_index.get_component_from_index
-        return [get_component_from_index(i) for i in range(index_1, index_2)]

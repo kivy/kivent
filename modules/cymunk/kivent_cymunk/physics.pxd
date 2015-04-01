@@ -1,6 +1,6 @@
 from cymunk cimport Body, cpBody, Space
 from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem, 
-    ComponentPointerAggregator, MemComponent)
+    MemComponent)
 
 
 cdef class PhysicsComponent(MemComponent):
@@ -20,7 +20,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
     cdef list segment_query_result
 
     cdef unsigned int _init_component(self, unsigned int component_index, 
-        unsigned int entity_id, cpBody* body) except -1
+        unsigned int entity_id, cpBody* body, str zone_name) except -1
     cdef int _clear_component(self, unsigned int component_index) except 0
 
 

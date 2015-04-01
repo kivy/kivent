@@ -23,7 +23,7 @@ cdef class BlockZone:
 
 cdef class ZonedBlock:
     cdef dict zones
-    cdef Buffer maser_buffer
+    cdef Buffer master_buffer
     cdef unsigned int master_index
     cdef unsigned int size
     cdef unsigned int type_size

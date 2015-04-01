@@ -355,8 +355,8 @@ cdef class Renderer(StaticMemGameSystem):
         self._batch_entity(entity_id, pointer)
         return pointer
         
-    def init_component(self, unsigned int index, unsigned int entity_id, 
-        args):
+    def init_component(self, unsigned int component_index, 
+        unsigned int entity_id, str zone_name, args):
         cdef float w, h
         cdef int vert_index_key, texkey
         cdef bool copy, render
@@ -390,7 +390,7 @@ cdef class Renderer(StaticMemGameSystem):
                 model_manager.load_textured_rectangle(attrib_count, 
                     w, h, texture_key, mesh_key)
             vert_index_key = model_manager.get_mesh_index(mesh_key)
-        self._init_component(index, entity_id, render, attrib_count,
+        self._init_component(component_index, entity_id, render, attrib_count,
             vert_index_key, texkey)
 
     def update(self, dt):
@@ -461,13 +461,13 @@ cdef class Renderer(StaticMemGameSystem):
                 mesh_instruction = batch.mesh_instruction
                 mesh_instruction.flag_update()
 
-    def remove_component(self, unsigned int component_id):
+    def remove_component(self, unsigned int component_index):
         cdef IndexedMemoryZone components = self.components
         cdef RenderStruct* pointer = <RenderStruct*>components.get_pointer(
-            component_id)
+            component_index)
         self._unbatch_entity(pointer.entity_id, pointer)
         
-        super(Renderer, self).remove_component(component_id)
+        super(Renderer, self).remove_component(component_index)
 
     def unbatch_entity(self, unsigned int entity_id):
         cdef IndexedMemoryZone components = self.components
@@ -537,6 +537,7 @@ cdef class PhysicsRenderer(Renderer):
         '''Update function where all drawing of entities is performed. 
         Override this method in combination with calculate_vertex_format
         if you would like to create a renderer with customized behavior.'''
+
         cdef IndexedBatch batch
         cdef list batches
         cdef unsigned int batch_key
@@ -603,6 +604,7 @@ cdef class PhysicsRenderer(Renderer):
                 batch.set_index_count_for_frame(index_offset)
                 mesh_instruction = batch.mesh_instruction
                 mesh_instruction.flag_update()
+
 
 Factory.register('Renderer', cls=Renderer)
 Factory.register('PhysicsRenderer', cls=PhysicsRenderer)

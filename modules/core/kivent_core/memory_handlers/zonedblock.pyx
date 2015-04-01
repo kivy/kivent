@@ -91,18 +91,20 @@ cdef class BlockZone:
 
 cdef class ZonedBlock:
 
-    def __cinit__(self, unsigned int type_size, list zone_list):
+    def __cinit__(self, unsigned int type_size, dict zone_dict):
         cdef unsigned int zone_index = 0
         cdef dict zones = {}
-        for zone_name, count in zone_list:
+        for zone_name in zone_dict:
+            count = zone_dict[zone_name]
             zones[zone_name] = BlockZone(zone_name, zone_index, count)
             zone_index += count
-
+        self.zones = zones
         cdef unsigned int size_in_bytes = zone_index * type_size
         self.data = NULL
         self.master_buffer = None
         self.size = size_in_bytes
         self.master_index = 0
+        self.count = zone_index
         self.type_size = type_size
 
     cdef bool check_empty(self):

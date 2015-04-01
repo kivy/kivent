@@ -12,7 +12,7 @@ cdef class MemComponent:
 
 cdef class StaticMemGameSystem(GameSystem):
     cdef IndexedMemoryZone components
-    cdef ComponentPointerAggregator entity_components
+    cdef ZonedAggregator entity_components
 
 cdef class ZonedAggregator:
     cdef ZonedBlock memory_block

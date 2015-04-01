@@ -95,6 +95,7 @@ class GameWorld(Widget):
         self.entities = None
         self._system_count = DEFAULT_SYSTEM_COUNT
         self.entities_to_remove = []
+        self.system_manager = system_manager
         self.master_buffer = None
 
     def ensure_startup(self, list_of_systems):

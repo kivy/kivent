@@ -54,7 +54,7 @@ cdef class ColorSystem(StaticMemGameSystem):
     component_type = ObjectProperty(ColorComponent)
 
     def init_component(self, unsigned int component_index, 
-        unsigned int entity_id, args):
+        unsigned int entity_id, str zone, args):
         cdef float r = args[0]
         cdef float g = args[1]
         cdef float b = args[2]

@@ -49,7 +49,7 @@ cdef class ScaleSystem2D(StaticMemGameSystem):
     component_type = ObjectProperty(ScaleComponent2D)
 
     def init_component(self, unsigned int component_index, 
-        unsigned int entity_id, args):
+        unsigned int entity_id, str zone, args):
         cdef float sx, sy
         if isinstance(args, tuple):
             sx = args[0]

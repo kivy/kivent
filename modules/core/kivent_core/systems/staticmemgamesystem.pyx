@@ -32,6 +32,7 @@ cdef class StaticMemGameSystem(GameSystem):
     component_type = ObjectProperty(None)
     processor = BooleanProperty(False)
     system_names = ListProperty([])
+    zones = ListProperty([])
 
     def __cinit__(self, **kwargs):
         self.entity_components = None
@@ -56,13 +57,15 @@ cdef class StaticMemGameSystem(GameSystem):
             self.size_of_component_block, self.type_size, 
             reserve_spec, self.component_type)
         if self.processor:
-            self.entity_components = ComponentPointerAggregator(
-                [x for x in self.system_names], 
-                self.components.memory_zone.count, self.gameworld.entities, 
-                master_buffer)
+            self.entity_components = ZonedAggregator(
+                [x for x in self.system_names], reserve_spec, 
+                self.gameworld.entities, master_buffer)
 
     def get_system_size(self):
-        return self.components.get_size()
+        size = self.components.get_size()
+        if self.processor:
+            size += self.entity_components.get_size()
+        return size
 
     def get_size_estimate(self, dict reserve_spec):
         cdef unsigned int size_of_zone, block_count, size_per_ent
@@ -85,10 +88,10 @@ cdef class StaticMemGameSystem(GameSystem):
             pointer_size_in_kb = ((entity_count * size_per_ent) // 1024) + 1
         return total + pointer_size_in_kb
 
-    def remove_component(self, unsigned int component_id):
-        self.clear_component(component_id)
+    def remove_component(self, unsigned int component_index):
+        self.clear_component(component_index)
         cdef MemoryZone memory_zone = self.components.memory_zone
-        memory_zone.free_slot(component_id)
+        memory_zone.free_slot(component_index)
 
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, args):
@@ -104,11 +107,12 @@ cdef class StaticMemGameSystem(GameSystem):
 
 cdef class ZonedAggregator:
     
-    def __cinit__(self, list system_names, list zone_counts,
+    def __cinit__(self, list system_names, dict zone_counts,
         IndexedMemoryZone entities, Buffer master_buffer): 
         self.count = len(system_names)
         cdef unsigned int total = 0
-        for zone_name, count in zone_counts:
+        for zone_name in zone_counts:
+            count = zone_counts[zone_name]
             total += count
         self.total = total
         self.entities = entities

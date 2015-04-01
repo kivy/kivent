@@ -12,7 +12,7 @@ from libc.math cimport M_PI_2
 cimport cython
 from kivy.factory import Factory
 from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem, 
-    ComponentPointerAggregator, MemComponent)
+    ZonedAggregator, MemComponent)
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.zone cimport MemoryZone
@@ -226,13 +226,13 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         
 
     cdef unsigned int _init_component(self, unsigned int component_index, 
-        unsigned int entity_id, cpBody* body) except -1:
+        unsigned int entity_id, cpBody* body, str zone_name) except -1:
         cdef MemoryZone memory_zone = self.components.memory_zone
         cdef PhysicsStruct* component = <PhysicsStruct*>(
             memory_zone.get_pointer(component_index))
         component.entity_id = entity_id
         component.body = body
-        return self.entity_components.add_entity(entity_id)
+        return self.entity_components.add_entity(entity_id, zone_name)
 
     cdef int _clear_component(self, unsigned int component_index) except 0:
         cdef MemoryZone memory_zone = self.components.memory_zone
@@ -243,7 +243,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         return 1
 
     def init_component(self, unsigned int component_index, 
-        unsigned int entity_id, dict entity_component_dict):
+        unsigned int entity_id, str zone_name, dict entity_component_dict):
         '''
         Args:
             entity_component_dict (dict): dict containing the kwargs
@@ -353,7 +353,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         component._body = body
         component._shapes = shapes
         component._shape_type = shape_type
-        self._init_component(index, entity_id, body._body)
+        self._init_component(index, entity_id, body._body, zone_name)
 
 
     def clear_component(self, unsigned int component_index):
@@ -363,9 +363,9 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         component._shape_type = 'None'
         self._clear_component(component_index)
 
-    def create_component(self, unsigned int entity_id, zone, args):
+    def create_component(self, unsigned int entity_id, str zone_name, args):
         component_index = super(CymunkPhysics, self).create_component(
-            entity_id, zone, args)
+            entity_id, zone_name, args)
         gameworld = self.gameworld
         cdef RotateSystem2D rotate_system
         cdef PositionSystem2D position_system
@@ -415,13 +415,14 @@ cdef class CymunkPhysics(StaticMemGameSystem):
     def update(self, dt):
         '''Handles update of the cymunk space and updates the rendering 
         component data for position and rotate components. '''
+
         self.space.step(dt)
         gameworld = self.gameworld
 
         cdef void** component_data = <void**>(
             self.entity_components.memory_block.data)
         cdef unsigned int component_count = self.entity_components.count
-        cdef unsigned int used= self.entity_components.memory_block.size
+        cdef unsigned int count = self.entity_components.memory_block.count
         cdef unsigned int i, real_index
         cdef PositionStruct2D* pos_comp
         cdef RotateStruct2D* rot_comp
@@ -429,7 +430,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         cdef cpBody* body
         cdef cpVect p_position
         
-        for i in range(used):
+        for i in range(count):
             real_index = i*component_count
             if component_data[real_index] == NULL:
                 continue

@@ -43,7 +43,7 @@ cdef class PositionSystem2D(StaticMemGameSystem):
     component_type = ObjectProperty(PositionComponent2D)
         
     def init_component(self, unsigned int component_index, 
-        unsigned int entity_id, args):
+        unsigned int entity_id, str zone, args):
         cdef float x = args[0]
         cdef float y = args[1]
         cdef MemoryZone memory_zone = self.components.memory_zone

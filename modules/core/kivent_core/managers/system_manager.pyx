@@ -41,6 +41,9 @@ cdef class SystemConfig:
 
 cdef class SystemManager:
 
+    def __getitem__(self, str name):
+        return self.systems[self.get_system_index(name)]
+
     def __cinit__(self):
         self.systems = {}
         self.system_count = DEFAULT_SYSTEM_COUNT

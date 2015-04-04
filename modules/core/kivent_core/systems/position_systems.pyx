@@ -46,7 +46,7 @@ cdef class PositionSystem2D(StaticMemGameSystem):
         unsigned int entity_id, str zone, args):
         cdef float x = args[0]
         cdef float y = args[1]
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef PositionStruct2D* component = <PositionStruct2D*>(
             memory_zone.get_pointer(component_index))
         component.entity_id = entity_id
@@ -54,7 +54,7 @@ cdef class PositionSystem2D(StaticMemGameSystem):
         component.y = y
 
     def clear_component(self, unsigned int component_index):
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef PositionStruct2D* pointer = <PositionStruct2D*>(
             memory_zone.get_pointer(component_index))
         pointer.entity_id = -1

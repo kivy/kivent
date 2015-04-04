@@ -10,7 +10,7 @@ from kivent_core.systems.position_systems cimport PositionSystem2D
 from kivent_core.uix.cwidget cimport CWidget
 from kivent_core.entity cimport Entity
 from kivent_core.managers.entity_manager cimport EntityManager
-from kivent_core.managers.system_manager cimport (system_manager, 
+from kivent_core.managers.system_manager cimport (SystemManager, 
     DEFAULT_SYSTEM_COUNT, DEFAULT_COUNT)
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.zone cimport MemoryZone
@@ -29,7 +29,6 @@ def test_gameworld():
     gameworld.add_system(pos_system)
     gameworld.allocate()
     entity = gameworld.entities[0]
-    print(entity.entity_id)
     init_entity = gameworld.init_entity
     for x in range(150):
         component_list = ['position']
@@ -82,12 +81,13 @@ class GameWorld(Widget):
     size_of_gameworld = NumericProperty(1024)
     size_of_entity_block = NumericProperty(16)
     update_time = NumericProperty(1./60.)
-    system_count = NumericProperty(None)
+    system_count = NumericProperty(DEFAULT_SYSTEM_COUNT)
  
     
     def __init__(self, **kwargs):
         self.canvas = RenderContext(use_parent_projection=True,
             use_parent_modelview=True)
+        self.systems_to_add = []
         super(GameWorld, self).__init__(**kwargs)
         self.states = {}
         self.state_callbacks = {}
@@ -95,13 +95,13 @@ class GameWorld(Widget):
         self.entities = None
         self._system_count = DEFAULT_SYSTEM_COUNT
         self.entities_to_remove = []
-        self.system_manager = system_manager
+        self.system_manager = SystemManager()
         self.master_buffer = None
 
     def ensure_startup(self, list_of_systems):
-        cdef dict system_index = system_manager.system_index
+        systems_to_add = [x.system_id for x in self.systems_to_add]
         for each in list_of_systems:
-            if each not in system_index:
+            if each not in systems_to_add:
                 return False
         return True
 
@@ -109,7 +109,7 @@ class GameWorld(Widget):
         cdef Buffer master_buffer = Buffer(self.size_of_gameworld*1024, 
             1, 1)
         self.master_buffer = master_buffer
-
+        cdef SystemManager system_manager = self.system_manager
         master_buffer.allocate_memory()
         cdef unsigned int real_size = master_buffer.real_size
         zones = self.zones
@@ -123,6 +123,9 @@ class GameWorld(Widget):
         if system_count is None:
             system_count = self._system_count
         system_manager.set_system_count(system_count)
+        for each in self.systems_to_add:
+            system_manager.add_system(each.system_id, each)
+        self.systems_to_add = None
         self.entity_manager = entity_manager = EntityManager(master_buffer, 
             self.size_of_entity_block, copy_from_obs_dict, system_count)
         self.entities = entity_manager.memory_index
@@ -132,11 +135,11 @@ class GameWorld(Widget):
         cdef IndexedMemoryZone memory_index
         total_count = entity_manager.get_size()
         for name in system_names:
-            system_manager.configure_system_allocation(name)
-            config_dict = system_manager.get_system_config_dict(name)
             system_id = system_names[name]
             system = systems[system_id]
-            if system.do_components:
+            if system.do_allocation:
+                system_manager.configure_system_allocation(name)
+                config_dict = system_manager.get_system_config_dict(name)
                 size_estimate = system.get_size_estimate(config_dict)
                 if total_count//1024 + size_estimate > real_size//1024:
                     raise GameWorldOutOfSpaceError(('System Name: {name} will ' 
@@ -159,6 +162,7 @@ class GameWorld(Widget):
                 real_size=str(real_size//1024)))
 
     def init_gameworld(self, list_of_systems, callback=None):
+        print('initting gameworld')
         if self.ensure_startup(list_of_systems):
             self.allocate()
             Clock.schedule_interval(self.update, self.update_time)
@@ -234,12 +238,13 @@ class GameWorld(Widget):
         gamescreenmanager = self.gamescreenmanager
         gamescreenmanager.state = value
         children = self.children
+        cdef SystemManager system_manager = self.system_manager
         for system in state_dict['systems_added']:
-            _system = system_manager.get_system(system)
+            _system = system_manager[system]
             if _system in children:
                 pass
             elif _system.gameview is not None:
-                gameview_system = system_manager.get_system(_system.gameview)
+                gameview_system = system_manager[_system.gameview]
                 if _system in gameview_system.children:
                     pass
                 else:
@@ -247,17 +252,17 @@ class GameWorld(Widget):
             else:
                 self.add_widget(_system)
         for system in state_dict['systems_removed']:
-            _system = system_manager.get_system(system)
+            _system = system_manager[system]
             if _system.gameview is not None:
-                gameview = system_manager.get_system(_system.gameview)
+                gameview = system_manager[_system.gameview]
                 gameview.remove_widget(_system)
             elif _system in children:
                 self.remove_widget(_system)
         for system in state_dict['systems_paused']:
-            _system = system_manager.get_system(system)
+            _system = system_manager[system]
             _system.paused = True
         for system in state_dict['systems_unpaused']:
-            _system = system_manager.get_system(system)
+            _system = system_manager[system]
             _system.paused = False
         state_callback = self.state_callbacks[value]
         if state_callback is not None:
@@ -290,11 +295,13 @@ class GameWorld(Widget):
         cdef unsigned int entity_id = self.get_entity(zone)
         cdef Entity entity = self.entities[entity_id]
         entity.load_order = component_order
+        cdef SystemManager system_manager = self.system_manager
+        entity.system_manager = system_manager
         cdef unsigned int system_id
         if debug:
             debug_str = 'KivEnt: Entity {entity_id} created with components: '
         for component in component_order:
-            system = system_manager.get_system(component)
+            system = system_manager[component]
             system_id = system_manager.get_system_index(component)
             component_id = system.create_component(
                 entity_id, zone, components_to_use[component])
@@ -329,10 +336,11 @@ class GameWorld(Widget):
 
         cdef Entity entity = self.entities[entity_id]
         cdef EntityManager entity_manager = self.entity_manager
+        cdef SystemManager system_manager = self.system_manager
         load_order = entity.load_order
         entity._load_order.reverse() 
         for system_name in load_order:
-            system_manager.get_system(system_name).remove_component(
+            system_manager[system_name].remove_component(
                 entity.get_component_index(system_name))
         entity.load_order = []
         entity_manager.remove_entity(entity_id)
@@ -348,9 +356,10 @@ class GameWorld(Widget):
         Typically you will call this function using either Clock.schedule_once
         or Clock.schedule_interval
         '''
-        cdef dict systems = system_manager.systems
-        cdef object system
-        for system_index in systems:
+        cdef SystemManager system_manager = self.system_manager
+        cdef list systems = system_manager.systems
+        cdef GameSystem system
+        for system_index in system_manager._update_order:
             system = systems[system_index]
             if system.updateable and not system.paused:
                 system._update(dt)
@@ -390,21 +399,33 @@ class GameWorld(Widget):
         self.remove_widget(system)
         del systems[system_id]
 
-    def get_system_index(self, system_id):
-        return self.systems_index.index(system_id)
+    def get_system_index(self, system_name):
+        cdef SystemManager system_manager = self.system_manager
+        return system_manager.get_system_index(system_name)
 
     def add_system(self, widget):
-        '''Used internally by add_widget.'''
+        '''Used internally by add_widget. Will register a previously unseen
+        GameSystem with the system_manager, and call the GameSystem's 
+        on_add_system function.'''
+        cdef SystemManager system_manager = self.system_manager
         system_index = system_manager.system_index
         if widget.system_id in system_index:
             return
-        system_manager.add_system(widget.system_id, widget)
+        if system_manager.initialized:
+            system_manager.add_system(widget.system_id, widget)
+        else:
+            self.systems_to_add.append(widget)
         widget.on_add_system()
 
     def add_widget(self, widget, index=0, canvas=None):
+        '''Overrides the default add_widget from Kivy to ensure that
+        we handle GameSystem related logic and can accept both Widget and
+        CWidget base classes'''
+        cdef SystemManager system_manager = self.system_manager
         systems = system_manager.system_index
         if isinstance(widget, GameSystem):
-            if widget.system_id not in systems:
+            if widget.system_id not in systems and (
+                widget.system_id not in self.systems_to_add):
                 Clock.schedule_once(lambda dt: self.add_system(widget))
         if not (isinstance(widget, Widget) or isinstance(widget, CWidget)):
             raise WidgetException(

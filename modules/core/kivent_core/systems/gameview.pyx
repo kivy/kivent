@@ -3,7 +3,7 @@ from kivy.properties import (StringProperty, ListProperty,
     NumericProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 from kivy.vector import Vector
-from kivent_core.managers.system_manager cimport system_manager
+from kivent_core.managers.system_manager cimport SystemManager
 from kivy.graphics.transformation import Matrix
 from kivy.graphics import RenderContext
 from kivy.factory import Factory
@@ -113,6 +113,7 @@ cdef class GameView(GameSystem):
     def add_widget(self, widget):
         gameworld = self.gameworld
         cdef str system_id
+        cdef SystemManager system_manager = gameworld.system_manager
         if isinstance(widget, GameSystem):
             render_system_order = self.render_system_order
             system_id = widget.system_id

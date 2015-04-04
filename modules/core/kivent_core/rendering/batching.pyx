@@ -128,10 +128,10 @@ cdef class BatchManager:
     def __cinit__(BatchManager self, unsigned int vbo_size_in_kb, 
         unsigned int batch_count, unsigned int frame_count, 
         KEVertexFormat vertex_format, Buffer master_buffer, str mode_str, 
-        object canvas, IndexedMemoryZone entities, list system_names,
-        unsigned int smallest_vertex_count):
+        object canvas, list system_names,
+        unsigned int smallest_vertex_count, object gameworld):
         cdef MemoryBlock batch_block, indices_block
-        self.entities = entities
+        self.gameworld = gameworld
         self.system_names = system_names
         cdef unsigned int size_in_bytes = vbo_size_in_kb * 1024
         cdef unsigned int type_size = vertex_format.vbytesize
@@ -199,8 +199,8 @@ cdef class BatchManager:
 
     cdef unsigned int get_size_of_component_pointers(self):
         cdef ComponentPointerAggregator entity_components = (
-            ComponentPointerAggregator(self.system_names, self.ent_per_batch, 
-                self.entities, self.master_buffer))
+            ComponentPointerAggregator(self.system_names, self.ent_per_batch,
+                self.gameworld, self.master_buffer))
         real_size = entity_components.get_size()
         entity_components.free()
         return real_size * self.max_batches
@@ -213,8 +213,8 @@ cdef class BatchManager:
                 or pack your textures more appropriately to reduce number
                 of batches""")
         cdef ComponentPointerAggregator entity_components = (
-            ComponentPointerAggregator(self.system_names, self.ent_per_batch, 
-                self.entities, self.master_buffer))
+            ComponentPointerAggregator(self.system_names, self.ent_per_batch,
+                self.gameworld, self.master_buffer))
         cdef IndexedBatch batch = IndexedBatch(tex_key, 
             self.index_slots_per_block, self.slots_per_block, self.frame_count, 
             self.get_vbos(), self.mode, entity_components)

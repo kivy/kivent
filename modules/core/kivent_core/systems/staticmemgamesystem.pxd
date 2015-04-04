@@ -11,7 +11,7 @@ cdef class MemComponent:
 
 
 cdef class StaticMemGameSystem(GameSystem):
-    cdef IndexedMemoryZone components
+    cdef IndexedMemoryZone imz_components
     cdef ZonedAggregator entity_components
 
 cdef class ZonedAggregator:
@@ -19,7 +19,7 @@ cdef class ZonedAggregator:
     cdef unsigned int count
     cdef unsigned int total
     cdef dict entity_block_index
-    cdef IndexedMemoryZone entities
+    cdef object gameworld
     cdef list system_names
 
     cdef bool check_empty(self)
@@ -33,7 +33,7 @@ cdef class ZonedAggregator:
 
 cdef class ComponentPointerAggregator:
     cdef MemoryBlock memory_block
-    cdef IndexedMemoryZone entities
+    cdef object gameworld
     cdef unsigned int count
     cdef unsigned int total
     cdef list system_names

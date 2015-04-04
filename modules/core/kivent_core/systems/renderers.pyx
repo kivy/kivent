@@ -30,7 +30,6 @@ from libc.math cimport fabs
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer
-from kivent_core.managers.system_manager cimport system_manager
 from kivent_core.systems.staticmemgamesystem cimport ComponentPointerAggregator
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivy.properties import ObjectProperty, NumericProperty
@@ -292,7 +291,7 @@ cdef class Renderer(StaticMemGameSystem):
         self.canvas.shader.source = value
 
     def clear_component(self, unsigned int component_index):
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef RenderStruct* pointer = <RenderStruct*>memory_zone.get_pointer(
             component_index)
         pointer.entity_id = -1
@@ -310,8 +309,8 @@ cdef class Renderer(StaticMemGameSystem):
         self.batch_manager = BatchManager(
             self.size_of_batches, self.max_batches, self.frame_count, 
             batch_vertex_format, master_buffer, 'triangles', self.canvas,
-            self.gameworld.entities, [x for x in self.system_names], 
-            self.smallest_vertex_count)
+            [x for x in self.system_names], 
+            self.smallest_vertex_count, self.gameworld)
         return <void*>self.batch_manager
 
     def allocate(self, Buffer master_buffer, dict reserve_spec):
@@ -341,7 +340,7 @@ cdef class Renderer(StaticMemGameSystem):
     cdef void* _init_component(self, unsigned int component_index, 
         unsigned int entity_id, bool render, unsigned int attrib_count, 
         unsigned int vert_index_key, unsigned int texkey) except NULL:
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef RenderStruct* pointer = <RenderStruct*>memory_zone.get_pointer(
             component_index)
         pointer.entity_id = entity_id
@@ -462,7 +461,7 @@ cdef class Renderer(StaticMemGameSystem):
                 mesh_instruction.flag_update()
 
     def remove_component(self, unsigned int component_index):
-        cdef IndexedMemoryZone components = self.components
+        cdef IndexedMemoryZone components = self.imz_components
         cdef RenderStruct* pointer = <RenderStruct*>components.get_pointer(
             component_index)
         self._unbatch_entity(pointer.entity_id, pointer)
@@ -470,7 +469,7 @@ cdef class Renderer(StaticMemGameSystem):
         super(Renderer, self).remove_component(component_index)
 
     def unbatch_entity(self, unsigned int entity_id):
-        cdef IndexedMemoryZone components = self.components
+        cdef IndexedMemoryZone components = self.imz_components
         cdef IndexedMemoryZone entities = self.gameworld.entities
         cdef Entity entity = entities[entity_id]
         cdef unsigned int component_index = entity.get_component_index(
@@ -493,7 +492,7 @@ cdef class Renderer(StaticMemGameSystem):
         return component_data
 
     def batch_entity(self, unsigned int entity_id):
-        cdef IndexedMemoryZone components = self.components
+        cdef IndexedMemoryZone components = self.imz_components
         cdef IndexedMemoryZone entities = self.gameworld.entities
         cdef Entity entity = entities[entity_id]
         cdef unsigned int component_index = entity.get_component_index(

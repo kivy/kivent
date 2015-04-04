@@ -42,6 +42,7 @@ cdef class BatchManager:
     cdef list batches
     cdef list free_batches
     cdef dict batch_groups
+    cdef object gameworld
     cdef unsigned int batch_count
     cdef unsigned int max_batches
     cdef unsigned int frame_count
@@ -52,7 +53,6 @@ cdef class BatchManager:
     cdef GLuint mode
     cdef KEVertexFormat vertex_format
     cdef object canvas
-    cdef IndexedMemoryZone entities
     cdef list system_names
     cdef Buffer master_buffer
     cdef unsigned int ent_per_batch

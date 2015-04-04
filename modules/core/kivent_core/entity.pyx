@@ -1,5 +1,4 @@
 from kivent_core.systems.staticmemgamesystem cimport MemComponent
-from kivent_core.managers.system_manager cimport system_manager
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 
@@ -23,10 +22,12 @@ cdef class Entity(MemComponent):
     def __cinit__(self, MemoryBlock memory_block, unsigned int index,
             unsigned int offset):
         self._load_order = []
+        self.system_manager = None
 
     def __getattr__(self, str name):
-        cdef unsigned int system_index = system_manager.get_system_index(name)
-        system = system_manager.get_system(name)
+        cdef unsigned int system_index = self.system_manager.get_system_index(
+            name)
+        system = self.system_manager.get_system(name)
         cdef unsigned int* pointer = <unsigned int*>self.pointer
         cdef unsigned int component_index = pointer[system_index+1]
         if component_index == -1:
@@ -51,7 +52,7 @@ cdef class Entity(MemComponent):
         pointer[system_id+1] = component_id
 
     cdef unsigned int get_component_index(self, str name):
-        cdef unsigned int system_index = system_manager.get_system_index(name)
-        system = system_manager.get_system(name)
+        cdef unsigned int system_index = self.system_manager.get_system_index(
+            name)
         cdef unsigned int* pointer = <unsigned int*>self.pointer
         return pointer[system_index+1]

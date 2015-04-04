@@ -10,15 +10,18 @@ cdef class ZoneConfig:
 cdef class SystemConfig:
     cdef dict zone_configs
 
+
 cdef class SystemManager:
-    cdef dict systems
+    cdef list systems
     cdef dict zones
     cdef dict system_index
-    cdef list update_order
+    cdef list _update_order
+    cdef bint initialized
+    cdef list free_indices
+    cdef list free_non_component_indices
     cdef unsigned int first_non_component_index
     cdef unsigned int system_count
     cdef unsigned int current_count
     cdef SystemConfig system_config
-    cdef unsigned int get_system_index(self, str system_name)
 
-cdef SystemManager system_manager
+    cdef unsigned int get_system_index(self, str system_name)

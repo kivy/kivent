@@ -209,7 +209,6 @@ cdef class SystemManager:
         self.first_non_component_index = system_count
         self.systems = [None for x in range(system_count)]
         self.initialized = 1
-        print('setting system count', self.systems)
 
     def add_system(self, system_name, system):
         '''Adds a new system to the manager. If the system have do_components

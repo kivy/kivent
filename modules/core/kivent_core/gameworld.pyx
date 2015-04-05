@@ -162,7 +162,6 @@ class GameWorld(Widget):
                 real_size=str(real_size//1024)))
 
     def init_gameworld(self, list_of_systems, callback=None):
-        print('initting gameworld')
         if self.ensure_startup(list_of_systems):
             self.allocate()
             Clock.schedule_interval(self.update, self.update_time)

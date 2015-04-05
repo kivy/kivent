@@ -146,5 +146,6 @@ cdef class EntityManager:
         Args:
             entity_id (unsigned int): The identity of the entity to remove
         '''
+        self.clear_entity(entity_id)
         cdef MemoryZone memory_zone = self.memory_index.memory_zone
         memory_zone.free_slot(entity_id)

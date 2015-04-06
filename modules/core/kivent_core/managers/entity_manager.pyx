@@ -142,7 +142,8 @@ cdef class EntityManager:
 
     cdef void remove_entity(self, unsigned int entity_id):
         '''Removes an entity from the **memory_index**, will mark as inactive
-        and free the associated memory for reuse.
+        and free the associated memory for reuse. Will clear the entity before
+        freeing.
         Args:
             entity_id (unsigned int): The identity of the entity to remove
         '''

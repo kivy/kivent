@@ -15,8 +15,8 @@ cdef class MemComponent:
     memory management system. The data do not live inside the MemComponent,
     it just provide a python accessible interface for working with the raw
     C structs holding the data. Will store a pointer to the actual data, 
-    and the index of the slot. All of the Python accessible components (and 
-    the Entity class) inherit from this class.''' 
+    and the index of the slot. All of the Python accessible C optimized 
+    components (and the Entity class) inherit from this class.''' 
 
     def __cinit__(self, MemoryBlock memory_block, unsigned int index, 
         unsigned int offset):
@@ -83,8 +83,8 @@ cdef class StaticMemGameSystem(GameSystem):
     property components:
         def __get__(self):
             if self.imz_components == None:
-                raise NotAllocatedError(self.system_id, '''has not been
-                    allocated yet''')
+                raise NotAllocatedError('''{system_id} has not been
+                    allocated yet'''.format(system_id=self.system_id))
             return self.imz_components
 
     def get_component(self, str zone):

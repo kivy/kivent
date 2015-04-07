@@ -16,10 +16,30 @@ cdef class MemComponent:
     it just provide a python accessible interface for working with the raw
     C structs holding the data. Will store a pointer to the actual data, 
     and the index of the slot. All of the Python accessible C optimized 
-    components (and the Entity class) inherit from this class.''' 
+    components (and the Entity class) inherit from this class.
+    **Attributes: (Cython Access Only)**
+        **pointer** (void*): Pointer to the location in the provided 
+        memory_block that this component's data resides in.
+
+        **_id** (unsigned int): Index of this component in the overall
+        component memory. Will usually be locate in MemoryBlock + offset of 
+        MemoryBlock in the MemoryPool.
+    ''' 
 
     def __cinit__(self, MemoryBlock memory_block, unsigned int index, 
         unsigned int offset):
+        '''Initializes a new MemComponent, typically called internally by
+        GameSystem or EntityManager.
+        Args:
+            memory_block (MemoryBlock): the actual MemoryBlock where the data
+            for this component resides.
+
+            index (unsigned int): The location of the data in the MemoryBlock
+            array.
+
+            offset (unsigned int): The offset of the MemoryBlock in the 
+            MemoryPool or MemoryZone.
+        '''
         self._id = index + offset
         self.pointer = memory_block.get_pointer(index)
 
@@ -93,8 +113,7 @@ cdef class StaticMemGameSystem(GameSystem):
         will be called prior to returning the new index of the component 
         ensuring no junk data is present.
         Return:
-            component_id (unsigned int): The index of the newly generated 
-            component.
+            unsigned int: The index of the newly generated component.
         '''
         cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef unsigned int new_id = memory_zone.get_free_slot(zone)
@@ -132,7 +151,7 @@ cdef class StaticMemGameSystem(GameSystem):
         raw component data, and other memories allocated by this GameSystem.
         Must be called after **allocate**.
         Return:
-            size (int): size in bytes of the system's allocations.
+            int: size in bytes of the system's allocations.
         '''
         size = self.imz_components.get_size()
         if self.processor:
@@ -144,8 +163,7 @@ cdef class StaticMemGameSystem(GameSystem):
         Used internally by GameWorld to estimate if enough memory is available
         to support the GameSystem
         Return:
-            estimated_size (int): estimated size in bytes of the system's 
-            allocations.
+            int: estimated size in bytes of the system's allocations.
         '''
         cdef unsigned int size_of_zone, block_count, size_per_ent
         cdef unsigned int total = 0
@@ -255,8 +273,8 @@ cdef class ZonedAggregator:
     cdef bool check_empty(self):
         '''Determines whether the **memory_block** is current empty
         Return:
-            check_empty (bool): Will be True if there is no data in 
-            **memory_block**, else False.
+            bool: Will be True if there is no data in **memory_block**, else 
+            False.
         '''
         return self.memory_block.check_empty()
 
@@ -268,8 +286,8 @@ cdef class ZonedAggregator:
     cdef unsigned int get_size(self):
         '''Gets the size of the **memory_block**
         Return:
-            size (unsigned int): The amount of data in bytes reserved by 
-            the **memory_block**
+            unsigned int: The amount of data in bytes reserved by the 
+            **memory_block**
         '''
         return self.memory_block.size
 
@@ -288,7 +306,7 @@ cdef class ZonedAggregator:
             entity_id (unsigned int): the id of the entity to remove from the 
             aggregator.
         Return:
-            1 if entity_id was successfully removed, else 0. Return exists 
+            int: 1 if entity_id was successfully removed, else 0. Return exists 
             mainly for exception propogation from Cython to Python.
         '''
         cdef unsigned int block_index = self.entity_block_index[entity_id]
@@ -317,8 +335,8 @@ cdef class ZonedAggregator:
             into, should match the zone the entity's components exist in.
 
         Return:
-            block_index (unsigned int): Will return the index of the
-            pointers in the **memory_block**
+            unsigned int: Will return the index of the pointers in the 
+            **memory_block**
         '''
         cdef unsigned int block_index = self.memory_block.add_data(1, zone_name)
         cdef IndexedMemoryZone entities = self.gameworld.entities
@@ -408,8 +426,8 @@ cdef class ComponentPointerAggregator:
     cdef bool check_empty(self):
         '''Determines whether the **memory_block** is current empty
         Return:
-            check_empty (bool): Will be True if there is no data in 
-            **memory_block**, else False.
+            bool: Will be True if there is no data in **memory_block**, 
+            else False.
         '''
         return self.memory_block.check_empty()
 
@@ -441,7 +459,7 @@ cdef class ComponentPointerAggregator:
             entity_id (unsigned int): the id of the entity to remove from the 
             aggregator.
         Return:
-            1 if entity_id was successfully removed, else 0. Return exists 
+            int: 1 if entity_id was successfully removed, else 0. Return exists 
             mainly for exception propogation from Cython to Python.
         '''
         cdef unsigned int block_index = self.entity_block_index[entity_id]
@@ -465,8 +483,8 @@ cdef class ComponentPointerAggregator:
         Args:
             entity_id (unsigned int): The id of the entity to be added.
         Return:
-            block_index (unsigned int): Will return the index of the
-            pointers in the **memory_block**
+            unsigned int: Will return the index of the pointers in the 
+            **memory_block**
         '''
         cdef unsigned int block_index = self.memory_block.add_data(1)
         cdef IndexedMemoryZone entities = self.gameworld.entities

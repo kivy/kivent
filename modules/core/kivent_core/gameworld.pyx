@@ -71,9 +71,27 @@ class GameWorld(Widget):
         **entities_to_remove** (list): list of entity_ids that will be cleaned 
         up in the next cleanup update tick
 
-        **systems** (dict): dict with keys system_id, can be used to access 
-        your gamesystems
+        **system_manager** (SystemManager): Registers all the GameSystem added
+        to the GameWorld and contains information for allocation and use of 
+        those GameSystem.
 
+        **master_buffer** (object): Typically a Buffer, the base memory from
+        which all other static allocating memory objects will allocate from.
+
+        **system_count** (NumericProperty): The number of systems that will 
+        have memory allocated for them in the entities array.
+
+        **update_time** (NumericProperty): The update interval.
+
+        **size_of_entity_block** (NumericProperty): The size in kibibytes of 
+        the Entity MemoryBlocks.
+
+        **size_of_gameworld** (NumericProperty): The size in kibibytes of the 
+        entire GameWorld's static allocation.
+
+        **zones** (DictProperty): The zone name and count pairings for static
+        allocation. Dict is zones[zone_name] = entity_count (int).
+        
     '''
     state = StringProperty('initial')
     gamescreenmanager = ObjectProperty(None)
@@ -93,12 +111,22 @@ class GameWorld(Widget):
         self.state_callbacks = {}
         self.entity_manager = None
         self.entities = None
+        self._last_state = 'initial'
         self._system_count = DEFAULT_SYSTEM_COUNT
         self.entities_to_remove = []
         self.system_manager = SystemManager()
         self.master_buffer = None
 
     def ensure_startup(self, list_of_systems):
+        '''Run during **init_gameworld** to determine whether or not it is safe
+        to begin allocation. Safe in this situation means that every system_id 
+        that has been listed in list_of_systems has been added to the GameWorld.
+        Args:
+            list_of_systems (list): List of the system_id (string) names of 
+            the GameSystems we expect to have initialized.
+        Return:
+            bool : True if systems all added, otherwise False.
+        '''
         systems_to_add = [x.system_id for x in self.systems_to_add]
         for each in list_of_systems:
             if each not in systems_to_add:
@@ -106,6 +134,11 @@ class GameWorld(Widget):
         return True
 
     def allocate(self):
+        '''Typically called interally as part of init_gameworld, this function
+        allocates the **master_buffer** for the gameworld, registers the 
+        zones, allocates the EntityManager, and calls allocate on all 
+        GameSystem with do_allocation == True.
+        '''
         cdef Buffer master_buffer = Buffer(self.size_of_gameworld*1024, 
             1, 1)
         self.master_buffer = master_buffer
@@ -162,6 +195,20 @@ class GameWorld(Widget):
                 real_size=str(real_size//1024)))
 
     def init_gameworld(self, list_of_systems, callback=None):
+        '''This function should be called once by your application during
+        initialization. It will handle ensuring all GameSystem added in 
+        kv lang have been initialized and call **allocate** afterwards.
+        Once allocation has finished, the **update** for GameWorld will be
+        Clock.schedule_interval for **update_time**. If kwarg callback is not
+        None your callback will be called with no extra arguments.
+        Args:
+            list_of_systems (list): list of system_id (string) names for the 
+            GameSystems we want to check have been initialized and added to
+            GameWorld.
+        Kwargs:
+            callback (object): If not None will be invoked after allocate has
+            returned and update scheduled. Defaults to None.
+        '''
         if self.ensure_startup(list_of_systems):
             self.allocate()
             Clock.schedule_interval(self.update, self.update_time)
@@ -178,26 +225,29 @@ class GameWorld(Widget):
         '''
         Args:
             state_name (str): Name for this state, should be unique.
-
+        Kwargs:
             screenmanager_screen (str): Name of the screen for 
             GameScreenManager to make current when this state is transitioned
-            into.
+            into. Default None.
 
             systems_added (list): List of system_id that should be added
-            to the GameWorld canvas when this state is transitioned into.
+            to the GameWorld canvas when this state is transitioned into. 
+            Default None.
 
             systems_removed (list): List of system_id that should be removed
             from the GameWorld canvas when this state is transitioned into.
+            Default None.
 
             systems_paused (list): List of system_id that will be paused
-            when this state is transitioned into.
+            when this state is transitioned into. Default None.
 
             systems_unpaused (list): List of system_id that will be unpaused 
-            when this state is transitioned into.
+            when this state is transitioned into. Default None.
 
             on_change_callback (object): Callback function that will receive
             args of state_name, previous_state_name. The callback
-            will run after the state change has occured
+            will run after the state change has occured. Callback will
+            be called with arguments current_state, last_state. Default None.
 
 
         This function adds a new state for your GameWorld that will help you
@@ -219,13 +269,18 @@ class GameWorld(Widget):
             'systems_unpaused': systems_unpaused}
         self.gamescreenmanager.states[state_name] = screenmanager_screen
         self.state_callbacks[state_name] = on_change_callback
-        self._last_state = 'initial'
 
     def on_state(self, instance, value):
         '''State change is handled here, systems will be added or removed
         in the order that they are listed. This allows control over the 
         arrangement of rendering layers. Later systems will be rendered on top
-        of earlier.'''
+        of earlier.
+        Args:
+            instance (object): Should point to self.
+
+            value(string): The name of the new state.
+        If the state does not exist state will be reset to initial.
+        '''
         try:
             state_dict = self.states[value]
         except KeyError: 
@@ -266,7 +321,7 @@ class GameWorld(Widget):
         state_callback = self.state_callbacks[value]
         if state_callback is not None:
             state_callback(value, self._last_state)
-            self._last_state = value
+        self._last_state = value
 
     def get_entity(self, str zone):
         '''Used internally if there is not an entity currently available in
@@ -311,16 +366,19 @@ class GameWorld(Widget):
             Logger.debug((debug_str).format(entity_id=str(entity_id)))
         return entity_id
 
-    def timed_remove_entity(self, int entity_id, dt):
+    def timed_remove_entity(self, unsigned int entity_id, dt):
         '''
         Args:
-            entity_id (int): The entity_id of the Entity to be removed from
-            the GameWorld
+            entity_id (unsigned int): The entity_id of the Entity to be removed 
+            from the GameWorld.
 
-            dt (float): Time argument passed by Kivy's Clock.schedule
+            dt (float): Time argument passed by Kivy's Clock.schedule.
 
         This function can be used to schedule the destruction of an entity
         for a time in the future using partial and kivy's Clock.schedule_once
+        Like:
+            Clock.schedule_once(partial(
+                gameworld.timed_remove_entity, entity_id))
         '''
         self.entities_to_remove.append(entity_id)
 
@@ -330,7 +388,9 @@ class GameWorld(Widget):
             entity_id (int): The entity_id of the Entity to be removed from
             the GameWorld
 
-        This function immediately removes an entity from the gameworld.
+        This function immediately removes an entity from the gameworld. The 
+        entity will have components removed in the reverse order from
+        its load_order. 
         '''
 
         cdef Entity entity = self.entities[entity_id]
@@ -362,11 +422,13 @@ class GameWorld(Widget):
             system = systems[system_index]
             if system.updateable and not system.paused:
                 system._update(dt)
-        Clock.schedule_once(self.remove_entities)
+        self.remove_entities()
 
-    def remove_entities(self, dt):
+    def remove_entities(self):
         '''Used internally to remove entities as part of the update tick'''
         original_ent_remove = self.entities_to_remove
+        if len(original_ent_remove) == 0:
+            return
         entities_to_remove = [entity_id for entity_id in original_ent_remove]
         remove_entity = self.remove_entity
         er = original_ent_remove.remove
@@ -388,24 +450,20 @@ class GameWorld(Widget):
             from GameWorld.
 
         Used to delete a GameSystem from the GameWorld'''
-        systems = self.systems
-        system = systems[system_id]
-        system.on_delete_system()
-        if system.do_components:
-            system_index = self.get_system_index(system_id)
-            self.unused_systems.append(system_index)
-            self.systems_index[system_index] = None
-        self.remove_widget(system)
-        del systems[system_id]
-
-    def get_system_index(self, system_name):
         cdef SystemManager system_manager = self.system_manager
-        return system_manager.get_system_index(system_name)
+        system = system_manager[system_id]
+        system.on_delete_system()
+        system_manager.remove_system(system_id)
+        self.remove_widget(system)
 
     def add_system(self, widget):
         '''Used internally by add_widget. Will register a previously unseen
         GameSystem with the system_manager, and call the GameSystem's 
-        on_add_system function.'''
+        on_add_system function.
+        Args:
+            widget (GameSystem): the GameSystem to add to the GameWorld's
+            system_manager.
+        '''
         cdef SystemManager system_manager = self.system_manager
         system_index = system_manager.system_index
         if widget.system_id in system_index:
@@ -419,7 +477,17 @@ class GameWorld(Widget):
     def add_widget(self, widget, index=0, canvas=None):
         '''Overrides the default add_widget from Kivy to ensure that
         we handle GameSystem related logic and can accept both Widget and
-        CWidget base classes'''
+        CWidget base classes. If a GameSystem is added **add_system** will be
+        called with that widget as the argument.
+        Args:
+            widget (Widget or CWidget): The widget to be added.
+
+        Kwargs:
+            index (int): The index to add this widget at in the children list.
+
+            canvas (str): None, 'before', or 'after'; which canvas to add this
+            widget to. None means base canvas and is default.
+        '''
         cdef SystemManager system_manager = self.system_manager
         systems = system_manager.system_index
         if isinstance(widget, GameSystem):
@@ -472,6 +540,11 @@ class GameWorld(Widget):
             canvas.insert(next_index, widget.canvas)
         
     def remove_widget(self, widget):
+        '''Same as Widget.remove_widget except that if the removed widget is a
+        GameSystem, on_remove_system of that GameSystem will be ran.
+        Args:
+            widget (Widget or CWidget): the child to remove.
+        '''
         if isinstance(widget, GameSystem):
             widget.on_remove_system()
         super(GameWorld, self).remove_widget(widget)

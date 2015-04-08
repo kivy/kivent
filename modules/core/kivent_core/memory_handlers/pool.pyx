@@ -184,7 +184,8 @@ cdef class MemoryPool:
 
     cdef void free_slot(self, unsigned int index):
         '''Frees a previously acquired slot for reuse. Does not handle 
-        clearing data.
+        clearing data. If all used slots have been freed we will clear the whole
+        pool.
         Args:
             index (unsigned int): The index of the slot in the pool.
         '''

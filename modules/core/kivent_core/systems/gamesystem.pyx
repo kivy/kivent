@@ -14,7 +14,11 @@ class Component(object):
     '''A component will keep track of the data for your GameSystems logic.
     It keeps track of its own identity (index in the components list), and
     the entity_id of its entity. If the entity_id returned is <unsigned int>-1
-    the component is not currently attached to an entity'''
+    the component is not currently attached to an entity
+
+    **Attributes:**
+        **_id** (unsigned int): The identity of this component
+    '''
     
     def __init__(self, component_id):
         self._id = component_id
@@ -37,6 +41,10 @@ cdef class GameSystem(CWidget):
     **Attributes:**
         **system_id** (StringProperty): Name of this gamesystem, used to name 
         entity component attribute, and refer to system.
+
+        **system_index** (NumericProperty): The integer index of the GameSystem
+        in the SystemManager array. Corresponds to where in the entity array
+        you will find this system's component_index. 
 
         **updateable** (BooleanProperty): Boolean to let gameworld know 
         whether or not to run an update tick on this gamesystem. Defaults to 

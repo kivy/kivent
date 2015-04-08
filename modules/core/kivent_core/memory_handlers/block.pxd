@@ -8,4 +8,3 @@ cdef class MemoryBlock(Buffer):
     	Buffer master_buffer) except NULL
     cdef void remove_from_buffer(self)
     cdef void deallocate_memory(self)
-    cdef void* get_pointer(self, unsigned int block_index) except NULL

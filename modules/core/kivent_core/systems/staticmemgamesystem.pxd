@@ -14,6 +14,7 @@ cdef class StaticMemGameSystem(GameSystem):
     cdef IndexedMemoryZone imz_components
     cdef ZonedAggregator entity_components
 
+
 cdef class ZonedAggregator:
     cdef ZonedBlock memory_block
     cdef unsigned int count

@@ -12,10 +12,10 @@ cdef class FixedVBO:
     cdef unsigned int data_size
     cdef KEVertexFormat vertex_format
 
-    cdef int have_id(FixedVBO self)
-    cdef void generate_buffer(FixedVBO self)
-    cdef void update_buffer(FixedVBO self)
-    cdef void bind(FixedVBO self)
-    cdef void unbind(FixedVBO self)
-    cdef void return_memory(FixedVBO self)
-    cdef void reload(FixedVBO self)
+    cdef int have_id(self)
+    cdef void generate_buffer(self)
+    cdef void update_buffer(self)
+    cdef void bind(self)
+    cdef void unbind(self)
+    cdef void return_memory(self)
+    cdef void reload(self)

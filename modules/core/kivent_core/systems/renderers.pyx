@@ -596,9 +596,9 @@ cdef class PhysicsRenderer(Renderer):
                             vertex.pos[1] = mesh_data[n*attribute_count+1]
                             vertex.uvs[0] = mesh_data[n*attribute_count+2]
                             vertex.uvs[1] = mesh_data[n*attribute_count+3]
-                            vertex.rot[0] = rot_comp.r
-                            vertex.rot[1] = pos_comp.x
-                            vertex.rot[2] = pos_comp.y
+                            vertex.rot = rot_comp.r
+                            vertex.center[0] = pos_comp.x
+                            vertex.center[1] = pos_comp.y
                         index_offset += index_count
                 batch.set_index_count_for_frame(index_offset)
                 mesh_instruction = batch.mesh_instruction

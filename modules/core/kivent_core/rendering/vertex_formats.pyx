@@ -11,18 +11,21 @@ vertex_format_4f = [
     ('uvs', 2, 'float', uvs_offset),
     ]
 
-print(vertex_format_4f)
 cdef VertexFormat7F* tmp2 = <VertexFormat7F*>NULL
 pos_offset = <Py_ssize_t> (<Py_intptr_t>(tmp2.pos) - <Py_intptr_t>(tmp2))
-print(pos_offset)
 uvs_offset = <Py_ssize_t> (<Py_intptr_t>(tmp2.uvs) - <Py_intptr_t>(tmp2))
-print(uvs_offset)
-rot_offset = <Py_ssize_t> (<Py_intptr_t>(tmp2.rot) - <Py_intptr_t>(tmp2))
-print(rot_offset)
+rot_offset = <Py_ssize_t> (<Py_intptr_t>(&tmp2.rot) - <Py_intptr_t>(tmp2))
+center_offset = <Py_ssize_t> (<Py_intptr_t>(tmp2.center) - <Py_intptr_t>(tmp2))
+
 
 vertex_format_7f = [
     ('pos', 2, 'float', pos_offset), 
     ('uvs', 2, 'float', uvs_offset),
-    ('rot', 3, 'float', rot_offset),
+    ('rot', 1, 'float', rot_offset),
+    ('center', 2, 'float', center_offset),
     ]
-print(vertex_format_7f)
+
+print vertex_format_7f
+
+
+

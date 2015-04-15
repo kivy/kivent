@@ -7,5 +7,5 @@ ctypedef struct VertexFormat4F:
 ctypedef struct VertexFormat7F:
     GLfloat[2] pos
     GLfloat[2] uvs
-    GLfloat[3] rot
-    
+    GLfloat rot
+    GLfloat[2] center

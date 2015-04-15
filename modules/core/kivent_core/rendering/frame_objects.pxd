@@ -4,4 +4,4 @@ cdef class FixedFrameData:
     cdef FixedVBO index_vbo
     cdef FixedVBO vertex_vbo
 
-    cdef void return_memory(FixedFrameData self)
+    cdef void return_memory(self)

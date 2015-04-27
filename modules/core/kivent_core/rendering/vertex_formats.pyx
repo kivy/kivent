@@ -24,8 +24,3 @@ vertex_format_7f = [
     ('rot', 1, 'float', rot_offset),
     ('center', 2, 'float', center_offset),
     ]
-
-print vertex_format_7f
-
-
-

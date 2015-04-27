@@ -26,7 +26,9 @@ cdef class KEVertexFormat(VertexFormat):
 
     **Attributes: (Cython Access Only)**
         attr_offsets (Py_ssize_t*): Pointer to the array containing the 
-        offsets for each attribute of the VertexFormat.
+        offsets for each attribute of the VertexFormat. Separate from 
+        the rest of the data to maintain compatibility with the Kivy 
+        VertexFormat.
     '''
     def __cinit__(self, size_in_bytes, *fmt):
         self.attr_offsets = NULL
@@ -40,6 +42,20 @@ cdef class KEVertexFormat(VertexFormat):
             self.attr_offsets = NULL
 
     def __init__(self, size_in_bytes, *fmt):
+        '''When creating a KEVertexFormat size_in_bytes should be the sizeof
+        result for the struct being used to hold vertex data. The vertex fmt 
+        arg differs slightly from the one found in the default kivy by 
+        including the offset in bytes of the attr in the struct. You can 
+        see examples in the vertex_formats.pyx.
+
+        Args:
+            size_in_bytes (unsigned int): The sizeof of the struct being used
+            to hold vertex data.
+
+            fmt (list): List of ('vert name' (bytes), count(unsigned int), 
+            'type'(str), offsetof(attr)(unsigned int)) tuples representing the 
+            vertex data.
+        '''
         cdef vertex_attr_t *attr
         cdef Py_ssize_t* attr_offsets
         cdef int index, size
@@ -101,6 +117,8 @@ cdef class KEVertexFormat(VertexFormat):
         self.vbytesize = size_in_bytes
 
     cdef void bind(self):
+        '''Responsible for making the current KEVertexFormat the active one
+        by calling glVertexAttribPointer for each of the attributes'''
         cdef Shader shader = getActiveContext()._shader
         cdef vertex_attr_t *attr
         cdef vertex_attr_t* vattr = self.vattr

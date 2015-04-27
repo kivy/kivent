@@ -19,21 +19,21 @@ cdef class IndexedBatch:
     cdef object mesh_instruction
     cdef ComponentPointerAggregator entity_components
 
-    cdef tuple add_entity(IndexedBatch self, unsigned int entity_id, 
-        unsigned int num_verts, unsigned int num_indices)
-    cdef void remove_entity(IndexedBatch self, unsigned int entity_id, 
+    cdef tuple add_entity(self, unsigned int entity_id, unsigned int num_verts, 
+        unsigned int num_indices)
+    cdef void remove_entity(self, unsigned int entity_id, 
         unsigned int num_verts, unsigned int vert_index, 
         unsigned int num_indices, unsigned int ind_index)
-    cdef bool check_empty(IndexedBatch self)
-    cdef bool can_fit_data(IndexedBatch self, unsigned int num_verts, 
+    cdef bool check_empty(self)
+    cdef bool can_fit_data(self, unsigned int num_verts, 
         unsigned int num_indices)
-    cdef void* get_vbo_frame_to_draw(IndexedBatch self)
-    cdef FixedFrameData get_current_vbo(IndexedBatch self)
-    cdef void* get_indices_frame_to_draw(IndexedBatch self)
-    cdef void set_index_count_for_frame(IndexedBatch self, 
+    cdef void* get_vbo_frame_to_draw(self)
+    cdef FixedFrameData get_current_vbo(self)
+    cdef void* get_indices_frame_to_draw(self)
+    cdef void set_index_count_for_frame(self, 
         unsigned int index_count)
-    cdef void draw_frame(IndexedBatch self)
-    cdef void clear_frames(IndexedBatch self)
+    cdef void draw_frame(self)
+    cdef void clear_frames(self)
 
 
 cdef class BatchManager:

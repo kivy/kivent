@@ -17,8 +17,46 @@ from kivent_core.gameworld import debug
 
 
 cdef class IndexedBatch:
+    '''The IndexedBatch represents a collection of FixedFrameData vbos, 
+    suitable for rendering using GL_TRIANGLES mode. Data will be split into 
+    both an indices VBO and a vertices VBO, and explicit multibuffering
+    will be performed. Drawing will be performed by calling glDrawElements. 
+    Each frame the FixedFrameData at position **current_frame** % 
+    **frame_count** in the **frame_data** list will be used for rendering.
 
-    def __cinit__(IndexedBatch self, int tex_key, unsigned int index_count,
+    **Attributes: (Cython Access Only)**
+
+        **frame_data** (list): List of FixedFrameData objects for this 
+        batch.
+
+        **current_frame** (unsigned int): Every frame rendered (calling 
+        **draw_frame**) will increment this by 1.
+
+        **frame_count** (unsigned int): Number of FixedFrameData objects 
+        in the **frame_data** list. The number of buffers to use.
+
+        **tex_key** (int): Identifier for the texture resource that will 
+        be used when drawing the entities in this batch. All entities must 
+        share the same texture.
+
+        **batch_id** (unsigned int): The identifier for this batch, will be 
+        set by the **BatchManager** controlling this batch. Defaults to 
+        <unsigned int>-1.
+
+        **mode** (GLuint): The drawing mode for this batch. Will be one of 
+        GL_TRIANGLES, GL_LINES, GL_POINTS, GL_TRIANGLE_FAN, GL_LINE_STRIP,
+        GL_LINE_LOOP, GL_TRIANGLE_STRIP.
+
+        **mesh_instruction** (object): Reference to the actual instruction 
+        that will be added to the canvas of the parent renderer.
+
+        **entity_components** (ComponentPointerAggregator): Helper object 
+        for retrieving pointers to the components of entities added to this 
+        batch.
+
+    '''
+
+    def __cinit__(self, int tex_key, unsigned int index_count,
         unsigned int vertex_count, unsigned int frame_count, list vbos,
         GLuint mode, ComponentPointerAggregator aggregator):
         self.frame_data = vbos
@@ -30,8 +68,21 @@ cdef class IndexedBatch:
         self.entity_components = aggregator
         self.mesh_instruction = None
 
-    cdef tuple add_entity(IndexedBatch self, unsigned int entity_id, 
-        unsigned int num_verts, unsigned int num_indices):
+    cdef tuple add_entity(self, unsigned int entity_id, unsigned int num_verts, 
+        unsigned int num_indices):
+        '''Adds an entity to the batch. The components will be inserted into 
+        the **entity_components** aggregator for ease of access.
+
+        Args:
+            entity_id (unsigned int): The identity of the entity to add.
+
+            num_verts (unsigned int): The number of vertices for this entity.
+
+            num_indices (unsigned int): The number of indices for this entity.
+
+        Return:
+            tuple: index of vertices, index of indices in the batch memory.
+        '''
         cdef FixedFrameData primary_frame = self.frame_data[0]
         cdef FixedVBO indices = primary_frame.index_vbo
         cdef FixedVBO vertices = primary_frame.vertex_vbo
@@ -47,9 +98,23 @@ cdef class IndexedBatch:
                     ind_index=ind_index))
         return (vert_index, ind_index)
 
-    cdef void remove_entity(IndexedBatch self, unsigned int entity_id, 
+    cdef void remove_entity(self, unsigned int entity_id, 
         unsigned int num_verts, unsigned int vert_index, 
         unsigned int num_indices, unsigned int ind_index):
+        '''Removes an entity from the batch. 
+        Args:
+            entity_id (unsigned int): The identity of the entity to add.
+
+            num_verts (unsigned int): The number of vertices for this entity.
+
+            vert_index (unsigned int): The index of the vertices in memory, 
+            returned from **add_entity**.
+
+            num_indices (unsigned int): The number of indices for this entity.
+
+            ind_index (unsigned int): The index of the indices in memory, 
+            returned from **add_entity**.
+        '''
         cdef FixedFrameData primary_frame = self.frame_data[0]
         cdef FixedVBO indices = primary_frame.index_vbo
         cdef FixedVBO vertices = primary_frame.vertex_vbo
@@ -64,11 +129,26 @@ cdef class IndexedBatch:
                     ind_index=ind_index))
         self.entity_components.remove_entity(entity_id)
 
-    cdef bool check_empty(IndexedBatch self):
+    cdef bool check_empty(self):
+        '''Checks whether the batch is empty by inspecting 
+        **entity_components**.
+        Return:
+            bool: True if **entity_components** is empty, else False.
+        '''
         return self.entity_components.check_empty()
 
-    cdef bool can_fit_data(IndexedBatch self, unsigned int num_verts, 
+    cdef bool can_fit_data(self, unsigned int num_verts, 
         unsigned int num_indices):
+        '''Checks whether the batch can fit the data for an entity we hope to 
+        add.
+        Args:
+            num_verts (unsigned int): The number of vertices we want to add.
+
+            num_indices (unsigned int): The number of indices we want to add.
+
+        Return:
+            bool: True if there is room in this batch, else False.
+        '''
         cdef FixedFrameData primary_frame = self.frame_data[0]
         cdef FixedVBO indices = primary_frame.index_vbo
         cdef FixedVBO vertices = primary_frame.vertex_vbo
@@ -77,28 +157,49 @@ cdef class IndexedBatch:
         return (vertex_block.can_fit_data(num_verts) and 
             indices_block.can_fit_data(num_indices))
 
-    cdef void* get_vbo_frame_to_draw(IndexedBatch self):
+    cdef void* get_vbo_frame_to_draw(self):
+        '''Returns a pointer to the vertex data for the next frame for writing
+        data to.
+
+        Return:
+            void*: Pointer to the data in the vertex FixedVBO's MemoryBlock.
+        '''
         cdef FixedFrameData frame_data = self.get_current_vbo()
         cdef FixedVBO vertices = frame_data.vertex_vbo
         cdef MemoryBlock vertex_block = vertices.memory_block
         return vertex_block.data
 
-    cdef FixedFrameData get_current_vbo(IndexedBatch self):
+    cdef FixedFrameData get_current_vbo(self):
+        '''Returns the next VBO pairing of indices and vertices VBO to use.
+
+        Return:
+            FixedFrameData: VBO at position **current_frame** % **frame_count**
+        '''
         return self.frame_data[self.current_frame % self.frame_count]
 
-    cdef void* get_indices_frame_to_draw(IndexedBatch self):
+    cdef void* get_indices_frame_to_draw(self):
+        '''Returns a pointer to the indices data for the next frame for writing
+        data to.
+
+        Return:
+            void*: Pointer to the data in the indices FixedVBO's MemoryBlock.
+        '''
         cdef FixedFrameData frame_data = self.get_current_vbo()
         cdef FixedVBO indices = frame_data.index_vbo
         cdef MemoryBlock index_block = indices.memory_block
         return index_block.data
 
-    cdef void set_index_count_for_frame(IndexedBatch self, 
-        unsigned int index_count):
+    cdef void set_index_count_for_frame(self, unsigned int index_count):
+        '''Sets the number of indices to be rendered on next **draw_frame**.'''
         cdef FixedFrameData frame_data = self.get_current_vbo()
         cdef FixedVBO indices = frame_data.index_vbo
         indices.data_size = index_count * sizeof(GLushort)
 
-    cdef void draw_frame(IndexedBatch self):
+    cdef void draw_frame(self):
+        '''Actually triggers the drawing of a frame by calling glDrawElements.
+        The current FixedFrameData as returned by **get_current_vbo** will be 
+        drawn. **current_frame** will be incremented after drawing.
+        '''
         cdef FixedFrameData frame_data = self.get_current_vbo()
         cdef FixedVBO indices = frame_data.index_vbo
         cdef FixedVBO vertices = frame_data.vertex_vbo
@@ -110,7 +211,10 @@ cdef class IndexedBatch:
         indices.unbind()
         self.current_frame += 1
 
-    cdef void clear_frames(IndexedBatch self):
+    cdef void clear_frames(self):
+        '''Clears all frames, returning their memory and deleting the members 
+        of **frame_data**.
+        '''
         cdef FixedFrameData frame
         cdef list frame_data = self.frame_data
         self.entity_components.free()

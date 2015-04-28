@@ -228,12 +228,121 @@ class MaxBatchException(Exception):
 
 
 cdef class BatchManager:
+    '''The BatchManager is responsible for managing a fixed amount of 
+    IndexedBatch to render more entities than will fit in a single 
+    IndexedBatch. It handles appropriate creation and reusing of these batches 
+    for you, and typically you will only care about **batch_entity** and 
+    **unbatch_entity** functions. All entities drawn by BatchManager must 
+    share the same KEVertexFormat, however they can have different textures.
 
-    def __cinit__(BatchManager self, unsigned int vbo_size_in_kb, 
-        unsigned int batch_count, unsigned int frame_count, 
-        KEVertexFormat vertex_format, Buffer master_buffer, str mode_str, 
-        object canvas, list system_names,
+    Keep in mind that each texture used will require a different batch so 
+    you should be careful not to use too many textures as the maximum amount 
+    of textures that can be used is the **max_batches**, and then we will be 
+    unable to render more than one batch worth of vertices per texture. This 
+    means you should try to combine textures into a single atlas as often as 
+    possible.
+
+    *Note at the moment only GL_TRIANGLES drawing mode is supported.*
+
+    **Attributes: (Cython Access Only)**
+
+        **batch_block** (MemoryBlock): The MemoryBlock reserved for holding 
+        vertex data of the IndexedBatch.
+
+        **indices_block** (MemoryBlock): The MemoryBlock reserved for holding 
+        indices data of the IndexedBatch.
+
+        **batches** (list): A list containing the active IndexedBatch objects.
+
+        **free_batches** (list): A list containing any currently unused batches 
+        waiting to be reused.
+
+        **batch_groups** (dict): Grouping of batches that share the same 
+        texture.
+
+        **gameworld** (object): Reference to the active gameworld, used when 
+        creating ComponentPointerAggregator to make iterating an IndexedBatch 
+        easier when rendering.
+
+        **batch_count** (unsigned int): The number of active batches either in 
+        use or waiting in the free list for reuse.
+
+        **max_batches** (unsigned int): The maximum number of batches that can 
+        be used.
+
+        **frame_count** (unsigned int): The number of frames that will be 
+        multibuffered for each IndexedBatch.
+
+        **slots_per_block** (unsigned int): The number of vertices held in each 
+        IndexedBatch.
+
+        **index_slots_per_block** (unsigned int): The number of indices held in 
+        each IndexedBatch. *Note: OpenGL ES2 have a limit of 65,535*
+
+        **vbo_size_in_kb** (unsigned int): The size of the batch VBO in 
+        kibibytes.
+
+        **mode_str** (str): The human readable mode of the rendering. Can be 
+        'triangles', 'points', 'line_strip', 'line_loop', 'lines', 
+        'triangle_strip', or 'triangle_fan'.
+
+        **mode** (GLuint): The GL translation of the **mode_str**. Will be 
+        either GL_TRIANGLES, GL_POINTS, GL_LINE_STRIP, GL_LINE_LOOP, GL_LINES, 
+        GL_TRIANGLE_STRIP, or GL_TRIANGLE_FAN.
+
+        **vertex_format** (KEVertexFormat): The KEVertexFormat containing 
+        information for binding the format of the vertices during rendering.
+
+        **canvas** (object): The canvas of the parent GameSystem that all 
+        batches will be drawn to.
+
+        **system_names** (list): List of the system_names that we should 
+        write pointers to in the ComponentPointerAggregator for rendering.
+
+        **master_buffer** (Buffer): The Buffer from which all memory will be 
+        allocated.
+
+        **ent_per_batch** (unsigned int): An estimation of the number of 
+        entities that will fit in each batch. The ComponentPointerAggregator 
+        will be this size per batch. Created during initialization by dividing
+        the **slots_per_block** by the **smallest_vertex_count** init arg.
+    '''
+
+    def __cinit__(self, unsigned int vbo_size_in_kb, unsigned int batch_count, 
+        unsigned int frame_count, KEVertexFormat vertex_format, 
+        Buffer master_buffer, str mode_str, object canvas, list system_names, 
         unsigned int smallest_vertex_count, object gameworld):
+        '''
+        Args:
+
+        vbo_size_in_kb (unsigned int): The size of each VBO in the 
+        IndexedBatch in kibibytes.
+
+        batch_count (unsigned int): The maximum number of batches.
+
+        frame_count (unsigned int): The number of frames to be multibuffered
+        per IndexedBatch.
+
+        vertex_format (KEVertexFormat): The vertex format to be used for all 
+        drawing by this BatchManager.
+
+        master_buffer (Buffer): The buffer to allocate all memory for rendering 
+        from.
+
+        mode_str (str): The drawing mode for this batch. Currently only 
+        'triangles' is supported. 
+
+        canvas (object): Reference the Widget canvas to draw to.
+
+        system_names (list): Names (str) of the GameSystem to aggregator 
+        pointers to in the IndexedBatch ComponentPointerAggregator.
+
+        smallest_vertex_count (unsigned int): The smallest number of vertices 
+        to be found in an Entity. Will be 4 if you are drawing sprites.
+
+        gameworld (object): Reference to the GameWorld object that is the 
+        parent of this BatchManager's GameSystem.
+        '''
         cdef MemoryBlock batch_block, indices_block
         self.gameworld = gameworld
         self.system_names = system_names
@@ -249,8 +358,8 @@ cdef class BatchManager:
         self.batch_block = batch_block = MemoryBlock(block_count*size_in_bytes, 
             size_in_bytes, 1)
         Logger.info('KivEnt: Batches for canvas: {canvas} will have ' 
-            '{vert_slots_per_block} verts and VBO will be {vbo_size} in KiB per'
-            ' frame with {count} total vbos, an estimated {ent_per_batch}' 
+            '{vert_slots_per_block} verts and VBO will be {vbo_size} in KiB'
+            ' per frame with {count} total vbos, an estimated {ent_per_batch}' 
             ' enities fit in each batch with {verts} verts per entity'.format(
             canvas=str(canvas), vert_slots_per_block=vert_slots_per_block, 
             vbo_size=vbo_size_in_kb, count=block_count, 
@@ -274,12 +383,24 @@ cdef class BatchManager:
         self.canvas = canvas
 
     cdef unsigned int get_size(self):
+        '''Returns the combined size of all memory being used by the 
+        BatchManager: the **indices_block**, the **batch_block** and all 
+        ComponentPointerAggregator.
+        Return:
+            unsigned int: size in bytes of all the memory.
+        '''
         cdef unsigned int pointer_size = self.get_size_of_component_pointers()
         return self.indices_block.real_size + self.batch_block.real_size + (
             pointer_size)
 
-    cdef void set_mode(BatchManager self, str mode):
-        # most common case in top;
+    cdef void set_mode(self, str mode):
+        '''Sets the mode of drawing.
+        Args:
+            mode (str): Can be 'triangles', 'points', 'line_strip', 
+            'line_loop', 'lines', 'triangle_strip', or 'triangle_fan'.
+
+        **warning: only 'triangles' is supported at the moment**
+        '''
         self.mode_str = mode
         if mode is 'triangles':
             self.mode = GL_TRIANGLES
@@ -298,10 +419,19 @@ cdef class BatchManager:
         else:
             self.mode = GL_TRIANGLES
 
-    cdef str get_mode(BatchManager self):
+    cdef str get_mode(self):
+        '''Returns the human readable name of the drawing mode
+        Return:
+            str: Name of the mode being used
+        '''
         return self.mode_str
 
     cdef unsigned int get_size_of_component_pointers(self):
+        '''Returns the combined size of all ComponentPointerAggregator for 
+        each IndexedBatch.
+        Return:
+            unsigned int: size in bytes of all ComponentPointerAggregator.
+        '''
         cdef ComponentPointerAggregator entity_components = (
             ComponentPointerAggregator(self.system_names, self.ent_per_batch,
                 self.gameworld, self.master_buffer))
@@ -309,7 +439,16 @@ cdef class BatchManager:
         entity_components.free()
         return real_size * self.max_batches
 
-    cdef unsigned int create_batch(BatchManager self, int tex_key) except -1:
+    cdef unsigned int create_batch(self, int tex_key) except -1:
+        '''Creates a new active batch and draws it to the canvas. If 
+        **batch_count** == **max_batches** a MaxBatchException will be raised.
+
+        Args:
+            tex_key (int): Identity key of the texture to be used.
+
+        Return:
+            unsigned int: The index of this batch in the batches list.
+        '''
         if self.batch_count == self.max_batches:
             raise MaxBatchException(
                 'Cannot allocate another batch: Max batches: ', 
@@ -345,7 +484,14 @@ cdef class BatchManager:
             batch.mesh_instruction = new_cmesh
         return new_index
   
-    cdef void remove_batch(BatchManager self, unsigned int batch_id):
+    cdef void remove_batch(self, unsigned int batch_id):
+        '''Removes a batch, clearing it and adding it to the **free_batches**
+        list.
+
+        Args:
+            batch_id (unsigned int): The id of the batch as returned by 
+            **create_batch**.
+        '''
         cdef IndexedBatch batch = self.batches[batch_id]
         cdef int tex_key = batch.tex_key
         self.canvas.remove(batch.mesh_instruction)
@@ -355,8 +501,24 @@ cdef class BatchManager:
         self.batches[batch_id] = None
         self.free_batches.append(batch_id)
 
-    cdef IndexedBatch get_batch_with_space(BatchManager self, int tex_key, 
+    cdef IndexedBatch get_batch_with_space(self, int tex_key, 
         unsigned int num_verts, unsigned int num_indices):
+        '''Finds a batch with enough room to fit this data, or creates a new 
+        one.
+
+        Args:
+            tex_key (int): The identity key of the texture for the data. 
+
+            num_verts (unsigned int): The number of vertices space is needed 
+            for.
+
+            num_indices (unsigned int): The number of indices space is 
+            needed for.
+
+        Return:
+            IndexedBatch: a batch that will have room for the data.
+        '''
+
         cdef dict batch_groups = self.batch_groups
         cdef IndexedBatch batch
         if tex_key not in batch_groups:
@@ -368,14 +530,29 @@ cdef class BatchManager:
             else:
                 return self.batches[self.create_batch(tex_key)]
 
-    cdef tuple batch_entity(BatchManager self, unsigned int entity_id, 
+    cdef tuple batch_entity(self, unsigned int entity_id, 
         int tex_key, unsigned int num_verts, unsigned int num_indices):
+        '''Batches an entity.
+        Args:
+            entity_id (unsigned int): The entity_id of the entity to be 
+            batched.
+
+            tex_key (int): The identity key of the texture for the entity.
+
+            num_verts (unsigned int): The number of vertices in the entity.
+
+            num_indices (unsigned int): The number of indices in the entity.
+
+        Return:
+            tuple: batch_id, vert_index, indices_index.
+        '''
         cdef IndexedBatch batch = self.get_batch_with_space(
             tex_key, num_verts, num_indices)
-        cdef tuple indices = batch.add_entity(entity_id, num_verts, num_indices)
-        return (batch.batch_id, indices[0], indices[1]) # batch, vert, ind
+        cdef tuple indices = batch.add_entity(entity_id, num_verts, 
+            num_indices)
+        return (batch.batch_id, indices[0], indices[1])
 
-    cdef bint unbatch_entity(BatchManager self, unsigned int entity_id, 
+    cdef bint unbatch_entity(self, unsigned int entity_id, 
         unsigned int batch_id, unsigned int num_verts, 
         unsigned int num_indices, unsigned int vert_index,
         unsigned int ind_index) except 0:
@@ -386,7 +563,7 @@ cdef class BatchManager:
             self.remove_batch(batch_id)
         return 1
 
-    cdef list get_vbos(BatchManager self):
+    cdef list get_vbos(self):
         cdef unsigned int i
         cdef MemoryBlock index_block, vertex_block
         cdef MemoryBlock master_vertex = self.batch_block

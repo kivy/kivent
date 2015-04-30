@@ -7,6 +7,20 @@ from kivy.properties import ObjectProperty, NumericProperty
 
 
 cdef class PositionComponent2D(MemComponent):
+    '''The component associated with PositionSystem2D.
+
+    **Attributes:**
+
+        **entity_id** (unsigned int): The entity_id this component is currently
+        associated with. Will be <unsigned int>-1 if the component is 
+        unattached.
+
+        **x** (float): The x position of the entity.
+
+        **y** (float): The y position of the entity.
+
+        **pos** (tuple): A tuple of the (x, y) position.
+    '''
     
     property entity_id:
         def __get__(self):
@@ -33,12 +47,19 @@ cdef class PositionComponent2D(MemComponent):
         def __get__(self):
             cdef PositionStruct2D* data = <PositionStruct2D*>self.pointer
             return (data.x, data.y)
+        def __set__(self, tuple new_pos):
+            cdef PositionStruct2D* data = <PositionStruct2D*>self.pointer
+            data.x = new_pos[0]
+            data.y = new_pos[1]
 
 
 cdef class PositionSystem2D(StaticMemGameSystem):
-    '''PositionSystem is optimized to hold location data for your entities.
-    The rendering systems will be able to interact with this data using the
-    underlying C structures rather than the Python objects.'''
+    '''PositionSystem2D abstracts 2 dimensional position data out into its own
+    system so that all other GameSystem can interact with the position of an 
+    Entity without having to know specifically about dependent systems such as 
+    the CymunkPhysics system or any other method of determining the actual 
+    position. This GameSystem does no processing of its own, just holding data.
+    '''
     type_size = NumericProperty(sizeof(PositionStruct2D))
     component_type = ObjectProperty(PositionComponent2D)
         

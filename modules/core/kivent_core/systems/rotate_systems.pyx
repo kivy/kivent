@@ -6,6 +6,16 @@ from kivy.factory import Factory
 from kivy.properties import ObjectProperty, NumericProperty
 
 cdef class RotateComponent2D(MemComponent):
+    '''The component associated with RotateSystem2D.
+
+    **Attributes:**
+
+        **entity_id** (unsigned int): The entity_id this component is currently
+        associated with. Will be <unsigned int>-1 if the component is 
+        unattached.
+
+        **r** (float): The rotation around center of the entity.
+    '''
     
     property entity_id:
         def __get__(self):
@@ -22,10 +32,14 @@ cdef class RotateComponent2D(MemComponent):
 
 
 cdef class RotateSystem2D(StaticMemGameSystem):
-    '''RotateSystem is optimized to hold a single rotate float for your 
-    entities, suitable for handling 2d rotations of sprites. 
-    The CymunkPhysics System and Renderers expect this to be an 
-    angle in radians.
+    '''RotateSystem2D abstracts 2 dimensional rotation data out into its own
+    system so that all other GameSystem can interact with the rotation of an 
+    Entity without having to know specifically about dependent systems such as 
+    the CymunkPhysics system or any other method of determining the actual 
+    rotation. This GameSystem does no processing of its own, just holding data.
+
+    Typically other GameSystems will interpret this rotation as being a 
+    rotation around the center of the entity. 
     '''
     type_size = NumericProperty(sizeof(RotateStruct2D))
     component_type = ObjectProperty(RotateComponent2D)

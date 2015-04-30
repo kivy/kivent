@@ -7,6 +7,20 @@ from kivy.properties import ObjectProperty, NumericProperty
 
 
 cdef class ScaleComponent2D(MemComponent):
+    '''The component associated with ScaleSystem2D.
+
+    **Attributes:**
+
+        **entity_id** (unsigned int): The entity_id this component is currently
+        associated with. Will be <unsigned int>-1 if the component is 
+        unattached.
+
+        **s** (float): The x position of the center of the entity.
+
+        **sx** (float): The y position of the center of the entity.
+
+        **sy** (float): A tuple of the (x, y) position.
+    '''
     
     property entity_id:
         def __get__(self):
@@ -40,11 +54,11 @@ cdef class ScaleComponent2D(MemComponent):
 
 
 cdef class ScaleSystem2D(StaticMemGameSystem):
-    '''ScaleSystem is optimized to hold 2d scale data for your entities.
-    The rendering systems will be able to interact with this data using the
-    underlying C structures rather than the Python objects. This object will
-    potentially change in the future to support scaling at different
-    rates in different directions.'''
+    '''ScaleSystem2D abstracts 2 dimensional scale data out into its own
+    system so that all other GameSystem can interact with the scale factor of 
+    an Entity without having to know specifically about dependent systems 
+    actually controlling the scale. This GameSystem does no processing of its 
+    own, just holding data.'''
     type_size = NumericProperty(sizeof(ScaleStruct2D))
     component_type = ObjectProperty(ScaleComponent2D)
 

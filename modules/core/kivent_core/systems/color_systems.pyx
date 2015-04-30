@@ -7,6 +7,22 @@ from kivy.properties import ObjectProperty, NumericProperty
 
 
 cdef class ColorComponent(MemComponent):
+    '''The component associated with ColorSystem.
+
+    **Attributes:**
+
+        **entity_id** (unsigned int): The entity_id this component is currently
+        associated with. Will be <unsigned int>-1 if the component is 
+        unattached.
+
+        **r** (float): The red channel, 0.0 to 1.0.
+
+        **g** (float): The green channel, 0.0 to 1.0.
+
+        **b** (float): The blue channel, 0.0 to 1.0.
+
+        **a** (float): The alpha channel, 0.0 to 1.0.
+    '''
 
     property entity_id:
         def __get__(self):
@@ -47,8 +63,13 @@ cdef class ColorComponent(MemComponent):
 
 
 cdef class ColorSystem(StaticMemGameSystem):
-    '''ColorSystem holds r,g,b,a that will be applied to the whole model
-    of the Entity using renderers that apply to 
+    '''ColorSystem abstracts color data out into its own system so that all 
+    other GameSystem can interact with the color of an Entity without having to 
+    know about whatever system is controlling the actual color the entity. It 
+    is suitable for controlling a color that is applied over the whole model 
+    of an entity tinting its texture or coloring every vertex.
+
+    This GameSystem does no processing of its own, just holding data.
     '''
     type_size = NumericProperty(sizeof(ColorStruct))
     component_type = ObjectProperty(ColorComponent)

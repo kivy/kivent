@@ -36,12 +36,50 @@ from kivy.properties import ObjectProperty, NumericProperty
 
 
 cdef class RenderComponent(MemComponent):
+    '''The component associated with various renderers including: Renderer 
+    and PhysicsRenderer. Designed for 2d sprites, but potentially useful for 
+    other types of models as well. If not using for sprites, ignore **width**,
+    **height**, and **texture_key** properties as they are designed for 
+    convenience when working with textured quads. Prefer instead to modify the 
+    properties of the **vert_mesh** directly.
+
+    **Attributes:**
+
+        **entity_id** (unsigned int): The entity_id this component is currently
+        associated with. Will be <unsigned int>-1 if the component is 
+        unattached.
+
+        **width** (float): The width of the sprite.
+
+        **height** (float): The height of the sprite.
+
+        **batch_id** (unsigned int): The batch the entity is assigned to. Read
+        Only. If the entity is not currently batched will be <unsigned int>-1.
+
+        **attribute_count** (unsigned int): The number of attributes in the 
+        vertex format for the model.
+
+        **texture_key** (str): The name of the texture for this sprite.
+
+        **render** (bool): Whether or not this entity should actually be 
+        rendered.
+
+        **vertex_count** (unsigned int): The number of vertices in the current 
+        model (the **vert_mesh**). You should not modify the number of vertices 
+        while an entity is batched.
+
+        **index_count** (unsigned int): The number of indices in the current 
+        model (the **vert_mesh**). You should not modify the number of indices
+        while an entity is batched.
+
+        **vert_mesh** (VertMesh): The actual VertMesh object containing the 
+        model information for this component. 
+    '''
 
     property entity_id:
         def __get__(self):
             cdef RenderStruct* data = <RenderStruct*>self.pointer
             return data.entity_id
-
 
     property width:
         def __get__(self):
@@ -93,10 +131,6 @@ cdef class RenderComponent(MemComponent):
         def __get__(self):
             cdef RenderStruct* component_data = <RenderStruct*>self.pointer
             return component_data.batch_id
-
-        def __set__(self, int value):
-            cdef RenderStruct* component_data = <RenderStruct*>self.pointer
-            component_data.batch_id = value
 
 
     property attribute_count:
@@ -204,9 +238,11 @@ cdef class RenderComponent(MemComponent):
 
 
 cdef class Renderer(StaticMemGameSystem):
-    '''The basic KivEnt renderer it draws every entity every frame. Entities 
+    '''The basic KivEnt renderer draws every entity every frame. Entities 
     will be batched into groups of up to **maximum_vertices**, if they can
-    share the source of texture. 
+    share the source of texture. The drawing will use a VertexFormat4F that 
+    only accounts for position and uv coordinates. This GameSystem is only 
+    dependent on its own component and the PositionComponent2D.
 
     **Attributes:**
         **shader_source** (StringProperty): Path to the .glsl to be used, do 
@@ -242,6 +278,32 @@ cdef class Renderer(StaticMemGameSystem):
         will be reset to this after drawing this canvas. 
         See blend_factor_source for more details.
 
+        **smallest_vertex_count** (NumericProperty, should be int): Used to 
+        estimate the number of entities that can fit in each batch at max,
+        batch ComponentPointerAggregator will then be **size_of_batches** //
+        **smallest_vertex_count** * **vertex_format_size**.  
+
+        **max_batches** (NumericProperty, should be int): The maximum number 
+        of space to reserve for this renderer. Will be **max_batches** * 
+        **frame_count** * **size_of_batches**.
+
+        **size_of_batches** (NumericProperty): Size in kibibytes of each batch.
+
+        **vertex_format_size** (NumericProperty): The size in bytes of the 
+        vertex_format to be used. Will typically be the result of calling
+        sizeof on the struct being used.
+
+        **frame_count** (NumericProperty, should be int): The number of frames 
+        to multibuffer. 
+
+    **Attributes: (Cython Access Only)**
+
+        **attribute_count** (unsigned int): The number of attributes in the 
+        VertMesh format for this renderer. Defaults to 4 (x, y, u, v).
+
+        **batch_manager** (BatchManager): The BatchManager that is responsible
+        for actually submitting vertex data to the GPU.
+
     '''
     system_id = StringProperty('renderer')
     updateable = BooleanProperty(True)
@@ -273,9 +335,15 @@ cdef class Renderer(StaticMemGameSystem):
             Callback(self._reset_blend_func)         
 
     def _set_blend_func(self, instruction):
+        '''This function is called internally in a callback on canvas.before 
+        to set up the blend function, it will obey **blend_factor_source**
+        and **blend_factor_dest** properties.'''
         glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
 
     def _reset_blend_func(self, instruction):
+        '''This function is called internally in a callback on canvas.after
+        to reset the blend function, it will obey **reset_blend_factor_source**
+        and **reset_blend_factor_dest** properties.'''
         glBlendFunc(self.reset_blend_factor_source, 
             self.reset_blend_factor_dest)
 
@@ -288,6 +356,8 @@ cdef class Renderer(StaticMemGameSystem):
         self.update(dt)
 
     def on_shader_source(self, instance, value):
+        '''Event that sets the canvas.shader.source property when the 
+        **shader_source** property is set'''
         self.canvas.shader.source = value
 
     def clear_component(self, unsigned int component_index):
@@ -304,6 +374,10 @@ cdef class Renderer(StaticMemGameSystem):
         pointer.ind_index = -1
 
     cdef void* setup_batch_manager(self, Buffer master_buffer) except NULL:
+        '''Function called internally during **allocate** to setup the 
+        BatchManager. The KEVertexFormat should be initialized in this 
+        function as well.
+        '''
         cdef KEVertexFormat batch_vertex_format = KEVertexFormat(
             sizeof(VertexFormat4F), *vertex_format_4f)
         self.batch_manager = BatchManager(
@@ -394,8 +468,16 @@ cdef class Renderer(StaticMemGameSystem):
 
     def update(self, dt):
         '''Update function where all drawing of entities is performed. 
-        Override this method in combination with calculate_vertex_format
-        if you would like to create a renderer with customized behavior.'''
+        Override this method if you would like to create a renderer with 
+        customized behavior. The basic logic is that we iterate through 
+        each batch getting the entities in that batch, then iterate through 
+        the vertices in the RenderComponent.vert_mesh, copying every 
+        vertex into the batches data and combining it with data from other 
+        components.
+        Args:
+            dt (float): The time elapsed since last update, not usually 
+            used in rendering but passed in to maintain a consistent API.
+        '''
         cdef IndexedBatch batch
         cdef list batches
         cdef unsigned int batch_key
@@ -469,6 +551,11 @@ cdef class Renderer(StaticMemGameSystem):
         super(Renderer, self).remove_component(component_index)
 
     def unbatch_entity(self, unsigned int entity_id):
+        '''Python accessible function for unbatching the entity, the real work 
+        is done in the cdefed _unbatch_entity.
+        Args:
+            entity_id (unsigned int): The id of the entity to unbatch.
+        '''
         cdef IndexedMemoryZone components = self.imz_components
         cdef IndexedMemoryZone entities = self.gameworld.entities
         cdef Entity entity = entities[entity_id]
@@ -479,6 +566,19 @@ cdef class Renderer(StaticMemGameSystem):
 
     cdef void* _unbatch_entity(self, unsigned int entity_id, 
         RenderStruct* component_data) except NULL:
+        '''The actual unbatching function. Will call 
+        **batch_manager**.unbatch_entity.
+        Args:
+            entity_id (unsigned int): The id of the entity to be unbatched.
+
+            component_data (RenderStruct*): Pointer to the actual component 
+            data for the entity.
+
+        Return:
+            void*: Will return a pointer to the component_data passed in 
+            if successful, will raise an exception if NULL is returned. This 
+            return is required for exception propogation.
+        '''
         cdef list meshes = model_manager.meshes
         cdef VertMesh vert_mesh = meshes[component_data.vert_index_key]
         cdef unsigned int vert_count = vert_mesh._vert_count
@@ -492,6 +592,11 @@ cdef class Renderer(StaticMemGameSystem):
         return component_data
 
     def batch_entity(self, unsigned int entity_id):
+        '''Python accessible function for batching the entity, the real work 
+        is done in the cdefed _batch_entity.
+        Args:
+            entity_id (unsigned int): The id of the entity to unbatch.
+        '''
         cdef IndexedMemoryZone components = self.imz_components
         cdef IndexedMemoryZone entities = self.gameworld.entities
         cdef Entity entity = entities[entity_id]
@@ -502,6 +607,19 @@ cdef class Renderer(StaticMemGameSystem):
 
     cdef void* _batch_entity(self, unsigned int entity_id, 
         RenderStruct* component_data) except NULL:
+        '''The actual batching function. Will call 
+        **batch_manager**.batch_entity.
+        Args:
+            entity_id (unsigned int): The id of the entity to be unbatched.
+
+            component_data (RenderStruct*): Pointer to the actual component 
+            data for the entity.
+
+        Return:
+            void*: Will return a pointer to the component_data passed in 
+            if successful, will raise an exception if NULL is returned. This 
+            return is required for exception propogation.
+        '''
         cdef list meshes = model_manager.meshes
         cdef tuple batch_indices
         cdef VertMesh vert_mesh = meshes[component_data.vert_index_key]
@@ -517,6 +635,13 @@ cdef class Renderer(StaticMemGameSystem):
         return component_data
 
 cdef class PhysicsRenderer(Renderer):
+    '''This renderer draws every entity every frame, with rotation data suitable
+    for use with entities using the CymunkPhysics GameSystems. The drawing will 
+    use a VertexFormat7F that accounts for position of vertex, uv coordinates,
+    the rotation around the center and the actual center of the rotation. 
+    This GameSystem is dependent on its own component, the PositionComponent2D, 
+    and the RotateComponent2D.
+    '''
     system_names = ListProperty(['physics_renderer', 'position',
         'rotate'])
     system_id = StringProperty('physics_renderer')
@@ -533,10 +658,6 @@ cdef class PhysicsRenderer(Renderer):
         return <void*>self.batch_manager
 
     def update(self, dt):
-        '''Update function where all drawing of entities is performed. 
-        Override this method in combination with calculate_vertex_format
-        if you would like to create a renderer with customized behavior.'''
-
         cdef IndexedBatch batch
         cdef list batches
         cdef unsigned int batch_key

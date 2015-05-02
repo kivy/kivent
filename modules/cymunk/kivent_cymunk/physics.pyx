@@ -21,6 +21,34 @@ from kivent_core.managers.system_manager cimport system_manager
 
 
 cdef class PhysicsComponent(MemComponent):
+    '''The PhysicsComponent mainly exposes the ability to retrieve cymunk 
+    objects you will want to review the documentation for the various parts of 
+    cymunk (and Chipmunk2D's documentation) to properly use this system.
+
+
+    **Attributes:**
+
+        **entity_id** (unsigned int): The entity_id this component is currently
+        associated with. Will be <unsigned int>-1 if the component is 
+        unattached.
+
+        **body** (Body): returns the cymunk.Body for your physics component.
+        Only set this if you are handling the adding and removal of your 
+        physics body from the cymunk.Space yourself.
+
+        **unit_vector** (tuple): Returns the current unit_vector describing
+        the heading of your physics body. Does not support setting only 
+        getting.
+
+        **shapes** (list): Returns a list of the shapes attached to the body.
+        Be careful when setting to appropriately handle the shapes being 
+        added or removed from the **body**.
+
+
+        **shape_type** (str): The type of shape this components **body**
+        was initialized with. Only set if you have been modifying your **body**
+        manually and you know what you're doing.
+    '''
 
     def __cinit__(self, MemoryBlock memory_block, unsigned int index,
             unsigned int offset):
@@ -61,6 +89,11 @@ cdef class CymunkPhysics(StaticMemGameSystem):
     the Chipmunk2d Physics Engine. Check the docs for Chipmunk2d to get an
     overview of how to work with Cymunk. https://chipmunk-physics.net/
 
+    This GameSystem is dependent on the PositionComponent2D and 
+    RotateComponent2d in addition to its own component. It will write out 
+    the position and rotation of the cymunk.Body associated with your entity 
+    every frame to these components.
+
     **Attributes:**
         **space** (ObjectProperty): The Cymunk Space the physics system is 
         using
@@ -79,9 +112,6 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         **damping** (NumericProperty): Damping for the Space, this is sort of 
         like a global kind of friction, all velocities will be reduced to 
         damping*initial_velocity every update tick. 
-
-        **on_screen_result** (list): Caches the entity_ids that were on 
-        on_screen last update. Prefer to use this compared to query_on_screen
 
     '''
     system_id = StringProperty('cymunk_physics')
@@ -102,7 +132,6 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         super(CymunkPhysics, self).__init__(**kwargs)
         self.bb_query_result = []
         self.segment_query_result = []
-        self.on_screen_result = []
         self.init_physics()
         
     def add_collision_handler(self, int type_a, int type_b, begin_func=None, 
@@ -150,9 +179,11 @@ cdef class CymunkPhysics(StaticMemGameSystem):
             post_solve_func, separate_func)
 
     def on_gravity(self, instance, value):
+        '''Event handler that sets the gravity of **space**.'''
         self.space.gravity = value
 
     def on_damping(self, instance, value):
+        '''Event handler that sets the damping of **space**.'''
         self.space.damping = value
 
     def init_physics(self):
@@ -164,32 +195,23 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         space.sleep_time_threshold = self.sleep_time_threshold
         
         space.collision_slop = self.collision_slop
-        space.register_bb_query_func(self.bb_query_func)
-        space.register_segment_query_func(self.segment_query_func)
+        space.register_bb_query_func(self._bb_query_func)
+        space.register_segment_query_func(self._segment_query_func)
 
-    def bb_query_func(self, Shape shape):
+    def _bb_query_func(self, Shape shape):
+        '''Internal callback used as part of a bounding box query, will be
+        used as part of **query_bb**. It is registered as part of 
+        **init_physics**.'''
         ignore_groups = self.ignore_groups
         if not shape.collision_type in ignore_groups:
             self.bb_query_result.append(shape.body.data)
 
-    def segment_query_func(self, object shape, float t, dict n):
+    def _segment_query_func(self, object shape, float t, dict n):
+        '''Internal callback used as part of a segment query, will be used as 
+        part of **query_segment**. It is registered as part of 
+        **init_phyiscs**.
+        '''
         self.segment_query_result.append((shape.body.data, t, n))
-
-    def query_on_screen(self):
-        '''Used internally to query entities on screen for a frame. Prefer to
-        use on_screen_result to get this information as it caches this 
-        information for performance'''
-        cdef object viewport = self.gameworld.systems[self.gameview]
-        camera_pos = viewport.camera_pos#TODO take this from gameview??
-        camera_scale = viewport.camera_scale
-        size = viewport.size
-        cdef list bb_list = [
-            -camera_pos[0], -camera_pos[1], 
-            -camera_pos[0] + size[0]*camera_scale, 
-            -camera_pos[1] + size[1]*camera_scale
-            ]
-        current_on_screen = self.query_bb(bb_list)
-        return current_on_screen
 
     def query_segment(self, vect_start, vect_end):
         '''

@@ -46,6 +46,9 @@ cdef class RotateSystem2D(StaticMemGameSystem):
 
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, str zone, float r):
+        '''A RotateComponent2D is always initialized with a single float 
+        representing a rotation in degrees. 
+        '''
         cdef MemoryZone memory_zone = self.components.memory_zone
         cdef RotateStruct2D* component = <RotateStruct2D*>(
             memory_zone.get_pointer(component_index))

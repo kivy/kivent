@@ -15,11 +15,13 @@ cdef class ScaleComponent2D(MemComponent):
         associated with. Will be <unsigned int>-1 if the component is 
         unattached.
 
-        **s** (float): The x position of the center of the entity.
+        **s** (float): The arithmetic average of the x scale and y scale, when 
+        set the x scale and y scale will be set to the value provided. Useful
+        if you want uniform scaling in both axes.
 
-        **sx** (float): The y position of the center of the entity.
+        **sx** (float): The x axis scaling of the entity.
 
-        **sy** (float): A tuple of the (x, y) position.
+        **sy** (float): The y axis scaling of the entity.
     '''
     
     property entity_id:
@@ -64,6 +66,11 @@ cdef class ScaleSystem2D(StaticMemGameSystem):
 
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, str zone, args):
+        '''A ScaleComponent2D can be initialized with either a separate
+        scaling factor for x axis and y axis or a single scaling factor for 
+        both. If args is a tuple sx will be args[0] and sy will be args[1],
+        otherwise sx = sy = args.
+        '''
         cdef float sx, sy
         if isinstance(args, tuple):
             sx = args[0]

@@ -59,7 +59,8 @@ cdef class RenderComponent(MemComponent):
         **attribute_count** (unsigned int): The number of attributes in the 
         vertex format for the model.
 
-        **texture_key** (str): The name of the texture for this sprite.
+        **texture_key** (str): The name of the texture for this component. If 
+        there is no texture None will be returned.
 
         **render** (bool): Whether or not this entity should actually be 
         rendered.
@@ -150,8 +151,11 @@ cdef class RenderComponent(MemComponent):
     property texture_key:
         def __get__(self):
             cdef RenderStruct* component_data = <RenderStruct*>self.pointer
-            return texture_manager.get_texkey_from_index_key(
-                component_data.texkey)
+            if component_data.texkey == <unsigned int>-1:
+                return None
+            else:
+                return texture_manager.get_texkey_from_index_key(
+                    component_data.texkey)
 
         def __set__(self, str value):
             cdef RenderStruct* component_data = <RenderStruct*>self.pointer
@@ -430,6 +434,24 @@ cdef class Renderer(StaticMemGameSystem):
         
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, str zone_name, args):
+        '''A RenderComponent is initialized with an args dict with many 
+        optional values.
+
+        Optional Args:
+            texture (str): If 'texture' is in args, the appropriate texture 
+            will be loaded from managers.resource_managers.texture_manager.
+
+            vert_mesh_key (str): If 'vert_mesh_key' is in args, the associated 
+            model from managers.resource_managers.model_manager will be loaded.
+            Otherwise, it will be assumed we are rendering a sprite and the 
+            appropriate model for that sprite will either be generated or 
+            loaded from the model_manager if it already exists. If this occurs 
+            the models name will be str(**attribute_count**) + texture_key.
+
+            render (bool): If 'render' is in args, the components render 
+            attribute will be set to the provided, otherwise it defaults to 
+            True.
+        '''
         cdef float w, h
         cdef int vert_index_key, texkey
         cdef bool copy, render

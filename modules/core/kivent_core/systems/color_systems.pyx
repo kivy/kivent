@@ -76,6 +76,8 @@ cdef class ColorSystem(StaticMemGameSystem):
 
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, str zone, args):
+        '''A color component is always initialized with a tuple (r, g, b, a).
+        '''
         cdef float r = args[0]
         cdef float g = args[1]
         cdef float b = args[2]

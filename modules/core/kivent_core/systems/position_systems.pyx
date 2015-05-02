@@ -15,9 +15,9 @@ cdef class PositionComponent2D(MemComponent):
         associated with. Will be <unsigned int>-1 if the component is 
         unattached.
 
-        **x** (float): The x position of the entity.
+        **x** (float): The x position of the center of the entity.
 
-        **y** (float): The y position of the entity.
+        **y** (float): The y position of the center of the entity.
 
         **pos** (tuple): A tuple of the (x, y) position.
     '''
@@ -65,6 +65,8 @@ cdef class PositionSystem2D(StaticMemGameSystem):
         
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, str zone, args):
+        '''A PositionComponent2D is initialized with an args tuple of (x, y).
+        '''
         cdef float x = args[0]
         cdef float y = args[1]
         cdef MemoryZone memory_zone = self.imz_components.memory_zone

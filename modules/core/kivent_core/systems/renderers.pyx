@@ -248,6 +248,9 @@ cdef class Renderer(StaticMemGameSystem):
     only accounts for position and uv coordinates. This GameSystem is only 
     dependent on its own component and the PositionComponent2D.
 
+    If you want a static renderer, set **frame_count** to 1 and **updateable**
+    to false.
+
     **Attributes:**
         **shader_source** (StringProperty): Path to the .glsl to be used, do 
         include '.glsl' in the name. You must ensure that your shader matches 
@@ -429,7 +432,7 @@ cdef class Renderer(StaticMemGameSystem):
             pointer.render = 1
         else:
             pointer.render = 0
-        self._batch_entity(entity_id, component_index, pointer)
+        self._batch_entity(entity_id, pointer)
         return pointer
         
     def init_component(self, unsigned int component_index, 
@@ -633,11 +636,10 @@ cdef class Renderer(StaticMemGameSystem):
         cdef Entity entity = entities[entity_id]
         cdef unsigned int component_index = entity.get_component_index(
             self.system_id)
-        self._batch_entity(entity_id, component_index, 
+        self._batch_entity(entity_id, 
             <RenderStruct*>components.get_pointer(component_index))
 
     cdef void* _batch_entity(self, unsigned int entity_id, 
-        unsigned int component_index, 
         RenderStruct* component_data) except NULL:
         '''The actual batching function. Will call 
         **batch_manager**.batch_entity.

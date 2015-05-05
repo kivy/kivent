@@ -33,6 +33,7 @@ from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.systems.staticmemgamesystem cimport ComponentPointerAggregator
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivy.properties import ObjectProperty, NumericProperty
+from kivy.clock import Clock
 
 
 cdef class RenderComponent(MemComponent):
@@ -339,7 +340,8 @@ cdef class Renderer(StaticMemGameSystem):
         with self.canvas.before:
             Callback(self._set_blend_func)
         with self.canvas.after:
-            Callback(self._reset_blend_func)         
+            Callback(self._reset_blend_func)
+        self.update_trigger = Clock.create_trigger(self.update)        
 
     def _set_blend_func(self, instruction):
         '''This function is called internally in a callback on canvas.before 
@@ -623,6 +625,8 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.batch_id = -1
         component_data.vert_index = -1
         component_data.ind_index = -1
+        if not self.updateable:
+            self.update_trigger()
         return component_data
 
     def batch_entity(self, unsigned int entity_id):
@@ -667,7 +671,7 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.vert_index = batch_indices[1]
         component_data.ind_index = batch_indices[2]
         if not self.updateable:
-            self.update(0.)
+            self.update_trigger()
         return component_data
 
 

@@ -429,7 +429,7 @@ cdef class Renderer(StaticMemGameSystem):
             pointer.render = 1
         else:
             pointer.render = 0
-        self._batch_entity(entity_id, pointer)
+        self._batch_entity(entity_id, component_index, pointer)
         return pointer
         
     def init_component(self, unsigned int component_index, 
@@ -448,9 +448,16 @@ cdef class Renderer(StaticMemGameSystem):
             loaded from the model_manager if it already exists. If this occurs 
             the models name will be str(**attribute_count**) + texture_key.
 
+            size (tuple): If size is provided and there is no 'vert_mesh_key'
+            and the sprite has not been loaded before the size of the newly 
+            generated sprite VertMesh will be set to (width, height).
+
             render (bool): If 'render' is in args, the components render 
             attribute will be set to the provided, otherwise it defaults to 
             True.
+
+        Keep in mind that all RenderComponent will share the same VertMesh if
+        they have the same vert_mesh_key or load the same sprite.
         '''
         cdef float w, h
         cdef int vert_index_key, texkey
@@ -522,10 +529,11 @@ cdef class Renderer(StaticMemGameSystem):
         cdef CMesh mesh_instruction
         cdef MemoryBlock components_block
         cdef void** component_data
-    
+ 
         for batch_key in batch_groups:
             batches = batch_groups[batch_key]
             for batch in batches:
+
                 entity_components = batch.entity_components
                 components_block = entity_components.memory_block
                 used = components_block.used_count
@@ -563,6 +571,7 @@ cdef class Renderer(StaticMemGameSystem):
                 batch.set_index_count_for_frame(index_offset)
                 mesh_instruction = batch.mesh_instruction
                 mesh_instruction.flag_update()
+ 
 
     def remove_component(self, unsigned int component_index):
         cdef IndexedMemoryZone components = self.imz_components
@@ -624,10 +633,11 @@ cdef class Renderer(StaticMemGameSystem):
         cdef Entity entity = entities[entity_id]
         cdef unsigned int component_index = entity.get_component_index(
             self.system_id)
-        self._batch_entity(entity_id, <RenderStruct*>components.get_pointer(
-            component_index))
+        self._batch_entity(entity_id, component_index, 
+            <RenderStruct*>components.get_pointer(component_index))
 
     cdef void* _batch_entity(self, unsigned int entity_id, 
+        unsigned int component_index, 
         RenderStruct* component_data) except NULL:
         '''The actual batching function. Will call 
         **batch_manager**.batch_entity.
@@ -654,7 +664,10 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.batch_id = batch_indices[0]
         component_data.vert_index = batch_indices[1]
         component_data.ind_index = batch_indices[2]
+        if not self.updateable:
+            self.update(0.)
         return component_data
+
 
 cdef class PhysicsRenderer(Renderer):
     '''This renderer draws every entity every frame, with rotation data suitable

@@ -17,29 +17,15 @@ TestGame:
             gameworld: gameworld
             zones: ['general']
             size_of_component_block: 128
-        GameView:
-            system_id: 'gameview'
-            focus_entity: False
-            updateable: False
-            gameworld: gameworld
-            pos: root.pos
-            do_scroll: False
-            size: root.size
-            currentmap: map
         Renderer:
             gameworld: gameworld
             system_id: 'renderer'
-            gameview: 'gameview'
             zones: ['general']
-            frame_count: 2
+            frame_count: 1
+            updateable: False
             size_of_batches: 512
             size_of_component_block: 128
             shader_source: 'assets/shaders/positionshader.glsl'
-        GameMap:
-            id: map
-            system_id: 'map'
-            map_size: root.size
-            gameworld: gameworld
     GameScreenManager:
         id: gamescreenmanager
         size: root.size
@@ -56,7 +42,6 @@ TestGame:
         DebugPanel:
             size_hint: (.2, .1)
             pos_hint: {'x': .225, 'y': .025}
-
 
 
 <DebugPanel>:

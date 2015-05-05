@@ -2,50 +2,44 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window
-from random import randint
+from random import randint, choice
 import kivent_core
 from kivent_core.gameworld import GameWorld
 from kivent_core.systems.position_systems import PositionSystem2D
-from kivent_core.systems.gameview import GameView
 from kivent_core.systems.renderers import Renderer
-from kivent_core.managers.resource_managers import texture_manager
+from kivent_core.managers.resource_managers import (
+    texture_manager, model_manager)
 from kivy.properties import StringProperty
-import cProfile
+
 texture_manager.load_atlas('assets/background_objects.atlas')
-texture_manager.load_image('assets/ship7.png')
+model_manager.load_textured_rectangle(4, 7., 7., 'star1', 'star1-4')
+model_manager.load_textured_rectangle(4, 10., 10., 'star1', 'star1-4-2')
+
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
-        print('here')
         super(TestGame, self).__init__(**kwargs)
-        print('before gameworld init')
         self.gameworld.init_gameworld(
-            ['map', 'renderer', 'position', 'gameview'],
+            ['renderer', 'position'],
             callback=self.init_game)
-        print('gameworld inited')
 
     def init_game(self):
-        print('in setup')
         self.setup_states()
         self.set_state()
         self.draw_some_stuff()
 
-
     def draw_some_stuff(self):
-        print('drawing some stuff')
         init_entity = self.gameworld.init_entity
-        for x in range(100000):
-            pos = randint(0, 800), randint(0, 800)
+        for x in range(1000):
+            pos = randint(0, Window.width), randint(0, Window.height)
+            vert_mesh_key = choice(['star1-4', 'star1-4-2'])
             create_dict = {
                 'position': pos,
-                'renderer': {'texture': 'star1', 'size': (3., 3.)},
+                'renderer': {'texture': 'star1', 
+                    'vert_mesh_key': vert_mesh_key},
             }
             ent = init_entity(create_dict, ['position', 'renderer'])
-            #print(self.gameworld.entity_manager.get_entity_ids(ent))
 
-
-    def update(self, dt):
-        self.gameworld.update(dt)
 
     def setup_states(self):
         self.gameworld.add_state(state_name='main', 

@@ -181,6 +181,9 @@ cdef class Buffer:
         cdef char* data = <char*>self.data
         return &data[block_index*self.type_size]
 
+    cdef unsigned int get_offset(self, unsigned int block_index):
+        return block_index*self.type_size
+
     cdef unsigned int get_largest_free_block(self):
         '''Used internally as part of **add_data** to find the largest available
         block of data

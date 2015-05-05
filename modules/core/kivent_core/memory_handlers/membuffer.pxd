@@ -24,3 +24,4 @@ cdef class Buffer:
     cdef void deallocate_memory(self)
     cdef void* allocate_memory(self) except NULL
     cdef bool check_empty(self)
+    cdef unsigned int get_offset(self, unsigned int block_index)

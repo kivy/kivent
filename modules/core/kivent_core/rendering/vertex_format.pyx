@@ -8,6 +8,7 @@ from kivy.graphics.c_opengl cimport (GL_FLOAT, GLfloat, GLsizei, GL_FALSE,
     GL_INT, GLint, GL_UNSIGNED_BYTE, GLubyte, GL_UNSIGNED_SHORT, GLushort,
     GL_UNSIGNED_INT, GLuint)
 from kivy.graphics.instructions cimport getActiveContext
+from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 
 cdef class KEVertexFormat(VertexFormat):
     '''VertexFormat is used to describe the layout of the vertex data stored 

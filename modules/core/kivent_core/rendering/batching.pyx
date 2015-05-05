@@ -211,6 +211,7 @@ cdef class IndexedBatch:
         indices.unbind()
         self.current_frame += 1
 
+
     cdef void clear_frames(self):
         '''Clears all frames, returning their memory and deleting the members 
         of **frame_data**.
@@ -477,11 +478,12 @@ cdef class BatchManager:
             batch_groups[tex_key] = [batch]
         else:
             batch_groups[tex_key].append(batch)
-        cdef CMesh new_cmesh
+        cdef CMesh cmesh
+
         with self.canvas:
-            new_cmesh = CMesh(texture=texture_manager.get_texture(tex_key), 
+            cmesh = CMesh(texture=texture_manager.get_texture(tex_key), 
                 batch=batch)
-            batch.mesh_instruction = new_cmesh
+            batch.mesh_instruction = cmesh
         return new_index
   
     cdef void remove_batch(self, unsigned int batch_id):
@@ -556,6 +558,31 @@ cdef class BatchManager:
         unsigned int batch_id, unsigned int num_verts, 
         unsigned int num_indices, unsigned int vert_index,
         unsigned int ind_index) except 0:
+        '''Removes an entity from the batch. If this is the last entity in 
+        the batch **remove_batch** will be called.
+        Args:
+            entity_id (unsigned int): The entity_id to remove.
+
+            batch_id (unsigned int): The index of the batch the entity is in,
+            returned from **batch_entity**.
+
+            num_verts (unsigned int): The number of vertices in the entity 
+            should be the same as passed in to **batch_entity**.
+
+            num_indices (unsigned int): The number of indicies in the entity 
+            should be the samea s passed in to **batch_entity**.
+
+            vert_index (unsigned int): The index of the vertices in the batch, 
+            returned from **batch_entity**.
+
+            ind_index (unsigned int): The index of the indicies in the batch,
+            returned from **batch_entity**.
+
+        Return:
+            bint: 1 if the entity was unbatched, 0 if an error occured (will
+            result in an exception propogating).
+
+        '''
         cdef IndexedBatch batch = self.batches[batch_id]
         batch.remove_entity(entity_id, num_verts, vert_index, num_indices,
             ind_index)
@@ -564,6 +591,12 @@ cdef class BatchManager:
         return 1
 
     cdef list get_vbos(self):
+        '''Returns a new list of FixedFrameData allocated for a new batch.
+        Used during **create_batch**, should not be called directly.
+
+        Return:
+            list: list of FixedFrameData with **frame_count** entries.
+        '''
         cdef unsigned int i
         cdef MemoryBlock index_block, vertex_block
         cdef MemoryBlock master_vertex = self.batch_block

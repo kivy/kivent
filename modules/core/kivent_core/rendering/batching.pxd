@@ -35,7 +35,6 @@ cdef class IndexedBatch:
     cdef void draw_frame(self)
     cdef void clear_frames(self)
 
-
 cdef class BatchManager:
     cdef MemoryBlock batch_block
     cdef MemoryBlock indices_block

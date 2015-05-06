@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <div align="center"><img src="images/kiventlogo.png" align="middle"></div>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <title>KivEnt by Kovak</title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>KivEnt</h1>
+        <h2>A Real-Time Rendering Framework for Kivy </h2>
+
+        <section id="downloads">
+          <a href="https://github.com/Kovak/KivEnt/zipball/master" class="btn">Download as .zip</a>
+          <a href="https://github.com/Kovak/KivEnt/tarball/master" class="btn">Download as .tar.gz</a>
+          <a href="https://github.com/Kovak/KivEnt" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h3>
+<a name="documentation" class="anchor" href="#documentation"><span class="octicon octicon-link"></span></a>Documentation</h3>
+<p>Visit the <a href=http://kivent.org/docs/index.html>documentation</a></p>
+<h3>
+<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Introduction</h3>
+
+<p>KivEnt is a framework for developing Kivy widgets with large amounts of real-time rendering. At the moment it is 2d oriented. The only dependency for the kivent_core module is Kivy itself, making it a relatively lightweight solution for building performant scenes in Kivy. Additional modules may have other requirements, such as kivent_cymunk module being based on <a href="https://chipmunk-physics.net/">Chipmunk2d</a> and its <a href="https://github.com/tito/cymunk">cymunk</a> wrapper.</p>
+
+<p>An entity-component architecture is used to control game object state and the logic of processing the game objects. This means that your game objects will be made up of collections of independent components that stricly hold data; each component corresponds to a GameSystem that will perform all data processing on the components, in the update loop each frame, and as a result of user interaction or other programmaticaly generated events. All memory for 
+the built-in components is allocated statically: if you would like learn more
+about memory management, <a href="http://kivent.org/docs/memory_handlers.html">read here</a> </p>
+
+<p>KivEnt is built with a modular architecture and designed to have both a python api and a c-level cython api that allows more performant access to your game data. This makes it suitable for quickly prototyping a mechanic completely in python and relatively trivial to deeply cythonize that GameSystem if you find it to have performance bottlenecks. This process has already been done for the built-in components meaning they are ready for you to build new, performant game systems on top of them.</p>
+
+<p> The entire framework is made available to you with an MIT license so that you have the freedom to build whatever you want on top of it and monetize it however you like. </p>
+
+<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Things that have been done with KivEnt: </h3>
+
+<p>A little over a year ago KivEnt 1.0 was released and here are some examples 
+  of things created using the framework</p>
+<ul>
+    <li>The Boardz Alpha was released for android a few months ago: <a href="https://play.google.com/store/apps/details?id=org.chozabu.boardzfree&hl=en">free</a>, <a href="https://play.google.com/store/apps/details?id=org.chozabu.boardz&hl=en">ad-free</a>.</li>
+    <li>chozabu has also worked on a graphical editor for building levels 
+      <a href="https://github.com/chozabu/KivEntEd">github</a></li>
+</ul>
+<p>KivEnt 2.0 represents 344 commits by 6 contributors! A huge thank you to 
+  github users chozabu, tshirtman mahomahomaho, squarrel, and inclement!</p>
+<p>
+  Compared to the KivEnt 1.0 release there has been 17663 additions, 4267 
+  deletions, we now have Windows support, performance has increased significantly,
+  the python api has been cut down and simplified, and the cython api has advanced 
+  significantly. It should be fairly easy to create new GameSystems benefiting
+  from the static memory optimizations, and much easier to write new renderers 
+  that make use of different shader formats.</p>
+
+
+<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Contact Info: </h3>
+<p>You can contact me at kovac1066@gmail.com or find me in Kivy's irc channel where I am kovak. On reddit, I'm JKovac.</p>
+
+  </body>
+</html>

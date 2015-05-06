@@ -1,0 +1,10 @@
+#!/home/jkovac/Documents/KivEnt/kivent_tutorials/8_airhockey_table/.buildozer/venv/bin/python2.7
+# EASY-INSTALL-ENTRY-SCRIPT: 'pip==1.4.1','console_scripts','pip'
+__requires__ = 'pip==1.4.1'
+import sys
+from pkg_resources import load_entry_point
+
+if __name__ == '__main__':
+    sys.exit(
+        load_entry_point('pip==1.4.1', 'console_scripts', 'pip')()
+    )

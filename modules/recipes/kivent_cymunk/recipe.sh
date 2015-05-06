@@ -1,10 +1,10 @@
 #!/bin/bash
 
 VERSION_kivent_cymunk=1.0.0
-URL_kivent_cymunk=https://github.com/Kovak/KivEnt/archive/new_rendering.zip
+URL_kivent_cymunk=https://github.com/Kovak/KivEnt/archive/master.zip
 MD5_kivent_cymunk=
 DEPS_kivent_cymunk=(python cymunk kivy kivent_core)
-BUILD_kivent_cymunk=$BUILD_PATH/kivent_cymunk/new_rendering/modules/cymunk
+BUILD_kivent_cymunk=$BUILD_PATH/kivent_cymunk/master/modules/cymunk
 RECIPE_kivent_cymunk=$RECIPES_PATH/kivent_cymunk
 
 function prebuild_kivent_cymunk() {

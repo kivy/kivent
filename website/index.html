@@ -43,8 +43,8 @@ about memory management, <a href="http://kivent.org/docs/memory_handlers.html">r
 <p>KivEnt is built with a modular architecture and designed to have both a python api and a c-level cython api that allows more performant access to your game data. This makes it suitable for quickly prototyping a mechanic completely in python and relatively trivial to deeply cythonize that GameSystem if you find it to have performance bottlenecks. This process has already been done for the built-in components meaning they are ready for you to build new, performant game systems on top of them.</p>
 
 <p> The entire framework is made available to you with an MIT license so that you have the freedom to build whatever you want on top of it and monetize it however you like. </p>
-
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Things that have been done with KivEnt: </h3>
+<h3>
+<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>News</h3>
 
 <p>A little over a year ago KivEnt 1.0 was released and here are some examples 
   of things created using the framework</p>
@@ -54,16 +54,20 @@ about memory management, <a href="http://kivent.org/docs/memory_handlers.html">r
       <a href="https://github.com/chozabu/KivEntEd">github</a></li>
 </ul>
 <p>KivEnt 2.0 represents 344 commits by 6 contributors! A huge thank you to 
-  github users chozabu, tshirtman mahomahomaho, squarrel, and inclement!</p>
+  github users chozabu, tshirtman, mahomahomaho, squarrel, and inclement!</p>
 <p>
-  Compared to the KivEnt 1.0 release there has been 17663 additions, 4267 
+  Compared to the KivEnt 1.0 release there has been 17,663 additions, 4,267 
   deletions, we now have Windows support, performance has increased significantly,
   the python api has been cut down and simplified, and the cython api has advanced 
   significantly. It should be fairly easy to create new GameSystems benefiting
   from the static memory optimizations, and much easier to write new renderers 
   that make use of different shader formats.</p>
+<p>
+  The plan for the next few months is to finish up porting the cymunk
+  module, rewriting the particles module, and writing a significant amount 
+  of tutorials to cover all the new additions. </p>
 
-
+<h3>
 <a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Contact Info: </h3>
 <p>You can contact me at kovac1066@gmail.com or find me in Kivy's irc channel where I am kovak. On reddit, I'm JKovac.</p>
 

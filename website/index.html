@@ -8,7 +8,7 @@
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
     <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
     <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
-    <title>KivEnt by Kovak</title>
+    <title>KivEnt</title>
   </head>
 
   <body>
@@ -34,13 +34,13 @@
 <h3>
 <a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Introduction</h3>
 
-<p>KivEnt is a framework for developing Kivy widgets with large amounts of real-time rendering. At the moment it is 2d oriented. The only dependency for the kivent_core module is Kivy itself, making it a relatively lightweight solution for building performant scenes in Kivy. Additional modules may have other requirements, such as kivent_cymunk module being based on <a href="https://chipmunk-physics.net/">Chipmunk2d</a> and its <a href="https://github.com/tito/cymunk">cymunk</a> wrapper.</p>
+<p>KivEnt is a framework for building performant, dynamic real-time scenes in Kivy. At the moment it is 2d oriented. The only dependency for the kivent_core module is <a href="http://kivy.org">Kivy</a> itself. Additional modules may have other requirements, such as kivent_cymunk module being based on <a href="https://chipmunk-physics.net/">Chipmunk2d</a> and its <a href="https://github.com/tito/cymunk">cymunk</a> wrapper.</p>
 
 <p>An entity-component architecture is used to control game object state and the logic of processing the game objects. This means that your game objects will be made up of collections of independent components that stricly hold data; each component corresponds to a GameSystem that will perform all data processing on the components, in the update loop each frame, and as a result of user interaction or other programmaticaly generated events. All memory for 
 the built-in components is allocated statically: if you would like learn more
 about memory management, <a href="http://kivent.org/docs/memory_handlers.html">read here</a> </p>
 
-<p>KivEnt is built with a modular architecture and designed to have both a python api and a c-level cython api that allows more performant access to your game data. This makes it suitable for quickly prototyping a mechanic completely in python and relatively trivial to deeply cythonize that GameSystem if you find it to have performance bottlenecks. This process has already been done for the built-in components meaning they are ready for you to build new, performant game systems on top of them.</p>
+<p>KivEnt is built with a modular architecture and designed to have both a python api and a c-level cython api that allows more performant access to your game data. This makes it suitable for quickly prototyping a mechanic completely in python, and relatively trivial to then deeply cythonize that GameSystem if you find it to be performance sensitive. This process has already been done for the built-in components meaning they are ready for you to build new, performant game systems on top of them.</p>
 
 <p> The entire framework is made available to you with an MIT license so that you have the freedom to build whatever you want on top of it and monetize it however you like. </p>
 <h3>

@@ -96,22 +96,15 @@ rather than creating the softlink above, you could probably alter your pythonpat
 
 If you have got this far you should be able to run some examples - this first one without cymunk working.
 
-at time of writing, tutorial 2,3 and 8 work.
 
-    cd KivEnt/kivent_tutorials/2_basic_app/
+    cd KivEnt/examples/2_basic_app/
     ln -s ../../modules/core/kivent_core/ kivent_core
     python main.py
 
 and a physics example
 
-    cd KivEnt/kivent_tutorials/3_adding_physics_objects/
+    cd KivEnt/examples/3_adding_physics_objects/
     ln -s ../../modules/core/kivent_core/ kivent_core
     ln -s ../../modules/cymunk/kivent_cymunk/ kivent_cymunk
     python main.py
 
-and a game
-
-    cd KivEnt/kivent_tutorials/8_airhockey_table/
-    ln -s ../../modules/core/kivent_core/ kivent_core
-    ln -s ../../modules/cymunk/kivent_cymunk/ kivent_cymunk
-    python main.py

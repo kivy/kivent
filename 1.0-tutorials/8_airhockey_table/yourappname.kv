@@ -1,0 +1,91 @@
+#:kivy 1.8.0
+#:import HorizontalBlurEffect kivy.uix.effectwidget.HorizontalBlurEffect
+
+TestGame:
+
+<Label>
+    font_name:'assets/ttf/EHSMB.TTF'
+
+<TestGame>:
+    gameworld: gameworld
+    GameWorld:
+        id: gameworld
+        gamescreenmanager: gamescreenmanager
+        PositionSystem:
+            system_id: 'position'
+            gameworld: gameworld
+        RotateSystem:
+            system_id: 'rotate'
+            gameworld: gameworld
+        ColorSystem:
+            system_id: 'color'
+            gameworld: gameworld
+        ScaleSystem:
+            system_id: 'scale'
+            gameworld: gameworld
+        GameView:
+            system_id: 'gameview'
+            focus_entity: False
+            updateable: True
+            gameworld: gameworld
+            pos: root.pos
+            do_scroll: False
+            camera_pos: self.get_camera_centered(map.map_size, self.size, self.camera_scale)
+            render_system_order: ['puck_renderer', 'renderer', ]
+            do_scroll_lock: False
+            size: root.size
+            camera_scale: max(map.map_size[0]/self.size[0], map.map_size[1]/self.size[1])
+        GameMap:
+            system_id: 'map'
+            id: map
+            map_size: (1920., 1080.)
+            gameworld: gameworld
+
+        Renderer:
+            gameworld: gameworld
+            system_id: 'renderer'
+            gameview: 'gameview'
+            do_rotate: True
+            do_color: True
+            do_scale: True
+            shader_source: 'assets/glsl/positioncolorrotatescaleshader.glsl'
+        Renderer:
+            gameworld: gameworld
+            system_id: 'puck_renderer'
+            gameview: 'gameview'
+            do_rotate: True
+            do_color: True
+            do_scale: True
+            shader_source: 'assets/glsl/positioncolorrotatescaleshader.glsl'
+
+        CymunkPhysics:
+            gameworld: root.gameworld
+            system_id: 'physics'
+            update_time: 1./48.
+        CymunkTouchSystem:
+            physics_system: 'physics'
+            gameview_name: 'gameview'
+            gameworld: gameworld
+            system_id: 'cymunk_touch'
+            ignore_groups: [3, 2, 4, 5]
+            max_force: 10000000.
+            max_bias:10000
+        LerpSystem:
+            gameworld: gameworld
+            system_id: 'lerp_system'
+            updateable: True
+            update_time: (1./24.)
+    GameScreenManager:
+        id: gamescreenmanager
+        size: root.size
+        pos: root.pos
+        gameworld: gameworld
+
+<GameScreenManager>:
+    MainScreen:
+        id: main_screen
+
+<MainScreen@GameScreen>:
+    name: 'main'
+    FloatLayout:
+

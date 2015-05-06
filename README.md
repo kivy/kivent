@@ -7,20 +7,14 @@ Mailing List: https://groups.google.com/forum/#!forum/kivent
 Documentation: http://www.kivent.org/docs  
 scroll down for extra detailed installation instructions
 
-Warning Tutorials Out Dated! Will Fix Soon.  
-Update: 2_basic_app tutorial and sample_application up to date. 04/10/14
 
-Tutorial 3 now functions, tutorial 4 partially finished. 04/17/14
-
-KivEnt is an Entity Based Game Engine for Kivy  
-https://github.com/Kovak/KivEnt/wiki/An-Introduction-to-KivEnt
-
-Requires Cymunk in order to run:   
+The cymunk module requires the Cymunk in order to run:   
 get the master branch from here:https://github.com/tito/cymunk
 
 You will need to compile both the cymunk module as well as the kivent_cython folders code.
 
-I develop using [Kivy Master Branch](https://github.com/kivy/kivy)
+I develop using [Kivy 1.9](https://github.com/kivy/kivy), tested on 
+Windows, Linux, and Android.
 
 Cymunk and Kivy must both be in your environment path in order to buld kivent as it must cimport modules from both of these modules.
 

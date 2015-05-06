@@ -1,10 +1,10 @@
 #!/bin/bash
 
 VERSION_kivent_core=1.0.0
-URL_kivent_core=https://github.com/Kovak/KivEnt/archive/new_rendering.zip
+URL_kivent_core=https://github.com/Kovak/KivEnt/archive/master.zip
 MD5_kivent_core=
 DEPS_kivent_core=(python kivy)
-BUILD_kivent_core=$BUILD_PATH/kivent_core/new_rendering/modules/core
+BUILD_kivent_core=$BUILD_PATH/kivent_core/master/modules/core
 RECIPE_kivent_core=$RECIPES_PATH/kivent_core
 
 function prebuild_kivent_core() {

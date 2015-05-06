@@ -1,3 +1,78 @@
+# cython: embedsignature=True
+'''
+The builtin GameSystems all use the IndexedMemoryZone to manage their memory 
+using an arena allocation strategy to hold system data contiguously in simple 
+C arrays. In addition, all memory will be pooled and reused instead of 
+released. This will minimize the amount of allocation occuring during your 
+game loop: decreasing the cost of component creation.
+
+The zoning strategy will allow you to group entities that have similary 
+promising habits (entities that use the same systems) into contiguous memory.
+If you ensure that each zone encompasses a specific type of entity aka every 
+entity in a zone has the exact same components, everything will be initialized 
+in such a way as to allow for processing of groups of components to be 
+contiguous as well. If this is not strictly followed everything will still 
+work but processing may be slightly slower as jumping around in memory may 
+occur.
+
+Example:
+
+We have 10 memory units in zone 'general':
+
+We have 2 entity types, 
+
+entity type 1: components: position, rotate, physics, renderer
+entity type 2: components: position, renderer2
+
+Since entity 1 and entity 2 share position components but not renderer 
+components. Position memory will be interleaved between the 2 groups while 
+render will not.
+
+We initialize 1 entity 1 then 5 entity 2 and then 4 more entity 1. 
+Memory will look like. Each [] is a component in the GameSystem for 
+[Entity number (type)].
+
+=========== =============================================================
+System Name Component Memory
+=========== =============================================================
+position    [0(1)][1(2)][2(2)][3(2)][4(2)][5(2)][6(1)][7(1)][8(1)][9(1)]
+rotate      [0(1)][6(1)][7(1)][8(1)][9(1)][....][....][....][....][....]
+physics     [0(1)][6(1)][7(1)][8(1)][9(1)][....][....][....][....][....]
+renderer    [0(1)][6(1)][7(1)][8(1)][9(1)][....][....][....][....][....]
+renderer2   [1(2)][2(2)][3(2)][4(2)][5(2)][....][....][....][....][....]
+=========== =============================================================
+
+While processing renderer will have to go to memory position 0, and then 
+jump to memory position 6 to continue through 9. If we continue interleaving
+types of entities in this scheme we will have to make many jumps and then go 
+back and go through doing the same thing for renderer2. 
+
+The solution is to split the memory into zones: contiguous sections of memory 
+reserved for a specific type of component grouping, identified by a user chosen
+str.
+
+If instead we split into zones: 'zone1' 5 units of memory, 'zone2' 5 units of 
+memory. We still use the same 10 memory units but our entities will look like:
+zone1 has components in position, rotate, physics, and renderer. zone2 has 
+components in render2 and position. The share components will be split into 
+zones. positions 0-4 in zone1 will be contained between 0-4 and positions 0-4 
+in zone2 will be contained between 5-9 in memory.
+
+=========== =============================================================
+System Name Component Memory
+=========== =============================================================
+position    [0(1)][1(1)][2(1)][3(1)][4(1)][5(2)][6(2)][7(2)][8(2)][9(2)]
+rotate      [0(1)][1(1)][2(1)][3(1)][4(1)][....][....][....][....][....]
+physics     [0(1)][1(1)][2(1)][3(1)][4(1)][....][....][....][....][....]
+renderer    [0(1)][1(1)][2(1)][3(1)][4(1)][....][....][....][....][....]
+renderer2   [5(2)][6(2)][7(2)][8(2)][9(2)][....][....][....][....][....]
+=========== =============================================================
+
+
+This way when renderer is processing it can run through all of its components 
+in a row, and when renderer2 is processing it can do the same, just a little 
+offset into the position component array.
+'''
 from block cimport MemoryBlock
 from zone cimport MemoryZone
 from pool cimport MemoryPool
@@ -23,6 +98,7 @@ cdef class BlockIndex:
         '''
         A ComponentToCreate object will be created for each slot in the 
         MemoryBlock.
+
         Args:
             memory_block (MemoryBlock): The MemoryBlock that should be indexed.
 
@@ -31,8 +107,8 @@ cdef class BlockIndex:
             location in the pool = location in block + offset.
 
             ComponentToCreate (object): The object that we will wrap each 
-            slot in the MemoryBlock with. Will receive args: memory_block, index
-            in block, offset of block.
+            slot in the MemoryBlock with. Will receive args: memory_block, 
+            index in block, offset of block.
         '''
         cdef unsigned int count = memory_block.size 
         self.block_objects = block_objects = []
@@ -63,6 +139,7 @@ cdef class PoolIndex:
         '''
         A BlockIndex will be created using ComponentToCreate for every 
         MemoryBlock in the pool.
+
         Args:
             memory_pool (MemoryPool): The MemoryPool that should be indexed.
 
@@ -95,7 +172,8 @@ cdef class PoolIndex:
 
 cdef class ZoneIndex:
     '''The ZoneIndex will generate a PoolIndex for every MemoryPool in the 
-    MemoryZone, making the data in the entire MemoryZone accessible from Python.
+    MemoryZone, making the data in the entire MemoryZone accessible from 
+    Python.
 
     **Attributes:**
 
@@ -106,13 +184,14 @@ cdef class ZoneIndex:
     def __cinit__(self, MemoryZone memory_zone, ComponentToCreate):
         '''
         A PoolIndex will be created using ComponentToCreate for every 
-        MemoryPool in the zone..
+        MemoryPool in the zone.
+
         Args:
             memory_zone (MemoryZone): The MemoryZone that should be indexed.
 
             ComponentToCreate (object): The object that we will wrap each 
-            slot in the MemoryBlock with. Will receive args: memory_block, index
-            in block, offset of block.
+            slot in the MemoryBlock with. Will receive args: memory_block, 
+            indexin block, offset of block.
         '''
         cdef unsigned int count = memory_zone.reserved_count
         cdef dict pool_indices = {}
@@ -136,9 +215,11 @@ cdef class ZoneIndex:
     def get_component_from_index(self, unsigned int index):
         '''Will retrieve a single object of the type ComponentToCreate the 
         ZoneIndex was initialized with.
+
         Args:
             index (unsigned int): The index of the component you wish to 
             retrieve.
+
         Return:
             object: Returns a python accessible object wrapping the data found
             in the MemoryZone.
@@ -157,10 +238,15 @@ cdef class IndexedMemoryZone:
     supported and a list of components will be returned if a slice object is 
     provided to __getitem__.
     In Python:
+
         component_object = self[component_index]
+
         or
+
         component_objects = self[start_index:end_index:step]
+
     In Cython:
+
         cdef void* pointer = self.get_pointer(component_index)
 
     **Attributes:**

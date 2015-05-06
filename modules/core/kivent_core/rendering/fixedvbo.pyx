@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 from kivy.graphics.context cimport Context, get_context
 from kivy.graphics.c_opengl cimport (GL_ARRAY_BUFFER, GL_STREAM_DRAW,
     GL_ELEMENT_ARRAY_BUFFER, glGenBuffers, glBindBuffer, glBufferData,
@@ -109,10 +110,12 @@ cdef class FixedVBO:
         '''Generates the glBuffer by calling glGenBuffers and glBindBuffer
         the buffer will initially be made the entire size of **memory_block**
         and pointed at a NULL data.'''
+        #commentout for sphinx
         glGenBuffers(1, &self.id)
         glBindBuffer(self.target, self.id)
         glBufferData(self.target, self.memory_block.real_size, 
             NULL, self.usage)
+
 
     cdef void update_buffer(self):
         '''Updates the buffer, uploading the latest data from **memory_block**
@@ -121,6 +124,7 @@ cdef class FixedVBO:
         used. If V_NEEDGEN has been set for **flags**, **generate_buffer** 
         will be called.
         '''
+        #commontout for sphinx
         cdef unsigned int data_size = self.data_size
         if self.flags & V_NEEDGEN:
             self.generate_buffer()
@@ -134,6 +138,7 @@ cdef class FixedVBO:
             glBufferSubData(self.target, 0, data_size, self.memory_block.data)
         self.size_last_frame = data_size
 
+
     cdef void bind(self):
         '''Binds this buffer for rendering, calling **update_buffer** in the 
         process. Will call the bind function of **vertex_format** if 
@@ -144,7 +149,9 @@ cdef class FixedVBO:
 
     cdef void unbind(self):
         '''Unbinds the buffer after rendering'''
+        #commentout for sphinx
         glBindBuffer(self.target, 0)
+
 
     cdef void return_memory(self):
         '''Will return the memory claimed by this VBO's **memory_block**.'''

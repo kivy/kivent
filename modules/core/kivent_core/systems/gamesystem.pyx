@@ -1,3 +1,12 @@
+# cython: embedsignature=True
+'''
+This is the base for creating a GameSystem usable from python. It will 
+store the components in a python list and allow dynamic control of your 
+components data as it is just a python object. These type of GameSystem 
+do not store their memory as contiguously as the more optimized game systems 
+but are perfectly suitable for prototyping or game systems that simply do not
+do that much processing.
+'''
 from kivent_core.uix.cwidget cimport CWidget
 from kivy.properties import (StringProperty, ListProperty, 
     NumericProperty, BooleanProperty, ObjectProperty)
@@ -26,7 +35,8 @@ class Component(object):
 
 
 cdef class GameSystem(CWidget):
-    '''GameSystem is the part of your game that holds the logic to operate 
+    '''
+    GameSystem is the part of your game that holds the logic to operate 
     on the data of your Entity's components. It will also manage assembling,
     cleaning up, storing, and destroying the components holding system data.
     The basic GameSystem keeps track of **Component**, which is a 
@@ -39,6 +49,7 @@ cdef class GameSystem(CWidget):
     before growing the list).
 
     **Attributes:**
+
         **system_id** (StringProperty): Name of this gamesystem, used to name 
         entity component attribute, and refer to system.
 
@@ -83,6 +94,7 @@ cdef class GameSystem(CWidget):
         **zones** (ListProperty): Determines which zones will be present in the
         GameSystem's memory allocation. Unused in the default GameSystem
         implementation.
+
     '''
     system_id = StringProperty(None, allownone=True)
     system_index = NumericProperty(None)
@@ -117,6 +129,7 @@ cdef class GameSystem(CWidget):
         '''
         Override this function if your GameSystem desires to make static 
         allocation of some data to be kept for the lifetime of the GameSystem. 
+
         Args:
             master_buffer (Buffer): The buffer that this system will allocate
             itself from.
@@ -207,6 +220,7 @@ cdef class GameSystem(CWidget):
         spot onto our list or use one of the existing free slots. Typically
         you will not need to call or work with it directly unless you
         are designing a custom memory management for your components.
+
         Return:
             component_id (unsigned int): The index of the newly generated 
             component.
@@ -225,6 +239,7 @@ cdef class GameSystem(CWidget):
         '''Typically called by GameWorld automatically as part of creating an
         **Entity**. If you would like to dynamically add a component you should
         call directly. 
+        
         Args:
             entity_id (unsigned int) : The identity of the **Entity** to assign
             this component to. 

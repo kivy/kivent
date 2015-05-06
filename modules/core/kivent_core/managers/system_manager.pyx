@@ -1,3 +1,9 @@
+# cython: embedsignature=True
+'''
+GameWorld uses these system management classes to keep track of the GameSystems
+attached to it, their indexes in the EntityManager memory, and the 
+configuration of each of the systems IndexedMemoryZone.
+'''
 cdef unsigned int DEFAULT_SYSTEM_COUNT = 8
 cdef unsigned int DEFAULT_COUNT = 10000
 

@@ -1,4 +1,5 @@
 # cython: profile=True
+# cython: embedsignature=True
 from cpython cimport bool
 from kivy.properties import (BooleanProperty, StringProperty, NumericProperty,
     ListProperty)
@@ -243,7 +244,8 @@ cdef class RenderComponent(MemComponent):
 
 
 cdef class Renderer(StaticMemGameSystem):
-    '''The basic KivEnt renderer draws every entity every frame. Entities 
+    '''
+    The basic KivEnt renderer draws every entity every frame. Entities 
     will be batched into groups of up to **maximum_vertices**, if they can
     share the source of texture. The drawing will use a VertexFormat4F that 
     only accounts for position and uv coordinates. This GameSystem is only 
@@ -253,6 +255,7 @@ cdef class Renderer(StaticMemGameSystem):
     to false.
 
     **Attributes:**
+
         **shader_source** (StringProperty): Path to the .glsl to be used, do 
         include '.glsl' in the name. You must ensure that your shader matches 
         your vertex format or you will have problems
@@ -344,15 +347,19 @@ cdef class Renderer(StaticMemGameSystem):
         self.update_trigger = Clock.create_trigger(self.update)        
 
     def _set_blend_func(self, instruction):
-        '''This function is called internally in a callback on canvas.before 
+        '''
+        This function is called internally in a callback on canvas.before 
         to set up the blend function, it will obey **blend_factor_source**
-        and **blend_factor_dest** properties.'''
+        and **blend_factor_dest** properties.
+        '''
         glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
 
     def _reset_blend_func(self, instruction):
-        '''This function is called internally in a callback on canvas.after
+        '''
+        This function is called internally in a callback on canvas.after
         to reset the blend function, it will obey **reset_blend_factor_source**
-        and **reset_blend_factor_dest** properties.'''
+        and **reset_blend_factor_dest** properties.
+        '''
         glBlendFunc(self.reset_blend_factor_source, 
             self.reset_blend_factor_dest)
 
@@ -365,8 +372,10 @@ cdef class Renderer(StaticMemGameSystem):
         self.update(dt)
 
     def on_shader_source(self, instance, value):
-        '''Event that sets the canvas.shader.source property when the 
-        **shader_source** property is set'''
+        '''
+        Event that sets the canvas.shader.source property when the 
+        **shader_source** property is set
+        '''
         self.canvas.shader.source = value
 
     def clear_component(self, unsigned int component_index):
@@ -383,7 +392,8 @@ cdef class Renderer(StaticMemGameSystem):
         pointer.ind_index = -1
 
     cdef void* setup_batch_manager(self, Buffer master_buffer) except NULL:
-        '''Function called internally during **allocate** to setup the 
+        '''
+        Function called internally during **allocate** to setup the 
         BatchManager. The KEVertexFormat should be initialized in this 
         function as well.
         '''
@@ -439,10 +449,12 @@ cdef class Renderer(StaticMemGameSystem):
         
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, str zone_name, args):
-        '''A RenderComponent is initialized with an args dict with many 
+        '''
+        A RenderComponent is initialized with an args dict with many 
         optional values.
 
         Optional Args:
+
             texture (str): If 'texture' is in args, the appropriate texture 
             will be loaded from managers.resource_managers.texture_manager.
 
@@ -501,13 +513,15 @@ cdef class Renderer(StaticMemGameSystem):
             vert_index_key, texkey)
 
     def update(self, dt):
-        '''Update function where all drawing of entities is performed. 
+        '''
+        Update function where all drawing of entities is performed. 
         Override this method if you would like to create a renderer with 
         customized behavior. The basic logic is that we iterate through 
         each batch getting the entities in that batch, then iterate through 
         the vertices in the RenderComponent.vert_mesh, copying every 
         vertex into the batches data and combining it with data from other 
         components.
+
         Args:
             dt (float): The time elapsed since last update, not usually 
             used in rendering but passed in to maintain a consistent API.
@@ -587,8 +601,10 @@ cdef class Renderer(StaticMemGameSystem):
         super(Renderer, self).remove_component(component_index)
 
     def unbatch_entity(self, unsigned int entity_id):
-        '''Python accessible function for unbatching the entity, the real work 
+        '''
+        Python accessible function for unbatching the entity, the real work 
         is done in the cdefed _unbatch_entity.
+
         Args:
             entity_id (unsigned int): The id of the entity to unbatch.
         '''
@@ -602,8 +618,10 @@ cdef class Renderer(StaticMemGameSystem):
 
     cdef void* _unbatch_entity(self, unsigned int entity_id, 
         RenderStruct* component_data) except NULL:
-        '''The actual unbatching function. Will call 
+        '''
+        The actual unbatching function. Will call 
         **batch_manager**.unbatch_entity.
+
         Args:
             entity_id (unsigned int): The id of the entity to be unbatched.
 
@@ -630,8 +648,10 @@ cdef class Renderer(StaticMemGameSystem):
         return component_data
 
     def batch_entity(self, unsigned int entity_id):
-        '''Python accessible function for batching the entity, the real work 
+        '''
+        Python accessible function for batching the entity, the real work 
         is done in the cdefed _batch_entity.
+
         Args:
             entity_id (unsigned int): The id of the entity to unbatch.
         '''
@@ -645,8 +665,10 @@ cdef class Renderer(StaticMemGameSystem):
 
     cdef void* _batch_entity(self, unsigned int entity_id, 
         RenderStruct* component_data) except NULL:
-        '''The actual batching function. Will call 
+        '''
+        The actual batching function. Will call 
         **batch_manager**.batch_entity.
+
         Args:
             entity_id (unsigned int): The id of the entity to be unbatched.
 
@@ -675,17 +697,18 @@ cdef class Renderer(StaticMemGameSystem):
         return component_data
 
 
-cdef class PhysicsRenderer(Renderer):
-    '''This renderer draws every entity every frame, with rotation data suitable
+cdef class RotateRenderer(Renderer):
+    '''
+    This renderer draws every entity every frame, with rotation data suitable
     for use with entities using the CymunkPhysics GameSystems. The drawing will 
     use a VertexFormat7F that accounts for position of vertex, uv coordinates,
     the rotation around the center and the actual center of the rotation. 
     This GameSystem is dependent on its own component, the PositionComponent2D, 
     and the RotateComponent2D.
     '''
-    system_names = ListProperty(['physics_renderer', 'position',
+    system_names = ListProperty(['rotate_renderer', 'position',
         'rotate'])
-    system_id = StringProperty('physics_renderer')
+    system_id = StringProperty('rotate_renderer')
     vertex_format_size = NumericProperty(sizeof(VertexFormat7F))
     
     cdef void* setup_batch_manager(self, Buffer master_buffer) except NULL:
@@ -694,9 +717,10 @@ cdef class PhysicsRenderer(Renderer):
         self.batch_manager = BatchManager(
             self.size_of_batches, self.max_batches, self.frame_count, 
             batch_vertex_format, master_buffer, 'triangles', self.canvas,
-            self.gameworld.entities, [x for x in self.system_names], 
-            self.smallest_vertex_count)
+            [x for x in self.system_names], 
+            self.smallest_vertex_count, self.gameworld)
         return <void*>self.batch_manager
+
 
     def update(self, dt):
         cdef IndexedBatch batch
@@ -768,4 +792,4 @@ cdef class PhysicsRenderer(Renderer):
 
 
 Factory.register('Renderer', cls=Renderer)
-Factory.register('PhysicsRenderer', cls=PhysicsRenderer)
+Factory.register('RotateRenderer', cls=RotateRenderer)

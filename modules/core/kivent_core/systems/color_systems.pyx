@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
@@ -82,7 +83,7 @@ cdef class ColorSystem(StaticMemGameSystem):
         cdef float g = args[1]
         cdef float b = args[2]
         cdef float a = args[3]
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef ColorStruct* component = <ColorStruct*>memory_zone.get_pointer(
             component_index)
         component.entity_id = entity_id
@@ -92,7 +93,7 @@ cdef class ColorSystem(StaticMemGameSystem):
         component.a = a
 
     def clear_component(self, unsigned int component_index):
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef ColorStruct* pointer = <ColorStruct*>memory_zone.get_pointer(
             component_index)
         pointer.entity_id = -1

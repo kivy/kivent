@@ -1,4 +1,5 @@
 # cython: profile=True
+# cython: embedsignature=True
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty, 
 BooleanProperty, NumericProperty)
 import cymunk
@@ -17,11 +18,12 @@ from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
-from kivent_core.managers.system_manager cimport system_manager
+from kivent_core.managers.system_manager cimport SystemManager
 
 
 cdef class PhysicsComponent(MemComponent):
-    '''The PhysicsComponent mainly exposes the ability to retrieve cymunk 
+    '''
+    The PhysicsComponent mainly exposes the ability to retrieve cymunk 
     objects you will want to review the documentation for the various parts of 
     cymunk (and Chipmunk2D's documentation) to properly use this system.
 
@@ -249,7 +251,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
 
     cdef unsigned int _init_component(self, unsigned int component_index, 
         unsigned int entity_id, cpBody* body, str zone_name) except -1:
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef PhysicsStruct* component = <PhysicsStruct*>(
             memory_zone.get_pointer(component_index))
         component.entity_id = entity_id
@@ -257,7 +259,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         return self.entity_components.add_entity(entity_id, zone_name)
 
     cdef int _clear_component(self, unsigned int component_index) except 0:
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef PhysicsStruct* pointer = <PhysicsStruct*>memory_zone.get_pointer(
             component_index)
         pointer.entity_id = -1
@@ -377,7 +379,6 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         component._shape_type = shape_type
         self._init_component(index, entity_id, body._body, zone_name)
 
-
     def clear_component(self, unsigned int component_index):
         cdef PhysicsComponent component = self.components[component_index]
         component._body = None
@@ -392,8 +393,9 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         cdef RotateSystem2D rotate_system
         cdef PositionSystem2D position_system
         cdef IndexedMemoryZone entities = gameworld.entities
-        rotate_system = system_manager.get_system('rotate')
-        position_system = system_manager.get_system('position')
+        cdef SystemManager system_manager = gameworld.system_manager
+        rotate_system = system_manager['rotate']
+        position_system = system_manager['position']
         cdef unsigned int rotate_index = system_manager.get_system_index(
             'rotate')
         cdef unsigned int pos_index = system_manager.get_system_index(
@@ -401,9 +403,9 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         cdef unsigned int phys_index = system_manager.get_system_index(
             self.system_id)
         cdef MemoryZone entity_memory = entities.memory_zone
-        cdef MemoryZone pos_memory = position_system.components.memory_zone
-        cdef MemoryZone rot_memory = rotate_system.components.memory_zone
-        cdef MemoryZone physics_memory = self.components.memory_zone
+        cdef MemoryZone pos_memory = position_system.imz_components.memory_zone
+        cdef MemoryZone rot_memory = rotate_system.imz_components.memory_zone
+        cdef MemoryZone physics_memory = self.imz_components.memory_zone
         cdef unsigned int* entity = <unsigned int*>(
             entity_memory.get_pointer(entity_id))
         cdef unsigned int pos_comp_index = entity[pos_index+1]
@@ -435,8 +437,8 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         super(CymunkPhysics, self).remove_component(component_index)
 
     def update(self, dt):
-        '''Handles update of the cymunk space and updates the rendering 
-        component data for position and rotate components. '''
+        '''Handles update of the cymunk space and updates the component data 
+        for position and rotate components. '''
 
         self.space.step(dt)
         gameworld = self.gameworld

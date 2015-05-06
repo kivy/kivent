@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 cdef extern from "string.h":
     void *memcpy(void *dest, void *src, size_t n)

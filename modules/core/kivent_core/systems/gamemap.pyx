@@ -1,10 +1,12 @@
+# cython: embedsignature=True
 from gamesystem cimport GameSystem
 from kivy.core.window import Window
 from kivy.properties import (StringProperty, ListProperty, BooleanProperty)
 from kivy.factory import Factory
 
 cdef class GameMap(GameSystem):
-    '''GameMap is a basic implementation of a map size for your GameWorld that
+    '''
+    GameMap is a basic implementation of a map size for your GameWorld that
     limits the scrolling of GameView typically a GameMap does not actually
     have any entities, it simply holds some data and logic for use by
     other GameSystems

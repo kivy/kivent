@@ -1,3 +1,10 @@
+# cython: embedsignature=True
+'''
+**StaticMemGameSystem** and **MemComponent** are the basis for all built in 
+GameSystems. They are cythonic classes that store their data in raw C 
+arrays allocated using the custom memory management designed for pooling and 
+contiguous processing found in the **memory_handlers** modules. 
+'''
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
@@ -17,19 +24,23 @@ cdef class MemComponent:
     C structs holding the data. Will store a pointer to the actual data, 
     and the index of the slot. All of the Python accessible C optimized 
     components (and the Entity class) inherit from this class.
+
     **Attributes: (Cython Access Only)**
+
         **pointer** (void*): Pointer to the location in the provided 
         memory_block that this component's data resides in.
 
         **_id** (unsigned int): Index of this component in the overall
         component memory. Will usually be locate in MemoryBlock + offset of 
         MemoryBlock in the MemoryPool.
+
     ''' 
 
     def __cinit__(self, MemoryBlock memory_block, unsigned int index, 
         unsigned int offset):
         '''Initializes a new MemComponent, typically called internally by
         GameSystem or EntityManager.
+
         Args:
             memory_block (MemoryBlock): the actual MemoryBlock where the data
             for this component resides.
@@ -63,6 +74,7 @@ cdef class StaticMemGameSystem(GameSystem):
     need Cython/C level access to various attributes and the components.
 
     **Attributes:**
+
     **size_of_component_block** (int): Internally the memory will be broken 
     down into blocks of **size_of_component_block** kibibytes. Defaults to 4.
 
@@ -88,6 +100,7 @@ cdef class StaticMemGameSystem(GameSystem):
     components are stored in the more complex IndexedMemoryZone which supports
     both direct C access to the underlying struct arrays and python level access
     to the **component_type** objects that wrap the C data.
+
     '''
     size_of_component_block = NumericProperty(4)
     type_size = NumericProperty(0)
@@ -108,10 +121,12 @@ cdef class StaticMemGameSystem(GameSystem):
             return self.imz_components
 
     def get_component(self, str zone):
-        '''Overrides GameSystem's default get_component, using 
+        '''
+        Overrides GameSystem's default get_component, using 
         IndexedMemoryZone to handle component data instead. **clear_component**
         will be called prior to returning the new index of the component 
         ensuring no junk data is present.
+
         Return:
             unsigned int: The index of the newly generated component.
         '''
@@ -121,7 +136,8 @@ cdef class StaticMemGameSystem(GameSystem):
         return new_id
 
     def allocate(self, Buffer master_buffer, dict reserve_spec):
-        '''Allocates an IndexedMemoryZone from the buffer provided following
+        '''
+        Allocates an IndexedMemoryZone from the buffer provided following
         the zone_name, count pairings in reserve_spec. The IndexedMemoryZone 
         will be stored internally on the C extension **imz_components** 
         attribute, it is accessible in python through the **components** 
@@ -129,6 +145,7 @@ cdef class StaticMemGameSystem(GameSystem):
         allocated. This stores void pointers to the various components of the 
         entity based on the system_names provides in **system_names**. This 
         makes it easier to retrieve various component data for processing.
+
         Args:
             master_buffer (Buffer): The buffer that this system will allocate
             itself from.
@@ -143,13 +160,15 @@ cdef class StaticMemGameSystem(GameSystem):
         if self.processor:
             self.entity_components = ZonedAggregator(
                 [x for x in self.system_names], reserve_spec, 
-                self.gameworld.entities, master_buffer)
+                self.gameworld, master_buffer)
 
     def get_system_size(self):
-        '''Returns the actual size being taken up by system data. Does not 
+        '''
+        Returns the actual size being taken up by system data. Does not 
         include python objects, just the various underlying arrays holding 
         raw component data, and other memories allocated by this GameSystem.
         Must be called after **allocate**.
+
         Return:
             int: size in bytes of the system's allocations.
         '''
@@ -159,9 +178,11 @@ cdef class StaticMemGameSystem(GameSystem):
         return size
 
     def get_size_estimate(self, dict reserve_spec):
-        '''Returns an estimated size, safe to call before calling **allocate**.
+        '''
+        Returns an estimated size, safe to call before calling **allocate**.
         Used internally by GameWorld to estimate if enough memory is available
         to support the GameSystem
+
         Return:
             int: estimated size in bytes of the system's allocations.
         '''
@@ -186,7 +207,8 @@ cdef class StaticMemGameSystem(GameSystem):
         return total + pointer_size_in_kb
 
     def remove_component(self, unsigned int component_index):
-        '''Overrides the default behavior of GameSystem, passing data handling
+        '''
+        Overrides the default behavior of GameSystem, passing data handling
         duties to the IndexedMemoryZone. **clear_component** will be called
         prior to calling **free_slot** on the MemoryZone.'''
         self.clear_component(component_index)
@@ -195,20 +217,23 @@ cdef class StaticMemGameSystem(GameSystem):
 
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, args):
-        '''Not implemented for StaticMemGameSystem, override when subclassing. 
+        '''
+        Not implemented for StaticMemGameSystem, override when subclassing. 
         Use this function to setup the initialization of a component's values.
         '''
         pass
 
     def clear_component(self, unsigned int component_index):
-        '''Not implemented for StaticMemGameSystem, override when subclassing.
+        '''
+        Not implemented for StaticMemGameSystem, override when subclassing.
         Use this function to setup the clearing of a component's values for 
         recycling'''
         pass
 
 
 cdef class ZonedAggregator:
-    '''ZonedAggregator provides a shortcut for processing data from several
+    '''
+    ZonedAggregator provides a shortcut for processing data from several
     components. A single contiguous array of void pointers is allocated, 
     respecting the zoning of memory for the IndexedMemoryZone. 
     It is not accessible from Python, this class is meant to be used only from 
@@ -220,6 +245,7 @@ cdef class ZonedAggregator:
     will have a bad reference.
 
     **Attributes (Cython Access Only):**
+
     **count** (unsigned int): The number of systems being tracked by this
     aggregator.
 
@@ -271,7 +297,9 @@ cdef class ZonedAggregator:
         self.clear()
 
     cdef bool check_empty(self):
-        '''Determines whether the **memory_block** is current empty
+        '''
+        Determines whether the **memory_block** is current empty
+
         Return:
             bool: Will be True if there is no data in **memory_block**, else 
             False.
@@ -279,8 +307,10 @@ cdef class ZonedAggregator:
         return self.memory_block.check_empty()
 
     cdef void free(self):
-        '''Free the memory being used by **memory_block**, returning it to
-        whichever Buffer the memory was allocated from during initialization'''
+        '''
+        Free the memory being used by **memory_block**, returning it to
+        whichever Buffer the memory was allocated from during initialization
+        '''
         self.memory_block.remove_from_buffer()
 
     cdef unsigned int get_size(self):
@@ -292,7 +322,9 @@ cdef class ZonedAggregator:
         return self.memory_block.size
 
     cdef void clear(self):
-        '''Clears the data in **memory_block**, resetting everything to NULL.'''
+        '''
+        Clears the data in **memory_block**, resetting everything to NULL.
+        '''
         cdef void** data = <void**>self.memory_block.data
         self.memory_block.clear()
         cdef unsigned int i
@@ -300,11 +332,14 @@ cdef class ZonedAggregator:
             data[i] = NULL
         
     cdef int remove_entity(self, unsigned int entity_id) except 0:
-        '''Removes a previously added entity. All pointers at the location
+        '''
+        Removes a previously added entity. All pointers at the location
         will be reset to NULL.
+
         Args:
             entity_id (unsigned int): the id of the entity to remove from the 
             aggregator.
+
         Return:
             int: 1 if entity_id was successfully removed, else 0. Return exists 
             mainly for exception propogation from Cython to Python.
@@ -321,13 +356,15 @@ cdef class ZonedAggregator:
 
     cdef unsigned int add_entity(self, unsigned int entity_id, 
         str zone_name) except -1:
-        '''Adds an entity to the aggregator, inserting it into zone_name
+        '''
+        Adds an entity to the aggregator, inserting it into zone_name
         section of the **memory_block**. Pointers to the current components
         corresponding to **system_names** will be stored for iteration on
         update. An exception will be raised if <unsigned int>-1 is returned. 
         A hashmap (**entity_block_index**) of entity_id, block_index will be 
         created so that you do not have to keep in mind the internal position
         in the aggregator when dealing with your entities.
+
         Args:
             entity_id (unsigned int): The id of the entity to be added.
 
@@ -363,7 +400,8 @@ cdef class ZonedAggregator:
 
 
 cdef class ComponentPointerAggregator:
-    '''ComponentPointerAggregator provides a shortcut for processing data from 
+    '''
+    ComponentPointerAggregator provides a shortcut for processing data from 
     several components. A single contiguous array of void pointers is allocated. 
     It is not accessible from Python, this class is meant to be used only from 
     Cython and allow you to deal directly with pointers to memory. Unintended
@@ -374,6 +412,7 @@ cdef class ComponentPointerAggregator:
     bad reference.
 
     **Attributes (Cython Access Only):**
+
     **count** (unsigned int): The number of systems being tracked by this
     aggregator.
 
@@ -397,8 +436,9 @@ cdef class ComponentPointerAggregator:
     def __cinit__(self, list system_names, unsigned int total,
         object gameworld, Buffer master_buffer):
         '''
-        The ComponentPointerAggregator allocates a MemoryBlock with enough space
-        to fit total * len(system_names) void pointers.
+        The ComponentPointerAggregator allocates a MemoryBlock with enough 
+        space to fit total * len(system_names) void pointers.
+
         Args:
             system_names (list): The names of the systems to lookup pointers 
             for, will be stored in the same order as listed.
@@ -424,7 +464,9 @@ cdef class ComponentPointerAggregator:
         self.clear()
 
     cdef bool check_empty(self):
-        '''Determines whether the **memory_block** is current empty
+        '''
+        Determines whether the **memory_block** is current empty
+
         Return:
             bool: Will be True if there is no data in **memory_block**, 
             else False.
@@ -432,12 +474,16 @@ cdef class ComponentPointerAggregator:
         return self.memory_block.check_empty()
 
     cdef void free(self):
-        '''Free the memory being used by **memory_block**, returning it to
-        whichever Buffer the memory was allocated from during initialization'''
+        '''
+        Free the memory being used by **memory_block**, returning it to
+        whichever Buffer the memory was allocated from during initialization
+        '''
         self.memory_block.remove_from_buffer()
 
     cdef unsigned int get_size(self):
-        '''Gets the size of the **memory_block**
+        '''
+        Gets the size of the **memory_block**
+
         Return:
             size (unsigned int): The amount of data in bytes reserved by 
             the **memory_block**
@@ -445,7 +491,9 @@ cdef class ComponentPointerAggregator:
         return self.memory_block.real_size
 
     cdef void clear(self):
-        '''Clears the data in **memory_block**, resetting everything to NULL.'''
+        '''
+        Clears the data in **memory_block**, resetting everything to NULL.
+        '''
         cdef void** data = <void**>self.memory_block.data
         self.memory_block.clear()
         cdef unsigned int i
@@ -453,11 +501,14 @@ cdef class ComponentPointerAggregator:
             data[i] = NULL
         
     cdef int remove_entity(self, unsigned int entity_id) except 0:
-        '''Removes a previously added entity. All pointers at the location
+        '''
+        Removes a previously added entity. All pointers at the location
         will be reset to NULL.
+
         Args:
             entity_id (unsigned int): the id of the entity to remove from the 
             aggregator.
+
         Return:
             int: 1 if entity_id was successfully removed, else 0. Return exists 
             mainly for exception propogation from Cython to Python.
@@ -473,15 +524,18 @@ cdef class ComponentPointerAggregator:
         return 1
 
     cdef unsigned int add_entity(self, unsigned int entity_id) except -1:
-        '''Adds an entity to the aggregator, inserting it into the first 
+        '''
+        Adds an entity to the aggregator, inserting it into the first 
         available slot in the **memory_block**. Pointers to the current 
         components corresponding to **system_names** will be stored for
         iteration on update. An exception will be raised if <unsigned int>-1 is 
         returned. A hashmap (**entity_block_index**) of entity_id, block_index 
         will be created so that you do not have to keep in mind the internal 
         position in the aggregator when dealing with your entities.
+
         Args:
             entity_id (unsigned int): The id of the entity to be added.
+
         Return:
             unsigned int: Will return the index of the pointers in the 
             **memory_block**

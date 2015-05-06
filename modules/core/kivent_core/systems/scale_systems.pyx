@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
@@ -78,7 +79,7 @@ cdef class ScaleSystem2D(StaticMemGameSystem):
         else:
             sx = args
             sy = args
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef ScaleStruct2D* component = <ScaleStruct2D*>(
             memory_zone.get_pointer(component_index))
         component.entity_id = entity_id
@@ -86,7 +87,7 @@ cdef class ScaleSystem2D(StaticMemGameSystem):
         component.sy = sy
 
     def clear_component(self, unsigned int component_index):
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef ScaleStruct2D* pointer = <ScaleStruct2D*>(
             memory_zone.get_pointer(component_index))
         pointer.entity_id = -1

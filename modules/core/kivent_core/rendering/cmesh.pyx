@@ -1,4 +1,5 @@
 # cython: profile=True
+# cython: embedsignature=True
 from kivy.graphics.instructions cimport VertexInstruction
 from batching cimport IndexedBatch
 include "opcodes.pxi"

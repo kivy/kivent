@@ -1,10 +1,12 @@
+# cython: embedsignature=True
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.entity cimport Entity
 
 cdef class EntityManager:
-    '''The EntityManager will keep track of the entities in your GameWorld.
+    '''
+    The EntityManager will keep track of the entities in your GameWorld.
     An Entity is technically nothing more than an entry in an array of 
     unsigned int. The entity is made up of system_count + 1 entries.
     The first entry is the actual identity of the entity, if it is inactive
@@ -22,12 +24,14 @@ cdef class EntityManager:
     EntityManager is typically allocated as part of your GameWorld.allocate.
 
     **Attributes: (Cython Access Only):
+
         **memory_index** (IndexedMemoryZone): Zoned memory for storing the 
         Entity indices. 
 
-        **system_count** (unsigned int): The number of slots reserved per Entity
-        will be one more than the initialization system_count arg as the first
-        entry is used internally to determine whether an entity is active.
+        **system_count** (unsigned int): The number of slots reserved per 
+        Entitywill be one more than the initialization system_count arg as the 
+        first entry is used internally to determine whether an entity is 
+        active.
 
     '''
 
@@ -44,8 +48,8 @@ cdef class EntityManager:
             reserve_spec (dict): Dict of zone_name, zone_count that should be
             allocated in the IndexedMemoryZone.
 
-            system_count (unsigned int): The number of systems to make room for,
-            internally system_count + 1 entries will actually be reserved
+            system_count (unsigned int): The number of systems to make room 
+            for, internally system_count + 1 entries will actually be reserved
             for your Entity as the first slot will be used to store whether
             or not that entity is active.
         '''
@@ -56,7 +60,8 @@ cdef class EntityManager:
         self.system_count = system_count
 
     cdef void clear_entity(self, unsigned int entity_id):
-        '''Clears an entity, setting all slots to <unsigned int>-1.
+        '''
+        Clears an entity, setting all slots to <unsigned int>-1.
 
         Args:
             entity_id (unsigned int): The index of the entity to be cleared.
@@ -70,25 +75,29 @@ cdef class EntityManager:
             pointer[i] = -1
 
     cdef unsigned int get_size(self):
-        '''Returns the size of the IndexedMemoryZone in bytes.
+        '''
+        Returns the size of the IndexedMemoryZone in bytes.
         '''
         return self.memory_index.get_size()
 
     cdef void set_component(self, unsigned int entity_id, 
         unsigned int component_id, unsigned int system_id):
-        '''Sets the component_id for the system at system_id in the 
+        '''
+        Sets the component_id for the system at system_id in the 
         entity data for Entity entity_id. Typically called by the GameSystem
         create_component automatically as part of initializing an entity.
         If you wish to change a component you should use the GameSystem's
         remove_component and create_component rather than manually calling 
         this function, unless you really know the implications of what you are 
         doing.
+
         Args:
             entity_id (unsigned int): id of the entity to set the component on.
 
             component_id (unsigned int): id of the component to be set.
 
             system_id (usngined int): index of the GameSystem.
+
         '''
 
         cdef MemoryZone memory_zone = self.memory_index.memory_zone
@@ -97,12 +106,15 @@ cdef class EntityManager:
         pointer[system_id+1] = component_id
 
     cdef void set_entity_active(self, unsigned int entity_id):
-        '''Marks the Entity at entity_id as active. This means that
+        '''
+        Marks the Entity at entity_id as active. This means that
         the first entry for that entity has been set to the entity_id
         instead of <unsigned int>-1. Typically called internally as part of
         **generate_entity**.
+
         Args:
             entity_id (unsigned int): The id of the entity to activate
+
         '''
         cdef MemoryZone memory_zone = self.memory_index.memory_zone
         cdef unsigned int* pointer = <unsigned int*>(
@@ -110,13 +122,17 @@ cdef class EntityManager:
         pointer[0] = entity_id
 
     cdef unsigned int generate_entity(self, str zone) except -1:
-        '''Activates a new entity in zone of **memory_index. Typically 
+        '''
+        Activates a new entity in zone of **memory_index. Typically 
         called internally as part of GameWorld.get_entity
+
         Args:
             zone (str): The zone to initialize the entity in.
+
         Return:
             new_id (unsigned int): The entity_id by which the new Entity will 
             be referred to.
+
         '''
         cdef IndexedMemoryZone memory_index = self.memory_index
         cdef MemoryZone memory_zone = memory_index.memory_zone
@@ -130,8 +146,10 @@ cdef class EntityManager:
         the indices that make up the entity. If a value is 4,294,967,295,
         which is <unsigned int>-1, that component is inactive. If the first 
         value is <unsigned int>-1 the entity itself is currently inactive.
+
         Args:
             entity_id (unsigned int): Identity of the entity to return.
+
         Return:
             list of ints : The component_id of each of the GameSystem with
             do_components.
@@ -144,6 +162,7 @@ cdef class EntityManager:
         '''Removes an entity from the **memory_index**, will mark as inactive
         and free the associated memory for reuse. Will clear the entity before
         freeing.
+
         Args:
             entity_id (unsigned int): The identity of the entity to remove
         '''

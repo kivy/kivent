@@ -1,14 +1,16 @@
+# cython: embedsignature=True
 from kivy.graphics.vertex cimport vertex_attr_t, VertexFormat
 from kivy.graphics.vertex import VertexFormatException
 from cython cimport Py_ssize_t
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from kivy.graphics.shader cimport Shader
 from kivy.graphics.c_opengl cimport (GL_FLOAT, GLfloat, GLsizei, GL_FALSE,
-    glVertexAttribPointer, GLvoid, GL_BYTE, GLbyte, GL_SHORT, GLshort, 
+    glVertexAttribPointer ,GLvoid, GL_BYTE, GLbyte, GL_SHORT, GLshort, 
     GL_INT, GLint, GL_UNSIGNED_BYTE, GLubyte, GL_UNSIGNED_SHORT, GLushort,
     GL_UNSIGNED_INT, GLuint)
 from kivy.graphics.instructions cimport getActiveContext
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
+
 
 cdef class KEVertexFormat(VertexFormat):
     '''VertexFormat is used to describe the layout of the vertex data stored 
@@ -131,6 +133,7 @@ cdef class KEVertexFormat(VertexFormat):
             attr = &vattr[i]
             if attr.per_vertex == 0:
                 continue
+            #commentout for sphinx
             glVertexAttribPointer(attr.index, attr.size, attr.type,
                     GL_FALSE, <GLsizei>vbytesize, 
                     <GLvoid*><long>offsets[i])

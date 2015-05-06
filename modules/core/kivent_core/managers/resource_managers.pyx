@@ -1,7 +1,9 @@
+# cython: embedsignature=True
 import json
 from os import path
 from kivy.core.image import Image as CoreImage
 from kivent_core.rendering.vertmesh cimport VertMesh
+
 
 cdef class ModelManager:
 
@@ -82,7 +84,8 @@ cdef class ModelManager:
 
 
 cdef class TextureManager:
-    '''The TextureManager handles the loading of all image resources into our
+    '''
+    The TextureManager handles the loading of all image resources into our
     game engine. Use **load_image** for image files and **load_atlas** for
     .atlas files. Do not load 2 images with the same name even in different
     atlas files. Prefer to access kivent.renderers.texture_manager than

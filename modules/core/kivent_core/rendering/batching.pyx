@@ -1,4 +1,5 @@
 # cython: profile=True
+# cython: embedsignature=True
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer
@@ -205,6 +206,7 @@ cdef class IndexedBatch:
         cdef FixedVBO vertices = frame_data.vertex_vbo
         vertices.bind()
         indices.bind()
+        #commentout for sphinx
         glDrawElements(self.mode, indices.data_size // sizeof(GLushort), 
             GL_UNSIGNED_SHORT, NULL)
         vertices.unbind()

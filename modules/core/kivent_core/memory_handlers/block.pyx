@@ -1,4 +1,5 @@
 # cython: profile=True
+# cython: embedsignature=True
 from membuffer cimport Buffer
 
 cdef class MemoryBlock(Buffer):
@@ -7,7 +8,9 @@ cdef class MemoryBlock(Buffer):
     It is suitable for nesting, for instance during rendering KivEnt will 
     allocate one large MemoryBlock to represent the maximum number of frames to 
     be rendered something like 20*512*1024 bytes: 
+
     .. code-block:: python
+
         #allocate the initial space
         buffer = Buffer(100*1024*1024, 1, 1)
         buffer.allocate_memory()
@@ -19,6 +22,7 @@ cdef class MemoryBlock(Buffer):
         #mem_block.type_size // other_type_size blocks.
         mem_block2 = MemoryBlock(1, other_type_size, 512*1024)
         mem_block2.allocate_memory_with_buffer(mem_block)
+
 
     You must allocate with the function **allocate_memory_with_buffer** instead
     of **allocate_memory**. Deallocation is handled with **remove_from_buffer**.

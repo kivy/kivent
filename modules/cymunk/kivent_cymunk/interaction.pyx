@@ -10,7 +10,7 @@ from kivent_core.gamesystems cimport PositionComponent, RotateComponent
 cimport cython
 from libc.math cimport atan2, pow as cpow
 
-@cython.freelist(100)
+
 cdef class CymunkTouchComponent:
 
     def __cinit__(self, Body touch_body, PivotJoint pivot):
@@ -205,7 +205,7 @@ class CymunkTouchSystem(GameSystem):
         space.remove(system_data._pivot)
         super(CymunkTouchSystem, self).remove_entity(entity_id)
             
-@cython.freelist(100)
+            
 cdef class SteeringComponent: 
 
     def __cinit__(self, Body body, PivotJoint pivot, GearJoint gear,

@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 from gamesystem cimport GameSystem
 from kivy.properties import (StringProperty, ListProperty, 
     NumericProperty, BooleanProperty, ObjectProperty)
@@ -10,12 +11,14 @@ from kivy.factory import Factory
 
 
 cdef class GameView(GameSystem):
-    '''GameView provides a simple camera system that will control the rendering
+    '''
+    GameView provides a simple camera system that will control the rendering
     view of any other **GameSystem** that has had the **gameview** property set 
     **GameSystem** that have a **gameview** will be added to the GameView
     canvas instead of the GameWorld canvas. 
 
     **Attributes:**
+    
         **do_scroll_lock** (BooleanProperty): If True the scrolling will be 
         locked to the bounds of the GameWorld's currentmap.
 

@@ -1,4 +1,5 @@
 # cython: profile=True
+# cython: embedsignature=True
 from kivy.uix.widget import Widget, WidgetException
 from kivy.properties import (StringProperty, ListProperty, NumericProperty, 
 DictProperty, BooleanProperty, ObjectProperty)
@@ -121,9 +122,11 @@ class GameWorld(Widget):
         '''Run during **init_gameworld** to determine whether or not it is safe
         to begin allocation. Safe in this situation means that every system_id 
         that has been listed in list_of_systems has been added to the GameWorld.
+
         Args:
             list_of_systems (list): List of the system_id (string) names of 
             the GameSystems we expect to have initialized.
+
         Return:
             bool : True if systems all added, otherwise False.
         '''
@@ -201,10 +204,12 @@ class GameWorld(Widget):
         Once allocation has finished, the **update** for GameWorld will be
         Clock.schedule_interval for **update_time**. If kwarg callback is not
         None your callback will be called with no extra arguments.
+
         Args:
             list_of_systems (list): list of system_id (string) names for the 
             GameSystems we want to check have been initialized and added to
             GameWorld.
+
         Kwargs:
             callback (object): If not None will be invoked after allocate has
             returned and update scheduled. Defaults to None.
@@ -225,6 +230,7 @@ class GameWorld(Widget):
         '''
         Args:
             state_name (str): Name for this state, should be unique.
+
         Kwargs:
             screenmanager_screen (str): Name of the screen for 
             GameScreenManager to make current when this state is transitioned
@@ -275,10 +281,12 @@ class GameWorld(Widget):
         in the order that they are listed. This allows control over the 
         arrangement of rendering layers. Later systems will be rendered on top
         of earlier.
+
         Args:
             instance (object): Should point to self.
 
             value(string): The name of the new state.
+
         If the state does not exist state will be reset to initial.
         '''
         try:
@@ -376,6 +384,7 @@ class GameWorld(Widget):
 
         This function can be used to schedule the destruction of an entity
         for a time in the future using partial and kivy's Clock.schedule_once
+        
         Like:
             Clock.schedule_once(partial(
                 gameworld.timed_remove_entity, entity_id))
@@ -460,6 +469,7 @@ class GameWorld(Widget):
         '''Used internally by add_widget. Will register a previously unseen
         GameSystem with the system_manager, and call the GameSystem's 
         on_add_system function.
+
         Args:
             widget (GameSystem): the GameSystem to add to the GameWorld's
             system_manager.
@@ -479,6 +489,7 @@ class GameWorld(Widget):
         we handle GameSystem related logic and can accept both Widget and
         CWidget base classes. If a GameSystem is added **add_system** will be
         called with that widget as the argument.
+
         Args:
             widget (Widget or CWidget): The widget to be added.
 
@@ -542,6 +553,7 @@ class GameWorld(Widget):
     def remove_widget(self, widget):
         '''Same as Widget.remove_widget except that if the removed widget is a
         GameSystem, on_remove_system of that GameSystem will be ran.
+
         Args:
             widget (Widget or CWidget): the child to remove.
         '''

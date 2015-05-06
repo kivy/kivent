@@ -18,7 +18,9 @@ else:
 	cstdarg = '-std=c99'
         libraries=[]
 
-do_clear_existing = True
+do_clear_existing = False
+
+print(environ.get('READTHEDOCS', None))
 
 prefixes = {
     'core': 'kivent_core.',

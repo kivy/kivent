@@ -1,30 +1,35 @@
+# cython: embedsignature=True
 from indexing cimport IndexedMemoryZone, ZoneIndex
 from zone cimport MemoryZone
 
 cdef class memrange:
-    '''Use memrange to iterate a IndexedMemoryZone object and return
-    the active game entities' python objects , an active memory object is one 
-    that currently does not have the first attribute of its struct set to 
+    '''
+    Use memrange to iterate a IndexedMemoryZone object and return the active 
+    game entities' python objects , an active memory object is one that 
+    currently does not have the first attribute of its struct set to 
     <unsigned int>-1. Typically KivEnt store the entity_id for the component
-    in this position.
-    Memory objects that have never been allocated are skipped
+    in this position. Memory objects that have never been allocated are 
+    skipped.
+
     Args:
 
-        memory_index IndexedMemoryZone
+        memory_index (IndexedMemoryZone): The IndexedMemoryZone to iterate.
 
-        start int
+        start (int): The start of iteration. Defaults 0.
 
-        end int
+        end (int): The end of iteration. Defaults None. If no end is specified
+        we will iterate all memory.
 
-        zone str
+        zone (str): The zone to iterate. Defaults None. If no zone is 
+        specified we will iterate through all zones.
 
-        You must reference an IndexedMemoryZone, by default we will iterate
-        through all the memory. The area of memory iterated can be controlled
-        with options *start* and *end*, or you can provide the name of one of 
-        the reserved zones to iterate that specific memory area.
+    You must reference an IndexedMemoryZone, by default we will iterate
+    through all the memory. The area of memory iterated can be controlled
+    with options *start* and *end*, or you can provide the name of one of 
+    the reserved zones to iterate that specific memory area.
     '''
 
-    def __init__(memrange self, IndexedMemoryZone memory_index, start=0, 
+    def __init__(self, IndexedMemoryZone memory_index, start=0, 
         end=None, zone=None):
         cdef MemoryZone memory_zone = memory_index.memory_zone
         cdef unsigned int zone_count = memory_zone.count
@@ -42,7 +47,7 @@ cdef class memrange:
 
 cdef class memrange_iter:
 
-    def __init__(memrange_iter self, IndexedMemoryZone memory_index, int start, 
+    def __init__(self, IndexedMemoryZone memory_index, int start, 
         int end):
         self.memory_index = memory_index
         self.current = start

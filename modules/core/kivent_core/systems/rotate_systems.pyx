@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
@@ -49,14 +50,14 @@ cdef class RotateSystem2D(StaticMemGameSystem):
         '''A RotateComponent2D is always initialized with a single float 
         representing a rotation in degrees. 
         '''
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef RotateStruct2D* component = <RotateStruct2D*>(
             memory_zone.get_pointer(component_index))
         component.entity_id = entity_id
         component.r = r
 
     def clear_component(self, unsigned int component_index):
-        cdef MemoryZone memory_zone = self.components.memory_zone
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef RotateStruct2D* pointer = <RotateStruct2D*>(
             memory_zone.get_pointer(component_index))
         pointer.entity_id = -1

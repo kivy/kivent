@@ -36,7 +36,7 @@ cdef class Entity(MemComponent):
     def __getattr__(self, str name):
         cdef unsigned int system_index = self.system_manager.get_system_index(
             name)
-        system = self.system_manager.get_system(name)
+        system = self.system_manager[name]
         cdef unsigned int* pointer = <unsigned int*>self.pointer
         cdef unsigned int component_index = pointer[system_index+1]
         if component_index == -1:

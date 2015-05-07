@@ -68,7 +68,6 @@ else:
         velocity_modules_c)
 
 
-
 setup(
     name='KivEnt Velocity Module',
     description='''A game engine for the Kivy Framework. 

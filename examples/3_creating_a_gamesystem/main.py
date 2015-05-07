@@ -13,9 +13,11 @@ from kivent_core.managers.resource_managers import (
 from kivy.properties import StringProperty
 from kivy.factory import Factory
 
+
 texture_manager.load_atlas('assets/background_objects.atlas')
 model_manager.load_textured_rectangle(4, 7., 7., 'star1', 'star1-4')
 model_manager.load_textured_rectangle(4, 10., 10., 'star1', 'star1-4-2')
+
 
 class VelocitySystem2D(GameSystem):
     
@@ -29,7 +31,9 @@ class VelocitySystem2D(GameSystem):
                 position_comp.x += component.vx * dt
                 position_comp.y += component.vy * dt
 
+
 Factory.register('VelocitySystem2D', cls=VelocitySystem2D)
+
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
@@ -57,16 +61,16 @@ class TestGame(Widget):
             ent = init_entity(create_dict, ['position', 'velocity', 
                 'renderer'])
 
-
     def setup_states(self):
         self.gameworld.add_state(state_name='main', 
             systems_added=['renderer'],
             systems_removed=[], systems_paused=[],
-            systems_unpaused=['renderer'],
+            systems_unpaused=['renderer', 'velocity'],
             screenmanager_screen='main')
 
     def set_state(self):
         self.gameworld.state = 'main'
+
 
 class DebugPanel(Widget):
     fps = StringProperty(None)

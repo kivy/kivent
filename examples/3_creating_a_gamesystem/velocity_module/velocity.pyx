@@ -92,6 +92,4 @@ cdef class VelocitySystem2D(StaticMemGameSystem):
             pos_comp.y += vel_comp.vy * dt
  
 
-
-
 Factory.register('VelocitySystem2D', cls=VelocitySystem2D)

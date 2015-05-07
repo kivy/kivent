@@ -30,7 +30,7 @@ class TestGame(Widget):
 
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity
-        for x in range(1000):
+        for x in range(12000):
             pos = randint(0, Window.width), randint(0, Window.height)
             vert_mesh_key = choice(['star1-4', 'star1-4-2'])
             create_dict = {

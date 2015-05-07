@@ -14,6 +14,7 @@ from kivy.properties import StringProperty
 from kivy.factory import Factory
 from velocity_module.velocity import VelocitySystem2D
 
+
 texture_manager.load_atlas('assets/background_objects.atlas')
 model_manager.load_textured_rectangle(4, 7., 7., 'star1', 'star1-4')
 model_manager.load_textured_rectangle(4, 10., 10., 'star1', 'star1-4-2')
@@ -33,7 +34,7 @@ class TestGame(Widget):
 
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity
-        for x in range(40000):
+        for x in range(100000):
             pos = randint(0, Window.width), randint(0, Window.height)
             vert_mesh_key = choice(['star1-4', 'star1-4-2'])
             create_dict = {
@@ -55,6 +56,7 @@ class TestGame(Widget):
 
     def set_state(self):
         self.gameworld.state = 'main'
+
 
 class DebugPanel(Widget):
     fps = StringProperty(None)

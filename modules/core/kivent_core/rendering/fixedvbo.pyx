@@ -116,7 +116,6 @@ cdef class FixedVBO:
         glBufferData(self.target, self.memory_block.real_size, 
             NULL, self.usage)
 
-
     cdef void update_buffer(self):
         '''Updates the buffer, uploading the latest data from **memory_block**
         If the data is the same size as the last call of **update_buffer**
@@ -138,7 +137,6 @@ cdef class FixedVBO:
             glBufferSubData(self.target, 0, data_size, self.memory_block.data)
         self.size_last_frame = data_size
 
-
     cdef void bind(self):
         '''Binds this buffer for rendering, calling **update_buffer** in the 
         process. Will call the bind function of **vertex_format** if 
@@ -152,12 +150,10 @@ cdef class FixedVBO:
         #commentout for sphinx
         glBindBuffer(self.target, 0)
 
-
     cdef void return_memory(self):
         '''Will return the memory claimed by this VBO's **memory_block**.'''
         self.memory_block.remove_from_buffer()
         
-
     cdef void reload(self):
         '''Will flag this VBO as V_NEEDGEN, set the **size_last_frame** to 0,
         and clear the **memory_block**.'''

@@ -221,13 +221,9 @@ cdef class IndexedBatch:
         cdef FixedFrameData frame
         cdef list frame_data = self.frame_data
         self.entity_components.free()
-        print(frame_data)
-        print('print entity_components free')
         for frame in frame_data:
             frame.return_memory()
-            print('return memory', frame)
-        print('end of framedata')
-        print('finish clear frame')
+
 
 
 class MaxBatchException(Exception):

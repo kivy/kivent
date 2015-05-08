@@ -14,28 +14,22 @@ from kivent_core.systems.renderers import RotateRenderer
 from kivent_core.systems.position_systems import PositionSystem2D
 from kivent_core.systems.rotate_systems import RotateSystem2D
 from kivy.properties import StringProperty, NumericProperty
-import cProfile
 from functools import partial
-
 
 
 texture_manager.load_atlas('assets/background_objects.atlas')
 
+
 class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
-        print('start app')
-        self.gameworld.init_gameworld(['map', 'cymunk_physics', 
-            'rotate_renderer', 
-            'rotate', 'position', 'gameview', 'scale', 'color'],
+        self.gameworld.init_gameworld(
+            ['cymunk_physics', 'rotate_renderer', 'rotate', 'position',],
             callback=self.init_game)
-        print('gameworld inited')
 
     def init_game(self):
-        print('in setup')
         self.setup_states()
         self.set_state()
-
 
 
     def draw_game(self):
@@ -48,22 +42,22 @@ class TestGame(Widget):
     def draw_some_stuff(self):
         size = Window.size
         w, h = size[0], size[1]
+        delete_time = 2.5
         create_asteroid = self.create_asteroid
+        destroy_ent = self.destroy_created_entity
         for x in range(100):
             pos = (randint(0, w), randint(0, h))
             ent_id = create_asteroid(pos)
-            #Clock.schedule_once(partial(self.destroy_created_entity, ent_id), 1.)
-            #print(self.gameworld.entity_manager.get_entity_ids(ent_id))
+            Clock.schedule_once(partial(destroy_ent, ent_id), delete_time)
         self.app.count += 100
+
         
-
-
     def create_asteroid(self, pos):
         x_vel = randint(-500, 500)
         y_vel = randint(-500, 500)
         angle = radians(randint(-360, 360))
         angular_velocity = radians(randint(-150, -150))
-        shape_dict = {'inner_radius': 0, 'outer_radius': 3, 
+        shape_dict = {'inner_radius': 0, 'outer_radius': 20, 
             'mass': 50, 'offset': (0, 0)}
         col_shape = {'shape_type': 'circle', 'elasticity': .5, 
             'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
@@ -76,19 +70,15 @@ class TestGame(Widget):
             'ang_vel_limit': radians(200), 
             'mass': 50, 'col_shapes': col_shapes}
         create_component_dict = {'cymunk_physics': physics_component, 
-            'rotate_renderer': {'texture': 'star1', 
-            'size': (6, 6),
+            'rotate_renderer': {'texture': 'asteroid1', 
+            'size': (45, 45),
             'render': True}, 
-            'position': pos, 'rotate': 0, 'color': (1., 1., 1., 1.),
-            'scale': 1.}
-        component_order = ['position', 'rotate', 'color', 'rotate_renderer', 
-            'scale', 'cymunk_physics']
+            'position': pos, 'rotate': 0, }
+        component_order = ['position', 'rotate', 'rotate_renderer', 
+            'cymunk_physics',]
         return self.gameworld.init_entity(
             create_component_dict, component_order)
 
-    def setup_map(self):
-        gameworld = self.gameworld
-        gameworld.currentmap = gameworld.systems['map']
 
     def update(self, dt):
         self.gameworld.update(dt)
@@ -124,4 +114,3 @@ class YourAppNameApp(App):
 
 if __name__ == '__main__':
     YourAppNameApp().run()
-    #cProfile.run('YourAppNameApp().run()', 'prof.prof')

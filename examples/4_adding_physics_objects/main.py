@@ -31,7 +31,6 @@ class TestGame(Widget):
         self.setup_states()
         self.set_state()
 
-
     def draw_game(self):
         self.draw_some_stuff()
 
@@ -51,7 +50,6 @@ class TestGame(Widget):
             Clock.schedule_once(partial(destroy_ent, ent_id), delete_time)
         self.app.count += 100
 
-        
     def create_asteroid(self, pos):
         x_vel = randint(-500, 500)
         y_vel = randint(-500, 500)
@@ -78,7 +76,6 @@ class TestGame(Widget):
             'cymunk_physics',]
         return self.gameworld.init_entity(
             create_component_dict, component_order)
-
 
     def update(self, dt):
         self.gameworld.update(dt)

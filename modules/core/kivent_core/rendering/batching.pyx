@@ -461,31 +461,34 @@ cdef class BatchManager:
         cdef ComponentPointerAggregator entity_components = (
             ComponentPointerAggregator(self.system_names, self.ent_per_batch,
                 self.gameworld, self.master_buffer))
-        cdef IndexedBatch batch = IndexedBatch(tex_key, 
-            self.index_slots_per_block, self.slots_per_block, self.frame_count, 
-            self.get_vbos(), self.mode, entity_components)
+        cdef IndexedBatch batch
         cdef list free_batches = self.free_batches
         cdef unsigned int new_index
+        cdef CMesh cmesh
         if len(free_batches) > 0:
             new_index = free_batches.pop(0)
-            self.batches[new_index] = batch
+            batch = self.batches[new_index]
+            cmesh = batch.mesh_instruction
         else:
+            batch = IndexedBatch(tex_key, 
+            self.index_slots_per_block, self.slots_per_block, self.frame_count, 
+            self.get_vbos(), self.mode, entity_components)
             self.batches.append(batch)
             new_index = self.batch_count
             self.batch_count += 1
+            cmesh = CMesh(batch=batch)
+            batch.mesh_instruction = cmesh
         batch.batch_id = new_index
+        self.canvas.add(cmesh)
         cdef dict batch_groups = self.batch_groups
-
+        cmesh.texture = texture_manager.get_texture(tex_key)
         if tex_key not in batch_groups:
             batch_groups[tex_key] = [batch]
         else:
             batch_groups[tex_key].append(batch)
-        cdef CMesh cmesh
+        
 
-        with self.canvas:
-            cmesh = CMesh(texture=texture_manager.get_texture(tex_key), 
-                batch=batch)
-            batch.mesh_instruction = cmesh
+    
         return new_index
   
     cdef void remove_batch(self, unsigned int batch_id):
@@ -496,14 +499,10 @@ cdef class BatchManager:
             batch_id (unsigned int): The id of the batch as returned by 
             **create_batch**.
         '''
-        print('removing batch', batch_id)
         cdef IndexedBatch batch = self.batches[batch_id]
         cdef int tex_key = batch.tex_key
-        self.canvas.remove(batch.mesh_instruction)
-        batch.mesh_instruction = None
         self.batch_groups[tex_key].remove(batch)
-        batch.clear_frames()
-        self.batches[batch_id] = None
+        self.canvas.remove(batch.mesh_instruction)
         self.free_batches.append(batch_id)
 
     cdef IndexedBatch get_batch_with_space(self, int tex_key, 
@@ -590,8 +589,8 @@ cdef class BatchManager:
         batch.remove_entity(entity_id, num_verts, vert_index, num_indices,
             ind_index)
         #TODO fix me, seg faults
-        #if batch.check_empty():
-        #    self.remove_batch(batch_id)
+        if batch.check_empty():
+            self.remove_batch(batch_id)
         return 1
 
     cdef list get_vbos(self):

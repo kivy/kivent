@@ -221,9 +221,13 @@ cdef class IndexedBatch:
         cdef FixedFrameData frame
         cdef list frame_data = self.frame_data
         self.entity_components.free()
+        print(frame_data)
+        print('print entity_components free')
         for frame in frame_data:
             frame.return_memory()
-        del frame_data[:]
+            print('return memory', frame)
+        print('end of framedata')
+        print('finish clear frame')
 
 
 class MaxBatchException(Exception):
@@ -496,6 +500,7 @@ cdef class BatchManager:
             batch_id (unsigned int): The id of the batch as returned by 
             **create_batch**.
         '''
+        print('removing batch', batch_id)
         cdef IndexedBatch batch = self.batches[batch_id]
         cdef int tex_key = batch.tex_key
         self.canvas.remove(batch.mesh_instruction)
@@ -588,8 +593,9 @@ cdef class BatchManager:
         cdef IndexedBatch batch = self.batches[batch_id]
         batch.remove_entity(entity_id, num_verts, vert_index, num_indices,
             ind_index)
-        if batch.check_empty():
-            self.remove_batch(batch_id)
+        #TODO fix me, seg faults
+        #if batch.check_empty():
+        #    self.remove_batch(batch_id)
         return 1
 
     cdef list get_vbos(self):

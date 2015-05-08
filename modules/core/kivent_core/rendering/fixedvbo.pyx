@@ -156,6 +156,7 @@ cdef class FixedVBO:
     cdef void return_memory(self):
         '''Will return the memory claimed by this VBO's **memory_block**.'''
         self.memory_block.remove_from_buffer()
+        
 
     cdef void reload(self):
         '''Will flag this VBO as V_NEEDGEN, set the **size_last_frame** to 0,

@@ -597,8 +597,8 @@ cdef class Renderer(StaticMemGameSystem):
         cdef RenderStruct* pointer = <RenderStruct*>components.get_pointer(
             component_index)
         self._unbatch_entity(pointer.entity_id, pointer)
-        
         super(Renderer, self).remove_component(component_index)
+
 
     def unbatch_entity(self, unsigned int entity_id):
         '''

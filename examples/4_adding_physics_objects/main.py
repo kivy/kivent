@@ -31,9 +31,6 @@ class TestGame(Widget):
         self.setup_states()
         self.set_state()
 
-    def draw_game(self):
-        self.draw_some_stuff()
-
     def destroy_created_entity(self, ent_id, dt):
         self.gameworld.remove_entity(ent_id)
         self.app.count -= 1
@@ -104,9 +101,6 @@ class DebugPanel(Widget):
 
 class YourAppNameApp(App):
     count = NumericProperty(0)
-
-    def build(self):
-        Window.clearcolor = (0, 0, 0, 1.)
 
 
 if __name__ == '__main__':

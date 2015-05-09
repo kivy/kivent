@@ -1,52 +1,49 @@
 KivEnt
 ======
-Project Website: http://www.kivent.org
+##Project Website: 
+http://www.kivent.org
 
-Mailing List: https://groups.google.com/forum/#!forum/kivent
+##Mailing List: 
+https://groups.google.com/forum/#!forum/kivent
 
-Documentation: http://www.kivent.org/docs  
-scroll down for extra detailed installation instructions
+##Documentation: 
+http://www.kivent.org/docs  
 
+##Getting Started
+Read the [introduction](https://github.com/Kovak/KivEnt/wiki/An-Introduction-to-KivEnt) on the github wiki.
+
+##Dependencies
 KivEnt is split into modules, the core module, 'kivent_core', is dependent only on Kivy.
 
 Other modules may have other dependecies, listed here:
 
-Kivent_core:
--------------
-kivy
+###kivent_core:
+* [kivy](https://github.com/kivy/kivy)
 
-kivent_cymunk:
--------------
-kivy 
-cymunk
-kivent_core
+###kivent_cymunk:
+* [kivy](https://github.com/kivy/kivy)
+* [cymunk](https://github.com/tito/cymunk)
+* [kivent_core](https://github.com/Kovak/KivEnt/tree/master/modules/core)
 
-cymunk:
--------
-get the master branch from here:https://github.com/tito/cymunk
-
+##Installation
 first install all dependencies then:
 
 cd .../KivEnt/modules/core or .../KivEnt/modules/cymunk
 
 python setup.py build_ext install
 
+##Tested On:
 Tested with [Kivy 1.9](https://github.com/kivy/kivy).
 
 Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 14.04, and Windows 8.1
 
 
-Detailed Setup Instructions (if not installing to system python)
+##Detailed Setup Instructions (if not installing to system python)
 
 export PYTHONPATH=~/path/to/kivy:$PYTHONPATH 
 
-do the same for cymunk  
-(this is the path to python folder in cymunk)  
+do the same for cymunk (point the path to python folder in cymunk)  
 export PYTHONPATH=~/path/to/cymunk/cymunk/python:$PYTHONPATH
-
-
-
-
 
 ##Extra detailed installation instructions:
 

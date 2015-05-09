@@ -7,8 +7,8 @@ import kivent_core
 from kivent_core.gameworld import GameWorld
 from kivent_core.systems.position_systems import PositionSystem2D
 from kivent_core.systems.renderers import Renderer
-from kivent_core.managers.resource_managers import (
-    texture_manager, model_manager)
+from kivent_core.managers.resource_managers import (texture_manager, 
+    model_manager)
 from kivy.properties import StringProperty
 
 texture_manager.load_atlas('assets/background_objects.atlas')
@@ -30,7 +30,7 @@ class TestGame(Widget):
 
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity
-        for x in range(12000):
+        for x in range(5000):
             pos = randint(0, Window.width), randint(0, Window.height)
             vert_mesh_key = choice(['star1-4', 'star1-4-2'])
             create_dict = {

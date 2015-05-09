@@ -8,7 +8,8 @@ Documentation: http://www.kivent.org/docs
 scroll down for extra detailed installation instructions
 
 KivEnt is split into modules, the core module, 'kivent_core', is dependent only on Kivy.
-Other modules may have other dependecies, listed her:
+
+Other modules may have other dependecies, listed here:
 
 kivent_cymunk:
 The cymunk module requires Cymunk in order to run:   
@@ -22,7 +23,10 @@ Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 14.04, and Windo
 
 You should now be able to use a system installed kivy to build against. If you would like to 
 install to your system python in the module folder execute
-such as KivEnt/modules/core or KivEnt/modules/cymunk
+such as 
+
+cd .../KivEnt/modules/core or .../KivEnt/modules/cymunk
+
 python setup.py build_ext install
 
 Detailed pythonpath setup instructions:

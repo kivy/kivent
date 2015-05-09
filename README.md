@@ -45,14 +45,6 @@ Tested with [Kivy 1.9](https://github.com/kivy/kivy).
 
 Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 14.04, and Windows 8.1
 
-
-##Detailed Setup Instructions (if not installing to system python)
-
-export PYTHONPATH=~/path/to/kivy:$PYTHONPATH 
-
-do the same for cymunk (point the path to python folder in cymunk)  
-export PYTHONPATH=~/path/to/cymunk/cymunk/python:$PYTHONPATH
-
 ##Extra detailed installation instructions:
 
 ###dependencies

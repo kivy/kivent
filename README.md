@@ -10,12 +10,22 @@ scroll down for extra detailed installation instructions
 KivEnt is split into modules, the core module, 'kivent_core', is dependent only on Kivy.
 
 Other modules may have other dependecies, listed here:
---------------------------------------------------------------
+
+Kivent_core:
+-------------
+kivy
+
 kivent_cymunk:
-The cymunk module requires Cymunk in order to run:   
+-------------
+kivy 
+cymunk
+kivent_core
+
+cymunk:
+-------
 get the master branch from here:https://github.com/tito/cymunk
---------------------------------------------------------------
-In order to build kivent_cymunk you must first build and link cymunk and the kivent_core module.
+
+first install all dependencies then:
 
 cd .../KivEnt/modules/core or .../KivEnt/modules/cymunk
 

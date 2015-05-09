@@ -17,8 +17,8 @@ get the master branch from here:https://github.com/tito/cymunk
 
 In order to build kivent_cymunk you must first build and link cymunk and the kivent_core module.
 
-I develop using [Kivy 1.9](https://github.com/kivy/kivy), tested on 
-Windows, Linux, and Android.
+Tested with [Kivy 1.9](https://github.com/kivy/kivy).
+
 Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 14.04, and Windows 8.1
 
 You should now be able to use a system installed kivy to build against. If you would like to 

@@ -1,5 +1,13 @@
 KivEnt
 ======
+KivEnt is a framework for building performant, dynamic real-time scenes in [Kivy](http://kivy.org/#home). At the moment it is 2d oriented. The only dependency for the kivent_core module is Kivy itself. Additional modules may have other requirements, such as kivent_cymunk module being based on [Chipmunk2d](https://chipmunk-physics.net/) and its [cymunk wrapper](https://github.com/tito/cymunk).
+
+An entity-component architecture is used to control game object state and the logic of processing the game objects. This means that your game objects will be made up of collections of independent components that stricly hold data; each component corresponds to a GameSystem that will perform all data processing on the components, in the update loop each frame, and as a result of user interaction or other programmaticaly generated events. All memory for the built-in components is allocated statically: if you would like learn more about memory management, [read here](http://kivent.org/docs/memory_handlers.html).
+
+KivEnt is built with a modular architecture and designed to have both a python api and a c-level cython api that allows more performant access to your game data. This makes it suitable for quickly prototyping a mechanic completely in python, and relatively trivial to then deeply cythonize that GameSystem if you find it to be performance sensitive. This process has already been done for the built-in components meaning they are ready for you to build new, performant game systems on top of them.
+
+The entire framework is made available to you with an MIT license so that you have the freedom to build whatever you want on top of it and monetize it however you like. 
+
 ##Project Website: 
 http://www.kivent.org
 

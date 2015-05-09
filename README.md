@@ -1,34 +1,49 @@
 KivEnt
 ======
-Project Website: http://www.kivent.org
+KivEnt is a framework for building performant, dynamic real-time scenes in [Kivy](http://kivy.org/#home). At the moment it is 2d oriented. The only dependency for the kivent_core module is Kivy itself. Additional modules may have other requirements, such as kivent_cymunk module being based on [Chipmunk2d](https://chipmunk-physics.net/) and its [cymunk wrapper](https://github.com/tito/cymunk).
 
-Mailing List: https://groups.google.com/forum/#!forum/kivent
+An entity-component architecture is used to control game object state and the logic of processing the game objects. This means that your game objects will be made up of collections of independent components that stricly hold data; each component corresponds to a GameSystem that will perform all data processing on the components, in the update loop each frame, and as a result of user interaction or other programmaticaly generated events. All memory for the built-in components is allocated statically: if you would like learn more about memory management, [read here](http://kivent.org/docs/memory_handlers.html).
 
-Documentation: http://www.kivent.org/docs  
-scroll down for extra detailed installation instructions
+KivEnt is built with a modular architecture and designed to have both a python api and a c-level cython api that allows more performant access to your game data. This makes it suitable for quickly prototyping a mechanic completely in python, and relatively trivial to then deeply cythonize that GameSystem if you find it to be performance sensitive. This process has already been done for the built-in components meaning they are ready for you to build new, performant game systems on top of them.
 
+The entire framework is made available to you with an MIT license so that you have the freedom to build whatever you want on top of it and monetize it however you like. 
 
-The cymunk module requires the Cymunk in order to run:   
-get the master branch from here:https://github.com/tito/cymunk
+##Project Website: 
+http://www.kivent.org
 
-You will need to compile both the cymunk module as well as the kivent_cython folders code.
+##Mailing List: 
+https://groups.google.com/forum/#!forum/kivent
 
-I develop using [Kivy 1.9](https://github.com/kivy/kivy), tested on 
-Windows, Linux, and Android.
+##Documentation: 
+http://www.kivent.org/docs  
 
-Cymunk and Kivy must both be in your environment path in order to buld kivent as it must cimport modules from both of these modules.
+##Getting Started
+Read the [introduction](https://github.com/Kovak/KivEnt/wiki/An-Introduction-to-KivEnt) on the github wiki.
 
-Do not make install kivy, simply make it and then
+##Dependencies
+KivEnt is split into modules, the core module, 'kivent_core', is dependent only on Kivy.
 
-export PYTHONPATH=~/path/to/kivy:$PYTHONPATH 
+Other modules may have other dependecies, listed here:
 
-do the same for cymunk  
-(this is the path to python folder in cymunk)  
-export PYTHONPATH=~/path/to/cymunk/cymunk/python:$PYTHONPATH
+###kivent_core:
+* [kivy](https://github.com/kivy/kivy)
 
+###kivent_cymunk:
+* [kivy](https://github.com/kivy/kivy)
+* [cymunk](https://github.com/tito/cymunk)
+* [kivent_core](https://github.com/Kovak/KivEnt/tree/master/modules/core)
 
+##Installation
+first install all dependencies then:
 
-Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 13.04 
+cd .../KivEnt/modules/core or .../KivEnt/modules/cymunk
+
+python setup.py build_ext install
+
+##Tested On:
+Tested with [Kivy 1.9](https://github.com/kivy/kivy).
+
+Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 14.04, and Windows 8.1
 
 ##Extra detailed installation instructions:
 
@@ -103,7 +118,7 @@ If you have got this far you should be able to run some examples - this first on
 
 and a physics example
 
-    cd KivEnt/examples/3_adding_physics_objects/
+    cd KivEnt/examples/4_adding_physics_objects/
     ln -s ../../modules/core/kivent_core/ kivent_core
     ln -s ../../modules/cymunk/kivent_cymunk/ kivent_cymunk
     python main.py

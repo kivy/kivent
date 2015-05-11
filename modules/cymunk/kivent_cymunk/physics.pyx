@@ -7,7 +7,7 @@ from kivent_core.systems.position_systems cimport (PositionStruct2D,
     PositionSystem2D)
 from kivent_core.systems.rotate_systems cimport RotateStruct2D, RotateSystem2D
 from kivent_core.entity cimport Entity
-from cymunk cimport (Space, BB, Body, Shape, Circle, BoxShape, 
+from cymunk.cymunk cimport (Space, BB, Body, Shape, Circle, BoxShape, 
     Vec2d, Poly, Segment, cpBody, cpVect)
 from libc.math cimport M_PI_2
 cimport cython

@@ -1,4 +1,4 @@
-from cymunk cimport Body, cpBody, Space
+from cymunk.cymunk cimport Body, cpBody, Space
 from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem, 
     MemComponent)
 

@@ -119,4 +119,13 @@ setup(
         'kivent_core.systems',
         'kivent_core.uix'
         ],
-    package_dir={'kivent_core': 'kivent_core'})
+    package_dir={'kivent_core': 'kivent_core'},
+    package_data={'kivent_core': [
+        '*.pxd', 
+        'memory_handlers/*.pxd',
+        'rendering/*.pxd',
+        'managers/*.pxd',
+        'systems/*.pxd',
+        'uix/*.pxd'
+        ]
+        },)

@@ -1,5 +1,4 @@
 from kivy.app import App
-print('imported kivy')
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.core.window import Window

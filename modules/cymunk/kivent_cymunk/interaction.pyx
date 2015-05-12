@@ -9,11 +9,14 @@ from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem,
     MemComponent)
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.zone cimport MemoryZone
+from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.systems.position_systems cimport (PositionComponent2D, 
     PositionStruct2D)
 from kivent_core.systems.rotate_systems cimport RotateComponent2D
 cimport cython
+from kivy.factory import Factory
 from libc.math cimport atan2, pow as cpow
+from kivent_core.managers.system_manager cimport SystemManager
 
 
 cdef class CymunkTouchComponent(MemComponent):
@@ -54,35 +57,37 @@ cdef class CymunkTouchComponent(MemComponent):
 
 cdef class CymunkTouchSystem(StaticMemGameSystem):
     system_id = StringProperty('cymunk_touch')
-    physics_system = StringProperty(None)
+    physics_system = StringProperty('cymunk_physics')
     updateable = BooleanProperty(True)
     gameview_name = StringProperty(None)
-    touch_radius = NumericProperty(10.)
-    max_force = NumericProperty(2000000.)
+    touch_radius = NumericProperty(20.)
+    max_force = NumericProperty(2500000.)
     max_bias = NumericProperty(10000.)
     ignore_groups = ListProperty([])
     processor = BooleanProperty(True)
     type_size = NumericProperty(sizeof(CymunkTouchStruct))
     component_type = ObjectProperty(CymunkTouchComponent)
+    zone_to_use = StringProperty('touch')
     system_names = ListProperty(['cymunk_touch','position'])
 
 
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, str zone, dict args):
         cdef MemoryZone memory_zone = self.imz_components.memory_zone
-        cdef PhysicsComponent py_component = self.components[component_index]
+        cdef CymunkTouchComponent py_component = self.components[
+            component_index]
         cdef CymunkTouchStruct* component = <CymunkTouchStruct*>(
             memory_zone.get_pointer(component_index))
         component.entity_id = entity_id
-        cdef object gameworld = self.gameworld
-        cdef dict systems = gameworld.systems
+        gameworld = self.gameworld
+        cdef SystemManager system_manager = gameworld.system_manager
         cdef str physics_id = self.physics_system
-        cdef object physics_system = systems[physics_id]
+        cdef object physics_system = system_manager[physics_id]
         cdef Body touch_body = Body(None, None)
-        cdef list entities = gameworld.entities
+        cdef IndexedMemoryZone entities = gameworld.entities
         cdef tuple touch_pos = args['touch_pos']
         cdef unsigned int touched_ent = args['touched_ent']
-        cdef object touched_entity = entities[touched_ent]
+        touched_entity = entities[touched_ent]
         cdef PhysicsComponent physics_data = getattr(
             touched_entity, physics_id)
         cdef Body body = physics_data.body
@@ -117,40 +122,21 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
     def remove_component(self, unsigned int component_index):
         cdef CymunkTouchComponent component = self.components[component_index]
         self.entity_components.remove_entity(component.entity_id)
-        cdef object gameworld = self.gameworld
+        gameworld = self.gameworld
         cdef str physics_id = self.physics_system
-        cdef object physics_system = gameworld.systems[physics_id]
+        cdef SystemManager system_manager = gameworld.system_manager
+        physics_system = system_manager[physics_id]
         cdef Space space = physics_system.space
         space.remove(component._pivot)
         super(CymunkTouchSystem, self).remove_component(component_index)
     
-
-    def convert_from_screen_to_world(self, tuple touch_pos, tuple camera_pos,
-        float camera_scale):
-        cdef float x, y, cx, cy, new_x, new_y
-        x,y = touch_pos
-        cx, cy = camera_pos
-        new_x = (x * camera_scale) - cx
-        new_y = (y * camera_scale) - cy
-        return new_x, new_y
-
     def on_touch_down(self, touch):
         cdef object gameworld = self.gameworld
-        cdef dict systems = gameworld.systems
-        cdef object physics_system = systems[self.physics_system]
-        # cdef object gameview = systems[self.gameview_name]
-        # cpos = gameview.camera_pos
-        # cdef tuple camera_pos = (cpos[0], cpos[1])
+        cdef SystemManager system_manager = gameworld.system_manager
+        cdef object physics_system = system_manager[self.physics_system]
         cdef float tx, ty 
         tx = touch.x 
         ty = touch.y
-        # cdef float camera_scale = gameview.camera_scale
-        # cdef tuple converted_pos = self.convert_from_screen_to_world(touch_pos,
-        #     camera_pos, camera_scale)
-        # cdef float cx, cy
-
-        # cx = converted_pos[0]
-        # cy = converted_pos[1]
         cdef str system_id = self.system_id
         cdef float max_force = self.max_force
         cdef float max_bias = self.max_bias
@@ -166,48 +152,40 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
                 'max_force': max_force, 'max_bias':max_bias}, 
                 'position': (tx, ty)}
             touch_ent = gameworld.init_entity(creation_dict, ['position', 
-                system_id])
+                system_id], zone=self.zone_to_use)
             touch.ud['ent_id'] = touch_ent
-            touch.ud['touched_ent_id'] = entity_id 
+            touch.ud['touched_ent_id'] = entity_id
+            return True
+        else:
+            return False
 
     def on_touch_move(self, touch):
         cdef object gameworld 
-        cdef dict systems 
+        cdef SystemManager system_manager
         cdef object gameview
-        cdef list entities
+        cdef IndexedMemoryZone entities
         cdef tuple camera_pos
         cdef tuple touch_pos = (touch.x, touch.y)
         cdef float camera_scale 
         cdef tuple converted_pos 
-        cdef int entity_id
+        cdef unsigned int entity_id
         cdef object entity
         cdef PositionComponent2D pos_comp
         if 'ent_id' in touch.ud:
             gameworld = self.gameworld
-            systems = gameworld.systems
+            system_manager = gameworld.system_manager
             entities = gameworld.entities
             entity_id = touch.ud['ent_id']
-            gameview = systems[self.gameview_name]
             entity = entities[entity_id]
             pos_comp = entity.position
-            # cpos = gameview.camera_pos
-            # camera_pos = (cpos[0], cpos[1])
-            # camera_scale = gameview.camera_scale
-            # converted_pos = self.convert_from_screen_to_world(touch_pos,
-            #     camera_pos, camera_scale)
-
             pos_comp.pos = touch_pos
-
 
     def on_touch_up(self, touch):
         if 'ent_id' in touch.ud:
             self.gameworld.remove_entity(touch.ud['ent_id'])
 
     def update(self, float dt):
-        cdef object gameworld = self.gameworld
-
-        cdef PositionComponent2D position_comp
-        cdef str system_id = self.system_id
+        gameworld = self.gameworld
         cdef CymunkTouchStruct* system_component 
         cdef PositionStruct2D* pos_comp
         cdef cpBody* body
@@ -215,7 +193,6 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
         cdef cpVect body_pos
         cdef cpVect new_vel
         cdef cpVect new_point
-        cdef float x, y
         cdef void** component_data = <void**>(
             self.entity_components.memory_block.data)
         cdef unsigned int component_count = self.entity_components.count
@@ -301,6 +278,7 @@ cdef class SteeringComponent:
         def __set__(self, float force):
             self._pivot.max_force = force
 
+Factory.register('CymunkTouchSystem', cls=CymunkTouchSystem)
 
 # class SteeringSystem(GameSystem):
 #     physics_system = StringProperty(None)

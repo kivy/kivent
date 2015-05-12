@@ -126,7 +126,12 @@ cdef class CymunkPhysics(StaticMemGameSystem):
     type_size = NumericProperty(sizeof(PhysicsStruct))
     component_type = ObjectProperty(PhysicsComponent)
     processor = BooleanProperty(True)
+    ignore_groups = ListProperty([])
     system_names = ListProperty(['cymunk_physics','position', 'rotate'])
+
+    property space:
+        def __get__(self):
+            return self.space
 
 
     def __init__(self, **kwargs):

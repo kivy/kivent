@@ -8,6 +8,7 @@ from kivent_core.managers.system_manager cimport SystemManager
 from kivy.graphics.transformation import Matrix
 from kivy.graphics import RenderContext
 from kivy.factory import Factory
+from kivy.input import MotionEvent
 
 
 cdef class GameView(GameSystem):
@@ -176,17 +177,36 @@ cdef class GameView(GameSystem):
         self.update_render_state()
 
     def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            touch.grab(self)
-            self._touch_count += 1
-            self._touches.append(touch)
-            camera_pos = self.camera_pos
-            size = self.size
-            touch.ud['world_pos'] = self.get_camera_center()
-            touch.ud['start_pos'] = touch.pos
-            touch.ud['start_scale'] = self.camera_scale
+        converted_pos = self.convert_from_screen_to_world(touch.pos)
+        old_x, old_y = touch.x, touch.y
+        touch.x = converted_pos[0]
+        touch.y = converted_pos[1]
+        if super(GameView, self).on_touch_down(touch):
+            return True
+        else:
+            touch.x = old_x 
+            touch.y = old_y
+            if self.collide_point(*touch.pos):
+                touch.grab(self)
+                self._touch_count += 1
+                self._touches.append(touch)
+                camera_pos = self.camera_pos
+                size = self.size
+                touch.ud['world_pos'] = self.get_camera_center()
+                touch.ud['start_pos'] = touch.pos
+                touch.ud['start_scale'] = self.camera_scale
+                return True
+            else:
+                return False
 
     def on_touch_up(self, touch):
+        converted_pos = self.convert_from_screen_to_world(touch.pos)
+        old_x, old_y = touch.x, touch.y
+        touch.x = converted_pos[0]
+        touch.y = converted_pos[1]
+        super(GameView, self).on_touch_up(touch)
+        touch.x = old_x 
+        touch.y = old_y
         if touch.grab_current is self:
             self._touch_count -= 1
             self._touches.remove(touch)
@@ -203,20 +223,15 @@ cdef class GameView(GameSystem):
         '''Converts the coordinates of pos from screen space to camera space'''
         #pos of touch
         x,y = pos
-        print(pos, self.camera_pos)
-        print(self.pos, self.size)
         #pos of widget
         rx, ry = self.pos
         cx, cy = self.camera_pos
         #touch pos converted to widget space
         wx, wy = x - rx, y - ry
         camera_scale = self.camera_scale
-        map_x, map_y = (wx * camera_scale) - cx, (wy * camera_scale) - cy
+        camera_x, camera_y = (wx * camera_scale) - cx, (wy * camera_scale) - cy
 
-        world_x = map_x
-        world_y = map_y
-        print(world_x, world_y)
-        return world_x, world_y
+        return camera_x, camera_y
 
 
     def look_at(self, pos):
@@ -229,6 +244,13 @@ cdef class GameView(GameSystem):
 
 
     def on_touch_move(self, touch):
+        converted_pos = self.convert_from_screen_to_world(touch.pos)
+        old_x, old_y = touch.x, touch.y
+        touch.x = converted_pos[0]
+        touch.y = converted_pos[1]
+        super(GameView, self).on_touch_move(touch)
+        touch.x = old_x 
+        touch.y = old_y
         if touch.grab_current is self:
             move_speed_multiplier = self.move_speed_multiplier
             if not self.focus_entity and self.do_touch_zoom:

@@ -74,8 +74,6 @@ cdef class SystemConfig:
             if system_name in zone_config.systems:
                 if zone_config.zone_name not in config_dict:
                     config_dict[zone_config.zone_name] = zone_config.count
-        if 'general' not in config_dict:
-            config_dict['general'] = DEFAULT_COUNT
         return config_dict
 
     def add_system_to_zone(self, system_name, zone_name):

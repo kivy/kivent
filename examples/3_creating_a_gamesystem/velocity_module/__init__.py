@@ -1,1 +1,1 @@
-from velocity_module import velocity
+from . import velocity

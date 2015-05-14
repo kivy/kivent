@@ -1,3 +1,3 @@
-from kivent_core.managers import resource_managers
-from kivent_core.managers import entity_manager
-from kivent_core.managers import system_manager
+from . import resource_managers
+from . import entity_manager
+from . import system_manager

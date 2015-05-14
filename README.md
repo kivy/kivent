@@ -85,7 +85,6 @@ build cymunk
 add the following lines to ~/.bashrc (or otherwise add them to your pythonpath)
 
     export PYTHONPATH=/path/to/kivy:$PYTHONPATH 
-    export PYTHONPATH=/path/to/cymunk/cymunk/python/:$PYTHONPATH 
     export PYTHONPATH=/path/to/cymunk/:$PYTHONPATH 
 
 if you have opted for .bashrc, you can either open a new term or run

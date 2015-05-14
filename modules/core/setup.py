@@ -12,11 +12,11 @@ import sys
 
 platform = sys.platform
 if platform == 'win32':
-	cstdarg = '-std=gnu99'
-	libraries=['opengl32', 'glu32','glew32']
+    cstdarg = '-std=gnu99'
+    libraries=['opengl32', 'glu32','glew32']
 else:
-	cstdarg = '-std=c99'
-        libraries=[]
+    cstdarg = '-std=c99'
+    libraries=[]
 
 do_clear_existing = False
 

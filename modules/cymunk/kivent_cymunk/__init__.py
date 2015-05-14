@@ -1,2 +1,2 @@
-import physics
-#import interaction
+from kivent_cymunk import physics
+from kivent_cymunk import interaction

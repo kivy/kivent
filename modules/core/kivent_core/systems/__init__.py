@@ -1,10 +1,10 @@
-import gamesystem
-import staticmemgamesystem
-import scale_systems
+from . import gamesystem
+from . import staticmemgamesystem
+from . import scale_systems
 
-import gameview
-import rotate_systems
-import color_systems
-import position_systems
-import gamemap
-import renderers
+from . import gameview
+from . import rotate_systems
+from . import color_systems
+from . import position_systems
+from . import gamemap
+from . import renderers

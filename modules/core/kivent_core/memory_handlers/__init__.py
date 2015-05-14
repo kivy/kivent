@@ -1,7 +1,7 @@
-import block
-import membuffer
-import utils
-import indexing
-import pool
-import zone
-import tests
+from . import block
+from . import membuffer
+from . import utils
+from . import indexing
+from . import pool
+from . import zone
+from . import tests

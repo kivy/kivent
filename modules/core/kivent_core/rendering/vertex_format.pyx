@@ -90,25 +90,25 @@ cdef class KEVertexFormat(VertexFormat):
             attr.size = size
 
             # only float is accepted as attribute format
-            if tp == 'float':
+            if tp == b'float':
                 attr.type = GL_FLOAT
                 attr.bytesize = sizeof(GLfloat) * size
-            elif tp == 'short':
+            elif tp == b'short':
                 attr.type = GL_SHORT
                 attr.bytesize = sizeof(GLshort) * size
-            elif tp == 'ushort':
+            elif tp == b'ushort':
                 attr.type = GL_UNSIGNED_SHORT
                 attr.bytesize = sizeof(GLushort) * size
-            elif tp == 'byte':
+            elif tp == b'byte':
                 attr.type = GL_BYTE
                 attr.bytesize = sizeof(GLbyte) * size
-            elif tp == 'ubyte':
+            elif tp == b'ubyte':
                 attr.type = GL_UNSIGNED_BYTE
                 attr.bytesize = sizeof(GLubyte) * size
-            elif tp == 'int':
+            elif tp == b'int':
                 attr.type = GL_INT
                 attr.bytesize = sizeof(GLint) * size
-            elif tp == 'uint':
+            elif tp == b'uint':
                 attr.type = GL_UNSIGNED_INT
                 attr.bytesize = sizeof(GLuint) * size
             else:

@@ -1,2 +1,2 @@
-import cwidget
-import gamescreens
+from . import cwidget
+from . import gamescreens

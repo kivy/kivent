@@ -1,7 +1,7 @@
-import vertex_format
-import frame_objects
-import cmesh
-import vertmesh
-import batching
-import vertex_formats
-import fixedvbo
+from . import vertex_format
+from . import frame_objects
+from . import cmesh
+from . import vertmesh
+from . import batching
+from . import vertex_formats
+from . import fixedvbo

@@ -1,2 +1,2 @@
-import physics
-#import interaction
+from . import physics
+from . import interaction

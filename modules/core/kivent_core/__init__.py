@@ -1,7 +1,7 @@
 from kivy.core.window import Window
-import memory_handlers
-import rendering
-import managers
-import entity
-import gameworld
-import systems
+from . import memory_handlers
+from . import rendering
+from . import managers
+from . import entity
+from . import gameworld
+from . import systems

@@ -45,6 +45,29 @@ Tested with [Kivy 1.9](https://github.com/kivy/kivy).
 
 Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 14.04, and Windows 8.1
 
+##Windows Kivy Portable Package Installation:
+
+Open the kivy-2.7.bat command console and type:
+
+    pip install https://github.com/tito/cymunk/archive/master.zip
+    
+Now either download and extract or git clone the KivEnt source:
+    
+    git clone https://github.com/Kovak/KivEnt.git
+
+Assuming you have KivEnt in the root folder for the portable package, in the kivy-2.7.bat console:
+
+    cd KivEnt/modules/core
+    python setup.py build_ext install
+    #check core install
+    cd ../../examples/2_basic_app
+    python main.py
+    cd ../../modules/cymunk
+    python setup.py build_ext install
+    #check that cymunk install
+    cd ../../examples/6_controlling_the_viewing_area
+    python main.py
+    
 ##Extra detailed installation instructions:
 
 ###dependencies

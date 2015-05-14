@@ -36,14 +36,27 @@ Other modules may have other dependecies, listed here:
 ##Installation
 first install all dependencies then:
 
-cd .../KivEnt/modules/core or .../KivEnt/modules/cymunk
+    cd .../KivEnt/modules/core
+    python setup.py build_ext install
+or
 
-python setup.py build_ext install
+    cd .../KivEnt/modules/cymunk
+    python setup.py build_ext install
 
-##Tested On:
-Tested with [Kivy 1.9](https://github.com/kivy/kivy).
+If you want to install into a system python on something like ubuntu you may need to:
 
-Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 14.04, and Windows 8.1
+    sudo python setup.py build_ext install
+    
+If you would like to instead build the modules in place and use PYTHONPATH to find them:
+
+    cd .../KivEnt/modules/core
+    python setup.py build_ext --inplace
+    export PYTHONPATH=/path/to/KivEnt/modules/core:$PYTHONPATH 
+or:
+
+    cd .../KivEnt/modules/cymunk
+    python setup.py build_ext --inplace
+    export PYTHONPATH=/path/to/KivEnt/modules/cymunk:$PYTHONPATH 
 
 ##Windows Kivy Portable Package Installation:
 
@@ -52,7 +65,7 @@ Open the kivy-2.7.bat command console and type:
     pip install https://github.com/tito/cymunk/archive/master.zip
     
 Now either download and extract or git clone the KivEnt source:
-    
+
     git clone https://github.com/Kovak/KivEnt.git
 
 Assuming you have KivEnt in the root folder for the portable package, in the kivy-2.7.bat console:
@@ -67,7 +80,13 @@ Assuming you have KivEnt in the root folder for the portable package, in the kiv
     #check that cymunk install
     cd ../../examples/6_controlling_the_viewing_area
     python main.py
-    
+
+##Tested On:
+Tested with [Kivy 1.9](https://github.com/kivy/kivy).
+
+Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 14.04, and Windows 8.1
+
+
 ##Extra detailed installation instructions:
 
 ###dependencies

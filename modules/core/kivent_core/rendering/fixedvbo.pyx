@@ -147,9 +147,8 @@ cdef class FixedVBO:
         '''Binds this buffer for rendering, calling **update_buffer** in the 
         process. Will call the bind function of **vertex_format** if 
         target is GL_ARRAY_BUFFER.'''
+        self.vertex_format.bind()
         self.update_buffer()
-        if self.target == GL_ARRAY_BUFFER:
-            self.vertex_format.bind()
 
     cdef void unbind(self):
         '''Unbinds the buffer after rendering'''

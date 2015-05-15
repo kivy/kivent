@@ -137,5 +137,5 @@ cdef class KEVertexFormat(VertexFormat):
             #commentout for sphinx
             glVertexAttribPointer(attr.index, attr.size, attr.type,
                     GL_FALSE, <GLsizei>vbytesize, 
-                    <GLvoid*>offsets[i])
+                    <GLvoid*><long>offsets[i])
             gl_log_debug_message('KEVertexFormat.bind-glVertexAttribPointer')

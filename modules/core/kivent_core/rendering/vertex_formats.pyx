@@ -7,8 +7,8 @@ pos_offset = <Py_ssize_t> (<Py_intptr_t>(tmp1.pos) - <Py_intptr_t>(tmp1))
 uvs_offset = <Py_ssize_t> (<Py_intptr_t>(tmp1.uvs) - <Py_intptr_t>(tmp1))
 
 vertex_format_4f = [
-    ('pos', 2, 'float', pos_offset), 
-    ('uvs', 2, 'float', uvs_offset),
+    (b'pos', 2, b'float', pos_offset), 
+    (b'uvs', 2, b'float', uvs_offset),
     ]
 
 cdef VertexFormat7F* tmp2 = <VertexFormat7F*>NULL

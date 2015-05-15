@@ -1,1 +1,1 @@
-cdef void gl_log_debug_message()
+cdef void gl_log_debug_message(str name)

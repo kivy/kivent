@@ -137,3 +137,4 @@ cdef class KEVertexFormat(VertexFormat):
             glVertexAttribPointer(attr.index, attr.size, attr.type,
                     GL_FALSE, <GLsizei>vbytesize, 
                     <GLvoid*><long>offsets[i])
+            gl_log_debug_message('KEVertexFormat.bind-glVertexAttribPointer')

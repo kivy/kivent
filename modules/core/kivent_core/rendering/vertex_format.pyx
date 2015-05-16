@@ -135,7 +135,6 @@ cdef class KEVertexFormat(VertexFormat):
             if attr.per_vertex == 0:
                 continue
             #commentout for sphinx
-            print(attr.index, attr.size, offsets[i], vbytesize)
             glVertexAttribPointer(attr.index, attr.size, attr.type,
                     GL_FALSE, <GLsizei>vbytesize, 
                     <GLvoid*><long>offsets[i])

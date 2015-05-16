@@ -129,6 +129,7 @@ cdef class KEVertexFormat(VertexFormat):
         cdef unsigned int vbytesize = self.vbytesize
         cdef int i
         shader.bind_vertex_format(self)
+        gl_log_debug_message('KEVertexFormat.bind-bind_vertex_format')
         for i in xrange(self.vattr_count):
             attr = &vattr[i]
             if attr.per_vertex == 0:
@@ -137,3 +138,4 @@ cdef class KEVertexFormat(VertexFormat):
             glVertexAttribPointer(attr.index, attr.size, attr.type,
                     GL_FALSE, <GLsizei>vbytesize, 
                     <GLvoid*><long>offsets[i])
+            gl_log_debug_message('KEVertexFormat.bind-glVertexAttribPointer')

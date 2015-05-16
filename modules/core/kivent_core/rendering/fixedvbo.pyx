@@ -112,9 +112,12 @@ cdef class FixedVBO:
         and pointed at a NULL data.'''
         #commentout for sphinx
         glGenBuffers(1, &self.id)
+        gl_log_debug_message('FixedVBO.generate_buffer-glGenBuffer')
         glBindBuffer(self.target, self.id)
+        gl_log_debug_message('FixedVBO.generate_buffer-glBindBuffer')
         glBufferData(self.target, self.memory_block.real_size, 
             NULL, self.usage)
+        gl_log_debug_message('FixedVBO.generate_buffer-glBufferData')
 
     cdef void update_buffer(self):
         '''Updates the buffer, uploading the latest data from **memory_block**
@@ -130,11 +133,14 @@ cdef class FixedVBO:
             self.flags &= ~V_NEEDGEN
             self.flags |= V_HAVEID
         glBindBuffer(self.target, self.id)
+        gl_log_debug_message('FixedVBO.update_buffer-glBindBuffer')
         if data_size != self.size_last_frame:
             glBufferData(
                 self.target, data_size, self.memory_block.data, self.usage)
+            gl_log_debug_message('FixedVBO.update_buffer-glBufferData')
         else:
             glBufferSubData(self.target, 0, data_size, self.memory_block.data)
+            gl_log_debug_message('FixedVBO.update_buffer-glBufferSubData')
         self.size_last_frame = data_size
 
     cdef void bind(self):
@@ -149,6 +155,7 @@ cdef class FixedVBO:
         '''Unbinds the buffer after rendering'''
         #commentout for sphinx
         glBindBuffer(self.target, 0)
+        gl_log_debug_message('FixedVBO.unbind-glBindBuffer')
 
     cdef void return_memory(self):
         '''Will return the memory claimed by this VBO's **memory_block**.'''

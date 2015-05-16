@@ -13,7 +13,6 @@ attribute vec2     vTexCoords0;
 attribute vec2     vCenter;
 attribute float    vRotation;
 attribute vec4     vColor;
-attribute float    vScale;
 
 /* uniform variables */
 uniform mat4       modelview_mat;
@@ -34,8 +33,8 @@ void main (void) {
               0.0, 1.0, 0.0, vCenter.y,
               0.0, 0.0, 1.0, 0.0,
               0.0, 0.0, 0.0, 1.0);
-  vec4 pos = vec4(vPosition.xy*vScale, 0.0, 1.0);
-  vec4 trans_pos = pos * rot_mat * trans_mat;
+  vec4 new_pos = vec4(vPosition.xy, 0.0, 1.0);
+  vec4 trans_pos = new_pos * rot_mat * trans_mat;
   gl_Position = projection_mat * modelview_mat * trans_pos;
 
 }

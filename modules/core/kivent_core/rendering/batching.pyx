@@ -15,7 +15,7 @@ from kivy.graphics.c_opengl cimport (GLushort, GL_UNSIGNED_SHORT, GL_TRIANGLES,
     GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_LINE_LOOP, GL_TRIANGLE_STRIP, 
     GL_TRIANGLE_FAN, glDrawElements, GLuint)
 from kivent_core.gameworld import debug
-
+from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 
 cdef class IndexedBatch:
     '''The IndexedBatch represents a collection of FixedFrameData vbos, 
@@ -209,6 +209,7 @@ cdef class IndexedBatch:
         #commentout for sphinx
         glDrawElements(self.mode, indices.data_size // sizeof(GLushort), 
             GL_UNSIGNED_SHORT, NULL)
+        gl_log_debug_message('IndexedBatch.draw_frame-glDrawElements')
         vertices.unbind()
         indices.unbind()
         self.current_frame += 1

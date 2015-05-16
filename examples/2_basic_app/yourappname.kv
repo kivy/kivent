@@ -11,6 +11,8 @@ TestGame:
         size_of_gameworld: 100*1024
         size_of_entity_block: 128
         system_count: 2
+        size: root.size
+        pos: root.pos
         zones: {'general': 10000}
         PositionSystem2D:
             system_id: 'position'
@@ -23,9 +25,9 @@ TestGame:
             zones: ['general']
             frame_count: 1
             updateable: False
-            size_of_batches: 512
+            size_of_batches: 128
             size_of_component_block: 128
-            shader_source: 'assets/shaders/positionshader.glsl'
+            shader_source: '../assets/glsl/positionshader.glsl'
     GameScreenManager:
         id: gamescreenmanager
         size: root.size

@@ -14,7 +14,7 @@ from kivy.properties import StringProperty
 from kivy.factory import Factory
 
 
-texture_manager.load_atlas('assets/background_objects.atlas')
+texture_manager.load_atlas('../assets/background_objects.atlas')
 model_manager.load_textured_rectangle(4, 7., 7., 'star1', 'star1-4')
 model_manager.load_textured_rectangle(4, 10., 10., 'star1', 'star1-4-2')
 

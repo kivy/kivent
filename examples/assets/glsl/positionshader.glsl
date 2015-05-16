@@ -8,9 +8,8 @@ varying vec4 frag_color;
 varying vec2 tex_coord0;
 
 /* vertex attributes */
-attribute vec2     vPosition;
-attribute vec2     vTexCoords0;
-attribute float    vRotation;
+attribute vec2     pos;
+attribute vec2     uvs;
 
 /* uniform variables */
 uniform mat4       modelview_mat;
@@ -20,16 +19,9 @@ uniform float      opacity;
 
 void main (void) {
   frag_color = color * vec4(1.0, 1., 1.0, opacity);
-  tex_coord0 = vTexCoords0;
-  float a_sin = sin(vRotation);
-  float a_cos = cos(vRotation);
-  mat4 rot_mat = mat4(a_cos, -a_sin, 0.0, 0.0,
-                    a_sin, a_cos, 0.0, 0.0,
-                    0.0, 0.0, 1.0, 0.0,
-                    0.0, 0.0, 0.0, 1.0 );
-  vec4 pos = vec4(vPosition.xy, 0.0, 1.0);
-  vec4 rot_pos = pos ()
-  gl_Position = projection_mat * modelview_mat * pos;
+  tex_coord0 = uvs;
+  vec4 new_pos = vec4(pos.xy, 0.0, 1.0);
+  gl_Position = projection_mat * modelview_mat * new_pos;
 
 }
 
@@ -47,5 +39,6 @@ varying vec2 tex_coord0;
 uniform sampler2D texture0;
 
 void main (void){
+
     gl_FragColor = frag_color * texture2D(texture0, tex_coord0);
 }

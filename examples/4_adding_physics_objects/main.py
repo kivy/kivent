@@ -16,7 +16,7 @@ from kivy.properties import StringProperty, NumericProperty
 from functools import partial
 
 
-texture_manager.load_atlas('assets/background_objects.atlas')
+texture_manager.load_atlas('../assets/background_objects.atlas')
 
 
 class TestGame(Widget):

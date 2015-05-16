@@ -26,8 +26,8 @@ void main (void) {
               0.0, 1.0, 0.0, vCenter.y,
               0.0, 0.0, 1.0, 0.0,
               0.0, 0.0, 0.0, 1.0);
-  vec4 pos = vec4(vPosition.xy, 0.0, 1.0);
-  vec4 trans_pos = pos * trans_mat;
+  vec4 new_pos = vec4(vPosition.xy, 0.0, 1.0);
+  vec4 trans_pos = new_pos * trans_mat;
   gl_Position = projection_mat * modelview_mat * trans_pos;
 
 }

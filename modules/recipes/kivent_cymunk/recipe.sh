@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION_kivent_cymunk=1.0.0
+VERSION_kivent_cymunk=2.0.0
 URL_kivent_cymunk=https://github.com/Kovak/KivEnt/archive/master.zip
 MD5_kivent_cymunk=
 DEPS_kivent_cymunk=(python cymunk kivy kivent_core)
@@ -18,7 +18,7 @@ function build_kivent_cymunk() {
 
 	export LDSHARED="$LIBLINK"
 	export PYTHONPATH=$BUILD_kivy/:$PYTHONPATH
-	export PYTHONPATH=$BUILD_cymunk/cymunk/python:$PYTHONPATH
+	export PYTHONPATH=$BUILD_cymunk/:$PYTHONPATH
 	export PYTHONPATH=$BUILD_kivent_core/:$PYTHONPATH
 	try find . -iname 'physics.pyx' -exec $CYTHON {} \;
 	try find . -iname 'interaction.pyx' -exec $CYTHON {} \;

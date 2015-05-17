@@ -24,3 +24,14 @@ vertex_format_7f = [
     (b'rot', 1, b'float', rot_offset),
     (b'center', 2, b'float', center_offset),
     ]
+
+cdef VertexFormat8F* tmp3 = <VertexFormat8F*>NULL
+pos_offset = <Py_ssize_t> (<Py_intptr_t>(tmp3.pos) - <Py_intptr_t>(tmp3))
+uvs_offset = <Py_ssize_t> (<Py_intptr_t>(tmp3.uvs) - <Py_intptr_t>(tmp3))
+color_offset = <Py_ssize_t> (<Py_intptr_t>(tmp3.vColor) - <Py_intptr_t>(tmp3))
+
+vertex_format_8f = [
+    (b'pos', 2, b'float', pos_offset), 
+    (b'uvs', 2, b'float', uvs_offset),
+    (b'vColor', 4, b'float', color_offset),
+    ]

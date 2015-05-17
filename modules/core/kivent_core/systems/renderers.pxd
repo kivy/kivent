@@ -37,3 +37,6 @@ cdef class Renderer(StaticMemGameSystem):
 
 cdef class PhysicsRenderer(Renderer):
     pass
+
+cdef class ColorRenderer(Renderer):
+    pass

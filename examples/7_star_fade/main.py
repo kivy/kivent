@@ -119,5 +119,3 @@ class YourAppNameApp(App):
 
 if __name__ == '__main__':
     YourAppNameApp().run()
-    
-    # cProfile.run('YourAppNameApp().run()', 'prof.prof')

@@ -1,4 +1,5 @@
 # cython: profile=True
+# cython: embedsignature=True
 from cymunk.cymunk cimport (GearJoint, PivotJoint, Vec2d, cpVect, cpv,
     cpFloat, cpBool, cpvunrotate, cpvrotate, cpvdot, cpvsub, cpvnear,
     cpBody, cpvmult, cpvlerp, Space)
@@ -28,7 +29,6 @@ cdef class CymunkTouchComponent(MemComponent):
 
 
     **Attributes:**
-
         **entity_id** (unsigned int): The entity_id this component is currently
         associated with. Will be <unsigned int>-1 if the component is 
         unattached.
@@ -43,6 +43,7 @@ cdef class CymunkTouchComponent(MemComponent):
         attached body.
 
         **error_bias** (float): The rate at which the joint is corrected.
+
     '''
 
     def __cinit__(self, MemoryBlock memory_block, unsigned int index,
@@ -80,7 +81,10 @@ cdef class CymunkTouchComponent(MemComponent):
             self._pivot = pivot
 
 cdef class CymunkTouchSystem(StaticMemGameSystem):
-    '''The CymunkTouchSystem provides a way to interact with the entities in a 
+    '''
+    Processing Depends On: PositionSystem2D, CymunkTouchSystem
+
+    The CymunkTouchSystem provides a way to interact with the entities in a 
     CymunkPhysics GameSystem, either through touches or mouse clicks. Touched 
     entities will be 'dragged'. This system will generate new entities when 
     receiving an on_touch_down event that collides with an entity in the 
@@ -93,8 +97,7 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
     This system will be dependent on its own component and a 
     PositionComponent2D (default system_id: 'position') for processing.
 
-    **Attributes: **
-
+    **Attributes:**
         **physics_system** (StringProperty): Name (system_id) of the physics 
         system to use with this system. Defaults to 'cymunk_physics'.
 
@@ -113,6 +116,7 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
 
         **zone_to_use** (StringProperty): Name of the zone to create entities 
         in. Defaults to 'touch'.
+
     '''
     system_id = StringProperty('cymunk_touch')
     physics_system = StringProperty('cymunk_physics')
@@ -149,19 +153,25 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
 
             zone (str): Name of the zone this entities memory will use.
 
-            args (dict): {
-                touch_pos (float, float): Tuple of the position this touch is 
-                occuring at.
+            args (dict): Contains the arguments for creating the PivotJoint.
+            Described below.
 
-                touched_ent (unsigned int): The id of the entity that was 
-                touched.
+        Args dict looks like:
 
-                max_bias (float): The error correction rate for this 
-                connection
+        .. code-block:: python
 
-                max_force (float): The maximum amount of force this 
-                joint can generate.
- 
+            args = {
+                'touch_pos': (float, float), 
+                #Tuple of the position this touch is occuring at
+
+                'touched_ent': (unsigned int), 
+                #The id of the entity that was touched.
+
+                'max_bias': float,
+                #The error correction rate for this connection
+
+                'max_force': float,
+                #The maximum amount of force this joint can generate.
                 }
 
         '''

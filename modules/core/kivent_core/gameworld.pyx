@@ -133,6 +133,11 @@ class GameWorld(Widget):
         systems_to_add = [x.system_id for x in self.systems_to_add]
         for each in list_of_systems:
             if each not in systems_to_add:
+                Logger.error('GameSystem: System_id: %s not attached retrying ' 
+                    'in a 1 sec. If you see this error once or twice, we are ' 
+                    'probably just waiting on the KV file to load. If you see '
+                    'it a whole bunch something is probably wrong. Make sure '
+                    'all systems are setup properly.'% (each))
                 return False
         return True
 
@@ -222,7 +227,7 @@ class GameWorld(Widget):
         else:
             Clock.schedule_once(
                 lambda dt: self.init_gameworld(list_of_systems, 
-                    callback=callback))
+                    callback=callback), 1.0)
 
     def add_state(self, state_name, screenmanager_screen=None, 
         systems_added=None, systems_removed=None, systems_paused=None, 
@@ -503,7 +508,7 @@ class GameWorld(Widget):
         systems = system_manager.system_index
         if isinstance(widget, GameSystem):
             if widget.system_id not in systems and (
-                widget.system_id not in self.systems_to_add):
+                widget not in self.systems_to_add):
                 Clock.schedule_once(lambda dt: self.add_system(widget))
         if not (isinstance(widget, Widget) or isinstance(widget, CWidget)):
             raise WidgetException(

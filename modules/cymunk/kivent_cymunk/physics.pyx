@@ -29,7 +29,6 @@ cdef class PhysicsComponent(MemComponent):
 
 
     **Attributes:**
-
         **entity_id** (unsigned int): The entity_id this component is currently
         associated with. Will be <unsigned int>-1 if the component is 
         unattached.
@@ -87,7 +86,10 @@ cdef class PhysicsComponent(MemComponent):
 
 
 cdef class CymunkPhysics(StaticMemGameSystem):
-    '''CymunkPhysics is a GameSystem that interacts with the Cymunk Port of
+    '''
+    Processing Depends On: PositionSystem2D, RotateSystem2D, CymunkPhysics
+
+    CymunkPhysics is a GameSystem that interacts with the Cymunk Port of
     the Chipmunk2d Physics Engine. Check the docs for Chipmunk2d to get an
     overview of how to work with Cymunk. https://chipmunk-physics.net/
 
@@ -272,37 +274,76 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         return 1
 
     def init_component(self, unsigned int component_index, 
-        unsigned int entity_id, str zone_name, dict entity_component_dict):
+        unsigned int entity_id, str zone_name, dict args):
         '''
         Args:
-            entity_component_dict (dict): dict containing the kwargs
-            required in order to initialize a Cymunk Body with one or more 
-            Shape attached.
 
-        entity_component_dict of the form {
-        'entity_id': id, 'main_shape': string_shape_name, 
-        'velocity': (x, y), 'position': (x, y), 'angle': radians, 
-        'angular_velocity': radians, 'mass': float, 
-        col_shapes': [col_shape_dicts]}
+            args (dict): dict containing the kwargs required in order to 
+            initialize a Cymunk Body with one or more Shape attached. Shape 
+            types supported are 'box', 'circle', 'poly', and 'segment'.
 
-        col_shape_dicts look like : {
-        'shape_type': string_shape_name, 'elasticity': float, 
-        'collision_type': int, 'shape_info': shape_specific_dict}
+        The args dict looks like:
 
-        shape_info:
-        box: {'width': float, 'height': float, 'mass': float}
-        circle: {'inner_radius': float, 'outer_radius': float, 
-        'mass': float, 'offset': tuple}
-        solid cirlces have an inner_radius of 0
+        .. code-block:: python
+    
+            args = {
+                'entity_id': id, 
+                'main_shape': string_shape_name, 
+                'velocity': (x, y), 
+                'position': (x, y), 
+                'angle': radians, 
+                'angular_velocity': radians, 
+                'mass': float, 
+                'col_shapes': [col_shape_dicts]
+                }
 
-        outputs RenderComponent with properties body, unit_vector, shapes,
-        shape_type.
+        The col_shape_dicts look like: 
+
+        .. code-block:: python
+
+            col_shape_dict = {
+                'shape_type': string_shape_name, 
+                'elasticity': float, 
+                'collision_type': int, 
+                'shape_info': shape_specific_dict
+                }
+
+        shape_info dicts looke like this, depending on their shape:
+
+        .. code-block:: python
+            
+            box = {
+                'width': float, 
+                'height': float, 
+                'mass': float
+                }
+
+            circle = {
+                'inner_radius': float, 
+                'outer_radius': float, 
+                'mass': float, 
+                'offset': (float, float)
+                }
+
+            poly = {
+                'mass': float, 
+                'vertices': list, 
+                'offset': (float, float)}
+
+            segment = {
+                'mass': float, 
+                'a': (float, float), 
+                'b': (float, float), 
+                'radius': float (beveling radius for segment),
+                }
+
+            If you want a solid circle set inner_radius to 0.
 
         '''
         cdef unsigned int index = component_index
         cdef PhysicsComponent component = self.components[index]
-        cdef dict shape = entity_component_dict['col_shapes'][0]
-        cdef list cshapes = entity_component_dict['col_shapes']
+        cdef dict shape = args['col_shapes'][0]
+        cdef list cshapes = args['col_shapes']
         cdef float moment
         cdef Body body
         cdef Space space
@@ -335,39 +376,36 @@ cdef class CymunkPhysics(StaticMemGameSystem):
                     shape_info['b'])
             else:
                 print 'error: shape ', a_shape['shape_type'], 'not supported'
-        if entity_component_dict['mass'] == 0:
+        if args['mass'] == 0:
             body = Body(None, None)
         else:
-            body = Body(entity_component_dict['mass'], moment)
-            body.velocity = entity_component_dict['velocity']
-            body.angular_velocity = entity_component_dict[
-                'angular_velocity']
-            if 'vel_limit' in entity_component_dict:
-                body.velocity_limit = entity_component_dict[
-                'vel_limit']
-            if 'ang_vel_limit' in entity_component_dict:
-                body.angular_velocity_limit = entity_component_dict[
-                'ang_vel_limit']
+            body = Body(args['mass'], moment)
+            body.velocity = args['velocity']
+            body.angular_velocity = args['angular_velocity']
+            if 'vel_limit' in args:
+                body.velocity_limit = args['vel_limit']
+            if 'ang_vel_limit' in args:
+                body.angular_velocity_limit = args['ang_vel_limit']
         body.data = entity_id
-        body.angle = entity_component_dict['angle']
-        body.position = entity_component_dict['position']
-        if entity_component_dict['mass'] != 0:
+        body.angle = args['angle']
+        body.position = args['position']
+        if args['mass'] != 0:
             space.add(body)
         shapes = []
-        for shape in entity_component_dict['col_shapes']:
+        for shape in args['col_shapes']:
             shape_info = shape['shape_info']
             if shape['shape_type'] == 'circle':
                 new_shape = Circle(body, shape_info['outer_radius'], 
                     shape_info['offset']) 
             elif shape['shape_type'] == 'box':
-                new_shape = BoxShape(
-                    body, shape_info['width'], shape_info['height'])
+                new_shape = BoxShape(body, shape_info['width'], 
+                    shape_info['height'])
             elif shape['shape_type'] == 'poly':
                 new_shape = Poly(body, shape_info['vertices'], 
                     offset=shape_info['offset'])
             elif shape['shape_type'] == 'segment':
-                new_shape = Segment(body, shape_info['a'], 
-                    shape_info['b'], shape_info['radius'])
+                new_shape = Segment(body, shape_info['a'], shape_info['b'], 
+                    shape_info['radius'])
             else:
                 print 'shape not created'
             new_shape.friction = shape['friction']
@@ -378,7 +416,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
             space.add(new_shape)
             space.reindex_shape(new_shape)
             
-        shape_type = entity_component_dict['col_shapes'][0]['shape_type']
+        shape_type = args['col_shapes'][0]['shape_type']
         component._body = body
         component._shapes = shapes
         component._shape_type = shape_type

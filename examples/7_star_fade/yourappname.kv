@@ -24,10 +24,11 @@ TestGame:
             zones: ['general']
         ColorRenderer:
             gameworld: gameworld
-            system_id: 'color_renderer'
+            system_id: 'renderer'
             zones: ['general']
             frame_count: 3
             updateable: True
+            system_names: ['renderer', 'position','color']
             size_of_batches: 256
             size_of_component_block: 128
             shader_source: 'assets/glsl/positioncolor.glsl'

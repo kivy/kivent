@@ -60,7 +60,7 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         self.gameworld.init_gameworld(
-            ['color', 'position', 'color_renderer'],
+            ['color', 'position', 'renderer', 'fade'],
             callback=self.init_game)
 
     def init_game(self):
@@ -81,20 +81,20 @@ class TestGame(Widget):
         create_dict = {
             'position': pos,
             'color': (1., 1., 1., 0.),
-            'color_renderer': {'texture': model_to_use[1], 
+            'renderer': {'texture': model_to_use[1], 
                 'vert_mesh_key': model_to_use[0]},
             'fade': {'time': fade_in + fade_out,
                 'fade_out_start': fade_in, 
                 'current_time': 0,},
         }
         ent = self.gameworld.init_entity(create_dict, ['position', 'color', 
-            'color_renderer', 'fade'])
+            'renderer', 'fade'])
 
     def setup_states(self):
         self.gameworld.add_state(state_name='main', 
-            systems_added=['color_renderer'],
+            systems_added=['renderer'],
             systems_removed=[], systems_paused=[],
-            systems_unpaused=['color_renderer'],
+            systems_unpaused=['renderer', 'fade'],
             screenmanager_screen='main')
 
     def set_state(self):

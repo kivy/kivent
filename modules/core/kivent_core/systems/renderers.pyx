@@ -47,7 +47,6 @@ cdef class RenderComponent(MemComponent):
     properties of the **vert_mesh** directly.
 
     **Attributes:**
-
         **entity_id** (unsigned int): The entity_id this component is currently
         associated with. Will be <unsigned int>-1 if the component is 
         unattached.
@@ -246,23 +245,30 @@ cdef class RenderComponent(MemComponent):
 
 cdef class Renderer(StaticMemGameSystem):
     '''
-    The basic KivEnt renderer draws every entity every frame. Entities 
-    will be batched into groups of up to **maximum_vertices**, if they can
-    share the source of texture. The drawing will use a VertexFormat4F that 
-    only accounts for position and uv coordinates. This GameSystem is only 
+    Processing Depends On: PositionSystem2D, Renderer
+
+    The basic KivEnt renderer draws with the VertexFormat4F:
+
+    .. code-block:: cython
+
+        ctypedef struct VertexFormat4F:
+            GLfloat[2] pos
+            GLfloat[2] uvs
+
+    Entities will be batched into groups of up to **maximum_vertices**, if 
+    they can share the source of texture. This GameSystem is only 
     dependent on its own component and the PositionComponent2D.
 
     If you want a static renderer, set **frame_count** to 1 and **updateable**
     to false.
 
     **Attributes:**
-
         **shader_source** (StringProperty): Path to the .glsl to be used, do 
         include '.glsl' in the name. You must ensure that your shader matches 
-        your vertex format or you will have problems
+        your vertex format or you will have problems.
 
         **maximum_vertices** (NumericProperty): The maximum number of vertices
-         that will be placed in a batch. 
+        that will be placed in a batch. 
 
         **attribute_count** (NumericProperty): The number of attributes each 
         vertex will contain. Computed automatically inside 
@@ -309,7 +315,6 @@ cdef class Renderer(StaticMemGameSystem):
         to multibuffer. 
 
     **Attributes: (Cython Access Only)**
-
         **attribute_count** (unsigned int): The number of attributes in the 
         VertMesh format for this renderer. Defaults to 4 (x, y, u, v).
 
@@ -700,12 +705,22 @@ cdef class Renderer(StaticMemGameSystem):
 
 cdef class RotateRenderer(Renderer):
     '''
-    This renderer draws every entity every frame, with rotation data suitable
-    for use with entities using the CymunkPhysics GameSystems. The drawing will 
-    use a VertexFormat7F that accounts for position of vertex, uv coordinates,
-    the rotation around the center and the actual center of the rotation. 
-    This GameSystem is dependent on its own component, the PositionComponent2D, 
-    and the RotateComponent2D.
+    Processing Depends On: PositionSystem2D, RotateSystem2D, RotateRenderer
+
+    The renderer draws with the VertexFormat7F:
+
+    .. code-block:: cython
+
+        ctypedef struct VertexFormat7F:
+            GLfloat[2] pos
+            GLfloat[2] uvs
+            GLfloat rot
+            GLfloat[2] center
+
+
+    This renderer draws every entity with rotation data suitable
+    for use with entities using the CymunkPhysics GameSystems. 
+
     '''
     system_names = ListProperty(['rotate_renderer', 'position',
         'rotate'])
@@ -793,7 +808,17 @@ cdef class RotateRenderer(Renderer):
 
 cdef class ColorRenderer(Renderer):
     '''
-    This renderer draws every entity every frame,
+    Processing Depends On: PositionSystem2D, ColorSystem, ColorRenderer
+
+    The renderer draws with the VertexFormat8F:
+
+    .. code-block:: cython
+
+        ctypedef struct VertexFormat8F:
+            GLfloat[2] pos
+            GLfloat[2] uvs
+            GLfloat[4] vColor
+
     '''
     system_names = ListProperty(['color_renderer', 'position',
         'color'])

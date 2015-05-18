@@ -11,7 +11,6 @@ cdef class ColorComponent(MemComponent):
     '''The component associated with ColorSystem.
 
     **Attributes:**
-
         **entity_id** (unsigned int): The entity_id this component is currently
         associated with. Will be <unsigned int>-1 if the component is 
         unattached.

@@ -10,7 +10,6 @@ cdef class RotateComponent2D(MemComponent):
     '''The component associated with RotateSystem2D.
 
     **Attributes:**
-
         **entity_id** (unsigned int): The entity_id this component is currently
         associated with. Will be <unsigned int>-1 if the component is 
         unattached.
@@ -33,7 +32,8 @@ cdef class RotateComponent2D(MemComponent):
 
 
 cdef class RotateSystem2D(StaticMemGameSystem):
-    '''RotateSystem2D abstracts 2 dimensional rotation data out into its own
+    '''
+    RotateSystem2D abstracts 2 dimensional rotation data out into its own
     system so that all other GameSystem can interact with the rotation of an 
     Entity without having to know specifically about dependent systems such as 
     the CymunkPhysics system or any other method of determining the actual 

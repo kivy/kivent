@@ -26,7 +26,6 @@ cdef class MemComponent:
     components (and the Entity class) inherit from this class.
 
     **Attributes: (Cython Access Only)**
-
         **pointer** (void*): Pointer to the location in the provided 
         memory_block that this component's data resides in.
 
@@ -74,32 +73,35 @@ cdef class StaticMemGameSystem(GameSystem):
     need Cython/C level access to various attributes and the components.
 
     **Attributes:**
+        **size_of_component_block** (int): Internally the memory will be broken 
+        down into blocks of **size_of_component_block** kibibytes. Defaults to 
+        4.
 
-    **size_of_component_block** (int): Internally the memory will be broken 
-    down into blocks of **size_of_component_block** kibibytes. Defaults to 4.
+        **type_size** (int): Number of bytes for the type. Typically you will 
+        set this with sizeof(YourCStruct).
 
-    **type_size** (int): Number of bytes for the type. Typically you will 
-    set this with sizeof(YourCStruct).
+        **component_type** (MemComponent): The object that will make your C 
+        structcomponent's data accessible from python. Should inherit from 
+        MemComponent.
 
-    **component_type** (MemComponent): The object that will make your C struct
-    component's data accessible from python. Should inherit from MemComponent.
+        **processor** (BooleanProperty): If set to True, the system will 
+        allocate a helper object **ZonedAggregator** to make it easier to batch 
+        process all the system's components in your **update** function. 
+        Defaults to False.
 
-    **processor** (BooleanProperty): If set to True, the system will allocate
-    a helper object **ZonedAggregator** to make it easier to batch process
-    all the system's components in your **update** function. Defaults to False.
+        **system_names** (ListProperty): Names of the other component systems 
+        to be bound by the **ZonedAggregator**, this should be a list of other 
+        StaticMemGameSystem **system_id** that you will need the component data 
+        from during your **update** function
 
-    **system_names** (ListProperty): Names of the other component systems to be 
-    bound by the **ZonedAggregator**, this should be a list of other 
-    StaticMemGameSystem **system_id** that you will need the component data from
-    during your **update** function
+        **do_allocation** (BooleanProperty): Defaults to True for 
+        StaticMemGameSystem as we expect an allocation phase.
 
-    **do_allocation** (BooleanProperty): Defaults to True for 
-    StaticMemGameSystem as we expect an allocation phase.
-
-    **components** (IndexedMemoryZone): Instead of the simple python list,
-    components are stored in the more complex IndexedMemoryZone which supports
-    both direct C access to the underlying struct arrays and python level access
-    to the **component_type** objects that wrap the C data.
+        **components** (IndexedMemoryZone): Instead of the simple python list,
+        components are stored in the more complex IndexedMemoryZone which 
+        supports both direct C access to the underlying struct arrays and 
+        python level access to the **component_type** objects that wrap the
+        C data.
 
     '''
     size_of_component_block = NumericProperty(4)
@@ -245,25 +247,24 @@ cdef class ZonedAggregator:
     will have a bad reference.
 
     **Attributes (Cython Access Only):**
+        **count** (unsigned int): The number of systems being tracked by this
+        aggregator.
 
-    **count** (unsigned int): The number of systems being tracked by this
-    aggregator.
+        **total** (unsigned int): The number of entitys data can be collected 
+        from summing all zones. The actual number of pointers being tracked is 
+        total * count
 
-    **total** (unsigned int): The number of entitys data can be collected from
-    summing all zones. The actual number of pointers being tracked is 
-    total * count
+        **entity_block_index** (dict): Stores the actual location of the entity 
+        in the Aggregator as keyed by the entity_id.
 
-    **entity_block_index** (dict): Stores the actual location of the entity 
-    in the Aggregator as keyed by the entity_id.
+        **system_names** (list): The systems that components will be retrieved 
+        from per entity. 
 
-    **system_names** (list): The systems that components will be retrieved from
-    per entity. 
+        **memory_block** (ZonedBlock): The actual container of the pointer data. 
+        Access via memory_block.data
 
-    **memory_block** (ZonedBlock): The actual container of the pointer data. 
-    Access via memory_block.data
-
-    **gameworld** (object): Reference to the GameWorld for access to 
-    entities and system_manager.
+        **gameworld** (object): Reference to the GameWorld for access to 
+        entities and system_manager.
     '''
     
     def __cinit__(self, list system_names, dict zone_counts,
@@ -271,6 +272,7 @@ cdef class ZonedAggregator:
         '''
         The ZonedAggregator allocates a ZonedBlock with enough space
         to fit the total sum of entities as specified in the zone_counts dict.
+
         Args:
             system_names (list): The names of the systems to lookup pointers 
             for, will be stored in the same order as listed.
@@ -315,6 +317,7 @@ cdef class ZonedAggregator:
 
     cdef unsigned int get_size(self):
         '''Gets the size of the **memory_block**
+
         Return:
             unsigned int: The amount of data in bytes reserved by the 
             **memory_block**
@@ -412,25 +415,24 @@ cdef class ComponentPointerAggregator:
     bad reference.
 
     **Attributes (Cython Access Only):**
+        **count** (unsigned int): The number of systems being tracked by this
+        aggregator.
 
-    **count** (unsigned int): The number of systems being tracked by this
-    aggregator.
+        **total** (unsigned int): The number of entitys data can be collected 
+        from summing all zones. The actual number of pointers being tracked is 
+        total * count
 
-    **total** (unsigned int): The number of entitys data can be collected from
-    summing all zones. The actual number of pointers being tracked is 
-    total * count
+        **entity_block_index** (dict): Stores the actual location of the entity 
+        in the Aggregator as keyed by the entity_id.
 
-    **entity_block_index** (dict): Stores the actual location of the entity 
-    in the Aggregator as keyed by the entity_id.
+        **system_names** (list): The systems that components will be retrieved 
+        from per entity. 
 
-    **system_names** (list): The systems that components will be retrieved from
-    per entity. 
+        **memory_block** (MemoryBlock): The actual container of the pointer 
+        data. Access via memory_block.data
 
-    **memory_block** (MemoryBlock): The actual container of the pointer data. 
-    Access via memory_block.data
-
-    **gameworld** (object): Reference to the GameWorld for access to 
-    entities and system_manager.
+        **gameworld** (object): Reference to the GameWorld for access to 
+        entities and system_manager.
     '''
 
     def __cinit__(self, list system_names, unsigned int total,

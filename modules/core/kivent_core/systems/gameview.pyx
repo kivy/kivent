@@ -19,7 +19,6 @@ cdef class GameView(GameSystem):
     canvas instead of the GameWorld canvas. 
 
     **Attributes:**
-    
         **do_scroll_lock** (BooleanProperty): If True the scrolling will be 
         locked to the bounds of the GameWorld's currentmap.
 

@@ -11,7 +11,6 @@ cdef class PositionComponent2D(MemComponent):
     '''The component associated with PositionSystem2D.
 
     **Attributes:**
-
         **entity_id** (unsigned int): The entity_id this component is currently
         associated with. Will be <unsigned int>-1 if the component is 
         unattached.
@@ -55,7 +54,8 @@ cdef class PositionComponent2D(MemComponent):
 
 
 cdef class PositionSystem2D(StaticMemGameSystem):
-    '''PositionSystem2D abstracts 2 dimensional position data out into its own
+    '''
+    PositionSystem2D abstracts 2 dimensional position data out into its own
     system so that all other GameSystem can interact with the position of an 
     Entity without having to know specifically about dependent systems such as 
     the CymunkPhysics system or any other method of determining the actual 

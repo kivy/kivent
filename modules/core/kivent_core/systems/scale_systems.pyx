@@ -11,7 +11,6 @@ cdef class ScaleComponent2D(MemComponent):
     '''The component associated with ScaleSystem2D.
 
     **Attributes:**
-
         **entity_id** (unsigned int): The entity_id this component is currently
         associated with. Will be <unsigned int>-1 if the component is 
         unattached.
@@ -57,11 +56,13 @@ cdef class ScaleComponent2D(MemComponent):
 
 
 cdef class ScaleSystem2D(StaticMemGameSystem):
-    '''ScaleSystem2D abstracts 2 dimensional scale data out into its own
+    '''
+    ScaleSystem2D abstracts 2 dimensional scale data out into its own
     system so that all other GameSystem can interact with the scale factor of 
     an Entity without having to know specifically about dependent systems 
     actually controlling the scale. This GameSystem does no processing of its 
-    own, just holding data.'''
+    own, just holding data.
+    '''
     type_size = NumericProperty(sizeof(ScaleStruct2D))
     component_type = ObjectProperty(ScaleComponent2D)
 

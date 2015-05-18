@@ -49,7 +49,6 @@ cdef class GameSystem(CWidget):
     before growing the list).
 
     **Attributes:**
-
         **system_id** (StringProperty): Name of this gamesystem, used to name 
         entity component attribute, and refer to system.
 

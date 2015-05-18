@@ -1,7 +1,7 @@
 #!/bin/bash
 
 VERSION_kivent_cymunk=2.0.0
-URL_kivent_cymunk=https://github.com/Kovak/KivEnt/archive/master.zip
+URL_kivent_cymunk=https://github.com/kivy/KivEnt/archive/master.zip
 MD5_kivent_cymunk=
 DEPS_kivent_cymunk=(python cymunk kivy kivent_core)
 BUILD_kivent_cymunk=$BUILD_PATH/kivent_cymunk/master/modules/cymunk

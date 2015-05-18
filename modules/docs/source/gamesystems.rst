@@ -91,6 +91,9 @@ Rendering Systems
 .. autoclass:: kivent_core.systems.renderers.RotateRenderer
     :members:
 
+.. autoclass:: kivent_core.systems.renderers.ColorRenderer
+    :members:
+
 Controlling the Viewing Area
 ============================
 

@@ -29,6 +29,7 @@
     <div class="container">
       <section id="main_content">
 <p>
+  <h5>Chipmunk2d Provides Smooth, Multitouch Enabled Physics Interaction</h5>
   <img src="images/interaction.gif" alt="Physics Interaction"> 
 </p>
 
@@ -44,15 +45,20 @@
 <p>Tested on Linux (Ubuntu 14.04), Windows 8.1, and Android. Should work on OSX/iOS but untested.</p>
 
 <p>
+<h5>20,000 Sprites Being Rendered</h5>
 <img src="images/velocitymod.gif" alt="20000 Sprites">
 </p>
+
 
 <h3>
 <a name="introduction" class="anchor" href="#introduction"><span class="octicon octicon-link"></span></a>Introduction</h3>
 
 
 
-<p>KivEnt is a framework for building performant, dynamic real-time scenes in Kivy. At the moment it is 2d oriented. The only dependency for the kivent_core module is <a href="http://kivy.org">Kivy</a> itself. Additional modules may have other requirements, such as kivent_cymunk module being based on <a href="https://chipmunk-physics.net/">Chipmunk2d</a> and its <a href="https://github.com/tito/cymunk">cymunk</a> wrapper.</p>
+<p>KivEnt is a framework for building performant, dynamic real-time scenes in Kivy. While not as powerful as something like the Unreal engine or Unity3d, KivEnt is capable of creating games that handle several thousands to tens of thousands of entities, depending on what type of processing we are doing on them. You can easily have a hundreds thousand static sprites rendered in the background if they do not have any dynamic processing. At the same time, almost the entire API is accessible through Python, with a more performant cythonic API for those looking to get closer to the metal. Even without creating any cython gamesystems, you ought to be able to create games that feature up to several thousand game objects at once.</p>
+
+<p>
+  The only dependency for the kivent_core module is <a href="http://kivy.org">Kivy</a> itself. Additional modules may have other requirements, such as kivent_cymunk module being based on <a href="https://chipmunk-physics.net/">Chipmunk2d</a> and its <a href="https://github.com/tito/cymunk">cymunk</a> wrapper.</p>
 
 <p>An entity-component architecture is used to control game object state and the logic of processing the game objects. This means that your game objects will be made up of collections of independent components that stricly hold data; each component corresponds to a GameSystem that will perform all data processing on the components, in the update loop each frame, and as a result of user interaction or other programmaticaly generated events. All memory for 
 the built-in components is allocated statically: if you would like learn more
@@ -61,10 +67,14 @@ about memory management, <a href="http://kivent.org/docs/memory_handlers.html">r
 <p>KivEnt is built with a modular architecture and designed to have both a python api and a c-level cython api that allows more performant access to your game data. This makes it suitable for quickly prototyping a mechanic completely in python, and relatively trivial to then deeply cythonize that GameSystem if you find it to be performance sensitive. This process has already been done for the built-in components meaning they are ready for you to build new, performant game systems on top of them.</p>
 
 <p> The entire framework is made available to you with an MIT license so that you have the freedom to build whatever you want on top of it and monetize it however you like. </p>
-<h3>
+
+<p>The simulation below is created using this <a href="https://github.com/Kovak/KivEnt/blob/master/examples/7_star_fade/main.py">pure python code.</a> It is still capable of handling updates on 5000 entities at nearly 60 fps.
+</p>
 <p>
+  <h5>5,000 Stars Being Rendered, with non-cythonized GameSystems</h5>
   <img src="images/starfield.gif" alt="5000 Entities scripted from python"> 
 </p>
+<h3>
 <a name="news" class="anchor" href="#news"><span class="octicon octicon-link"></span></a>News</h3>
 
 <p>A little over a year ago KivEnt 1.0 was released and here are some examples 
@@ -85,6 +95,7 @@ about memory management, <a href="http://kivent.org/docs/memory_handlers.html">r
   that make use of different shader formats.</p>
 
 <p>
+<h5>Interactive Mall Map with KivEnt</h5>
 <img src="images/mallmap.gif" alt="Rendering an Interactive Mall Map">
 </p>
 
@@ -98,6 +109,7 @@ about memory management, <a href="http://kivent.org/docs/memory_handlers.html">r
 <p>You can contact me at kovac1066@gmail.com or find me in Kivy's irc channel where I am kovak. On reddit, I'm JKovac.</p>
 
 <p>
+<h5>Several Thousand Sprites with Full Physics</h5>
 <img src="images/physics.gif" alt="Several Thousand sprites with 2d physics calculation">
 </p>  
 

@@ -5,7 +5,8 @@ cdef extern from "string.h":
 
     
 cdef class VertMesh:
-    '''The VertMesh represents a collection of **vertex_count** vertices, 
+    '''
+    The VertMesh represents a collection of **vertex_count** vertices, 
     all having **attribute_count** floating point data fields. The 
     relationship between the vertices is kept in the form of a list of indices
     **index_count** in length corresponding to the triangles our mesh is made 
@@ -15,12 +16,13 @@ cdef class VertMesh:
 
     To work with an individual vertex you can:
 
-    vert_mesh[vertex_number] = [1., 1., 1., 1.] #New vertex data 
+        vert_mesh[vertex_number] = [1., 1., 1., 1.] #New vertex data 
 
     This will replace the first n attributes with the contents of the assigned
     list. Do not have length of assigned list exceed attribute_count.
 
     **Attributes:**
+
         **index_count** (int): Number of indices in the list of triangles.
 
         **attribute_count** (int): Number of attributes per vertex.
@@ -29,8 +31,8 @@ cdef class VertMesh:
 
         **data** (list): Returns a copy of the VertMesh's vertex data. When 
         setting ensure your input list matches vertex_count * attribute_count 
-        in size. To work with individual vertices use __setitem__ and
-         __getitem__ or other helper functions. 
+        in size. To work with individual vertices use __setitem__ and 
+        __getitem__ or other helper functions. 
 
         **indices** (list): Returns a copy of the VertMesh's index data. When 
         setting ensure your input list matches index_count in size. 

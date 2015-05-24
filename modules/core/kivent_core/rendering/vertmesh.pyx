@@ -2,8 +2,117 @@
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 cdef extern from "string.h":
     void *memcpy(void *dest, void *src, size_t n)
+from vertex_formats cimport VertexFormat4F
+from vertex_formats import vertex_format_4f, vertex_format_7f
+from kivy.graphics.c_opengl cimport (GLfloat, GLbyte, GLubyte, GLint, GLuint,
+    GLshort, GLushort)
 
-    
+        # 'float': GLfloat
+        # 'byte': GLbyte 
+        # 'ubyte': GLubyte
+        # 'int': GLint
+        # 'uint': GLuint
+        # 'short': GLshort
+        # 'ushort': GLushort
+
+def test_vertex():
+    format_dict = {}
+    for each in vertex_format_7f:
+        format_dict[each[0]] = each[1:]
+
+    cdef void* data_p = PyMem_Malloc(sizeof(float)*4)
+    if not data_p:
+        raise MemoryError()
+    cdef Vertex vertex = Vertex(format_dict)
+    vertex.vertex_pointer = data_p
+    return vertex
+
+
+cdef class Vertex:
+    cdef dict vertex_format
+    cdef void* vertex_pointer
+
+    def __cinit__(self, dict format):
+        self.vertex_format = format 
+
+    def __getattr__(self, name):
+        cdef int count
+        cdef unsigned int offset
+        cdef bytes attr_type
+        cdef char* data = <char*>self.vertex_pointer
+        if isinstance(name, unicode):
+            name = bytes(name, 'utf-8')
+        if name in self.vertex_format:
+            attribute_tuple = self.vertex_format[name]
+            count = attribute_tuple[0]
+            attr_type = attribute_tuple[1]
+            offset = attribute_tuple[2]
+            if attr_type == b'float':
+                ret = [<float>data[offset + x*sizeof(GLfloat)] 
+                    for x in range(count)]
+            elif attr_type == b'int':
+                ret = [<int>data[offset + x*sizeof(GLint)] 
+                    for x in range(count)]
+            elif attr_type == b'uint':
+                ret = [<unsigned int>data[offset + x*sizeof(GLuint)] 
+                    for x in range(count)]
+            elif attr_type == b'short':
+                ret = [<short>data[offset + x*sizeof(GLshort)] 
+                    for x in range(count)]
+            elif attr_type == b'ushort':
+                ret = [<unsigned short>data[offset + x*sizeof(GLushort)] 
+                    for x in range(count)]
+            elif attr_type == b'byte':
+                ret = [<char>data[offset + x*sizeof(GLbyte)]
+                    for x in range(count)]
+            elif attr_type == b'ubyte':
+                ret = [<unsigned char>data[offset + x*sizeof(GLubyte)] 
+                    for x in range(count)]
+            else:
+                raise TypeError()
+            if len(ret) == 1:
+                return ret[0]
+            else:
+                return ret
+        else:
+            raise AttributeError()
+        
+    def __setattr__(self, name, value):
+        cdef int count
+        cdef unsigned int offset
+        cdef bytes attr_type
+        cdef char* data = <char*>self.vertex_pointer
+        if not isinstance(value, list):
+            value = [value]
+        if isinstance(name, unicode):
+            name = bytes(name, 'utf-8')
+        if name in self.vertex_format:
+            attribute_tuple = self.vertex_format[name]
+            count = attribute_tuple[0]
+            attr_type = attribute_tuple[1]
+            offset = attribute_tuple[2]
+            for x in range(count):
+                if attr_type == b'float':
+                    data[offset + x*sizeof(GLfloat)] = <char><GLfloat>value[x]
+                elif attr_type == b'int':
+                    data[offset + x*sizeof(GLint)] = <char><GLint>value[x]
+                elif attr_type == b'uint':
+                    data[offset + x*sizeof(GLuint)] = <char><GLuint>value[x]
+                elif attr_type == b'short':
+                    data[offset + x*sizeof(GLshort)] = <char><GLshort>value[x]
+                elif attr_type == b'ushort':
+                    data[offset + x*sizeof(GLushort)] = (
+                        <char><GLushort>value[x])
+                elif attr_type == b'byte':
+                    data[offset + x*sizeof(GLbyte)] = <char><GLbyte>value[x]
+                elif attr_type == b'ubyte':
+                    data[offset + x*sizeof(GLubyte)] = <char><GLubyte>value[x]
+                else:
+                    raise TypeError()
+        else:
+            raise AttributeError()
+
+
 cdef class VertMesh:
     '''
     The VertMesh represents a collection of **vertex_count** vertices, 

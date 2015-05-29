@@ -170,6 +170,9 @@ cdef class TextureManager:
     def get_size(self, tex_key):
         return self._sizes[tex_key]
 
+    def get_size_by_name(self, name):
+        return self._sizes[self._keys[name]]
+
     def get_texture(self, tex_key):
         return self._textures[tex_key]
 

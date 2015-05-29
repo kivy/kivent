@@ -164,7 +164,7 @@ cdef class RenderComponent(MemComponent):
             cdef unsigned int texkey = texture_manager.get_texkey_from_name(
                 value)
             cdef float u0, v0, u1, v1
-            cdef list uv_list = texture_manager.get_uvs(value)
+            cdef list uv_list = texture_manager.get_uvs(texkey)
             u0 = uv_list[0]
             v0 = uv_list[1]
             u1 = uv_list[2]

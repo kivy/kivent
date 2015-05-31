@@ -6,6 +6,8 @@ from vertex_formats cimport VertexFormat4F
 from vertex_formats import vertex_format_4f, vertex_format_7f
 from kivy.graphics.c_opengl cimport (GLfloat, GLbyte, GLubyte, GLint, GLuint,
     GLshort, GLushort)
+from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivent_core.memory_handlers.block cimport MemoryBlock
 
         # 'float': GLfloat
         # 'byte': GLbyte 
@@ -15,7 +17,16 @@ from kivy.graphics.c_opengl cimport (GLfloat, GLbyte, GLubyte, GLint, GLuint,
         # 'short': GLshort
         # 'ushort': GLushort
 
-def test_vertex():
+def get_test_model():
+    cdef Buffer index_buffer = Buffer(1024*10, 1, 1)
+    index_buffer.allocate_memory()
+    cdef Buffer vertex_buffer = Buffer(1024*10, 1, 1)
+    vertex_buffer.allocate_memory()
+    test_config = ModelConfig(vertex_format_4f, sizeof(VertexFormat4F))
+    test_model = VertexModel(4, 6, test_config, index_buffer, vertex_buffer)
+    return test_model
+
+def get_test_vertex():
     format_dict = {}
     for each in vertex_format_7f:
         format_dict[each[0]] = each[1:]
@@ -111,6 +122,148 @@ cdef class Vertex:
                     raise TypeError()
         else:
             raise AttributeError()
+
+
+cdef class ModelConfig:
+    cdef dict _format_dict
+    cdef list _vertex_format
+    cdef unsigned int _format_size
+
+    def __init__(self, list vertex_format, unsigned int format_size):
+        format_dict = {}
+        for each in vertex_format:
+            format_dict[each[0]] = each[1:]
+        self._format_dict = format_dict
+        self._format_size = format_size
+        self._vertex_format = vertex_format
+
+    property vertex_format:
+        def __get__(self):
+            return self._vertex_format
+
+    property format_dict:
+        def __get__(self):
+            return self._format_dict
+
+    property format_size:
+        def __get__(self):
+            return self._format_size
+
+
+cdef class VertexModel:
+    cdef MemoryBlock vertices_block
+    cdef MemoryBlock indices_block
+    cdef ModelConfig _model_config
+    cdef unsigned int _vertex_count
+    cdef unsigned int _index_count
+    cdef Buffer index_buffer
+    cdef Buffer vertex_buffer
+    
+    
+    def __cinit__(self, unsigned int vert_count, unsigned int index_count,
+        ModelConfig config, Buffer index_buffer, Buffer vertex_buffer):
+        self._model_config = config
+        self._vertex_count = vert_count
+        self._index_count = index_count
+        cdef MemoryBlock indices_block = MemoryBlock(
+            index_count*sizeof(unsigned short), sizeof(unsigned short), 1)
+        indices_block.allocate_memory_with_buffer(index_buffer)
+        self.indices_block = indices_block
+        cdef MemoryBlock vertices_block = MemoryBlock(
+            vert_count*config._format_size, config._format_size, 1)
+        vertices_block.allocate_memory_with_buffer(vertex_buffer)
+        self.vertices_block = vertices_block
+        self.index_buffer = index_buffer
+        self.vertex_buffer = vertex_buffer
+
+    def __dealloc__(self):
+        if self.indices_block is not None:
+            self.indices_block.remove_from_buffer()
+            self.indices_block = None
+        if self.vertices_block is not None:
+            self.vertices_block.remove_from_buffer()
+            self.vertices_block = None
+        self.index_buffer = None
+        self.vertex_buffer = None
+
+    def __getitem__(self, unsigned int index):
+        cdef int vert_count = self._vertex_count
+        if not index < vert_count:
+            raise IndexError()
+        cdef Vertex vertex = Vertex(self._model_config._format_dict)
+        vertex.vertex_pointer = self.vertices_block.get_pointer(index)
+        return vertex
+
+    property index_count:
+
+        def __set__(self, unsigned int new_count):
+            cdef unsigned int old_count = self._index_count
+            self._index_count = new_count
+            cdef MemoryBlock new_indices = MemoryBlock(
+                new_count*sizeof(unsigned int), sizeof(unsigned int), 1)
+            new_indices.allocate_memory_with_buffer(self.index_buffer)
+            if new_count < old_count:
+                old_count = new_count
+            memcpy(<char*>new_indices.data, self.indices_block.data, 
+                old_count*sizeof(unsigned short))
+            self.indices_block.remove_from_buffer()
+            self.indices_block = new_indices
+ 
+        def __get__(self):
+            return self._index_count
+
+    property vertex_count:
+
+        def __set__(self, unsigned int new_count):
+            cdef unsigned int old_count = self._vertex_count
+            self._vertex_count = new_count
+            cdef MemoryBlock new_vertices = MemoryBlock(
+                new_count*self._model_config._format_size, 
+                self._model_config._format_size, 1)
+            new_vertices.allocate_memory_with_buffer(self.vertex_buffer)
+            if new_count < old_count:
+                old_count = new_count
+            memcpy(<char*>new_vertices.data, self.vertices_block.data, 
+                old_count*self._model_config._format_size)
+            self.vertices_block.remove_from_buffer()
+            self.vertices_block = new_vertices
+
+        def __get__(self):
+            return self._vertex_count
+
+    property vertices:
+
+        def __get__(self):
+            return_list = []
+            cdef int i
+            r_append = return_list.append
+            for i in range(self._vertex_count):
+                r_append(self[i])
+            return return_list
+
+    property indices:
+
+        def __get__(self):
+            cdef unsigned short* indices = <unsigned short*>(
+                self.indices_block.data)
+            cdef list return_list = []
+            cdef int index_count = self._index_count
+            r_append = return_list.append
+            cdef int i
+            cdef int index
+            for i from 0 <= i < index_count:
+                index = indices[i]
+                r_append(index)
+            return return_list
+
+        def __set__(self, list new_indices):
+            cdef int index_count = self._index_count
+            if len(new_indices) != index_count:
+                raise Exception("Provided data doesn't match internal size")
+            cdef unsigned short* indices = <unsigned short*>(
+                self.indices_block.data)
+            for i from 0 <= i < index_count:
+                indices[i] = <unsigned short>new_indices[i]
 
 
 cdef class VertMesh:

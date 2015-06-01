@@ -38,6 +38,8 @@ def get_test_vertex():
     vertex.vertex_pointer = data_p
     return vertex
 
+class AttributeCountError(Exception):
+    pass
 
 cdef class Vertex:
     cdef dict vertex_format
@@ -51,6 +53,13 @@ cdef class Vertex:
         cdef unsigned int offset
         cdef bytes attr_type
         cdef char* data = <char*>self.vertex_pointer
+        cdef GLfloat* f_data
+        cdef GLint* i_data
+        cdef GLuint* ui_data
+        cdef GLshort* s_data
+        cdef GLushort* us_data
+        cdef GLbyte* b_data
+        cdef GLubyte* ub_data
         if isinstance(name, unicode):
             name = bytes(name, 'utf-8')
         if name in self.vertex_format:
@@ -59,26 +68,26 @@ cdef class Vertex:
             attr_type = attribute_tuple[1]
             offset = attribute_tuple[2]
             if attr_type == b'float':
-                ret = [<float>data[offset + x*sizeof(GLfloat)] 
-                    for x in range(count)]
+                f_data = <GLfloat*>&data[offset]
+                ret = [<float>f_data[x] for x in range(count)]
             elif attr_type == b'int':
-                ret = [<int>data[offset + x*sizeof(GLint)] 
-                    for x in range(count)]
+                i_data = <GLint*>&data[offset]
+                ret = [<int>i_data[x] for x in range(count)]
             elif attr_type == b'uint':
-                ret = [<unsigned int>data[offset + x*sizeof(GLuint)] 
-                    for x in range(count)]
+                ui_data = <GLuint*>&data[offset]
+                ret = [<unsigned int>ui_data[x] for x in range(count)]
             elif attr_type == b'short':
-                ret = [<short>data[offset + x*sizeof(GLshort)] 
-                    for x in range(count)]
+                s_data = <GLshort*>&data[offset]
+                ret = [<short>s_data[x] for x in range(count)]
             elif attr_type == b'ushort':
-                ret = [<unsigned short>data[offset + x*sizeof(GLushort)] 
-                    for x in range(count)]
+                us_data = <GLushort*>&data[offset]
+                ret = [<unsigned short>us_data[x] for x in range(count)]
             elif attr_type == b'byte':
-                ret = [<char>data[offset + x*sizeof(GLbyte)]
-                    for x in range(count)]
+                b_data = <GLbyte*>&data[offset]
+                ret = [<char>b_data[x] for x in range(count)]
             elif attr_type == b'ubyte':
-                ret = [<unsigned char>data[offset + x*sizeof(GLubyte)] 
-                    for x in range(count)]
+                ub_data = <GLubyte*>&data[offset]
+                ret = [<unsigned char>ub_data[x] for x in range(count)]
             else:
                 raise TypeError()
             if len(ret) == 1:
@@ -93,6 +102,13 @@ cdef class Vertex:
         cdef unsigned int offset
         cdef bytes attr_type
         cdef char* data = <char*>self.vertex_pointer
+        cdef GLfloat* f_data
+        cdef GLint* i_data
+        cdef GLuint* ui_data
+        cdef GLshort* s_data
+        cdef GLushort* us_data
+        cdef GLbyte* b_data
+        cdef GLubyte* ub_data
         if not isinstance(value, list):
             value = [value]
         if isinstance(name, unicode):
@@ -102,22 +118,32 @@ cdef class Vertex:
             count = attribute_tuple[0]
             attr_type = attribute_tuple[1]
             offset = attribute_tuple[2]
+            if len(value) != count:
+                raise AttributeCountError('Expected list of length {count} got'
+                    'list of size {length}'.format(count=count, 
+                    length=len(value)))
             for x in range(count):
                 if attr_type == b'float':
-                    data[offset + x*sizeof(GLfloat)] = <char><GLfloat>value[x]
+                    f_data = <GLfloat*>&data[offset + x*sizeof(GLfloat)]
+                    f_data[0] = <GLfloat>value[x]
                 elif attr_type == b'int':
-                    data[offset + x*sizeof(GLint)] = <char><GLint>value[x]
+                    i_data = <GLint*>&data[offset + x*sizeof(GLint)]
+                    i_data[0] = <GLint>value[x]
                 elif attr_type == b'uint':
-                    data[offset + x*sizeof(GLuint)] = <char><GLuint>value[x]
+                    ui_data = <GLuint*>&data[offset + x*sizeof(GLuint)]
+                    ui_data[0] = <GLuint>value[x]
                 elif attr_type == b'short':
-                    data[offset + x*sizeof(GLshort)] = <char><GLshort>value[x]
+                    s_data = <GLshort*>&data[offset + x*sizeof(GLshort)]
+                    s_data[0] = <GLshort>value[x]
                 elif attr_type == b'ushort':
-                    data[offset + x*sizeof(GLushort)] = (
-                        <char><GLushort>value[x])
+                    us_data = <GLushort*>&data[offset + x*sizeof(GLushort)]
+                    us_data[0] = <GLushort>value[x]
                 elif attr_type == b'byte':
-                    data[offset + x*sizeof(GLbyte)] = <char><GLbyte>value[x]
+                    b_data = <GLbyte*>&data[offset + x*sizeof(GLbyte)]
+                    b_data[0] = <GLbyte>value[x]
                 elif attr_type == b'ubyte':
-                    data[offset + x*sizeof(GLubyte)] = <char><GLubyte>value[x]
+                    ub_data = <GLubyte*>&data[offset + x*sizeof(GLubyte)]
+                    ub_data[0] = <GLubyte>value[x]
                 else:
                     raise TypeError()
         else:
@@ -185,6 +211,7 @@ cdef class VertexModel:
             self.vertices_block = None
         self.index_buffer = None
         self.vertex_buffer = None
+        self._model_config = None
 
     def __getitem__(self, unsigned int index):
         cdef int vert_count = self._vertex_count
@@ -198,16 +225,18 @@ cdef class VertexModel:
 
         def __set__(self, unsigned int new_count):
             cdef unsigned int old_count = self._index_count
-            self._index_count = new_count
-            cdef MemoryBlock new_indices = MemoryBlock(
-                new_count*sizeof(unsigned int), sizeof(unsigned int), 1)
-            new_indices.allocate_memory_with_buffer(self.index_buffer)
-            if new_count < old_count:
-                old_count = new_count
-            memcpy(<char*>new_indices.data, self.indices_block.data, 
-                old_count*sizeof(unsigned short))
-            self.indices_block.remove_from_buffer()
-            self.indices_block = new_indices
+            cdef MemoryBlock new_indices
+            if new_count != old_count:
+                self._index_count = new_count
+                new_indices = MemoryBlock(
+                    new_count*sizeof(unsigned int), sizeof(unsigned int), 1)
+                new_indices.allocate_memory_with_buffer(self.index_buffer)
+                if new_count < old_count:
+                    old_count = new_count
+                memcpy(<char*>new_indices.data, self.indices_block.data, 
+                    old_count*sizeof(unsigned short))
+                self.indices_block.remove_from_buffer()
+                self.indices_block = new_indices
  
         def __get__(self):
             return self._index_count
@@ -216,20 +245,103 @@ cdef class VertexModel:
 
         def __set__(self, unsigned int new_count):
             cdef unsigned int old_count = self._vertex_count
-            self._vertex_count = new_count
-            cdef MemoryBlock new_vertices = MemoryBlock(
-                new_count*self._model_config._format_size, 
-                self._model_config._format_size, 1)
-            new_vertices.allocate_memory_with_buffer(self.vertex_buffer)
-            if new_count < old_count:
-                old_count = new_count
-            memcpy(<char*>new_vertices.data, self.vertices_block.data, 
-                old_count*self._model_config._format_size)
-            self.vertices_block.remove_from_buffer()
-            self.vertices_block = new_vertices
+            cdef MemoryBlock new_vertices
+            if new_count != old_count:
+                self._vertex_count = new_count
+                new_vertices = MemoryBlock(
+                    new_count*self._model_config._format_size, 
+                    self._model_config._format_size, 1)
+                new_vertices.allocate_memory_with_buffer(self.vertex_buffer)
+                if new_count < old_count:
+                    old_count = new_count
+                memcpy(<char*>new_vertices.data, self.vertices_block.data, 
+                    old_count*self._model_config._format_size)
+                self.vertices_block.remove_from_buffer()
+                self.vertices_block = new_vertices
 
         def __get__(self):
             return self._vertex_count
+
+    def copy_vertex_model(self, VertexModel to_copy):
+        self.vertex_count = to_copy._vertex_count
+        self.index_count = to_copy._index_count
+        self._model_config = to_copy._model_config
+        memcpy(<char *>self.indices_block.data, to_copy.indices_block.data, 
+            self._index_count*sizeof(unsigned short))
+        memcpy(<char *>self.vertices_block.data, to_copy.vertices_block.data, 
+            self._vertex_count * self._model_config._format_size)
+
+    def set_all_vertex_attribute(self, str attribute_name, value):
+        '''Set attribute number attribute_n of all vertices to value.
+        '''
+        cdef int vert_count = self._vertex_count
+        if not attribute_name in self._model_config._format_dict:
+            raise AttributeError()
+        cdef Vertex vertex = Vertex(self._model_config._format_dict)
+        for i from 0 <= i < vert_count:
+            vertex.vertex_pointer = self.vertices_block.get_pointer(i)
+            setattr(vertex, attribute_name, value)
+
+    def add_all_vertex_attribute(self, str attribute_name, value):
+        '''Add value to attribute number attribute_n of all vertices.
+        '''
+        cdef int vert_count = self._vertex_count
+        if not attribute_name in self._model_config._format_dict:
+            raise AttributeError()
+        cdef Vertex vertex = Vertex(self._model_config._format_dict)
+        for i from 0 <= i < vert_count:
+            vertex.vertex_pointer = self.vertices_block.get_pointer(i)
+            old_value = getattr(vertex, attribute_name)
+            if isinstance(old_value, list) and isinstance(value, list):
+                new_value = [x + y for x, y in zip(old_value, value)]
+            elif isinstance(old_value, list) and not isinstance(value, list):
+                new_value = [x + value for x in old_value]
+            else:
+                new_value = old_value + value
+            setattr(vertex, attribute_name, new_value)
+
+    def mult_all_vertex_attribute(self, str attribute_name, value):
+        '''Multiply the value of attribute number attribute_n of all vertices 
+        by value.
+        '''
+        cdef int vert_count = self._vertex_count
+        if not attribute_name in self._model_config._format_dict:
+            raise AttributeError()
+        cdef Vertex vertex = Vertex(self._model_config._format_dict)
+        for i from 0 <= i < vert_count:
+            vertex.vertex_pointer = self.vertices_block.get_pointer(i)
+            old_value = getattr(vertex, attribute_name)
+            if isinstance(old_value, list) and isinstance(value, list):
+                new_value = [x * y for x, y in zip(old_value, value)]
+            elif isinstance(old_value, list) and not isinstance(value, list):
+                new_value = [x * value for x in old_value]
+            else:
+                new_value = old_value * value
+            setattr(vertex, attribute_name, new_value)
+
+    def set_textured_rectangle(self, float width, float height, list uvs):
+        '''Prepare a 4 vertex_count, 6 index_count textured quad (sprite) of 
+        size: width x height. Normally called internally when creating sprites. 
+        Will assume that the vertex format has a 'pos' and 'uvs' attribute that 
+        are both lists of size 2'''
+        self.vertex_count = 4
+        self.index_count = 6
+        self.indices = [0, 1, 2, 2, 3, 0]
+        w = .5*width
+        h = .5*height
+        u0, v0, u1, v1 = uvs
+        vertex1 = self[0]
+        vertex1.pos = [-w, -h]
+        vertex1.uvs = [u0, v0]
+        vertex2 = self[1]
+        vertex2.pos = [-w, h]
+        vertex2.uvs = [u0, v1]
+        vertex3 = self[2]
+        vertex3.pos = [w, h]
+        vertex3.uvs = [u1, v1]
+        vertex4 = self[3]
+        vertex4.pos = [w, -h]
+        vertex4.uvs = [u1, v0]
 
     property vertices:
 
@@ -240,6 +352,11 @@ cdef class VertexModel:
             for i in range(self._vertex_count):
                 r_append(self[i])
             return return_list
+
+    property model_config:
+
+        def __get__(self):
+            return self._model_config
 
     property indices:
 

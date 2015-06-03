@@ -13,3 +13,9 @@ cdef class ModelManager:
     cdef dict _keys
     cdef list _unused
     cdef int _mesh_count
+    cdef dict memory_blocks
+    cdef unsigned int allocation_size
+    cdef dict _models
+    cdef dict _key_counts
+
+

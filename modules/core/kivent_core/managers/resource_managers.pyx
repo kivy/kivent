@@ -2,20 +2,88 @@
 import json
 from os import path
 from kivy.core.image import Image as CoreImage
-from kivent_core.rendering.vertmesh cimport VertMesh
+from kivent_core.rendering.vertmesh cimport VertMesh, VertexModel
+from kivent_core.rendering.vertex_formats cimport format_registrar, FormatConfig
+from kivent_core.memory_handlers.block cimport MemoryBlock
+from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivy.logger import Logger
 
+
+class ModelNameInUse(Exception):
+    pass
 
 cdef class ModelManager:
 
-    def __init__(self):
+    def __init__(self, allocation_size=100*1024):
         self._meshes = []
         self._keys = {}
+        self.allocation_size = allocation_size
         self._mesh_count = 0
         self._unused = []
 
+        self.memory_blocks = {}
+        self._models = {}
+        self._key_counts = {}
+
     property meshes:
         def __get__(self):
-            return self._meshes  
+            return self._meshes
+
+    def allocate(self, Buffer master_buffer, dict formats_to_allocate):
+        #Either for each format in formats to allocate, or use default behavior
+        #Load 10 mb of space for each registered vertex format. 
+        #(index space, vertex_space) for val at format_name key.
+        cdef MemoryBlock indices_block
+        cdef MemoryBlock vertices_block
+        cdef FormatConfig format_config
+        vertex_formats = format_registrar._vertex_formats
+        cdef dict memory_blocks = self.memory_blocks
+        cdef unsigned int total_count = 0
+        if formats_to_allocate == {}:
+            for key in vertex_formats:
+                formats_to_allocate[key] = (
+                    self.allocation_size - self.allocation_size // 4, 
+                    self.allocation_size // 4)
+        for format in formats_to_allocate:
+            vertex_size, index_size = formats_to_allocate[format]
+            format_config = vertex_formats[format]
+            indices_block = MemoryBlock(self.allocation_size//2, 1, 1)
+            vertices_block = MemoryBlock(self.allocation_size//2, 1, 1)
+            vertices_block.allocate_memory_with_buffer(master_buffer)
+            indices_block.allocate_memory_with_buffer(master_buffer)
+            memory_blocks[format] = {'indices_block': indices_block,
+                'vertices_block': vertices_block}
+            total_count += vertex_size + index_size
+            Logger.info('KivEnt: Model Manager reserved space for vertex '
+                'format: {name}. {space} KiB was reserved for vertices, '
+                'fitting a total of {vert_count}. {ind_space} KiB was reserved '
+                'for indices fitting a total of {ind_count}.'.format(
+                name=format,
+                space=str(vertex_size//1024),
+                vert_count=str(vertex_size//format_config._size),
+                ind_space=str(index_size//1024),
+                ind_count=str(index_size//sizeof(unsigned short)),))
+        return total_count
+
+    def load_model(self, str format_name, unsigned int vertex_count, 
+        unsigned int index_count, str name, do_copy=False):
+        vertex_formats = format_registrar._vertex_formats
+        cdef FormatConfig format_config = vertex_formats[format_name]
+        if name not in self._key_counts:
+            self._key_counts[name] = 0
+        elif name in self._key_counts and not do_copy:
+            raise ModelNameInUse()
+        elif name in self._key_counts and do_copy:
+            name = name + str(self._key_counts[name])
+            self._key_counts[name] += 1
+        cdef MemoryBlock vertex_block = self.memory_blocks[format_name][
+            'vertices_block']
+        cdef MemoryBlock index_block = self.memory_blocks[format_name][
+            'indices_block']
+        cdef VertexModel model = VertexModel(vertex_count, index_count, 
+            format_config, index_block, vertex_block, name)
+        self._models[name] = model
+        return name
 
     def load_textured_rectangle(self, attribute_count, width, height, 
         texture_key, name):
@@ -80,7 +148,6 @@ cdef class ModelManager:
         self._unused.append(mesh_index)
         self._meshes[mesh_index] = None
         del self._keys[mesh_key]
-
 
 
 cdef class TextureManager:

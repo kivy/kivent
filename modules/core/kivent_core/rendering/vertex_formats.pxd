@@ -14,3 +14,14 @@ ctypedef struct VertexFormat8F:
     GLfloat[2] pos
     GLfloat[2] uvs
     GLfloat[4] vColor
+
+cdef class FormatConfig:
+    cdef unsigned int _size
+    cdef list _format
+    cdef str _name
+    cdef dict _format_dict
+
+cdef class VertexFormatRegister:
+    cdef dict _vertex_formats
+
+cdef VertexFormatRegister format_registrar

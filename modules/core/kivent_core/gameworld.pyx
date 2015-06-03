@@ -17,6 +17,9 @@ from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.utils cimport memrange
+from kivent_core.rendering.vertex_formats cimport (format_registrar, 
+    FormatConfig)
+from kivent_core.managers.resource_managers cimport ModelManager
 from kivy.logger import Logger
 debug = False
 
@@ -101,6 +104,7 @@ class GameWorld(Widget):
     size_of_entity_block = NumericProperty(16)
     update_time = NumericProperty(1./60.)
     system_count = NumericProperty(DEFAULT_SYSTEM_COUNT)
+    model_format_allocations = DictProperty({})
  
     
     def __init__(self, **kwargs):
@@ -117,6 +121,7 @@ class GameWorld(Widget):
         self.entities_to_remove = []
         self.system_manager = SystemManager()
         self.master_buffer = None
+        self.model_manager = ModelManager()
 
     def ensure_startup(self, list_of_systems):
         '''Run during **init_gameworld** to determine whether or not it is safe
@@ -133,11 +138,12 @@ class GameWorld(Widget):
         systems_to_add = [x.system_id for x in self.systems_to_add]
         for each in list_of_systems:
             if each not in systems_to_add:
-                Logger.error('GameSystem: System_id: %s not attached retrying ' 
-                    'in a 1 sec. If you see this error once or twice, we are ' 
+                Logger.error(
+                    'GameSystem: System_id: {system_id} not attached retrying ' 
+                    'in 1 sec. If you see this error once or twice, we are ' 
                     'probably just waiting on the KV file to load. If you see '
                     'it a whole bunch something is probably wrong. Make sure '
-                    'all systems are setup properly.'% (each))
+                    'all systems are setup properly.'.format(system_id=each))
                 return False
         return True
 
@@ -153,6 +159,14 @@ class GameWorld(Widget):
         cdef SystemManager system_manager = self.system_manager
         master_buffer.allocate_memory()
         cdef unsigned int real_size = master_buffer.real_size
+        cdef FormatConfig format_config
+        for each in format_registrar._vertex_formats:
+            format_config = format_registrar._vertex_formats[each]
+            Logger.info('KivEnt: Vertex Format: {name} registered. Size per '
+                'vertex is: {size}. Format is {format}.'.format(
+                name=format_config._name,
+                size=str(format_config._size),
+                format=format_config._format))
         zones = self.zones
         if 'general' not in zones:
             zones['general'] = DEFAULT_COUNT
@@ -192,11 +206,12 @@ class GameWorld(Widget):
 
                 system.allocate(master_buffer, config_dict)
                 system_size = system.get_system_size()
-                Logger.info(('Kivent: {system_name} allocated {system_size} '  
+                Logger.info(('KivEnt: {system_name} allocated {system_size} '  
                     'KiB').format(system_name=str(name), 
                     system_size=str(system_size//1024)))
                 total_count += system_size
-
+        total_count += self.model_manager.allocate(master_buffer, 
+            dict(self.model_format_allocations))
 
         Logger.info(('KivEnt: We will need {total_count} KiB for game, we ' +
             'have {real_size} KiB').format(total_count=str(total_count//1024), 

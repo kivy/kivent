@@ -2,27 +2,19 @@
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 cdef extern from "string.h":
     void *memcpy(void *dest, void *src, size_t n)
-from vertex_formats cimport VertexFormat4F
+from vertex_formats cimport VertexFormat4F, FormatConfig
 from vertex_formats import vertex_format_4f, vertex_format_7f
 from kivy.graphics.c_opengl cimport (GLfloat, GLbyte, GLubyte, GLint, GLuint,
     GLshort, GLushort)
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.block cimport MemoryBlock
 
-        # 'float': GLfloat
-        # 'byte': GLbyte 
-        # 'ubyte': GLubyte
-        # 'int': GLint
-        # 'uint': GLuint
-        # 'short': GLshort
-        # 'ushort': GLushort
-
 def get_test_model():
     cdef Buffer index_buffer = Buffer(1024*10, 1, 1)
     index_buffer.allocate_memory()
     cdef Buffer vertex_buffer = Buffer(1024*10, 1, 1)
     vertex_buffer.allocate_memory()
-    test_config = ModelConfig(vertex_format_4f, sizeof(VertexFormat4F))
+    test_config = FormatConfig(vertex_format_4f, sizeof(VertexFormat4F))
     test_model = VertexModel(4, 6, test_config, index_buffer, vertex_buffer)
     return test_model
 
@@ -42,8 +34,6 @@ class AttributeCountError(Exception):
     pass
 
 cdef class Vertex:
-    cdef dict vertex_format
-    cdef void* vertex_pointer
 
     def __cinit__(self, dict format):
         self.vertex_format = format 
@@ -109,6 +99,8 @@ cdef class Vertex:
         cdef GLushort* us_data
         cdef GLbyte* b_data
         cdef GLubyte* ub_data
+        if isinstance(value, tuple):
+            value = list(value)
         if not isinstance(value, list):
             value = [value]
         if isinstance(name, unicode):
@@ -150,53 +142,21 @@ cdef class Vertex:
             raise AttributeError()
 
 
-cdef class ModelConfig:
-    cdef dict _format_dict
-    cdef list _vertex_format
-    cdef unsigned int _format_size
-
-    def __init__(self, list vertex_format, unsigned int format_size):
-        format_dict = {}
-        for each in vertex_format:
-            format_dict[each[0]] = each[1:]
-        self._format_dict = format_dict
-        self._format_size = format_size
-        self._vertex_format = vertex_format
-
-    property vertex_format:
-        def __get__(self):
-            return self._vertex_format
-
-    property format_dict:
-        def __get__(self):
-            return self._format_dict
-
-    property format_size:
-        def __get__(self):
-            return self._format_size
-
-
 cdef class VertexModel:
-    cdef MemoryBlock vertices_block
-    cdef MemoryBlock indices_block
-    cdef ModelConfig _model_config
-    cdef unsigned int _vertex_count
-    cdef unsigned int _index_count
-    cdef Buffer index_buffer
-    cdef Buffer vertex_buffer
-    
     
     def __cinit__(self, unsigned int vert_count, unsigned int index_count,
-        ModelConfig config, Buffer index_buffer, Buffer vertex_buffer):
-        self._model_config = config
+        FormatConfig config, Buffer index_buffer, Buffer vertex_buffer, 
+        str name):
+        self._format_config = config
         self._vertex_count = vert_count
         self._index_count = index_count
+        self._name = name
         cdef MemoryBlock indices_block = MemoryBlock(
             index_count*sizeof(unsigned short), sizeof(unsigned short), 1)
         indices_block.allocate_memory_with_buffer(index_buffer)
         self.indices_block = indices_block
         cdef MemoryBlock vertices_block = MemoryBlock(
-            vert_count*config._format_size, config._format_size, 1)
+            vert_count*config._size, config._size, 1)
         vertices_block.allocate_memory_with_buffer(vertex_buffer)
         self.vertices_block = vertices_block
         self.index_buffer = index_buffer
@@ -211,13 +171,13 @@ cdef class VertexModel:
             self.vertices_block = None
         self.index_buffer = None
         self.vertex_buffer = None
-        self._model_config = None
+        self._format_config = None
 
     def __getitem__(self, unsigned int index):
         cdef int vert_count = self._vertex_count
         if not index < vert_count:
             raise IndexError()
-        cdef Vertex vertex = Vertex(self._model_config._format_dict)
+        cdef Vertex vertex = Vertex(self._format_config._format_dict)
         vertex.vertex_pointer = self.vertices_block.get_pointer(index)
         return vertex
 
@@ -241,6 +201,11 @@ cdef class VertexModel:
         def __get__(self):
             return self._index_count
 
+    property name:
+
+        def __get__(self):
+            return self._name
+
     property vertex_count:
 
         def __set__(self, unsigned int new_count):
@@ -249,13 +214,13 @@ cdef class VertexModel:
             if new_count != old_count:
                 self._vertex_count = new_count
                 new_vertices = MemoryBlock(
-                    new_count*self._model_config._format_size, 
-                    self._model_config._format_size, 1)
+                    new_count*self._format_config._size, 
+                    self._format_config._size, 1)
                 new_vertices.allocate_memory_with_buffer(self.vertex_buffer)
                 if new_count < old_count:
                     old_count = new_count
                 memcpy(<char*>new_vertices.data, self.vertices_block.data, 
-                    old_count*self._model_config._format_size)
+                    old_count*self._format_config._size)
                 self.vertices_block.remove_from_buffer()
                 self.vertices_block = new_vertices
 
@@ -265,19 +230,19 @@ cdef class VertexModel:
     def copy_vertex_model(self, VertexModel to_copy):
         self.vertex_count = to_copy._vertex_count
         self.index_count = to_copy._index_count
-        self._model_config = to_copy._model_config
+        self._format_config = to_copy._format_config
         memcpy(<char *>self.indices_block.data, to_copy.indices_block.data, 
             self._index_count*sizeof(unsigned short))
         memcpy(<char *>self.vertices_block.data, to_copy.vertices_block.data, 
-            self._vertex_count * self._model_config._format_size)
+            self._vertex_count * self._format_config._size)
 
     def set_all_vertex_attribute(self, str attribute_name, value):
         '''Set attribute number attribute_n of all vertices to value.
         '''
         cdef int vert_count = self._vertex_count
-        if not attribute_name in self._model_config._format_dict:
+        if not attribute_name in self._format_config._format_dict:
             raise AttributeError()
-        cdef Vertex vertex = Vertex(self._model_config._format_dict)
+        cdef Vertex vertex = Vertex(self._format_config._format_dict)
         for i from 0 <= i < vert_count:
             vertex.vertex_pointer = self.vertices_block.get_pointer(i)
             setattr(vertex, attribute_name, value)
@@ -286,9 +251,9 @@ cdef class VertexModel:
         '''Add value to attribute number attribute_n of all vertices.
         '''
         cdef int vert_count = self._vertex_count
-        if not attribute_name in self._model_config._format_dict:
+        if not attribute_name in self._format_config._format_dict:
             raise AttributeError()
-        cdef Vertex vertex = Vertex(self._model_config._format_dict)
+        cdef Vertex vertex = Vertex(self._format_config._format_dict)
         for i from 0 <= i < vert_count:
             vertex.vertex_pointer = self.vertices_block.get_pointer(i)
             old_value = getattr(vertex, attribute_name)
@@ -305,9 +270,9 @@ cdef class VertexModel:
         by value.
         '''
         cdef int vert_count = self._vertex_count
-        if not attribute_name in self._model_config._format_dict:
+        if not attribute_name in self._format_config._format_dict:
             raise AttributeError()
-        cdef Vertex vertex = Vertex(self._model_config._format_dict)
+        cdef Vertex vertex = Vertex(self._format_config._format_dict)
         for i from 0 <= i < vert_count:
             vertex.vertex_pointer = self.vertices_block.get_pointer(i)
             old_value = getattr(vertex, attribute_name)
@@ -353,10 +318,10 @@ cdef class VertexModel:
                 r_append(self[i])
             return return_list
 
-    property model_config:
+    property format_config:
 
         def __get__(self):
-            return self._model_config
+            return self._format_config
 
     property indices:
 

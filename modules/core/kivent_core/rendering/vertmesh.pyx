@@ -152,7 +152,7 @@ cdef class VertexModel:
         self._index_count = index_count
         self._name = name
         cdef MemoryBlock indices_block = MemoryBlock(
-            index_count*sizeof(unsigned short), sizeof(unsigned short), 1)
+            index_count*sizeof(GLushort), sizeof(GLushort), 1)
         indices_block.allocate_memory_with_buffer(index_buffer)
         self.indices_block = indices_block
         cdef MemoryBlock vertices_block = MemoryBlock(
@@ -189,12 +189,12 @@ cdef class VertexModel:
             if new_count != old_count:
                 self._index_count = new_count
                 new_indices = MemoryBlock(
-                    new_count*sizeof(unsigned int), sizeof(unsigned int), 1)
+                    new_count*sizeof(GLushort), sizeof(GLushort), 1)
                 new_indices.allocate_memory_with_buffer(self.index_buffer)
                 if new_count < old_count:
                     old_count = new_count
                 memcpy(<char*>new_indices.data, self.indices_block.data, 
-                    old_count*sizeof(unsigned short))
+                    old_count*sizeof(GLushort))
                 self.indices_block.remove_from_buffer()
                 self.indices_block = new_indices
  
@@ -232,7 +232,7 @@ cdef class VertexModel:
         self.index_count = to_copy._index_count
         self._format_config = to_copy._format_config
         memcpy(<char *>self.indices_block.data, to_copy.indices_block.data, 
-            self._index_count*sizeof(unsigned short))
+            self._index_count*sizeof(GLushort))
         memcpy(<char *>self.vertices_block.data, to_copy.vertices_block.data, 
             self._vertex_count * self._format_config._size)
 
@@ -326,15 +326,14 @@ cdef class VertexModel:
     property indices:
 
         def __get__(self):
-            cdef unsigned short* indices = <unsigned short*>(
-                self.indices_block.data)
+            cdef GLushort* indices = <GLushort*>self.indices_block.data
             cdef list return_list = []
             cdef int index_count = self._index_count
             r_append = return_list.append
             cdef int i
-            cdef int index
+            cdef unsigned short index
             for i from 0 <= i < index_count:
-                index = indices[i]
+                index = <unsigned short>indices[i]
                 r_append(index)
             return return_list
 
@@ -342,10 +341,9 @@ cdef class VertexModel:
             cdef int index_count = self._index_count
             if len(new_indices) != index_count:
                 raise Exception("Provided data doesn't match internal size")
-            cdef unsigned short* indices = <unsigned short*>(
-                self.indices_block.data)
+            cdef GLushort* indices = <GLushort*>self.indices_block.data
             for i from 0 <= i < index_count:
-                indices[i] = <unsigned short>new_indices[i]
+                indices[i] = <GLushort>new_indices[i]
 
 
 cdef class VertMesh:

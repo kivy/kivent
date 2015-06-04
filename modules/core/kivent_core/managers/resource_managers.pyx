@@ -24,10 +24,34 @@ cdef class ModelManager:
         self.memory_blocks = {}
         self._models = {}
         self._key_counts = {}
+        self._model_register = {}
+
+    property models:
+        def __get__(self):
+            return self._models
+
+    property key_counts:
+        def __get__(self):
+            return self._key_counts
+
+    property model_register:
+        def __get__(self):
+            return self._model_register
 
     property meshes:
         def __get__(self):
             return self._meshes
+
+    def register_entity_with_model(self, unsigned int entity_id, str system_id,
+        str model_name):
+        if model_name not in self._model_register:
+            self._model_register[model_name] = {entity_id: system_id}
+        else: 
+            self._model_register[model_name][entity_id] = system_id
+
+    def unregister_entity_with_model(self, unsigned int entity_id, 
+        str model_name):
+        del self._model_register[model_name][entity_id]
 
     def allocate(self, Buffer master_buffer, dict formats_to_allocate):
         #Either for each format in formats to allocate, or use default behavior
@@ -72,7 +96,7 @@ cdef class ModelManager:
         if name not in self._key_counts:
             self._key_counts[name] = 0
         elif name in self._key_counts and not do_copy:
-            raise ModelNameInUse()
+            return name
         elif name in self._key_counts and do_copy:
             name = name + str(self._key_counts[name])
             self._key_counts[name] += 1
@@ -84,6 +108,26 @@ cdef class ModelManager:
             format_config, index_block, vertex_block, name)
         self._models[name] = model
         return name
+
+    def copy_model(self, str model_to_copy, str model_name=None):
+        cdef VertexModel copy_model = self._models[model_to_copy]
+        cdef str format_name = copy_model._format_config._name
+        if model_name is None:
+            model_name = model_to_copy
+        real_name = self.load_model(format_name, copy_model._vertex_count,
+            copy_model._index_count, model_name, do_copy=True)
+        self._models[real_name].copy_vertex_model(copy_model)
+        return real_name
+
+    def new_load_textured_rectangle(self, str format_name, float width, 
+        float height, str texture_key, str name, do_copy=False):
+        model_name = self.load_model(format_name, 4, 6, name, do_copy=do_copy)
+        cdef VertexModel model = self._models[model_name]
+        texkey = texture_manager.get_texkey_from_name(texture_key)
+        uvs = texture_manager.get_uvs(texkey)
+        model.set_textured_rectangle(width, height, uvs)
+        return model_name
+
 
     def load_textured_rectangle(self, attribute_count, width, height, 
         texture_key, name):
@@ -229,7 +273,6 @@ cdef class TextureManager:
 
     def get_texkey_from_name(self, name):
         return self._keys[name]
-
 
     def get_uvs(self, tex_key):
         return self._uvs[tex_key]

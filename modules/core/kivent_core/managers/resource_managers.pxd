@@ -17,5 +17,6 @@ cdef class ModelManager:
     cdef unsigned int allocation_size
     cdef dict _models
     cdef dict _key_counts
+    cdef dict _model_register
 
 

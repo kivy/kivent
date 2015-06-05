@@ -2,25 +2,62 @@
 import json
 from os import path
 from kivy.core.image import Image as CoreImage
-from kivent_core.rendering.vertmesh cimport VertMesh, VertexModel
+from kivent_core.rendering.vertmesh cimport VertMesh
+from kivent_core.rendering.model cimport VertexModel
 from kivent_core.rendering.vertex_formats cimport format_registrar, FormatConfig
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.logger import Logger
 
 
-class ModelNameInUse(Exception):
-    pass
-
 cdef class ModelManager:
+    '''
+    The ModelManager is responsible for managing all VertexModel that will be 
+    used during your game's rendering. A model is a collection of vertex and 
+    index data describing the triangles that make up your entities geometry.]
+
+    The ModelManager ensures that all models using the same vertex format are 
+    stored contiguously, helping to ensure that your rendering does not have to 
+    jump around so much in memory.
+
+    If you do not provide custom instructions to the allocation function, 
+    the ModelManager will register 100 KiB for each format found in the 
+    rendering.vertex_formats.format_registrar. The memory will be split 72/25
+    vertices to indices. 
+
+    Remember every entity that uses a model of the same name will share all 
+    of that vertex data and modifying ones model will modify all. There is 
+    copying functionality built into the loading functions in case you want to 
+    create unique models per entity. 
+
+    **Attributes:**
+        **models** (dict): A dict of all the loaded models, keyed by name.
+
+        **key_counts** (dict): The count of the number of copies made of a 
+        certain model. Used internally if we are constructing a copy of an 
+        already loaded model.
+
+        **model_register** (dict): Used to keep track of the entities actively
+        using this model. Keyed by model_name will be dicts of key = entity_id,
+        value = system_id of renderer for that entity. If you want to modify 
+        a model attached to many entities, use the model_register to find out 
+        which entities are actively using that model.
+
+    **Attributes: (Cython Access Only)**
+        **allocation_size** (unsigned int): Set during initalization of the 
+        ModelManager, this is the amount of space to be reserved for each 
+        vertex format if an empty formats_to_allocate dict is provided to 
+        **allocate**. The space will be split 75/25 for vertices/indices.
+
+        **memory_blocks** (dict): A dict of dicts. Each format that gets 
+        allocated will have an entry here, that is a dict containing keys: 
+        'vertices_block' and 'indices_block'. Models for that format will be 
+        allocated inside these MemoryBlock.
+
+    '''
 
     def __init__(self, allocation_size=100*1024):
-        self._meshes = []
-        self._keys = {}
         self.allocation_size = allocation_size
-        self._mesh_count = 0
-        self._unused = []
-
         self.memory_blocks = {}
         self._models = {}
         self._key_counts = {}
@@ -38,12 +75,26 @@ cdef class ModelManager:
         def __get__(self):
             return self._model_register
 
-    property meshes:
-        def __get__(self):
-            return self._meshes
-
     def register_entity_with_model(self, unsigned int entity_id, str system_id,
         str model_name):
+        '''
+        Used to register entities that are using a certain model. Typically 
+        called internally as part of Renderer.init_component or the logic 
+        associated with setting a RenderComponent.model.
+
+        Note: At the moment you should not register the same model on the same 
+        entity with multiple renderers. This is not handled. Although I'm not 
+        quite certain when you would do that.
+
+        Args:
+            entity_id (unsigned int): Id of the entity being registered.
+
+            system_id (str): system_id of the Renderer that this entity is 
+            attached to with the model.
+
+            model_name (str): Name of the model to register the entity_id with.
+
+        '''
         if model_name not in self._model_register:
             self._model_register[model_name] = {entity_id: system_id}
         else: 
@@ -51,9 +102,40 @@ cdef class ModelManager:
 
     def unregister_entity_with_model(self, unsigned int entity_id, 
         str model_name):
+        '''
+        Unregisters a previously registered entity.
+
+        Args:
+            entity_id (unsigned int): The id of the entity being registered.
+
+            model_name (str): The name of the model that entity was registered 
+            with.
+        '''
         del self._model_register[model_name][entity_id]
 
     def allocate(self, Buffer master_buffer, dict formats_to_allocate):
+        '''
+        Allocates space for loading models. Typically called as part of 
+        Gameworld.allocate.
+
+        If you pass in a dict keyed by the name of registered vertex_formats 
+        with a tuple value of (bytes for vertex data, bytes for index data) 
+        you can control the formats loaded and the data loaded. If you do not 
+        provide instructions, every registered vertex format will have 
+        75 KiB allocated for vertex data and 25 KiB for index data by default.
+        This default allocation can be controlled by **allocation_size**
+        if set before initalization.
+
+        Args:
+            master_buffer (Buffer): The buffer to do allocation from.
+
+            formats_to_allocate (dict): Dict with keys of format names, values 
+            of tuples (bytes for vertex data, bytes for index data).
+
+        Return:
+            unsigned int: Number of bytes actually used by the ModelManager
+
+        '''
         #Either for each format in formats to allocate, or use default behavior
         #Load 10 mb of space for each registered vertex format. 
         #(index space, vertex_space) for val at format_name key.
@@ -91,6 +173,41 @@ cdef class ModelManager:
 
     def load_model(self, str format_name, unsigned int vertex_count, 
         unsigned int index_count, str name, do_copy=False):
+        '''
+        Loads a new VertexModel, and allocates space in the MemoryBlock for its 
+        vertex format to hold the model. The model will be stored in the 
+        **models** dict. 
+
+        Load model does not fill your model with any data you should do that 
+        after creating it. Either by accessing the vertices yourself or through 
+        a function such as **copy_model** or **load_textured_rectangle**.
+
+        The kwarg do_copy controls the behavior of the loaded. By default if we 
+        find a model has already been loaded under **name**, we simply return 
+        that already loaded model's name. If do_copy is set to True we will 
+        actually create a new model that appends an underscore and number to 
+        the name provide. For instance, 'test_model' becomes 'test_model_0', 
+        and then 'test_model_1' and so on. Copying 'test_model_0' will create 
+        'test_model_0_0'. 
+
+        Args:
+            format_name (str): The name of the vertex format this model should 
+            be created with.
+
+            vertex_count (unsigned int): The number of vertices in the model.
+
+            index_count (unsigned int): The number of indices for the model.
+
+            name (str): The name to store the model under.
+
+        Kwargs:
+            do_copy (bool): Defaults False, determines whether to copy the model 
+            if we find one with its name is already loaded.
+
+        Return:
+            str: Returns the actual name the model has been stored under.
+
+        '''
         vertex_formats = format_registrar._vertex_formats
         cdef FormatConfig format_config = vertex_formats[format_name]
         if name not in self._key_counts:
@@ -98,7 +215,7 @@ cdef class ModelManager:
         elif name in self._key_counts and not do_copy:
             return name
         elif name in self._key_counts and do_copy:
-            name = name + str(self._key_counts[name])
+            name = name + '_' + str(self._key_counts[name])
             self._key_counts[name] += 1
         cdef MemoryBlock vertex_block = self.memory_blocks[format_name][
             'vertices_block']
@@ -110,6 +227,23 @@ cdef class ModelManager:
         return name
 
     def copy_model(self, str model_to_copy, str model_name=None):
+        '''
+        Copies an existing model, creating a new model with the same data. If 
+        you set the model_name kwarg the new model will be stored under this 
+        name, otherwise the name of model being copied will be used, with 
+        do_copy set to True for **load_model**.
+
+        Args:
+            model_to_copy (str): The name of the model to copy.
+
+        Kwargs:
+            model_name (str): The name to store the new model under. If None 
+            the model_to_copy name will be used.
+
+        Return:
+            str: Actual name of the copied model.
+
+        '''
         cdef VertexModel copy_model = self._models[model_to_copy]
         cdef str format_name = copy_model._format_config._name
         if model_name is None:
@@ -119,8 +253,34 @@ cdef class ModelManager:
         self._models[real_name].copy_vertex_model(copy_model)
         return real_name
 
-    def new_load_textured_rectangle(self, str format_name, float width, 
+    def load_textured_rectangle(self, str format_name, float width, 
         float height, str texture_key, str name, do_copy=False):
+        '''
+        Loads a new model and sets it to be a textured quad (sprite). 
+        vertex_count will be set to 4, index_count to 6 with indices set to 
+        [0, 1, 2, 2, 3, 0].
+
+        The uvs from **texture_key** will be used.
+
+        Args:
+            format_name (str): Name of the vertex format to use.
+
+            width (float): Width of the quad.
+
+            height (float): Height of the quad.
+
+            texture_key (str): Name of the texture to use.
+
+            name (str): Name to load the model under.
+
+        Kwargs:
+            do_copy (bool): Defaults False. Kwarg forwarded to load_model, 
+            controls whether we will copy the model if name is laready in use.
+
+        Return:
+            str: Actual name of the loaded model.
+
+        '''
         model_name = self.load_model(format_name, 4, 6, name, do_copy=do_copy)
         cdef VertexModel model = self._models[model_name]
         texkey = texture_manager.get_texkey_from_name(texture_key)
@@ -128,70 +288,20 @@ cdef class ModelManager:
         model.set_textured_rectangle(width, height, uvs)
         return model_name
 
+    def unload_model(self, str model_name):
+        '''
+        Unloads the model. Freeing it for GC. Make sure you have not kept 
+        any references to your model yourself.
 
-    def load_textured_rectangle(self, attribute_count, width, height, 
-        texture_key, name):
-        cdef dict keys = self._keys
-        assert(name not in keys)
-        vert_mesh = VertMesh(attribute_count, 4, 6)
-        texkey = texture_manager.get_texkey_from_name(texture_key)
-        uvs = texture_manager.get_uvs(texkey)
-        vert_mesh.set_textured_rectangle(width, height, uvs)
-        try:
-            free = self._unused.pop()
-            self._meshes[free] = vert_mesh
-            index = free
-        except:
-            self._meshes.append(vert_mesh)
-            index = self._mesh_count
-            self._mesh_count += 1
-        keys[name] = index
-
-    def does_key_exist(self, key):
-        return key in self._keys
-
-    def vert_mesh_from_key(self, key):
-        return self._meshes[self.get_mesh_index(key)]
-
-    def get_mesh_index(self, key):
-        return self._keys[key]
-
-    def load_mesh(self, attribute_count, vert_count, index_count, key):
-        cdef dict keys = self._keys
-        assert(key not in keys)
-        vert_mesh = VertMesh(attribute_count, vert_count, index_count)
-        try:
-            free = self._unused.pop()
-            self._meshes[free] = vert_mesh
-            index = free
-        except:
-            self._meshes.append(vert_mesh)
-            index = self._mesh_count
-            self._mesh_count += 1
-        keys[key] = index
-
-    def copy_mesh(self, mesh_key, new_key):
-        cdef dict keys = self._keys
-        assert(new_key not in keys)
-        cdef VertMesh vert_mesh = self.meshes[keys[mesh_key]]
-        cdef VertMesh copy_mesh = VertMesh(vert_mesh._attrib_count, 
-            vert_mesh._vert_count, vert_mesh._index_count)
-        copy_mesh.copy_vert_mesh(vert_mesh)
-        try:
-            free = self._unused.pop()
-            self._meshes[free] = vert_mesh
-            index = free
-        except:
-            self._meshes.append(vert_mesh)
-            index = self._mesh_count
-            self._mesh_count += 1
-        keys[new_key] = index
-        
-    def unload_mesh(self, mesh_key):
-        mesh_index = self._keys[mesh_key]
-        self._unused.append(mesh_index)
-        self._meshes[mesh_index] = None
-        del self._keys[mesh_key]
+        Args:
+            model_name (str): Name of the model to unload.
+            
+        '''
+        del self._models[model_name]
+        if model_name in self._model_register:
+            del self._model_register[model_name]
+        if model_name in self._key_counts:
+            del self._key_counts[model_name]
 
 
 cdef class TextureManager:

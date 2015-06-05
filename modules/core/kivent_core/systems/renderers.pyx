@@ -26,7 +26,8 @@ from kivent_core.systems.rotate_systems cimport RotateStruct2D
 from kivent_core.systems.scale_systems cimport ScaleStruct2D
 from kivent_core.systems.color_systems cimport ColorStruct
 from kivent_core.entity cimport Entity
-from kivent_core.rendering.vertmesh cimport VertMesh, VertexModel
+from kivent_core.rendering.vertmesh cimport VertMesh
+from kivent_core.rendering.model cimport VertexModel
 from kivy.factory import Factory
 from libc.math cimport fabs
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
@@ -217,8 +218,12 @@ cdef class RenderComponent(MemComponent):
             cdef Renderer renderer = <Renderer>component_data.renderer
             renderer._unbatch_entity(component_data.entity_id, component_data)
             cdef ModelManager manager = renderer.gameworld.model_manager
+            manager.unregister_entity_with_model(component_data.entity_id, 
+                (<VertexModel>component_data.model)._name)
             cdef VertexModel model = manager._models[model_name]
             component_data.model = <void*>model
+            manager.register_entity_with_model(component_data.entity_id,
+                renderer.system_id, model._name)
             renderer._batch_entity(component_data.entity_id, component_data)
 
 
@@ -487,6 +492,8 @@ cdef class Renderer(StaticMemGameSystem):
             model_key = model_manager.copy_model(model_key, 
                 model_name=copy_name)
         cdef VertexModel model = model_manager._models[model_key]
+        model_manager.register_entity_with_model(entity_id, self.system_id, 
+            model_key)
         self._init_component(component_index, entity_id, render, model, texkey)
 
     def update(self, dt):
@@ -568,6 +575,8 @@ cdef class Renderer(StaticMemGameSystem):
         cdef RenderStruct* pointer = <RenderStruct*>components.get_pointer(
             component_index)
         self._unbatch_entity(pointer.entity_id, pointer)
+        model_manager.unregister_entity_with_model(pointer.entity_id, 
+            (<VertexModel>pointer.model)._name)
         super(Renderer, self).remove_component(component_index)
 
     def unbatch_entity(self, unsigned int entity_id):

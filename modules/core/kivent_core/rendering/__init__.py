@@ -5,3 +5,4 @@ from . import vertmesh
 from . import batching
 from . import vertex_formats
 from . import fixedvbo
+from . import model

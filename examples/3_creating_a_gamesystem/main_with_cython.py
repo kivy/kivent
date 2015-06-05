@@ -13,12 +13,9 @@ from kivent_core.managers.resource_managers import (
 from kivy.properties import StringProperty
 from kivy.factory import Factory
 from velocity_module.velocity import VelocitySystem2D
-
+import cProfile
 
 texture_manager.load_atlas('../assets/background_objects.atlas')
-model_manager.load_textured_rectangle(4, 7., 7., 'star1', 'star1-4')
-model_manager.load_textured_rectangle(4, 10., 10., 'star1', 'star1-4-2')
-
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
@@ -29,19 +26,27 @@ class TestGame(Widget):
 
     def init_game(self):
         self.setup_states()
+        self.load_models()
         self.set_state()
         self.draw_some_stuff()
 
+    def load_models(self):
+        model_manager = self.gameworld.model_manager
+        model_manager.load_textured_rectangle('vertex_format_4f', 7., 7., 
+            'star1', 'star1-4')
+        model_manager.load_textured_rectangle('vertex_format_4f', 10., 10., 
+            'star1', 'star1-4-2')
+
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity
-        for x in range(10000):
+        for x in range(30000):
             pos = randint(0, Window.width), randint(0, Window.height)
-            vert_mesh_key = choice(['star1-4', 'star1-4-2'])
+            model_key = choice(['star1-4', 'star1-4-2'])
             create_dict = {
                 'position': pos,
                 'velocity': (randint(-75, 75), randint(-75, 75)),
                 'renderer': {'texture': 'star1', 
-                    'vert_mesh_key': vert_mesh_key},
+                    'model_key': model_key},
             }
             ent = init_entity(create_dict, ['position', 'velocity', 
                 'renderer'])
@@ -76,4 +81,5 @@ class CythonVelApp(App):
 
 
 if __name__ == '__main__':
-    CythonVelApp().run()
+    #CythonVelApp().run()
+    cProfile.run('CythonVelApp().run()', 'prof.prof')

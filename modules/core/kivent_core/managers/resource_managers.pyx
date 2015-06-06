@@ -295,7 +295,7 @@ cdef class ModelManager:
 
         Args:
             model_name (str): Name of the model to unload.
-            
+
         '''
         del self._models[model_name]
         if model_name in self._model_register:
@@ -435,4 +435,4 @@ cdef class TextureManager:
                 group_list_a(key_index)
 
 texture_manager = TextureManager()
-model_manager = ModelManager()
+

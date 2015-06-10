@@ -57,7 +57,7 @@ cdef class IndexedBatch:
 
     '''
 
-    def __cinit__(self, int tex_key, unsigned int index_count,
+    def __cinit__(self, unsigned int tex_key, unsigned int index_count,
         unsigned int vertex_count, unsigned int frame_count, list vbos,
         GLuint mode, ComponentPointerAggregator aggregator):
         self.frame_data = vbos
@@ -443,7 +443,7 @@ cdef class BatchManager:
         entity_components.free()
         return real_size * self.max_batches
 
-    cdef unsigned int create_batch(self, int tex_key) except -1:
+    cdef unsigned int create_batch(self, unsigned int tex_key) except -1:
         '''Creates a new active batch and draws it to the canvas. If 
         **batch_count** == **max_batches** a MaxBatchException will be raised.
 

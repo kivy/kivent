@@ -391,10 +391,17 @@ cdef class TextureManager:
         return self._sizes[tex_key]
 
     def get_texture(self, tex_key):
+        #handles if batch has no texture
+        if tex_key == <unsigned int>-1:
+            return None
         return self._textures[tex_key]
 
     def get_groupkey_from_texkey(self, tex_key):
-        return self._texkey_index[tex_key]
+        #handles if entity has no texture
+        if tex_key == <unsigned int>-1:
+            return tex_key
+        else:
+            return self._texkey_index[tex_key]
 
     def get_texname_from_texkey(self, tex_key):
         return self._key_index[tex_key]

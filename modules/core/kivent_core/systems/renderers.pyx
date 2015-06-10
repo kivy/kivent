@@ -446,7 +446,7 @@ cdef class Renderer(StaticMemGameSystem):
 
             texture (str): If 'texture' is in args, the appropriate texture 
             will be loaded from managers.resource_managers.texture_manager.
-
+            #change to model_key
             vert_mesh_key (str): If 'vert_mesh_key' is in args, the associated 
             model from managers.resource_managers.model_manager will be loaded.
             Otherwise, it will be assumed we are rendering a sprite and the 
@@ -657,7 +657,7 @@ cdef class Renderer(StaticMemGameSystem):
         '''
         cdef tuple batch_indices
         cdef VertexModel model = <VertexModel>component_data.model
-        cdef int texkey = texture_manager.get_groupkey_from_texkey(
+        cdef unsigned int texkey = texture_manager.get_groupkey_from_texkey(
             component_data.texkey)
         batch_indices = self.batch_manager.batch_entity(entity_id,
             texkey, model._vertex_count, model._index_count)
@@ -769,6 +769,7 @@ cdef class RotateRenderer(Renderer):
                 batch.set_index_count_for_frame(index_offset)
                 mesh_instruction = batch.mesh_instruction
                 mesh_instruction.flag_update()
+
 
 cdef class ColorRenderer(Renderer):
     '''

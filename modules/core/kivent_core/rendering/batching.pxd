@@ -13,7 +13,7 @@ cdef class IndexedBatch:
     cdef list frame_data
     cdef unsigned int current_frame
     cdef unsigned int frame_count
-    cdef int tex_key
+    cdef unsigned int tex_key
     cdef unsigned int batch_id
     cdef GLuint mode
     cdef object mesh_instruction
@@ -60,7 +60,7 @@ cdef class BatchManager:
     cdef str get_mode(self)
     cdef unsigned int get_size(self)
     cdef unsigned int get_size_of_component_pointers(self)
-    cdef unsigned int create_batch(self, int tex_key) except -1
+    cdef unsigned int create_batch(self, unsigned int tex_key) except -1
     cdef void remove_batch(self, unsigned int batch_id)
     cdef IndexedBatch get_batch_with_space(self, int tex_key, 
         unsigned int num_verts, unsigned int num_indices)

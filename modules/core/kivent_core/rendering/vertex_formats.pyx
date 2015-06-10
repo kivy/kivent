@@ -54,7 +54,11 @@ cdef class FormatConfig:
 cdef class VertexFormatRegister:
     '''
     Registers FormatConfigs for vertex_format lists so that we can use the 
-    formats throughout the engine. 
+    formats throughout the engine. A global instance of this class is declared
+    in the module so that you can register new vertex formats in your own code.
+    If you need to register a format, do not instantiate this class instead use
+    kivent_core.rendering.vertex_formats.format_registrar.
+
     A vertex_format list looks like:
 
     .. code-block:: python
@@ -115,6 +119,19 @@ cdef class VertexFormatRegister:
 
     def register_vertex_format(self, str format_name, list format, 
         unsigned int size):
+        '''
+        Call this function to register a new FormatConfig. 
+
+        Args:
+            format_name (str): Name of this format. We will use the name to 
+            reference the format throughout the engine.
+
+            format (list): List of the tuples describing the vertex format.
+
+            size (unsigned int): Result of calling sizeof on the underlying 
+            struct.
+
+        '''
         self._vertex_formats[format_name] = FormatConfig(format_name, format,
             size)
 
@@ -130,8 +147,8 @@ pos_offset = <Py_ssize_t> (<Py_intptr_t>(tmp1.pos) - <Py_intptr_t>(tmp1))
 uvs_offset = <Py_ssize_t> (<Py_intptr_t>(tmp1.uvs) - <Py_intptr_t>(tmp1))
 
 vertex_format_4f = [
-    (b'pos', 2, b'float', pos_offset), 
-    (b'uvs', 2, b'float', uvs_offset),
+    (b'pos', 2, b'float', pos_offset, False), 
+    (b'uvs', 2, b'float', uvs_offset, False),
     ]
 
 format_registrar.register_vertex_format('vertex_format_4f', vertex_format_4f,
@@ -144,10 +161,10 @@ rot_offset = <Py_ssize_t> (<Py_intptr_t>(&tmp2.rot) - <Py_intptr_t>(tmp2))
 center_offset = <Py_ssize_t> (<Py_intptr_t>(tmp2.center) - <Py_intptr_t>(tmp2))
 
 vertex_format_7f = [
-    (b'pos', 2, b'float', pos_offset), 
-    (b'uvs', 2, b'float', uvs_offset),
-    (b'rot', 1, b'float', rot_offset),
-    (b'center', 2, b'float', center_offset),
+    (b'pos', 2, b'float', pos_offset, False), 
+    (b'uvs', 2, b'float', uvs_offset, False),
+    (b'rot', 1, b'float', rot_offset, False),
+    (b'center', 2, b'float', center_offset, False),
     ]
 
 format_registrar.register_vertex_format('vertex_format_7f', vertex_format_7f,
@@ -159,9 +176,9 @@ uvs_offset = <Py_ssize_t> (<Py_intptr_t>(tmp3.uvs) - <Py_intptr_t>(tmp3))
 color_offset = <Py_ssize_t> (<Py_intptr_t>(tmp3.vColor) - <Py_intptr_t>(tmp3))
 
 vertex_format_8f = [
-    (b'pos', 2, b'float', pos_offset), 
-    (b'uvs', 2, b'float', uvs_offset),
-    (b'vColor', 4, b'float', color_offset),
+    (b'pos', 2, b'float', pos_offset, False), 
+    (b'uvs', 2, b'float', uvs_offset, False),
+    (b'vColor', 4, b'float', color_offset, False),
     ]
 
 format_registrar.register_vertex_format('vertex_format_8f', vertex_format_8f,

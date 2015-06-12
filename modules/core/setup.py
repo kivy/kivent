@@ -2,6 +2,7 @@ from os import environ, remove
 from os.path import dirname, join, isfile
 from distutils.core import setup
 from distutils.extension import Extension
+import kivy
 try:
     from Cython.Build import cythonize
     from Cython.Distutils import build_ext
@@ -78,7 +79,8 @@ cmdclass = {}
 def build_extensions_for_modules_cython(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
-        ext = build_ext(module_name, modules[module_name])
+        ext = build_ext(module_name, modules[module_name],
+            include_dirs=kivy.get_includes())
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)
@@ -87,7 +89,8 @@ def build_extensions_for_modules_cython(ext_list, modules):
 def build_extensions_for_modules(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
-        ext = build_ext(module_name, modules[module_name])
+        ext = build_ext(module_name, modules[module_name],
+            include_dirs=kivy.get_includes())
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)

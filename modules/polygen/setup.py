@@ -1,6 +1,7 @@
 from os import environ, remove
 from os.path import dirname, join, isfile
 from distutils.core import setup
+import kivy
 from distutils.extension import Extension
 try:
     from Cython.Build import cythonize
@@ -9,6 +10,7 @@ try:
 except ImportError:
     have_cython = False
 import sys
+
 
 platform = sys.platform
 if platform == 'win32':
@@ -41,7 +43,7 @@ check_for_removal = [
 def build_ext(ext_name, files, include_dirs=[]):
     return Extension(ext_name, files, include_dirs,
         extra_compile_args=[cstdarg, '-ffast-math',],
-        libraries=libraries)
+        libraries=libraries,)
 
 extensions = []
 polygen_extensions = []
@@ -50,7 +52,8 @@ cmdclass = {}
 def build_extensions_for_modules_cython(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
-        ext = build_ext(module_name, modules[module_name])
+        ext = build_ext(module_name, modules[module_name], 
+            include_dirs=kivy.get_includes())
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)
@@ -59,7 +62,8 @@ def build_extensions_for_modules_cython(ext_list, modules):
 def build_extensions_for_modules(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
-        ext = build_ext(module_name, modules[module_name])
+        ext = build_ext(module_name, modules[module_name], 
+            include_dirs=kivy.get_includes())
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)
@@ -75,7 +79,6 @@ if have_cython:
 else:
     polygen_extensions = build_extensions_for_modules(polygen_extensions, 
         polygen_modules_c)
-
 
 
 setup(

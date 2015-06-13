@@ -2,7 +2,6 @@
 # cython: embedsignature=True
 from kivy.graphics.instructions cimport VertexInstruction
 from kivent_core.rendering.batching cimport IndexedBatch
-from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 include "opcodes.pxi"
 include "common.pxi"
 

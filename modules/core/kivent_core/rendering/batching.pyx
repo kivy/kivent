@@ -204,7 +204,9 @@ cdef class IndexedBatch:
         cdef FixedFrameData frame_data = self.get_current_vbo()
         cdef FixedVBO indices = frame_data.index_vbo
         cdef FixedVBO vertices = frame_data.vertex_vbo
+        gl_log_debug_message('IndexedBatch.draw_frame-vertices bind')
         vertices.bind()
+        gl_log_debug_message('IndexedBatch.draw_frame-indices bind')
         indices.bind()
         #commentout for sphinx
         glDrawElements(self.mode, indices.data_size // sizeof(GLushort), 
@@ -453,6 +455,7 @@ cdef class BatchManager:
         Return:
             unsigned int: The index of this batch in the batches list.
         '''
+        gl_log_debug_message('BatchManager.create_batch-pre create batch')
         if self.batch_count == self.max_batches:
             raise MaxBatchException(
                 'Cannot allocate another batch: Max batches: ', 
@@ -471,9 +474,9 @@ cdef class BatchManager:
             batch = self.batches[new_index]
             cmesh = batch.mesh_instruction
         else:
-            batch = IndexedBatch(tex_key, 
-            self.index_slots_per_block, self.slots_per_block, self.frame_count, 
-            self.get_vbos(), self.mode, entity_components)
+            batch = IndexedBatch(
+                tex_key, self.index_slots_per_block, self.slots_per_block, 
+                self.frame_count, self.get_vbos(), self.mode, entity_components)
             self.batches.append(batch)
             new_index = self.batch_count
             self.batch_count += 1

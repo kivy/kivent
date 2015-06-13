@@ -3,12 +3,12 @@ import json
 from os import path
 from kivy.core.image import Image as CoreImage
 from kivent_core.rendering.vertmesh cimport VertMesh
-from kivent_core.rendering.model cimport VertexModel
+from kivent_core.rendering.model cimport VertexModel, Vertex
 from kivent_core.rendering.vertex_formats cimport format_registrar, FormatConfig
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.logger import Logger
-
+import cPickle as pickle
 
 cdef class ModelManager:
     '''
@@ -113,6 +113,61 @@ cdef class ModelManager:
         '''
         del self._model_register[model_name][entity_id]
 
+    def pickle_model(self, str model_name, str directory_name):
+        '''
+        Saves a model to disk using cPickle. Data will be stored as a 
+        dictionary containing keys 'vertices', 'indices', and 'format_name'.
+
+        The name of the file will be os.path.join(directory_name, 
+        model_name + '.kem').
+
+        Args:
+            model_name (str): The name of the model to save.
+
+            directory_name (str): The directory where you want to save the 
+            model.
+
+        '''
+        cdef VertexModel model = self._models[model_name]
+        cdef list indices = model.indices
+        cdef list vertices = model.vertices
+        cdef dict vert_dict = {}
+        cdef FormatConfig format_config = model._format_config
+        cdef dict format_dict = format_config._format_dict
+        cdef Vertex vert
+        for index, vert in enumerate(vertices):
+            vert_dict[index] = vert_data = {}
+            for key in format_dict:
+                vert_data[key] = getattr(vert, key)
+        save_dict = {
+            'vertices': vert_dict,
+            'indices': indices,
+            'format_name': format_config._name
+        }
+        output = open(path.join(directory_name, model_name + '.kem'), 'wb')
+        pickle.dump(save_dict, output)
+        output.close()
+
+    def load_model_from_pickle(self, str file_to_load):
+        '''
+        Loads a previously pickled model. 
+
+        Args:
+            file_to_load (str): Name of the file to load.
+            
+        '''
+        model_name = path.splitext(path.basename(file_to_load))[0]
+        pkl_file = open(file_to_load, 'rb')
+        data = pickle.load(pkl_file)
+        format_name = data['format_name']
+        indices = data['indices']
+        index_count = len(indices)
+        vertices = data['vertices']
+        vertex_count = max(vertices) + 1
+        pkl_file.close()
+        return self.load_model(format_name, vertex_count, index_count, 
+            model_name, indices=indices, vertices=vertices)
+
     def allocate(self, Buffer master_buffer, dict formats_to_allocate):
         '''
         Allocates space for loading models. Typically called as part of 
@@ -172,7 +227,8 @@ cdef class ModelManager:
         return total_count
 
     def load_model(self, str format_name, unsigned int vertex_count, 
-        unsigned int index_count, str name, do_copy=False):
+        unsigned int index_count, str name, do_copy=False, indices=None,
+        vertices=None):
         '''
         Loads a new VertexModel, and allocates space in the MemoryBlock for its 
         vertex format to hold the model. The model will be stored in the 
@@ -204,6 +260,26 @@ cdef class ModelManager:
             do_copy (bool): Defaults False, determines whether to copy the model 
             if we find one with its name is already loaded.
 
+            indices (list): If a list of indices is provided, the data will be 
+            loaded into your model. Make sure the len(indices) == 
+            **index_count**.
+
+            vertices (dict): Vertex data can be supplied in the form of a 
+            dictionary containing key is the index of vertex, and the value at 
+            the key is a dict with key vertex attribute, 
+            value at that attribute.
+
+            For instance:
+
+            .. code-block:: python
+
+                vertices = {
+                    1: {'pos': (-5., -5.), uvs: (0., 0.)},
+                    2: {'pos': (-5., 5.), uvs: (0., 1.)},
+                    3: {'pos': (5., 5.), uvs: (1., 1.)},
+                    4: {'pos': (5., -5.), uvs: (1., 0.)},
+                }
+
         Return:
             str: Returns the actual name the model has been stored under.
 
@@ -224,6 +300,10 @@ cdef class ModelManager:
         cdef VertexModel model = VertexModel(vertex_count, index_count, 
             format_config, index_block, vertex_block, name)
         self._models[name] = model
+        if vertices is not None:
+            model.vertices = vertices
+        if indices is not None:
+            model.indices = indices
         return name
 
     def copy_model(self, str model_to_copy, str model_name=None):

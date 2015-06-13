@@ -241,7 +241,19 @@ cdef class VertexModel:
         **vertices** (list): Returns a list of Vertex objects for every vertex 
         in the model. Be careful about keeping the results around. You need to 
         retrieve a new copy of the list if you for instance change 
-        **vertex_count**.
+        **vertex_count**. You can supply a dict of key: index of vertex, value 
+        dict of attribute, value pairs in order to set all vertices at once.
+
+        For instance:
+
+            .. code-block:: python
+
+                model.vertices = {
+                    1: {'pos': (-5., -5.), uvs: (0., 0.)},
+                    2: {'pos': (-5., 5.), uvs: (0., 1.)},
+                    3: {'pos': (5., 5.), uvs: (1., 1.)},
+                    4: {'pos': (5., -5.), uvs: (1., 0.)},
+                }
 
         **indices** (list): Returns a list of unsigned shorts specifying the 
         indices for this model. This is a copy of the actual data, do not 
@@ -250,6 +262,7 @@ cdef class VertexModel:
             .. code-block:: python
 
                 vertex_model.indices = [new index data]
+                
     '''
     
     def __cinit__(self, unsigned int vert_count, unsigned int index_count,
@@ -484,6 +497,18 @@ cdef class VertexModel:
                 r_append(self[i])
             return return_list
 
+        def __set__(self, dict vert_dict):
+            cdef int vert_count = max(vert_dict)
+            cdef int i 
+            cdef dict vertex_data
+            if vert_count + 1 != self._vertex_count:
+                raise Exception("Provided data doesn't match internal size")
+            for i in range(vert_count + 1):
+                vertex_data = vert_dict[i]
+                vertex = self[i]
+                for key in vertex_data:
+                    setattr(vertex, key, vertex_data[key])
+
     property format_config:
 
         def __get__(self):
@@ -510,4 +535,3 @@ cdef class VertexModel:
             cdef GLushort* indices = <GLushort*>self.indices_block.data
             for i from 0 <= i < index_count:
                 indices[i] = <GLushort>new_indices[i]
-

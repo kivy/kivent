@@ -36,6 +36,7 @@ from kivent_core.systems.staticmemgamesystem cimport ComponentPointerAggregator
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivy.properties import ObjectProperty, NumericProperty
 from kivy.clock import Clock
+from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 
 
 cdef class RenderComponent(MemComponent):
@@ -325,7 +326,7 @@ cdef class Renderer(StaticMemGameSystem):
 
     
     def __init__(self, **kwargs):
-        self.canvas = RenderContext(use_parent_projection=True)
+        self.canvas = RenderContext(use_parent_projection=True, nocompiler=True)
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
         super(Renderer, self).__init__(**kwargs)
@@ -333,7 +334,7 @@ cdef class Renderer(StaticMemGameSystem):
             Callback(self._set_blend_func)
         with self.canvas.after:
             Callback(self._reset_blend_func)
-        self.update_trigger = Clock.create_trigger(self.update)        
+        self.update_trigger = Clock.create_trigger(self.update)
 
     def _set_blend_func(self, instruction):
         '''
@@ -342,6 +343,7 @@ cdef class Renderer(StaticMemGameSystem):
         and **blend_factor_dest** properties.
         '''
         glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
+        gl_log_debug_message('Renderer._set_blend_func-glBlendFunc')
 
     def _reset_blend_func(self, instruction):
         '''
@@ -351,6 +353,7 @@ cdef class Renderer(StaticMemGameSystem):
         '''
         glBlendFunc(self.reset_blend_factor_source, 
             self.reset_blend_factor_dest)
+        gl_log_debug_message('Renderer._reset_blend_func-glBlendFunc')
 
     def _update(self, dt):
         '''
@@ -366,7 +369,7 @@ cdef class Renderer(StaticMemGameSystem):
         **shader_source** property is set
         '''
         self.canvas.shader.source = value
-
+        
     def clear_component(self, unsigned int component_index):
         cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef RenderStruct* pointer = <RenderStruct*>memory_zone.get_pointer(

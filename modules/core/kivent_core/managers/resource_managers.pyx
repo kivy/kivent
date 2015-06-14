@@ -208,8 +208,8 @@ cdef class ModelManager:
         for format in formats_to_allocate:
             vertex_size, index_size = formats_to_allocate[format]
             format_config = vertex_formats[format]
-            indices_block = MemoryBlock(self.allocation_size//2, 1, 1)
-            vertices_block = MemoryBlock(self.allocation_size//2, 1, 1)
+            indices_block = MemoryBlock(index_size, 1, 1)
+            vertices_block = MemoryBlock(vertex_size, 1, 1)
             vertices_block.allocate_memory_with_buffer(master_buffer)
             indices_block.allocate_memory_with_buffer(master_buffer)
             memory_blocks[format] = {'indices_block': indices_block,

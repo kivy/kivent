@@ -364,10 +364,12 @@ cdef class BatchManager:
         self.batch_block = batch_block = MemoryBlock(block_count*size_in_bytes, 
             size_in_bytes, 1)
         Logger.info('KivEnt: Batches for canvas: {canvas} will have ' 
-            '{vert_slots_per_block} verts and VBO will be {vbo_size} in KiB'
+            '{vert_slots_per_block} verts and {ind_slots} indices.VBO will be'
+            ' {vbo_size} in KiB'
             ' per frame with {count} total vbos, an estimated {ent_per_batch}' 
             ' enities fit in each batch with {verts} verts per entity'.format(
-            canvas=str(canvas), vert_slots_per_block=vert_slots_per_block, 
+            canvas=str(canvas), vert_slots_per_block=vert_slots_per_block,
+            ind_slots=index_slots_per_block, 
             vbo_size=vbo_size_in_kb, count=block_count, 
             ent_per_batch=ent_per_batch, verts=smallest_vertex_count))
         batch_block.allocate_memory_with_buffer(master_buffer)

@@ -8,6 +8,7 @@ from math import pi, cos, sin
 from random import random, randint
 from kivent_core.rendering.model import VertexModel
 from kivy.graphics.tesselator import Tesselator
+from generate_triangulated_polygons import triangulate_regular_polygon
 
 
 class BackgroundGenerator(object):
@@ -206,14 +207,40 @@ class TestGame(Widget):
             callback=self.init_game)
         
 
+    def test_triangulate_polygon(self, sides, radius, area, name):
+        t = triangulate_regular_polygon(sides,radius, (0., 0.), area)
+        print(sides, radius, area, t['ind_count'], t['vert_count'])
+        model_manager = self.gameworld.model_manager
+        model_name = model_manager.load_model('vertex_format_2f4ub', 
+            t['vert_count'], t['ind_count'], name, 
+            indices=t['indices'], vertices=t['vertices'])
+        
+        return model_name
+
+    def generate_and_save_various_models(self, radii=[], areas=[], sides=40):
+        model_manager = self.gameworld.model_manager
+        for radius in radii:
+            for area in areas:
+                name = 'circle_' + str(int(radius)) + '_' + area
+                model_name = self.test_triangulate_polygon(sides, radius, 
+                    area, name)
+                model_manager.pickle_model(model_name, 'triangulated_models')
+
+    def pregenerate_models(self):
+        self.generate_and_save_various_models(radii=[100., 200.,],
+            areas=['5', '10', '20'])
+        self.generate_and_save_various_models(radii=[400.], 
+            areas=['10', '20', '30'], sides=60)
+        self.generate_and_save_various_models(radii=[800.], 
+            areas=['25', '35', '50'], sides=100)
 
     def init_game(self):
         self.setup_states()
         self.set_state()
-        # model = self.background_system.draw_regular_polygon(10, 50., 
-        #     [100, 125, 255, 155], (0., 0.), 'test')
+
+        self.pregenerate_models()
         model_name = self.gameworld.model_manager.load_model_from_pickle(
-            'assets/test.kem')
+             'triangulated_models/circle_800_35.kem')
         create_dict = {
             'position': (150., 150.),
             'poly_renderer': {'model_key': model_name}
@@ -221,6 +248,11 @@ class TestGame(Widget):
         self.gameworld.init_entity(create_dict, ['position', 'poly_renderer'])
         create_dict = {
             'position': (350., 350.),
+            'poly_renderer': {'model_key': model_name}
+        }
+        self.gameworld.init_entity(create_dict, ['position', 'poly_renderer'])
+        create_dict = {
+            'position': (550., 550.),
             'poly_renderer': {'model_key': model_name}
         }
         self.gameworld.init_entity(create_dict, ['position', 'poly_renderer'])

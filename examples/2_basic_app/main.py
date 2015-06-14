@@ -7,13 +7,11 @@ import kivent_core
 from kivent_core.gameworld import GameWorld
 from kivent_core.systems.position_systems import PositionSystem2D
 from kivent_core.systems.renderers import Renderer
-from kivent_core.managers.resource_managers import (texture_manager, 
-    model_manager)
+from kivent_core.managers.resource_managers import texture_manager
 from kivy.properties import StringProperty
 
 texture_manager.load_atlas('../assets/background_objects.atlas')
-model_manager.load_textured_rectangle(4, 7., 7., 'star1', 'star1-4')
-model_manager.load_textured_rectangle(4, 10., 10., 'star1', 'star1-4-2')
+
 
 
 class TestGame(Widget):
@@ -25,18 +23,26 @@ class TestGame(Widget):
 
     def init_game(self):
         self.setup_states()
+        self.load_models()
         self.set_state()
         self.draw_some_stuff()
+
+    def load_models(self):
+        model_manager = self.gameworld.model_manager
+        model_manager.load_textured_rectangle('vertex_format_4f', 7., 7., 
+            'star1', 'star1-4')
+        model_manager.load_textured_rectangle('vertex_format_4f', 10., 10., 
+            'star1', 'star1-4-2')
 
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity
         for x in range(5000):
             pos = randint(0, Window.width), randint(0, Window.height)
-            vert_mesh_key = choice(['star1-4', 'star1-4-2'])
+            model_key = choice(['star1-4', 'star1-4-2'])
             create_dict = {
                 'position': pos,
                 'renderer': {'texture': 'star1', 
-                    'vert_mesh_key': vert_mesh_key},
+                    'model_key': model_key},
             }
             ent = init_entity(create_dict, ['position', 'renderer'])
 

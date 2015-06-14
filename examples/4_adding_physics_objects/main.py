@@ -43,7 +43,7 @@ class TestGame(Widget):
         for x in range(100):
             pos = (randint(0, w), randint(0, h))
             ent_id = create_asteroid(pos)
-            Clock.schedule_once(partial(destroy_ent, ent_id), delete_time)
+            #Clock.schedule_once(partial(destroy_ent, ent_id), delete_time)
         self.app.count += 100
 
     def create_asteroid(self, pos):

@@ -1,0 +1,35 @@
+#:kivy 1.8.0
+#:import os os
+#:import main __main__
+TestGame:
+
+<TestGame>:
+    gameworld: gameworld
+    GameWorld:
+        id: gameworld
+        gamescreenmanager: gamescreenmanager
+        size_of_gameworld: 100*1024
+        zones: {'general': 10000}
+        PositionSystem2D:
+            gameworld: gameworld
+            system_id: 'position'
+            zones: ['general']
+        ColorPolyRenderer:
+            gameworld: gameworld
+            shader_source: os.path.join(os.path.dirname(main.__file__), 'assets', 'shaders', 'poscolorshader.glsl')
+            zones: ['general']
+            frame_count: 3
+    GameScreenManager:
+        id: gamescreenmanager
+        size: root.size
+        pos: root.pos
+        gameworld: gameworld
+
+<GameScreenManager>:
+    MainScreen:
+        id: main_screen
+
+<MainScreen@GameScreen>:
+    name: 'main'
+    FloatLayout:
+

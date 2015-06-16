@@ -148,7 +148,7 @@ cdef class ModelManager:
         pickle.dump(save_dict, output)
         output.close()
 
-    def load_model_from_pickle(self, str file_to_load):
+    def load_model_from_pickle(self, str file_to_load, str model_name=None):
         '''
         Loads a previously pickled model. 
 
@@ -156,7 +156,8 @@ cdef class ModelManager:
             file_to_load (str): Name of the file to load.
             
         '''
-        model_name = path.splitext(path.basename(file_to_load))[0]
+        if model_name is None:
+            model_name = path.splitext(path.basename(file_to_load))[0]
         pkl_file = open(file_to_load, 'rb')
         data = pickle.load(pkl_file)
         format_name = data['format_name']
@@ -291,8 +292,10 @@ cdef class ModelManager:
         elif name in self._key_counts and not do_copy:
             return name
         elif name in self._key_counts and do_copy:
+            old_name = name
             name = name + '_' + str(self._key_counts[name])
-            self._key_counts[name] += 1
+            self._key_counts[old_name] += 1
+            self._key_counts[name] = 0
         cdef MemoryBlock vertex_block = self.memory_blocks[format_name][
             'vertices_block']
         cdef MemoryBlock index_block = self.memory_blocks[format_name][

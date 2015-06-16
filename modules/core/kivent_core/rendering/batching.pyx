@@ -36,8 +36,8 @@ cdef class IndexedBatch:
         **frame_count** (unsigned int): Number of FixedFrameData objects 
         in the **frame_data** list. The number of buffers to use.
 
-        **tex_key** (int): Identifier for the texture resource that will 
-        be used when drawing the entities in this batch. All entities must 
+        **tex_key** (unsigned int): Identifier for the texture resource that 
+        will be used when drawing the entities in this batch. All entities must 
         share the same texture.
 
         **batch_id** (unsigned int): The identifier for this batch, will be 
@@ -457,7 +457,6 @@ cdef class BatchManager:
         Return:
             unsigned int: The index of this batch in the batches list.
         '''
-        gl_log_debug_message('BatchManager.create_batch-pre create batch')
         if self.batch_count == self.max_batches:
             raise MaxBatchException(
                 'Cannot allocate another batch: Max batches: ', 
@@ -506,18 +505,19 @@ cdef class BatchManager:
             **create_batch**.
         '''
         cdef IndexedBatch batch = self.batches[batch_id]
-        cdef int tex_key = batch.tex_key
+        cdef unsigned int tex_key = batch.tex_key
         self.batch_groups[tex_key].remove(batch)
         self.canvas.remove(batch.mesh_instruction)
         self.free_batches.append(batch_id)
 
-    cdef IndexedBatch get_batch_with_space(self, int tex_key, 
+    cdef IndexedBatch get_batch_with_space(self, unsigned int tex_key, 
         unsigned int num_verts, unsigned int num_indices):
         '''Finds a batch with enough room to fit this data, or creates a new 
         one.
 
         Args:
-            tex_key (int): The identity key of the texture for the data. 
+            tex_key (unsigned int): The identity key of the texture for the 
+            data. 
 
             num_verts (unsigned int): The number of vertices space is needed 
             for.
@@ -541,13 +541,14 @@ cdef class BatchManager:
                 return self.batches[self.create_batch(tex_key)]
 
     cdef tuple batch_entity(self, unsigned int entity_id, 
-        int tex_key, unsigned int num_verts, unsigned int num_indices):
+        unsigned int tex_key, unsigned int num_verts, unsigned int num_indices):
         '''Batches an entity.
         Args:
             entity_id (unsigned int): The entity_id of the entity to be 
             batched.
 
-            tex_key (int): The identity key of the texture for the entity.
+            tex_key (unsigned int): The identity key of the texture for the 
+            entity.
 
             num_verts (unsigned int): The number of vertices in the entity.
 

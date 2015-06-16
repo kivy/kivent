@@ -62,9 +62,9 @@ cdef class BatchManager:
     cdef unsigned int get_size_of_component_pointers(self)
     cdef unsigned int create_batch(self, unsigned int tex_key) except -1
     cdef void remove_batch(self, unsigned int batch_id)
-    cdef IndexedBatch get_batch_with_space(self, int tex_key, 
+    cdef IndexedBatch get_batch_with_space(self, unsigned int tex_key, 
         unsigned int num_verts, unsigned int num_indices)
-    cdef tuple batch_entity(self, unsigned int entity_id, int tex_key,
+    cdef tuple batch_entity(self, unsigned int entity_id, unsigned int tex_key,
         unsigned int num_verts, unsigned int num_indices)
     cdef bint unbatch_entity(self, unsigned int entity_id, 
         unsigned int batch_id, unsigned int num_verts, 

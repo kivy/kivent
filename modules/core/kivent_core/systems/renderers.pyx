@@ -37,6 +37,7 @@ from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivy.properties import ObjectProperty, NumericProperty
 from kivy.clock import Clock
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
+from functools import partial
 
 
 cdef class RenderComponent(MemComponent):
@@ -309,6 +310,7 @@ cdef class Renderer(StaticMemGameSystem):
     system_id = StringProperty('renderer')
     updateable = BooleanProperty(True)
     renderable = BooleanProperty(True)
+    static_rendering = BooleanProperty(False)
     max_batches = NumericProperty(20)
     size_of_batches = NumericProperty(256)
     vertex_format_size = NumericProperty(sizeof(VertexFormat4F))
@@ -334,7 +336,7 @@ cdef class Renderer(StaticMemGameSystem):
             Callback(self._set_blend_func)
         with self.canvas.after:
             Callback(self._reset_blend_func)
-        self.update_trigger = Clock.create_trigger(self.update)
+        self.update_trigger = Clock.create_trigger(partial(self.update, True))
 
     def _set_blend_func(self, instruction):
         '''
@@ -361,7 +363,7 @@ cdef class Renderer(StaticMemGameSystem):
         the basic GameSystem logic here which accounts appropriately for
         dt.
         '''
-        self.update(dt)
+        self.update(False, dt)
 
     def on_shader_source(self, instance, value):
         '''
@@ -498,7 +500,7 @@ cdef class Renderer(StaticMemGameSystem):
             model_key)
         self._init_component(component_index, entity_id, render, model, texkey)
 
-    def update(self, dt):
+    def update(self, force_update, dt):
         '''
         Update function where all drawing of entities is performed. 
         Override this method if you would like to create a renderer with 
@@ -532,43 +534,46 @@ cdef class Renderer(StaticMemGameSystem):
         cdef CMesh mesh_instruction
         cdef MemoryBlock components_block
         cdef void** component_data
- 
+        cdef bint static_rendering = self.static_rendering
+
         for batch_key in batch_groups:
             batches = batch_groups[batch_key]
             for batch in batches:
-                entity_components = batch.entity_components
-                components_block = entity_components.memory_block
-                used = components_block.used_count
-                component_count = entity_components.count
-                component_data = <void**>components_block.data
-                frame_data = <VertexFormat4F*>batch.get_vbo_frame_to_draw()
-                frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
-                index_offset = 0
-                for i in range(used):
-                    real_index = i * component_count
-                    if component_data[real_index] == NULL:
-                        continue
-                    render_comp = <RenderStruct*>component_data[real_index+0]
-                    vert_offset = render_comp.vert_index
-                    model = <VertexModel>render_comp.model
-                    if render_comp.render:
-                        pos_comp = <PositionStruct2D*>component_data[
-                            real_index+1]
-                        model_vertices = <VertexFormat4F*>(
-                            model.vertices_block.data)
-                        model_indices = <GLushort*>model.indices_block.data
-                        for i in range(model._index_count):
-                            frame_indices[i+index_offset] = (
-                                model_indices[i] + vert_offset)
-                        for n in range(model._vertex_count):
-                            vertex = &frame_data[n + vert_offset]
-                            model_vertex = model_vertices[n]
-                            vertex.pos[0] = pos_comp.x + model_vertex.pos[0]
-                            vertex.pos[1] = pos_comp.y + model_vertex.pos[1]
-                            vertex.uvs[0] = model_vertex.uvs[0]
-                            vertex.uvs[1] = model_vertex.uvs[1]
-                        index_offset += model._index_count
-                batch.set_index_count_for_frame(index_offset)
+                if not static_rendering or force_update:
+                    entity_components = batch.entity_components
+                    components_block = entity_components.memory_block
+                    used = components_block.used_count
+                    component_count = entity_components.count
+                    component_data = <void**>components_block.data
+                    frame_data = <VertexFormat4F*>batch.get_vbo_frame_to_draw()
+                    frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
+                    index_offset = 0
+                    for i in range(used):
+                        real_index = i * component_count
+                        if component_data[real_index] == NULL:
+                            continue
+                        render_comp = <RenderStruct*>component_data[
+                            real_index+0]
+                        vert_offset = render_comp.vert_index
+                        model = <VertexModel>render_comp.model
+                        if render_comp.render:
+                            pos_comp = <PositionStruct2D*>component_data[
+                                real_index+1]
+                            model_vertices = <VertexFormat4F*>(
+                                model.vertices_block.data)
+                            model_indices = <GLushort*>model.indices_block.data
+                            for i in range(model._index_count):
+                                frame_indices[i+index_offset] = (
+                                    model_indices[i] + vert_offset)
+                            for n in range(model._vertex_count):
+                                vertex = &frame_data[n + vert_offset]
+                                model_vertex = model_vertices[n]
+                                vertex.pos[0] = pos_comp.x + model_vertex.pos[0]
+                                vertex.pos[1] = pos_comp.y + model_vertex.pos[1]
+                                vertex.uvs[0] = model_vertex.uvs[0]
+                                vertex.uvs[1] = model_vertex.uvs[1]
+                            index_offset += model._index_count
+                    batch.set_index_count_for_frame(index_offset)
                 mesh_instruction = batch.mesh_instruction
                 mesh_instruction.flag_update()
  
@@ -621,7 +626,7 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.batch_id = -1
         component_data.vert_index = -1
         component_data.ind_index = -1
-        if not self.updateable:
+        if not self.updateable or self.static_rendering:
             self.update_trigger()
         return component_data
 
@@ -667,7 +672,7 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.batch_id = batch_indices[0]
         component_data.vert_index = batch_indices[1]
         component_data.ind_index = batch_indices[2]
-        if not self.updateable:
+        if not self.updateable or self.static_rendering:
             self.update_trigger()
         return component_data
 
@@ -707,7 +712,7 @@ cdef class RotateRenderer(Renderer):
         return <void*>self.batch_manager
 
 
-    def update(self, dt):
+    def update(self, force_update, dt):
         cdef IndexedBatch batch
         cdef list batches
         cdef unsigned int batch_key
@@ -729,47 +734,51 @@ cdef class RotateRenderer(Renderer):
         cdef CMesh mesh_instruction
         cdef MemoryBlock components_block
         cdef void** component_data
- 
+        cdef bint static_rendering = self.static_rendering
+
         for batch_key in batch_groups:
             batches = batch_groups[batch_key]
             for batch in batches:
-                entity_components = batch.entity_components
-                components_block = entity_components.memory_block
-                used = components_block.used_count
-                component_count = entity_components.count
-                component_data = <void**>components_block.data
-                frame_data = <VertexFormat7F*>batch.get_vbo_frame_to_draw()
-                frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
-                index_offset = 0
-                for i in range(used):
-                    real_index = i * component_count
-                    if component_data[real_index] == NULL:
-                        continue
-                    render_comp = <RenderStruct*>component_data[real_index+0]
-                    vert_offset = render_comp.vert_index
-                    model = <VertexModel>render_comp.model
-                    if render_comp.render:
-                        pos_comp = <PositionStruct2D*>component_data[
-                            real_index+1]
-                        rot_comp = <RotateStruct2D*>component_data[real_index+2]
-                        model_vertices = <VertexFormat4F*>(
-                            model.vertices_block.data)
-                        model_indices = <GLushort*>model.indices_block.data
-                        for i in range(model._index_count):
-                            frame_indices[i+index_offset] = (
-                                model_indices[i] + vert_offset)
-                        for n in range(model._vertex_count):
-                            vertex = &frame_data[n + vert_offset]
-                            model_vertex = model_vertices[n]
-                            vertex.pos[0] = model_vertex.pos[0]
-                            vertex.pos[1] = model_vertex.pos[1]
-                            vertex.uvs[0] = model_vertex.uvs[0]
-                            vertex.uvs[1] = model_vertex.uvs[1]
-                            vertex.rot = rot_comp.r
-                            vertex.center[0] = pos_comp.x
-                            vertex.center[1] = pos_comp.y
-                        index_offset += model._index_count
-                batch.set_index_count_for_frame(index_offset)
+                if not static_rendering or force_update:
+                    entity_components = batch.entity_components
+                    components_block = entity_components.memory_block
+                    used = components_block.used_count
+                    component_count = entity_components.count
+                    component_data = <void**>components_block.data
+                    frame_data = <VertexFormat7F*>batch.get_vbo_frame_to_draw()
+                    frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
+                    index_offset = 0
+                    for i in range(used):
+                        real_index = i * component_count
+                        if component_data[real_index] == NULL:
+                            continue
+                        render_comp = <RenderStruct*>component_data[
+                            real_index+0]
+                        vert_offset = render_comp.vert_index
+                        model = <VertexModel>render_comp.model
+                        if render_comp.render:
+                            pos_comp = <PositionStruct2D*>component_data[
+                                real_index+1]
+                            rot_comp = <RotateStruct2D*>component_data[
+                                real_index+2]
+                            model_vertices = <VertexFormat4F*>(
+                                model.vertices_block.data)
+                            model_indices = <GLushort*>model.indices_block.data
+                            for i in range(model._index_count):
+                                frame_indices[i+index_offset] = (
+                                    model_indices[i] + vert_offset)
+                            for n in range(model._vertex_count):
+                                vertex = &frame_data[n + vert_offset]
+                                model_vertex = model_vertices[n]
+                                vertex.pos[0] = model_vertex.pos[0]
+                                vertex.pos[1] = model_vertex.pos[1]
+                                vertex.uvs[0] = model_vertex.uvs[0]
+                                vertex.uvs[1] = model_vertex.uvs[1]
+                                vertex.rot = rot_comp.r
+                                vertex.center[0] = pos_comp.x
+                                vertex.center[1] = pos_comp.y
+                            index_offset += model._index_count
+                    batch.set_index_count_for_frame(index_offset)
                 mesh_instruction = batch.mesh_instruction
                 mesh_instruction.flag_update()
 
@@ -804,7 +813,7 @@ cdef class ColorRenderer(Renderer):
         return <void*>self.batch_manager
 
 
-    def update(self, dt):
+    def update(self, force_update, dt):
         cdef IndexedBatch batch
         cdef list batches
         cdef unsigned int batch_key
@@ -826,48 +835,52 @@ cdef class ColorRenderer(Renderer):
         cdef CMesh mesh_instruction
         cdef MemoryBlock components_block
         cdef void** component_data
+        cdef bint static_rendering = self.static_rendering
  
         for batch_key in batch_groups:
             batches = batch_groups[batch_key]
             for batch in batches:
-                entity_components = batch.entity_components
-                components_block = entity_components.memory_block
-                used = components_block.used_count
-                component_count = entity_components.count
-                component_data = <void**>components_block.data
-                frame_data = <VertexFormat8F*>batch.get_vbo_frame_to_draw()
-                frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
-                index_offset = 0
-                for i in range(used):
-                    real_index = i * component_count
-                    if component_data[real_index] == NULL:
-                        continue
-                    render_comp = <RenderStruct*>component_data[real_index+0]
-                    vert_offset = render_comp.vert_index
-                    model = <VertexModel>render_comp.model
-                    if render_comp.render:
-                        pos_comp = <PositionStruct2D*>component_data[
-                            real_index+1]
-                        color_comp = <ColorStruct*>component_data[real_index+2]
-                        model_vertices = <VertexFormat4F*>(
-                            model.vertices_block.data)
-                        model_indices = <GLushort*>model.indices_block.data
-                        for i in range(model._index_count):
-                            frame_indices[i+index_offset] = (
-                                model_indices[i] + vert_offset)
-                        for n in range(model._vertex_count):
-                            vertex = &frame_data[n + vert_offset]
-                            model_vertex = model_vertices[n]
-                            vertex.pos[0] = pos_comp.x + model_vertex.pos[0]
-                            vertex.pos[1] = pos_comp.y + model_vertex.pos[1]
-                            vertex.uvs[0] = model_vertex.uvs[0]
-                            vertex.uvs[1] = model_vertex.uvs[1]
-                            vertex.vColor[0] = color_comp.r
-                            vertex.vColor[1] = color_comp.g
-                            vertex.vColor[2] = color_comp.b
-                            vertex.vColor[3] = color_comp.a
-                        index_offset += model._index_count
-                batch.set_index_count_for_frame(index_offset)
+                if not static_rendering or force_update:
+                    entity_components = batch.entity_components
+                    components_block = entity_components.memory_block
+                    used = components_block.used_count
+                    component_count = entity_components.count
+                    component_data = <void**>components_block.data
+                    frame_data = <VertexFormat8F*>batch.get_vbo_frame_to_draw()
+                    frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
+                    index_offset = 0
+                    for i in range(used):
+                        real_index = i * component_count
+                        if component_data[real_index] == NULL:
+                            continue
+                        render_comp = <RenderStruct*>component_data[
+                            real_index+0]
+                        vert_offset = render_comp.vert_index
+                        model = <VertexModel>render_comp.model
+                        if render_comp.render:
+                            pos_comp = <PositionStruct2D*>component_data[
+                                real_index+1]
+                            color_comp = <ColorStruct*>component_data[
+                                real_index+2]
+                            model_vertices = <VertexFormat4F*>(
+                                model.vertices_block.data)
+                            model_indices = <GLushort*>model.indices_block.data
+                            for i in range(model._index_count):
+                                frame_indices[i+index_offset] = (
+                                    model_indices[i] + vert_offset)
+                            for n in range(model._vertex_count):
+                                vertex = &frame_data[n + vert_offset]
+                                model_vertex = model_vertices[n]
+                                vertex.pos[0] = pos_comp.x + model_vertex.pos[0]
+                                vertex.pos[1] = pos_comp.y + model_vertex.pos[1]
+                                vertex.uvs[0] = model_vertex.uvs[0]
+                                vertex.uvs[1] = model_vertex.uvs[1]
+                                vertex.vColor[0] = color_comp.r
+                                vertex.vColor[1] = color_comp.g
+                                vertex.vColor[2] = color_comp.b
+                                vertex.vColor[3] = color_comp.a
+                            index_offset += model._index_count
+                    batch.set_index_count_for_frame(index_offset)
                 mesh_instruction = batch.mesh_instruction
                 mesh_instruction.flag_update()
 

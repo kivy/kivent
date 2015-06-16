@@ -10,17 +10,125 @@ TestGame:
         gamescreenmanager: gamescreenmanager
         size_of_gameworld: 500*1024
         zones: {'general': 10000}
-        model_format_allocations: {'vertex_format_2f4ub': (100*1024*1024, 100*1024*1024)}
+        model_format_allocations: {'vertex_format_2f4ub': (10000*1024, 10000*1024)}
         PositionSystem2D:
             gameworld: gameworld
             system_id: 'position'
             zones: ['general']
+        GameView:
+            gameworld: gameworld
+            id: camera_stars1
+            system_id: 'camera_stars1'
+            camera_pos: (camera_top.camera_pos[0])*.4, (camera_top.camera_pos[1])*.4
+            do_scroll_lock: False
+            size: root.size
+        GameView:
+            gameworld: gameworld
+            id: camera_stars2
+            system_id: 'camera_stars2'
+            do_scroll_lock: False
+            camera_pos: (camera_top.camera_pos[0])*.5, (camera_top.camera_pos[1])*.5
+            size: root.size
+        GameView:
+            gameworld: gameworld
+            id: camera_sun1
+            system_id: 'camera_sun1'
+            camera_pos: (camera_top.camera_pos[0])*.66, (camera_top.camera_pos[1])*.66
+            do_scroll_lock: False
+            size: root.size
+        GameView:
+            gameworld: gameworld
+            id: camera_sun2
+            system_id: 'camera_sun2'
+            camera_pos: (camera_top.camera_pos[0])*.75, (camera_top.camera_pos[1])*.75
+            do_scroll_lock: False
+            size: root.size
+        GameMap:
+            system_id: 'map'
+            id: map
+            map_size: (2500., 2500.)
+        GameView:
+            gameworld: gameworld
+            id: camera_planet1
+            system_id: 'camera_planet1'
+            camera_pos: (camera_top.camera_pos[0])*.83, (camera_top.camera_pos[1])*.83
+            do_scroll_lock: False
+            size: root.size
+        GameView:
+            gameworld: gameworld
+            do_scroll: True
+            do_scroll_lock: True
+            id: camera_top
+            camera_pos: (-500., -500.)
+            system_id: 'camera_planet2'
+            size: root.size
+            currentmap: map
+        ColorPolyRenderer:
+            gameworld: gameworld
+            shader_source: os.path.join(os.path.dirname(main.__file__), 'assets', 'shaders', 'poscolorshader.glsl')
+            system_id: 'back_stars'
+            zones: ['general']
+            static_rendering: True
+            max_batches: 20
+            gameview: 'camera_stars1'
+            size_of_batches: 512
+            system_names: ['back_stars', 'position']
+            frame_count: 1
+        ColorPolyRenderer:
+            gameworld: gameworld
+            shader_source: os.path.join(os.path.dirname(main.__file__), 'assets', 'shaders', 'poscolorshader.glsl')
+            system_id: 'mid_stars'
+            zones: ['general']
+            static_rendering: True
+            max_batches: 20
+            gameview: 'camera_stars2'
+            size_of_batches: 512
+            system_names: ['mid_stars', 'position']
+            frame_count: 1
+        ColorPolyRenderer:
+            gameworld: gameworld
+            shader_source: os.path.join(os.path.dirname(main.__file__), 'assets', 'shaders', 'poscolorshader.glsl')
+            system_id: 'sun1'
+            zones: ['general']
+            static_rendering: True
+            max_batches: 20
+            gameview: 'camera_sun1'
+            size_of_batches: 768
+            system_names: ['sun1', 'position']
+            frame_count: 1
+        ColorPolyRenderer:
+            gameworld: gameworld
+            shader_source: os.path.join(os.path.dirname(main.__file__), 'assets', 'shaders', 'poscolorshader.glsl')
+            system_id: 'sun2'
+            zones: ['general']
+            static_rendering: True
+            max_batches: 20
+            gameview: 'camera_sun2'
+            size_of_batches: 768
+            system_names: ['sun2', 'position']
+            frame_count: 1
         ColorPolyRenderer:
             gameworld: gameworld
             shader_source: os.path.join(os.path.dirname(main.__file__), 'assets', 'shaders', 'poscolorshader.glsl')
             zones: ['general']
-            size_of_batches: 1024
-            frame_count: 3
+            system_id: 'planet1'
+            gameview: 'camera_planet1'
+            static_rendering: True
+            max_batches: 20
+            size_of_batches: 768
+            system_names: ['planet1', 'position']
+            frame_count: 1
+        ColorPolyRenderer:
+            gameworld: gameworld
+            shader_source: os.path.join(os.path.dirname(main.__file__), 'assets', 'shaders', 'poscolorshader.glsl')
+            system_id: 'planet2'
+            zones: ['general']
+            static_rendering: True
+            max_batches: 20
+            gameview: 'camera_planet2'
+            size_of_batches: 768
+            system_names: ['planet2', 'position']
+            frame_count: 1
     GameScreenManager:
         id: gamescreenmanager
         size: root.size
@@ -34,4 +142,25 @@ TestGame:
 <MainScreen@GameScreen>:
     name: 'main'
     FloatLayout:
+        Button: 
+            text: 'Gen'
+            pos_hint: {'x': .9, 'y': .05}
+            size_hint: (.1, .1)
+            on_release: app.root.redraw_map()
+        DebugPanel:
+            size_hint: (.2, .1)
+            pos_hint: {'x': .225, 'y': .025}
+
+
+<DebugPanel>:
+    Label:
+        pos: root.pos
+        size: root.size
+        font_size: root.size[1]*.5
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1)
+        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'
+
+
 

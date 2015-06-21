@@ -14,18 +14,18 @@ do_clear_existing = True
 
 
 cymunk_modules = {
-    'kivent_particles.particle': ['kivent_particles/particle.pyx'],
-    'kivent_particles.particleemitter': ['kivent_particles/particleemitter.pyx',],
+    # 'kivent_particles.particle': ['kivent_particles/particle.pyx'],
+    'kivent_particles.emitter': ['kivent_particles/emitter.pyx',],
 }
 
 cymunk_modules_c = {
-    'kivent_particles.particle': ['kivent_particles/particle.c',],
-    'kivent_particles.particleemitter': ['kivent_particles/particleemitter.c',],
+    # 'kivent_particles.particle': ['kivent_particles/particle.c',],
+    'kivent_particles.emitter': ['kivent_particles/emitter.c',],
 }
 
 check_for_removal = [
     'kivent_particles/particle.c',
-    'kivent_particles.particleemitter.c',
+    'kivent_particles.emitter.c',
 
     ]
 

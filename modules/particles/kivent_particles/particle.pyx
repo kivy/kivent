@@ -3,74 +3,312 @@ import json
 from libc.math cimport trunc, sin, cos, fmin, fmax
 from utils cimport (color_delta, calc_distance, KEColor, random_color_variance,
     random_variance)
-from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from kivent_core.gamesystems import GameSystem
 from kivent_core.gamesystems cimport (RotateComponent, ScaleComponent, 
     PositionComponent, ColorComponent)
 from kivent_core.renderers cimport RenderComponent
 from particleemitter cimport ParticleEmitter, EmitterConfig
 
-EMITTER_TYPE_GRAVITY = 0
-EMITTER_TYPE_RADIAL = 1
+
+ctypedef struct ParticleStruct:
+    unsigned int entity_id
+    float current_time
+    float total_time
+    float[2] start_pos
+    float[2] velocity
+    float radial_acceleration
+    float tangential_acceleration
+    float emit_radius
+    float emit_radius_delta
+    float emit_rotation
+    float emit_rotation_delta
+    float rotation_delta
+    float scale_delta
+    void* emitter
+    float[4] color_delta
+    
 
 
-cdef class ParticleComponent:
-    cdef float _current_time
-    cdef float _total_time
-    cdef float _start_x
-    cdef float _start_y
-    cdef float _velocity_x
-    cdef float _velocity_y
-    cdef float _radial_acceleration
-    cdef float _tangent_acceleration
-    cdef float _emit_radius
-    cdef float _emit_radius_delta
-    cdef float _emit_rotation
-    cdef float _emit_rotation_delta
-    cdef float _rotation_delta
-    cdef KEColor _color_delta
-    cdef float _scale_delta
-    cdef void* _emitter_ptr
-    cdef int _index
+cdef class ParticleComponent(MemComponent):
+    '''The component associated with ParticleSystem
 
-    def __cinit__(self, int index):
-        self._index = index
+    **Attributes:**
+        **entity_id** (unsigned int): The entity_id this component is currently
+        associated with. Will be <unsigned int>-1 if the component is 
+        unattached.
 
-    property current_time:
+
+    '''
+    property entity_id:
+
         def __get__(self):
-            return self._current_time
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.entity_id
+
+     property current_time:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.current_time
+
         def __set__(self, float value):
-            self._current_time = value
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.current_time = value
 
     property total_time:
+
         def __get__(self):
-            return self._total_time
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.total_time
+
         def __set__(self, float value):
-            self._total_time = value
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.total_time = value
 
     property start_x:
+
         def __get__(self):
-            return self._start_x
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.start_pos[0]
+
         def __set__(self, float value):
-            self._start_x = value
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.start_pos[0] = value
 
     property start_y:
+
         def __get__(self):
-            return self._start_y
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.start_pos[1]
+
         def __set__(self, float value):
-            self._start_y = value
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.start_pos[1] = value
+
+    property start_pos:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return [data.start_pos[i] for i in range(2)]
+
+        def __set__(self, value):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointers
+            for i in range(2):
+                data.start_pos[i] = value[i]
 
     property velocity_x:
+
         def __get__(self):
-            return self._velocity_x
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.velocity[0]
+
         def __set__(self, float value):
-            self._velocity_x = value
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.velocity[0] = value
 
     property velocity_y:
+
         def __get__(self):
-            return self._velocity_y
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.velocity[1]
+
         def __set__(self, float value):
-            self._velocity_y = value
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.velocity[1] = value
+
+    property velocity:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return [data.velocity[i] for i in range(2)]
+
+        def __set__(self, value):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            for i in range(2):
+                data.velocity[i] = value[i]
+
+    property radial_acceleration:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.radial_acceleration
+
+        def __set__(self, float value):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.radial_acceleration = value
+
+    property tangential_acceleration:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.tangential_acceleration
+
+        def __set__(self, float value):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.tangential_acceleration = value
+
+    property emit_radius:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.emit_radius
+
+        def __set__(self, float value):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.emit_radius = value
+
+    property emit_radius_delta:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.emit_radius_delta
+
+        def __set__(self, float value):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.emit_radius_delta = value
+
+    property rotation_delta:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data rotation_delta
+
+        def __set__(self, float value):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data rotation_delta = value
+
+    property scale_delta:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return data.scale_delta
+
+        def __set__(self, float value):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            data.scale_delta = value
+
+    property emitter:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return <ParticleEmitter>data.emitter
+
+    property color_delta:
+
+        def __get__(self):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            return [data.color_delta[i] for i in range(4)]
+
+        def __set__(self, value):
+            cdef ParticleStruct* data = <ParticleStruct*>self.pointer
+            for i in range(4):
+                data.color_delta[i] = value[i]
+
+
+cdef class ParticleSystem(StaticMemGameSystem)
+
+    def init_component(self, unsigned int component_index, 
+        unsigned int entity_id, str zone, args):
+        '''
+        '''
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
+        cdef ParticleStruct* pointer = <ParticleStruct*>memory_zone.get_pointer(
+            component_index)
+        pointer.entity_id = entity_id
+        pointer.current_time = 0.0
+
+
+    #     unsigned int entity_id
+    # float current_time
+    # float total_time
+    # float[2] start_pos
+    # float[2] velocity
+    # float radial_acceleration
+    # float tangential_acceleration
+    # float emit_radius
+    # float emit_radius_delta
+    # float emit_rotation
+    # float emit_rotation_delta
+    # float rotation_delta
+    # char[4] color_delta
+    # float scale_delta
+    # void* emitter
+
+        cdef float life_span = random_variance(emitter._life_span, 
+            ec._life_span_variance)
+
+        if life_span <= 0.0:
+            return self.init_particle(index, emitter)
+        cdef float x = emitter._x
+        cdef float y = emitter._y
+        cdef void** particle_data = self._particle_data
+        cdef ParticleComponent particle_comp = (
+            <ParticleComponent>particle_data[index])
+        particle_comp._current_time = 0.0
+        particle_comp._total_time = life_span
+        particle_comp._start_x = x
+        particle_comp._start_y = y
+        cdef float angle = random_variance(emitter._emit_angle, 
+            ec._emit_angle_variance)
+        cdef float speed = random_variance(ec._speed, ec._speed_variance)
+        particle_comp._velocity_x = speed * cos(angle)
+        particle_comp._velocity_y = speed * sin(angle)
+        particle_comp._emit_radius = random_variance(ec.max_radius, 
+            ec.max_radius_variance)
+        particle_comp._emit_radius_delta = (ec._max_radius - 
+            ec._min_radius) / life_span
+
+        particle_comp._emit_rotation = random_variance(emitter._emit_angle, 
+            ec._emit_angle_variance)
+        particle_comp._emit_rotation_delta = random_variance(
+            ec._rotate_per_second, ec._rotate_per_second_variance)
+
+        particle_comp._radial_acceleration = random_variance(
+            ec._radial_acceleration, ec._radial_acceleration_variance)
+        particle_comp._tangent_acceleration = random_variance(
+            ec._tangential_acceleration, ec._tangential_acceleration_variance)
+        cdef float start_size = random_variance(ec._start_size, 
+            ec._start_size_variance)
+        cdef float end_size = random_variance(ec._end_size, 
+            ec._end_size_variance)
+        start_size = fmax(0.1, start_size)
+        end_size = fmax(0.1, end_size)
+        particle_comp._scale_delta = ((end_size - start_size) / life_span) / 2.
+
+        # colors
+        cdef KEColor start_color = random_color_variance(ec._start_color, 
+            ec._start_color_variance)
+        cdef KEColor end_color = random_color_variance(ec._end_color, 
+            ec._end_color_variance)
+
+        particle_comp._color_delta = color_delta(
+            start_color, end_color, life_span)
+
+        # rotation
+        cdef float start_rotation = random_variance(ec.start_rotation, 
+            ec.start_rotation_variance)
+        cdef float end_rotation = random_variance(ec.end_rotation, 
+            ec.end_rotation_variance)
+        particle_comp._rotation_delta = (
+            end_rotation - start_rotation) / life_span
+        cdef void** position_data = self._position_data
+        cdef void** rotate_data = self._rotate_data
+        cdef void** scale_data = self._scale_data
+        cdef void** color_data = self._color_data
+        cdef void** render_data = self._render_data
+        cdef PositionComponent pos_comp = (
+            <PositionComponent>position_data[index])
+        cdef RotateComponent rot_comp = <RotateComponent>rotate_data[index]
+        cdef ScaleComponent scale_comp = <ScaleComponent>scale_data[index]
+        cdef ColorComponent color_comp = <ColorComponent>color_data[index]
+        pos_comp._x = random_variance(x, ec._emitter_x_variance)
+        pos_comp._y = random_variance(y, ec._emitter_y_variance)
+        scale_comp._s = start_size / 2.
+        rot_comp._r = start_rotation
+        color_comp._r = start_color.r
+        color_comp._g = start_color.g
+        color_comp._b = start_color.b
+        color_comp._a = start_color.a
 
 
 cdef class ParticleManager:

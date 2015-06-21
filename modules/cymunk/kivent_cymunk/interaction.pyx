@@ -276,8 +276,7 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
         cdef float max_force = self.max_force
         cdef float max_bias = self.max_bias
         cdef float radius = self.touch_radius
-        cdef list touch_box = [tx-radius, ty-radius, tx-radius, ty+radius, 
-            tx+radius, ty+radius, tx+radius, ty-radius]
+        cdef list touch_box = [tx-radius, ty-radius, tx+radius, ty+radius]
         cdef list touched_ids = physics_system.query_bb(touch_box,
             ignore_groups=self.ignore_groups)
         if len(touched_ids) > 0:

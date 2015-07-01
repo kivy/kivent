@@ -474,6 +474,7 @@ cdef class BatchManager:
             new_index = free_batches.pop(0)
             batch = self.batches[new_index]
             cmesh = batch.mesh_instruction
+            batch.tex_key = tex_key
         else:
             batch = IndexedBatch(
                 tex_key, self.index_slots_per_block, self.slots_per_block, 
@@ -491,12 +492,9 @@ cdef class BatchManager:
             batch_groups[tex_key] = [batch]
         else:
             batch_groups[tex_key].append(batch)
-        
-
-    
         return new_index
   
-    cdef void remove_batch(self, unsigned int batch_id):
+    cdef int remove_batch(self, unsigned int batch_id) except 0:
         '''Removes a batch, clearing it and adding it to the **free_batches**
         list.
 
@@ -509,6 +507,7 @@ cdef class BatchManager:
         self.batch_groups[tex_key].remove(batch)
         self.canvas.remove(batch.mesh_instruction)
         self.free_batches.append(batch_id)
+        return 1
 
     cdef IndexedBatch get_batch_with_space(self, unsigned int tex_key, 
         unsigned int num_verts, unsigned int num_indices):

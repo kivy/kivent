@@ -496,7 +496,8 @@ cdef class TextureManager:
         dirname = path.dirname(source)
         with open(source, 'r') as data:
              atlas_data = json.load(data)
-
+        keys = self._keys
+        uvs = self._uvs
         for imgname in atlas_data:
             texture = CoreImage(
                 path.join(dirname,imgname), nocache=True).texture
@@ -504,8 +505,6 @@ cdef class TextureManager:
             size = texture.size
             w = <float>size[0]
             h = <float>size[1]
-            keys = self._keys
-            uvs = self._uvs
             atlas_content = atlas_data[imgname]
             atlas_key = self.load_texture(name, texture)
             group_list = self._groups[atlas_key]

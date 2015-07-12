@@ -25,7 +25,7 @@ cdef class MemoryZone:
         unsigned int pool_index)
     cdef tuple get_pool_block_slot_indices(self, unsigned int index)
     cdef unsigned int get_free_slot(self, str reserved_hint) except -1
-    cdef void free_slot(self, unsigned int index)
+    cdef int free_slot(self, unsigned int index) except -1
     cdef void* get_pointer(self, unsigned int index) except NULL
     cdef unsigned int get_pool_end_from_pool_index(self, unsigned int index)
     cdef tuple get_pool_range(self, unsigned int pool_index)

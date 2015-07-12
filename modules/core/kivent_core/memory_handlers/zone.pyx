@@ -271,7 +271,7 @@ cdef class MemoryZone:
         cdef unsigned int unadjusted_index = pool.get_free_slot()
         return self.add_pool_offset(unadjusted_index, pool_index)
 
-    cdef void free_slot(self, unsigned int index):
+    cdef int free_slot(self, unsigned int index) except -1:
         '''Returns a slot for reuse after being acquired with **get_free_slot**.
         Args:
             index (unsigned int): The slot index in the MemoryZone as provided
@@ -282,6 +282,7 @@ cdef class MemoryZone:
             pool_index)
         cdef MemoryPool pool = self.get_pool_from_pool_index(pool_index)
         pool.free_slot(unadjusted_index)
+        return 1
 
     cdef void* get_pointer(self, unsigned int index) except NULL:
         '''Returns a pointer to the data held in the slot at index.

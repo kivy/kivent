@@ -476,6 +476,7 @@ cdef class Renderer(StaticMemGameSystem):
         if 'texture' in args:
             texture_key = args['texture']
             texkey = texture_manager.get_texkey_from_name(texture_key)
+            w, h = texture_manager.get_size(texkey)
         else:
             texture_key = str(None)
             texkey = -1
@@ -836,6 +837,7 @@ cdef class ColorRenderer(Renderer):
         cdef MemoryBlock components_block
         cdef void** component_data
         cdef bint static_rendering = self.static_rendering
+        cdef int ii
  
         for batch_key in batch_groups:
             batches = batch_groups[batch_key]
@@ -875,10 +877,8 @@ cdef class ColorRenderer(Renderer):
                                 vertex.pos[1] = pos_comp.y + model_vertex.pos[1]
                                 vertex.uvs[0] = model_vertex.uvs[0]
                                 vertex.uvs[1] = model_vertex.uvs[1]
-                                vertex.vColor[0] = color_comp.r
-                                vertex.vColor[1] = color_comp.g
-                                vertex.vColor[2] = color_comp.b
-                                vertex.vColor[3] = color_comp.a
+                                for ii in range(4):
+                                    vertex.vColor[ii] = color_comp.color[ii]
                             index_offset += model._index_count
                     batch.set_index_count_for_frame(index_offset)
                 mesh_instruction = batch.mesh_instruction

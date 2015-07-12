@@ -7,20 +7,24 @@ include "particle_config.pxi"
 
 cdef class ParticleEmitter:
     cdef str _effect_name
+    cdef str _texture
     cdef float _emit_angle_offset
+    cdef float _emit_angle
+    cdef float[2] _pos
     cdef float[2] _pos_offset
     cdef float _life_span
     cdef bint _paused 
     cdef int _emitter_type
     cdef int _number_of_particles
+    cdef int _current_particles
     cdef float _frame_time
     cdef float[2] _gravity
     cdef float[2] _pos_variance
-    cdef float _start_size
+    cdef float _start_scale
     cdef float _emission_rate
-    cdef float _start_size_variance
-    cdef float _end_size
-    cdef float _end_size_variance
+    cdef float _start_scale_variance
+    cdef float _end_scale
+    cdef float _end_scale_variance
     cdef float _emit_angle_variance
     cdef float _start_rotation
     cdef float _start_rotation_variance

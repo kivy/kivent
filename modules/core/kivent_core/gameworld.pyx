@@ -425,8 +425,8 @@ class GameWorld(Widget):
         cdef Entity entity = self.entities[entity_id]
         cdef EntityManager entity_manager = self.entity_manager
         cdef SystemManager system_manager = self.system_manager
-        load_order = entity.load_order
-        entity._load_order.reverse() 
+        entity._load_order.reverse()
+        load_order = entity._load_order
         for system_name in load_order:
             system_manager[system_name].remove_component(
                 entity.get_component_index(system_name))
@@ -451,7 +451,11 @@ class GameWorld(Widget):
             system = systems[system_index]
             if system.updateable and not system.paused:
                 system._update(dt)
+        if debug:
+                Logger.debug('KivEnt: Frame Update done, removing entities')
         self.remove_entities()
+        if debug:
+                Logger.debug('KivEnt: Frame Update Finished')
 
     def remove_entities(self):
         '''Used internally to remove entities as part of the update tick'''

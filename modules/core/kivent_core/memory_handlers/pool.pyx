@@ -166,7 +166,7 @@ cdef class MemoryPool:
         cdef MemoryBlock mem_block
         cdef list mem_blocks = self.memory_blocks
         cdef list free_blocks = self.blocks_with_free_space
-        if self.used == self.count:
+        if self.used == self.count and len(free_blocks) <= 0:
             raise MemoryError()
         if len(free_blocks) == 0:
             block_index = self.get_block_from_index(self.used)
@@ -176,9 +176,17 @@ cdef class MemoryPool:
         else:
             block_index = free_blocks[0]
             mem_block = mem_blocks[block_index]
-            self.free_count -= 1
             index = mem_block.add_data(1)
-            if mem_block.free_block_count == 0:
+            if block_index == self.get_block_from_index(self.used) and (
+                    self.get_index_from_slot_index_and_block(
+                    index, block_index) >= self.used):
+                self.used += 1
+            else:
+                self.free_count -= 1
+
+
+            if mem_block.free_block_count == 0 and (
+                    mem_block.get_blocks_on_tail() == 0):
                 free_blocks.remove(block_index)
         return self.get_index_from_slot_index_and_block(index, block_index)
 
@@ -197,10 +205,11 @@ cdef class MemoryPool:
         mem_block = mem_blocks[block_index]
         mem_block.remove_data(slot_index, 1)
         self.free_count += 1
-        if self.free_count == self.used:
-            self.clear()
         if block_index not in free_blocks:
             free_blocks.append(block_index)
+        if self.free_count >= self.used:
+            self.clear()
+
 
     cdef unsigned int get_size(self):
         '''Returns the size in bytes of the entire MemoryPool.

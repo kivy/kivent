@@ -4,7 +4,7 @@ from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.factory import Factory
-from kivy.properties import ObjectProperty, NumericProperty
+from kivy.properties import ObjectProperty, NumericProperty, StringProperty
 
 cdef class RotateComponent2D(MemComponent):
     '''The component associated with RotateSystem2D.
@@ -44,6 +44,7 @@ cdef class RotateSystem2D(StaticMemGameSystem):
     '''
     type_size = NumericProperty(sizeof(RotateStruct2D))
     component_type = ObjectProperty(RotateComponent2D)
+    system_id = StringProperty('rotate')
 
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, str zone, float r):
@@ -62,7 +63,6 @@ cdef class RotateSystem2D(StaticMemGameSystem):
             memory_zone.get_pointer(component_index))
         pointer.entity_id = -1
         pointer.r = 0.
-
 
 
 Factory.register('RotateSystem2D', cls=RotateSystem2D)

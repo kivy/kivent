@@ -4,7 +4,7 @@ from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.factory import Factory
-from kivy.properties import ObjectProperty, NumericProperty
+from kivy.properties import ObjectProperty, NumericProperty, StringProperty
 
 
 cdef class ScaleComponent2D(MemComponent):
@@ -63,6 +63,7 @@ cdef class ScaleSystem2D(StaticMemGameSystem):
     actually controlling the scale. This GameSystem does no processing of its 
     own, just holding data.
     '''
+    system_id = StringProperty('scale')
     type_size = NumericProperty(sizeof(ScaleStruct2D))
     component_type = ObjectProperty(ScaleComponent2D)
 

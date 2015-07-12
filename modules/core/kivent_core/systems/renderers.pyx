@@ -528,7 +528,7 @@ cdef class Renderer(StaticMemGameSystem):
         cdef GLushort* model_indices
         cdef VertexFormat4F* model_vertices
         cdef VertexFormat4F model_vertex
-        cdef unsigned int used, i, real_index, component_count, n
+        cdef unsigned int used, i, real_index, component_count, n, t
         cdef ComponentPointerAggregator entity_components
         cdef BatchManager batch_manager = self.batch_manager
         cdef dict batch_groups = batch_manager.batch_groups
@@ -549,8 +549,8 @@ cdef class Renderer(StaticMemGameSystem):
                     frame_data = <VertexFormat4F*>batch.get_vbo_frame_to_draw()
                     frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
                     index_offset = 0
-                    for i in range(used):
-                        real_index = i * component_count
+                    for t in range(used):
+                        real_index = t * component_count
                         if component_data[real_index] == NULL:
                             continue
                         render_comp = <RenderStruct*>component_data[
@@ -728,7 +728,7 @@ cdef class RotateRenderer(Renderer):
         cdef GLushort* model_indices
         cdef VertexFormat4F* model_vertices
         cdef VertexFormat4F model_vertex
-        cdef unsigned int used, i, real_index, component_count, n
+        cdef unsigned int used, i, real_index, component_count, n, t
         cdef ComponentPointerAggregator entity_components
         cdef BatchManager batch_manager = self.batch_manager
         cdef dict batch_groups = batch_manager.batch_groups
@@ -749,8 +749,8 @@ cdef class RotateRenderer(Renderer):
                     frame_data = <VertexFormat7F*>batch.get_vbo_frame_to_draw()
                     frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
                     index_offset = 0
-                    for i in range(used):
-                        real_index = i * component_count
+                    for t in range(used):
+                        real_index = t * component_count
                         if component_data[real_index] == NULL:
                             continue
                         render_comp = <RenderStruct*>component_data[
@@ -829,7 +829,7 @@ cdef class ColorRenderer(Renderer):
         cdef GLushort* model_indices
         cdef VertexFormat4F* model_vertices
         cdef VertexFormat4F model_vertex
-        cdef unsigned int used, i, real_index, component_count, n
+        cdef unsigned int used, i, real_index, component_count, n, t
         cdef ComponentPointerAggregator entity_components
         cdef BatchManager batch_manager = self.batch_manager
         cdef dict batch_groups = batch_manager.batch_groups
@@ -851,8 +851,8 @@ cdef class ColorRenderer(Renderer):
                     frame_data = <VertexFormat8F*>batch.get_vbo_frame_to_draw()
                     frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
                     index_offset = 0
-                    for i in range(used):
-                        real_index = i * component_count
+                    for t in range(used):
+                        real_index = t * component_count
                         if component_data[real_index] == NULL:
                             continue
                         render_comp = <RenderStruct*>component_data[

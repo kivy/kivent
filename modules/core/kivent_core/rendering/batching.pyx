@@ -223,9 +223,9 @@ cdef class IndexedBatch:
         '''
         cdef FixedFrameData frame
         cdef list frame_data = self.frame_data
-        self.entity_components.free()
+        self.entity_components.clear()
         for frame in frame_data:
-            frame.return_memory()
+            frame.clear()
 
 
 
@@ -463,9 +463,7 @@ cdef class BatchManager:
                 self.max_batches, """raise your batch_count for this renderer
                 or pack your textures more appropriately to reduce number
                 of batches""")
-        cdef ComponentPointerAggregator entity_components = (
-            ComponentPointerAggregator(self.system_names, self.ent_per_batch,
-                self.gameworld, self.master_buffer))
+        cdef ComponentPointerAggregator entity_components 
         cdef IndexedBatch batch
         cdef list free_batches = self.free_batches
         cdef unsigned int new_index
@@ -476,6 +474,9 @@ cdef class BatchManager:
             cmesh = batch.mesh_instruction
             batch.tex_key = tex_key
         else:
+            entity_components = ComponentPointerAggregator(
+                self.system_names, self.ent_per_batch,
+                self.gameworld, self.master_buffer)
             batch = IndexedBatch(
                 tex_key, self.index_slots_per_block, self.slots_per_block, 
                 self.frame_count, self.get_vbos(), self.mode, entity_components)
@@ -506,6 +507,7 @@ cdef class BatchManager:
         cdef unsigned int tex_key = batch.tex_key
         self.batch_groups[tex_key].remove(batch)
         self.canvas.remove(batch.mesh_instruction)
+        batch.clear_frames()
         self.free_batches.append(batch_id)
         return 1
 

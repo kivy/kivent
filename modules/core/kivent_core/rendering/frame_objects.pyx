@@ -38,3 +38,7 @@ cdef class FixedFrameData:
         calling their respective return_memory functions'''
         self.index_vbo.return_memory()
         self.vertex_vbo.return_memory()
+
+    cdef void clear(self):
+        self.index_vbo.reload()
+        self.vertex_vbo.reload()

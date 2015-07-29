@@ -214,8 +214,6 @@ cdef class IndexedBatch:
         gl_log_debug_message('IndexedBatch.draw_frame-glDrawElements')
         vertices.unbind()
         indices.unbind()
-        self.current_frame += 1
-
 
     cdef void clear_frames(self):
         '''Clears all frames, returning their memory and deleting the members 
@@ -226,7 +224,6 @@ cdef class IndexedBatch:
         self.entity_components.clear()
         for frame in frame_data:
             frame.clear()
-
 
 
 class MaxBatchException(Exception):

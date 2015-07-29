@@ -19,6 +19,7 @@ cdef class CMesh(VertexInstruction):
 
     cdef int apply(self) except -1:
         if self.flags & GI_NEEDS_UPDATE:
+            self._batch.current_frame += 1
             self.flag_update_done()
         self._batch.draw_frame()
 

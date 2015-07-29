@@ -29,6 +29,7 @@ cdef class IndexedBatch:
         unsigned int num_indices)
     cdef void* get_vbo_frame_to_draw(self)
     cdef FixedFrameData get_current_vbo(self)
+    cdef FixedFrameData get_next_vbo(self)
     cdef void* get_indices_frame_to_draw(self)
     cdef void set_index_count_for_frame(self, 
         unsigned int index_count)

@@ -165,7 +165,7 @@ cdef class IndexedBatch:
         Return:
             void*: Pointer to the data in the vertex FixedVBO's MemoryBlock.
         '''
-        cdef FixedFrameData frame_data = self.get_current_vbo()
+        cdef FixedFrameData frame_data = self.get_next_vbo()
         cdef FixedVBO vertices = frame_data.vertex_vbo
         cdef MemoryBlock vertex_block = vertices.memory_block
         return vertex_block.data
@@ -178,6 +178,9 @@ cdef class IndexedBatch:
         '''
         return self.frame_data[self.current_frame % self.frame_count]
 
+    cdef FixedFrameData get_next_vbo(self):
+        return self.frame_data[(self.current_frame + 1) % self.frame_count]
+
     cdef void* get_indices_frame_to_draw(self):
         '''Returns a pointer to the indices data for the next frame for writing
         data to.
@@ -185,7 +188,7 @@ cdef class IndexedBatch:
         Return:
             void*: Pointer to the data in the indices FixedVBO's MemoryBlock.
         '''
-        cdef FixedFrameData frame_data = self.get_current_vbo()
+        cdef FixedFrameData frame_data = self.get_next_vbo()
         cdef FixedVBO indices = frame_data.index_vbo
         cdef MemoryBlock index_block = indices.memory_block
         return index_block.data

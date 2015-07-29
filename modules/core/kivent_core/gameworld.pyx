@@ -430,6 +430,11 @@ class GameWorld(Widget):
         for system_name in load_order:
             system_manager[system_name].remove_component(
                 entity.get_component_index(system_name))
+            if debug:
+                Logger.debug(('Remove component {comp_id} from entity'
+                ' {entity_id}').format(
+                    comp_id=system_name, 
+                    entity_id=str(entity_id)))
         entity.load_order = []
         entity_manager.remove_entity(entity_id)
 

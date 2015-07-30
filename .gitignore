@@ -4,3 +4,6 @@
 .idea
 *.c
 *.pyd
+*.swp
+*.egg-info
+build

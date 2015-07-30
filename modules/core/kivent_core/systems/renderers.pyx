@@ -311,6 +311,7 @@ cdef class Renderer(StaticMemGameSystem):
     updateable = BooleanProperty(True)
     renderable = BooleanProperty(True)
     static_rendering = BooleanProperty(False)
+    force_update = BooleanProperty(False)
     max_batches = NumericProperty(20)
     size_of_batches = NumericProperty(256)
     vertex_format_size = NumericProperty(sizeof(VertexFormat4F))
@@ -325,7 +326,6 @@ cdef class Renderer(StaticMemGameSystem):
     reset_blend_factor_dest = NumericProperty(GL_ONE_MINUS_SRC_ALPHA)
     type_size = NumericProperty(sizeof(RenderStruct))
     component_type = ObjectProperty(RenderComponent)
-
     
     def __init__(self, **kwargs):
         self.canvas = RenderContext(use_parent_projection=True, nocompiler=True)
@@ -627,7 +627,7 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.batch_id = -1
         component_data.vert_index = -1
         component_data.ind_index = -1
-        if not self.updateable or self.static_rendering:
+        if self.force_update or not self.updateable or self.static_rendering:
             self.update_trigger()
         return component_data
 
@@ -673,7 +673,7 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.batch_id = batch_indices[0]
         component_data.vert_index = batch_indices[1]
         component_data.ind_index = batch_indices[2]
-        if not self.updateable or self.static_rendering:
+        if self.force_update or not self.updateable or self.static_rendering:
             self.update_trigger()
         return component_data
 

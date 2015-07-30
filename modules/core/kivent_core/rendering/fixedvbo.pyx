@@ -166,6 +166,8 @@ cdef class FixedVBO:
         and clear the **memory_block**.'''
         self.flags = V_NEEDGEN
         self.size_last_frame = 0
+        if self.target == GL_ELEMENT_ARRAY_BUFFER:
+            self.data_size = 0
         self.memory_block.clear()
 
     def __repr__(self):

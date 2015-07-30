@@ -195,7 +195,7 @@ cdef class IndexedBatch:
 
     cdef void set_index_count_for_frame(self, unsigned int index_count):
         '''Sets the number of indices to be rendered on next **draw_frame**.'''
-        cdef FixedFrameData frame_data = self.get_current_vbo()
+        cdef FixedFrameData frame_data = self.get_next_vbo()
         cdef FixedVBO indices = frame_data.index_vbo
         indices.data_size = index_count * sizeof(GLushort)
 
@@ -225,6 +225,7 @@ cdef class IndexedBatch:
         cdef FixedFrameData frame
         cdef list frame_data = self.frame_data
         self.entity_components.clear()
+        self.current_frame = 0
         for frame in frame_data:
             frame.clear()
 
@@ -596,7 +597,6 @@ cdef class BatchManager:
         cdef IndexedBatch batch = self.batches[batch_id]
         batch.remove_entity(entity_id, num_verts, vert_index, num_indices,
             ind_index)
-        #TODO fix me, seg faults
         if batch.check_empty():
             self.remove_batch(batch_id)
         return 1

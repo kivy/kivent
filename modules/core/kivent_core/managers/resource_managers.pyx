@@ -412,6 +412,10 @@ cdef class TextureManager:
         #maps actual texture key to all subtexture texkey (for atlas)
         self._groups = {}
 
+    property loaded_textures:
+        def __get__(self):
+            return [key for key in self._keys]
+
     def load_image(self, source):
         texture = CoreImage(source, nocache=True).texture
         name = path.splitext(path.basename(source))[0]

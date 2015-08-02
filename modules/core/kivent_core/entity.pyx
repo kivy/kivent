@@ -68,7 +68,7 @@ cdef class Entity(MemComponent):
         cdef unsigned int* pointer = <unsigned int*>self.pointer
         pointer[system_index+1] = component_id
 
-    cdef unsigned int get_component_index(self, str name):
+    def get_component_index(self, str name):
         '''Gets the index of the component for GameSystem with system_id name.
         Args:
             name (str): The system_id of the GameSystem to retrieve the 

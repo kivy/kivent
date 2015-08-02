@@ -6,4 +6,3 @@ cdef class Entity(MemComponent):
     cdef SystemManager system_manager
     cdef void set_component(self, unsigned int component_id, 
         unsigned int system_id)
-    cdef unsigned int get_component_index(self, str name)

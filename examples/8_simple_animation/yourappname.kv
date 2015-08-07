@@ -1,6 +1,10 @@
 #:kivy 1.9.0
+#:import path os.path
+#:import dirname os.path.dirname
+#:import main __main__
 
 TestGame:
+
 
 <TestGame>:
     gameworld: gameworld
@@ -31,17 +35,18 @@ TestGame:
             system_names: ['renderer', 'position']
             size_of_batches: 256
             size_of_component_block: 128
-            shader_source: '../assets/glsl/positionshader.glsl'
-
+            shader_source: path.join(dirname(dirname(path.abspath(main.__file__))), 'assets', 'glsl', 'positionshader.glsl')
     GameScreenManager:
         id: gamescreenmanager
         size: root.size
         pos: root.pos
         gameworld: gameworld
 
+
 <GameScreenManager>:
     MainScreen:
         id: main_screen
+
 
 <MainScreen@GameScreen>:
     name: 'main'
@@ -60,4 +65,3 @@ TestGame:
         valign: 'middle'
         color: (1,1,1,1)
         text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'
-

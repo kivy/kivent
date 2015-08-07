@@ -11,9 +11,12 @@ from kivent_core.systems.gamesystem import GameSystem
 from kivent_core.managers.resource_managers import texture_manager
 from kivy.properties import StringProperty, ObjectProperty
 from kivy.factory import Factory
+from os.path import dirname, join, abspath
 
-texture_manager.load_image('assets/star1.png')
-texture_manager.load_image('assets/star2.png')
+texture_manager.load_image(join(dirname(dirname(abspath(__file__))), 'assets', 
+    'star1.png'))
+texture_manager.load_image(join(dirname(dirname(abspath(__file__))), 'assets', 
+    'star2.png'))
 
 
 

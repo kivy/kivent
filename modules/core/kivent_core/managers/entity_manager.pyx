@@ -73,7 +73,7 @@ cdef class EntityManager:
         cdef unsigned int i
         for i in range(system_count):
             pointer[i] = -1
-
+ 
     cdef unsigned int get_size(self):
         '''
         Returns the size of the IndexedMemoryZone in bytes.

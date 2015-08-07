@@ -47,12 +47,17 @@ cdef inline void color_variance(unsigned char* base, unsigned char* variance,
             <float>variance[i])), 255.)
 
 
-cdef inline void color_integrate(unsigned char* current, float* delta, 
-    unsigned char* output, float dt):
+cdef inline void color_integrate(float* current, float* delta, 
+    float* output, float dt):
     cdef int i
     for i in range(4):
-        output[i] = <unsigned char>fmin(fmax(0., current[i] + delta[i]*dt), 
-            255.)
+        output[i] = fmin(fmax(0., <float>current[i] + delta[i]*dt), 255.)
+
+
+cdef inline void color_copy(float* from_color, unsigned char* destination):
+    cdef int i
+    for i in range(4):
+        destination[i] = <unsigned char>from_color[i]
 
 
 cdef inline float calc_distance(float point_1_x, float point_1_y, 

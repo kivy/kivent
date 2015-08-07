@@ -387,6 +387,7 @@ cdef class ParticleSystem(StaticMemGameSystem):
         rotate_comp.r = start_rotation
         cdef int i
         for i in range(4):
+            pointer.color[i] = <float>start_color[i]
             color_comp.color[i] = start_color[i]
 
     def remove_component(self, unsigned int component_index):
@@ -418,6 +419,7 @@ cdef class ParticleSystem(StaticMemGameSystem):
         pointer.emitter = NULL
         for i in range(4):
             pointer.color_delta[i] = 0.
+            pointer.color[i] = 255.
 
     def update(self, float dt):
         cdef ParticleEmitter emitter
@@ -505,8 +507,9 @@ cdef class ParticleSystem(StaticMemGameSystem):
             scale_comp.sx += particle_comp.scale_delta * passed_time
             scale_comp.sy += particle_comp.scale_delta * passed_time
             rotate_comp.r += particle_comp.rotation_delta * passed_time
-            color_integrate(color_comp.color, particle_comp.color_delta, 
-                color_comp.color, passed_time)
+            color_integrate(particle_comp.color, particle_comp.color_delta, 
+                particle_comp.color, passed_time)
+            color_copy(particle_comp.color, color_comp.color)
             if particle_comp.current_time >= particle_comp.total_time:
                 emitter._current_particles -= 1
                 remove_entity(particle_comp.entity_id)

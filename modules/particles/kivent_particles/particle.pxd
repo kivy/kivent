@@ -18,6 +18,7 @@ ctypedef struct ParticleStruct:
     float scale_delta
     void* emitter
     float[4] color_delta
+    float[4] color
 
 
 cdef class ParticleComponent(MemComponent):

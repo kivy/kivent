@@ -18,15 +18,20 @@ from kivy.properties import StringProperty, NumericProperty, ListProperty
 
 cdef class ParticlesRenderer(Renderer):
     '''
-    Processing Depends On: PositionSystem2D, ColorRenderer
+    Processing Depends On: ParticlesRenderer, PositionSystem2D, ScaleSystem2D,
+    RotateSystem2D, ColorSystem
 
-    The renderer draws with the VertexFormat2F4UB:
+    The renderer draws with the VertexFormat9F4UB:
 
     .. code-block:: cython
 
-        ctypedef struct VertexFormat2F4UB:
+        ctypedef struct VertexFormat9F4UB:
             GLfloat[2] pos
+            GLfloat[2] uvs
+            GLfloat[2] center
+            GLfloat[2] scale
             GLubyte[4] v_color
+            GLfloat rotate
 
     '''
     system_names = ListProperty(['particles_renderer', 'position', 'scale', 

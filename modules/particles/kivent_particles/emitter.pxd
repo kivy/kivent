@@ -60,6 +60,11 @@ cdef class EmitterComponent(MemComponent):
 cdef class EmitterSystem(StaticMemGameSystem):
     cdef dict _emitter_prototypes
     cdef list attributes_to_save
+    cdef dict editor_fields
+    cdef str subobject_field
+    cdef str editor_type
+    cdef str subobject_name_field
+    cdef dict panels
 
     cdef int insert_effect_into_component(self, ParticleEmitter effect, 
         EmitterComponent py_component) except -1

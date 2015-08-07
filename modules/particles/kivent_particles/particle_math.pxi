@@ -9,7 +9,10 @@ cdef inline float cy_random():
 
 
 cdef inline float cy_radians(float degrees):
-    return (degrees*PI)/180.0
+    return degrees*(PI/180.0)
+
+cdef inline float cy_degrees(float radians):
+    return radians*(180./PI)
 
 
 cdef inline void rotate_offset(float* offset, float angle, float* output):

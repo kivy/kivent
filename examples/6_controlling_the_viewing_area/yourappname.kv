@@ -1,4 +1,7 @@
 #:kivy 1.9.0
+#:import path os.path
+#:import dirname os.path.dirname
+#:import main __main__
 
 TestGame:
 
@@ -21,7 +24,7 @@ TestGame:
         RotateRenderer:
             gameworld: gameworld
             zones: ['general']
-            shader_source: '../assets/glsl/positionrotateshader.glsl'
+            shader_source: path.join(dirname(dirname(path.abspath(main.__file__))), 'assets', 'glsl', 'positionrotateshader.glsl')
             gameview: 'camera1'
         CymunkPhysics:
             gameworld: root.gameworld
@@ -38,7 +41,8 @@ TestGame:
             gameworld: gameworld
             size: root.size
             pos: root.pos
-            do_scroll: True
+            do_scroll_lock: False
+            updateable: True
     GameScreenManager:
         id: gamescreenmanager
         size: root.size

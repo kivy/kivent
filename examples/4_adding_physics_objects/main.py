@@ -8,15 +8,15 @@ import kivent_core
 import kivent_cymunk
 from kivent_core.gameworld import GameWorld
 from kivent_core.managers.resource_managers import texture_manager
-from kivent_core.rendering.vertmesh import VertMesh
 from kivent_core.systems.renderers import RotateRenderer
 from kivent_core.systems.position_systems import PositionSystem2D
 from kivent_core.systems.rotate_systems import RotateSystem2D
 from kivy.properties import StringProperty, NumericProperty
 from functools import partial
+from os.path import dirname, join, abspath
 
-
-texture_manager.load_atlas('../assets/background_objects.atlas')
+texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets', 
+    'background_objects.atlas'))
 
 
 class TestGame(Widget):
@@ -51,23 +51,31 @@ class TestGame(Widget):
         y_vel = randint(-500, 500)
         angle = radians(randint(-360, 360))
         angular_velocity = radians(randint(-150, -150))
-        shape_dict = {'inner_radius': 0, 'outer_radius': 20, 
-            'mass': 50, 'offset': (0, 0)}
-        col_shape = {'shape_type': 'circle', 'elasticity': .5, 
-            'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0}
+        shape_dict = {
+            'inner_radius': 0, 'outer_radius': 20, 
+            'mass': 50, 'offset': (0, 0)
+            }
+        col_shape = {
+            'shape_type': 'circle', 'elasticity': .5, 
+            'collision_type': 1, 'shape_info': shape_dict, 'friction': 1.0
+            }
         col_shapes = [col_shape]
         physics_component = {'main_shape': 'circle', 
-            'velocity': (x_vel, y_vel), 
-            'position': pos, 'angle': angle, 
-            'angular_velocity': angular_velocity, 
-            'vel_limit': 250, 
-            'ang_vel_limit': radians(200), 
-            'mass': 50, 'col_shapes': col_shapes}
-        create_component_dict = {'cymunk_physics': physics_component, 
-            'rotate_renderer': {'texture': 'asteroid1', 
-            'size': (45, 45),
-            'render': True}, 
-            'position': pos, 'rotate': 0, }
+                            'velocity': (x_vel, y_vel), 
+                            'position': pos, 'angle': angle, 
+                            'angular_velocity': angular_velocity, 
+                            'vel_limit': 250, 
+                            'ang_vel_limit': radians(200), 
+                            'mass': 50, 'col_shapes': col_shapes}
+        create_component_dict = {
+            'cymunk_physics': physics_component, 
+            'rotate_renderer': {
+                'texture': 'asteroid1', 
+                'size': (45, 45),
+                'render': True
+                }, 
+            'position': pos, 
+            'rotate': 0, }
         component_order = ['position', 'rotate', 'rotate_renderer', 
             'cymunk_physics',]
         return self.gameworld.init_entity(

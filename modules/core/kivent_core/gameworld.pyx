@@ -95,6 +95,10 @@ class GameWorld(Widget):
 
         **zones** (DictProperty): The zone name and count pairings for static
         allocation. Dict is zones[zone_name] = entity_count (int).
+
+        **model_manager** (ModelManager): Handles the loading of VertexModels.
+        You should only load model data using this ModelManager. Do not
+        instantiate your own.
         
     '''
     state = StringProperty('initial')

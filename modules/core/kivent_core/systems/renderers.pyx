@@ -5,9 +5,9 @@ from kivy.properties import (BooleanProperty, StringProperty, NumericProperty,
     ListProperty)
 from kivy.graphics import RenderContext, Callback
 from kivent_core.rendering.vertex_formats cimport (VertexFormat4F, 
-    VertexFormat7F, VertexFormat8F)
+    VertexFormat7F, VertexFormat4F4UB)
 from kivent_core.rendering.vertex_formats import (vertex_format_4f, 
-    vertex_format_7f, vertex_format_8f)
+    vertex_format_7f, vertex_format_4f4ub)
 from kivent_core.rendering.vertex_format cimport KEVertexFormat
 from kivent_core.rendering.cmesh cimport CMesh
 from kivent_core.rendering.batching cimport BatchManager, IndexedBatch
@@ -25,7 +25,6 @@ from kivent_core.systems.rotate_systems cimport RotateStruct2D
 from kivent_core.systems.scale_systems cimport ScaleStruct2D
 from kivent_core.systems.color_systems cimport ColorStruct
 from kivent_core.entity cimport Entity
-from kivent_core.rendering.vertmesh cimport VertMesh
 from kivent_core.rendering.model cimport VertexModel
 from kivy.factory import Factory
 from libc.math cimport fabs
@@ -297,7 +296,20 @@ cdef class Renderer(StaticMemGameSystem):
         sizeof on the struct being used.
 
         **frame_count** (NumericProperty, should be int): The number of frames 
-        to multibuffer. 
+        to multibuffer.
+
+        **force_update** (BooleanProperty): Set force_update if you want to be
+        sure an Entity is drawn immediately upon being added instead of waiting
+        for the next update tick. Useful if you want to have a static renderer,
+        or if you are adding and removing an Entity every frame.
+
+        **static_rendering** (BooleanProperty): Set static_rendering to True,
+        if you do not want to redraw every Entity every frame. Usually used 
+        in combination with force_update = True.
+
+        **update_trigger** (function): Invoke update_trigger if you want to 
+        force the renderer to redraw a frame. force_update = True will call
+        update_trigger automatically on batching and unbatching of an Entity.
 
     **Attributes: (Cython Access Only)**
         **attribute_count** (unsigned int): The number of attributes in the 
@@ -337,6 +349,11 @@ cdef class Renderer(StaticMemGameSystem):
         with self.canvas.after:
             Callback(self._reset_blend_func)
         self.update_trigger = Clock.create_trigger(partial(self.update, True))
+
+    property update_trigger:
+
+        def __get__(self):
+            return self.update_trigger
 
     def _set_blend_func(self, instruction):
         '''
@@ -627,7 +644,7 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.batch_id = -1
         component_data.vert_index = -1
         component_data.ind_index = -1
-        if self.force_update or not self.updateable or self.static_rendering:
+        if self.force_update:
             self.update_trigger()
         return component_data
 
@@ -673,7 +690,7 @@ cdef class Renderer(StaticMemGameSystem):
         component_data.batch_id = batch_indices[0]
         component_data.vert_index = batch_indices[1]
         component_data.ind_index = batch_indices[2]
-        if self.force_update or not self.updateable or self.static_rendering:
+        if self.force_update:
             self.update_trigger()
         return component_data
 
@@ -795,17 +812,17 @@ cdef class ColorRenderer(Renderer):
         ctypedef struct VertexFormat8F:
             GLfloat[2] pos
             GLfloat[2] uvs
-            GLfloat[4] vColor
+            GLubyte[4] vColor
 
     '''
     system_names = ListProperty(['color_renderer', 'position',
         'color'])
     system_id = StringProperty('color_renderer')
-    vertex_format_size = NumericProperty(sizeof(VertexFormat8F))
+    vertex_format_size = NumericProperty(sizeof(VertexFormat4F4UB))
     
     cdef void* setup_batch_manager(self, Buffer master_buffer) except NULL:
         cdef KEVertexFormat batch_vertex_format = KEVertexFormat(
-            sizeof(VertexFormat8F), *vertex_format_8f)
+            sizeof(VertexFormat4F4UB), *vertex_format_4f4ub)
         self.batch_manager = BatchManager(
             self.size_of_batches, self.max_batches, self.frame_count, 
             batch_vertex_format, master_buffer, 'triangles', self.canvas,
@@ -822,9 +839,9 @@ cdef class ColorRenderer(Renderer):
         cdef RenderStruct* render_comp
         cdef PositionStruct2D* pos_comp
         cdef ColorStruct* color_comp
-        cdef VertexFormat8F* frame_data
+        cdef VertexFormat4F4UB* frame_data
         cdef GLushort* frame_indices
-        cdef VertexFormat8F* vertex
+        cdef VertexFormat4F4UB* vertex
         cdef VertexModel model
         cdef GLushort* model_indices
         cdef VertexFormat4F* model_vertices
@@ -848,7 +865,7 @@ cdef class ColorRenderer(Renderer):
                     used = components_block.used_count
                     component_count = entity_components.count
                     component_data = <void**>components_block.data
-                    frame_data = <VertexFormat8F*>batch.get_vbo_frame_to_draw()
+                    frame_data = <VertexFormat4F4UB*>batch.get_vbo_frame_to_draw()
                     frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
                     index_offset = 0
                     for t in range(used):

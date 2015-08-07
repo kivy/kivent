@@ -486,6 +486,12 @@ cdef class TextureManager:
             return None
         return self._textures[tex_key]
 
+    def get_texture_by_name(self, name):
+        tex_key = self._keys[name]
+        if tex_key == <unsigned int>-1:
+            return None
+        return self._textures[tex_key]
+
     def get_groupkey_from_texkey(self, tex_key):
         #handles if entity has no texture
         if tex_key == <unsigned int>-1:

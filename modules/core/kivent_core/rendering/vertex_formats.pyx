@@ -170,16 +170,16 @@ vertex_format_7f = [
 format_registrar.register_vertex_format('vertex_format_7f', vertex_format_7f,
     sizeof(VertexFormat7F))
 
-cdef VertexFormat8F* tmp3 = <VertexFormat8F*>NULL
+cdef VertexFormat4F4UB* tmp3 = <VertexFormat4F4UB*>NULL
 pos_offset = <Py_ssize_t> (<Py_intptr_t>(tmp3.pos) - <Py_intptr_t>(tmp3))
 uvs_offset = <Py_ssize_t> (<Py_intptr_t>(tmp3.uvs) - <Py_intptr_t>(tmp3))
 color_offset = <Py_ssize_t> (<Py_intptr_t>(tmp3.vColor) - <Py_intptr_t>(tmp3))
 
-vertex_format_8f = [
+vertex_format_4f4ub = [
     (b'pos', 2, b'float', pos_offset, False), 
     (b'uvs', 2, b'float', uvs_offset, False),
-    (b'vColor', 4, b'float', color_offset, False),
+    (b'vColor', 4, b'ubyte', color_offset, True),
     ]
 
-format_registrar.register_vertex_format('vertex_format_8f', vertex_format_8f,
-    sizeof(VertexFormat8F))
+format_registrar.register_vertex_format('vertex_format_4f4ub',
+    vertex_format_4f4ub, sizeof(VertexFormat4F4UB))

@@ -19,6 +19,21 @@ texture_manager.load_image(join(dirname(dirname(abspath(__file__))), 'assets',
     'star2.png'))
 
 
+class AnimationSystem(GameSystem):
+
+    def update(self, dt):
+        entities = self.gameworld.entities
+        for component in self.components:
+            if component is not None:
+                entity_id = component.entity_id
+                entity = entities[entity_id]
+                render_comp = entity.renderer
+                if render_comp.texture_key == 'star1':
+                    render_comp.texture_key = 'star2'
+                else:
+                    render_comp.texture_key = 'star1'
+
+Factory.register('AnimationSystem', cls=AnimationSystem)
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
@@ -37,24 +52,16 @@ class TestGame(Widget):
         init_entity = self.gameworld.init_entity
         for x in range(100):
             self.draw_a_star()
-        Clock.schedule_interval(self.change_tex, 1.0)
-
-    def change_tex(self, dt):
-        for each in self.entities:
-            ent = self.gameworld.entities[each]
-            render_comp = ent.renderer 
-            if render_comp.texture_key == 'star1':
-                render_comp.texture_key = 'star2'
-            else:
-                render_comp.texture_key = 'star1'
 
     def draw_a_star(self):
         pos = randint(0, Window.width), randint(0, Window.height)
         create_dict = {
             'position': pos,
+            'animation': {},
             'renderer': {'texture': 'star1', 'size': (50., 50.)},
         }
-        ent = self.gameworld.init_entity(create_dict, ['position', 'renderer'])
+        ent = self.gameworld.init_entity(create_dict, ['position', 'renderer',
+            'animation'])
         self.entities.append(ent)
         
 

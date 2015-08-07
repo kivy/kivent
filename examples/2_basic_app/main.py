@@ -9,9 +9,10 @@ from kivent_core.systems.position_systems import PositionSystem2D
 from kivent_core.systems.renderers import Renderer
 from kivent_core.managers.resource_managers import texture_manager
 from kivy.properties import StringProperty
+from os.path import dirname, join, abspath
 
-texture_manager.load_atlas('../assets/background_objects.atlas')
-
+texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets', 
+    'background_objects.atlas'))
 
 
 class TestGame(Widget):
@@ -45,6 +46,8 @@ class TestGame(Widget):
                     'model_key': model_key},
             }
             ent = init_entity(create_dict, ['position', 'renderer'])
+        #If you do not set Renderer.force_update to True, call update_trigger
+        #self.ids.renderer.update_trigger()
 
 
     def setup_states(self):
@@ -77,4 +80,3 @@ class YourAppNameApp(App):
 if __name__ == '__main__':
     YourAppNameApp().run()
     
-    # cProfile.run('YourAppNameApp().run()', 'prof.prof')

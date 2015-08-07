@@ -8,14 +8,14 @@ from kivent_core.gameworld import GameWorld
 from kivent_core.systems.position_systems import PositionSystem2D
 from kivent_core.systems.renderers import Renderer
 from kivent_core.systems.gamesystem import GameSystem
-from kivent_core.managers.resource_managers import (
-    texture_manager, model_manager)
+from kivent_core.managers.resource_managers import texture_manager
 from kivy.properties import StringProperty
 from kivy.factory import Factory
 from velocity_module.velocity import VelocitySystem2D
-import cProfile
+from os.path import dirname, join, abspath
 
-texture_manager.load_atlas('../assets/background_objects.atlas')
+texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets', 
+    'background_objects.atlas'))
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
@@ -39,7 +39,7 @@ class TestGame(Widget):
 
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity
-        for x in range(30000):
+        for x in range(10000):
             pos = randint(0, Window.width), randint(0, Window.height)
             model_key = choice(['star1-4', 'star1-4-2'])
             create_dict = {
@@ -81,5 +81,4 @@ class CythonVelApp(App):
 
 
 if __name__ == '__main__':
-    #CythonVelApp().run()
-    cProfile.run('CythonVelApp().run()', 'prof.prof')
+    CythonVelApp().run()

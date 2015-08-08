@@ -886,8 +886,9 @@ cdef class EmitterSystem(StaticMemGameSystem):
                 emitter = <ParticleEmitter>emitter_comp.emitters[e]
                 if not emitter._paused:
                     emitter._emit_angle = (
-                        rot_comp.r + emitter._emit_angle_offset)
-                    rotate_offset(emitter._pos_offset, emitter._emit_angle, 
+                        cy_radians(rot_comp.r) + emitter._emit_angle_offset)
+                    rotate_offset(emitter._pos_offset, 
+                        emitter._emit_angle, 
                         resulting_offset)
                     emitter._pos[0] = pos_comp.x + resulting_offset[0]
                     emitter._pos[1] = pos_comp.y + resulting_offset[1]

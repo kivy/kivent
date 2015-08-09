@@ -1,5 +1,5 @@
-KivEnt
-======
+KivEnt 2.1
+==========
 KivEnt is a framework for building performant, dynamic real-time scenes in [Kivy](http://kivy.org/#home) for Python2 and Python3. At the moment it is 2d oriented. The only dependency for the kivent_core module is Kivy itself. Additional modules may have other requirements, such as kivent_cymunk module being based on [Chipmunk2d](https://chipmunk-physics.net/) and its [cymunk wrapper](https://github.com/tito/cymunk).
 
 An entity-component architecture is used to control game object state and the logic of processing the game objects. This means that your game objects will be made up of collections of independent components that stricly hold data; each component corresponds to a GameSystem that will perform all data processing on the components, in the update loop each frame, and as a result of user interaction or other programmaticaly generated events. All memory for the built-in components is allocated statically: if you would like learn more about memory management, [read here](http://kivent.org/docs/memory_handlers.html).
@@ -18,7 +18,7 @@ https://groups.google.com/forum/#!forum/kivent
 http://www.kivent.org/docs  
 
 ##Getting Started
-Read the [introduction](https://github.com/Kovak/KivEnt/wiki/An-Introduction-to-KivEnt) on the github wiki.
+Read the [introduction](https://github.com/kivy/KivEnt/wiki/An-Introduction-to-KivEnt) on the github wiki.
 
 ##Dependencies
 KivEnt is split into modules, the core module, 'kivent_core', is dependent only on Kivy.
@@ -31,8 +31,16 @@ Other modules may have other dependecies, listed here:
 ###kivent_cymunk:
 * [kivy](https://github.com/kivy/kivy)
 * [cymunk](https://github.com/tito/cymunk)
-* [kivent_core](https://github.com/Kovak/KivEnt/tree/master/modules/core)
+* [kivent_core](https://github.com/kivy/KivEnt/tree/master/modules/core)
 
+###kivent_polygen
+* [kivy](https://github.com/kivy/kivy)
+* [kivent_core](https://github.com/kivy/KivEnt/tree/master/modules/core)
+
+###kivent_particles
+* [kivy](https://github.com/kivy/kivy)
+* [kivent_core](https://github.com/kivy/KivEnt/tree/master/modules/core)
+* 
 ##Installation
 first install all dependencies then:
 
@@ -82,6 +90,6 @@ Assuming you have KivEnt in the root folder for the portable package, in the kiv
     python main.py
 
 ##Tested On:
-Tested with [Kivy 1.9](https://github.com/kivy/kivy). Python 2.7 and Python 3.4.
+Tested with [master branch](https://github.com/kivy/kivy). Python 2.7 and Python 3.4.
 
 Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 14.04, and Windows 8.1

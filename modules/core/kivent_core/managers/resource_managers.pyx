@@ -2,7 +2,6 @@
 import json
 from os import path
 from kivy.core.image import Image as CoreImage
-from kivent_core.rendering.vertmesh cimport VertMesh
 from kivent_core.rendering.model cimport VertexModel, Vertex
 from kivent_core.rendering.vertex_formats cimport format_registrar, FormatConfig
 from kivent_core.memory_handlers.block cimport MemoryBlock

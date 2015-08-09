@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 from kivent_core.systems.renderers cimport Renderer, RenderStruct
 from kivent_polygen.vertex_formats cimport VertexFormat2F4UB
 from kivent_polygen.vertex_formats import vertex_format_2f4ub
@@ -15,7 +16,7 @@ from kivy.properties import StringProperty, NumericProperty, ListProperty
 
 cdef class ColorPolyRenderer(Renderer):
     '''
-    Processing Depends On: PositionSystem2D, ColorRenderer
+    Processing Depends On: PositionSystem2D, ColorPolyRenderer
 
     The renderer draws with the VertexFormat2F4UB:
 

@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 from cpython cimport bool
 from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem,
     MemComponent)

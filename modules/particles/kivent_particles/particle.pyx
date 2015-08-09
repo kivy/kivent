@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 from xml.dom.minidom import parse as parse_xml
 import json
 from libc.math cimport trunc, sin, cos, fmin, fmax
@@ -268,7 +269,7 @@ cdef class ParticleSystem(StaticMemGameSystem):
     processor = BooleanProperty(True)
     system_names = ListProperty(['particles','position', 'rotate', 'scale',
         'color'])
-    renderer_name = StringProperty('particles_renderer')
+    renderer_name = StringProperty('particle_renderer')
     particle_zone = StringProperty('particles')
 
     def __init__(self, **kwargs):

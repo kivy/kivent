@@ -43,6 +43,7 @@ cdef class Vertex:
     returned from indexing into a VertexModel. For instance:
 
     .. code-block:: python 
+    
         vertex = instance_of_VertexModel[0] #retrieve the first vertex
         pos = vertex.pos #retrieve data from a vertex
         vertex.pos = [1., 2.] #set data

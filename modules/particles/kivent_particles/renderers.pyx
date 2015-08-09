@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 from kivent_core.systems.renderers cimport Renderer, RenderStruct
 from kivent_particles.vertex_formats cimport VertexFormat9F4UB
 from kivent_particles.vertex_formats import vertex_format_9f4ub
@@ -16,7 +17,7 @@ from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.factory import Factory
 from kivy.properties import StringProperty, NumericProperty, ListProperty
 
-cdef class ParticlesRenderer(Renderer):
+cdef class ParticleRenderer(Renderer):
     '''
     Processing Depends On: ParticlesRenderer, PositionSystem2D, ScaleSystem2D,
     RotateSystem2D, ColorSystem
@@ -34,9 +35,9 @@ cdef class ParticlesRenderer(Renderer):
             GLfloat rotate
 
     '''
-    system_names = ListProperty(['particles_renderer', 'position', 'scale', 
+    system_names = ListProperty(['particle_renderer', 'position', 'scale', 
         'rotate', 'color'])
-    system_id = StringProperty('particles_renderer')
+    system_id = StringProperty('particle_renderer')
     model_format = StringProperty('vertex_format_9f4ub')
     vertex_format_size = NumericProperty(sizeof(VertexFormat9F4UB))
     
@@ -132,4 +133,4 @@ cdef class ParticlesRenderer(Renderer):
                 mesh_instruction.flag_update()
 
 
-Factory.register('ParticlesRenderer', cls=ParticlesRenderer)
+Factory.register('ParticleRenderer', cls=ParticleRenderer)

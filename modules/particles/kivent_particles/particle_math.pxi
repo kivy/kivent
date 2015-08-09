@@ -15,10 +15,10 @@ cdef inline float cy_degrees(float radians):
     return radians*(180./PI)
 
 
-cdef inline void rotate_offset(float* offset, float angle, float* output):
-    cdef float rads = cy_radians(angle)
-    cdef float cs = cos(rads)
-    cdef float sn = sin(rads)
+cdef inline void rotate_offset(float* offset, float angle_radians, 
+    float* output):
+    cdef float cs = cos(angle_radians)
+    cdef float sn = sin(angle_radians)
     output[0] = offset[0] * cs - offset[1] * sn
     output[1] = offset[0] * sn + offset[1] * cs
 

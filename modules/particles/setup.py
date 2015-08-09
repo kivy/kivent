@@ -27,21 +27,21 @@ do_clear_existing = True
 particles_modules = {
     'kivent_particles.particle': ['kivent_particles/particle.pyx'],
     'kivent_particles.emitter': ['kivent_particles/emitter.pyx',],
-    'kivent_particles.vertex_formats': ['kivent_particles/vertex_formats.pyx',],
+    'kivent_particles.vf': ['kivent_particles/vf.pyx',],
     'kivent_particles.renderers': ['kivent_particles/renderers.pyx',],
 }
 
 particles_modules_c = {
     'kivent_particles.particle': ['kivent_particles/particle.c',],
     'kivent_particles.emitter': ['kivent_particles/emitter.c',],
-    'kivent_particles.vertex_formats': ['kivent_particles/vertex_formats.c',],
+    'kivent_particles.vf': ['kivent_particles/vf.c',],
     'kivent_particles.renderers': ['kivent_particles/renderers.c',],
 }
 
 check_for_removal = [
     'kivent_particles/particle.c',
     'kivent_particles.emitter.c',
-    'kivent_particles/vertex_formats.c',
+    'kivent_particles/vf.c',
     'kivent_particles/renderers.c',
 
     ]

@@ -18,6 +18,7 @@ function build_kivent_particles() {
 
 	export LDSHARED="$LIBLINK"
 	export PYTHONPATH=$BUILD_kivy/:$PYTHONPATH
+	export PYTHONPATH=$BUILD_kivent_core/:$PYTHONPATH
 	try find . -iname '*.pyx' -exec $CYTHON {} \;
 	try $BUILD_PATH/python-install/bin/python.host setup.py build_ext -v
 	try find build/lib.* -name "*.o" -exec $STRIP {} \;

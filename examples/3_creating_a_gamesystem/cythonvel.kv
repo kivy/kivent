@@ -1,4 +1,7 @@
 #:kivy 1.9.0
+#:import path os.path
+#:import dirname os.path.dirname
+#:import main __main__
 
 TestGame:
 
@@ -11,7 +14,7 @@ TestGame:
         size_of_gameworld: 100*1024
         size_of_entity_block: 128
         system_count: 4
-        zones: {'general': 100000}
+        zones: {'general': 10000}
         PositionSystem2D:
             system_id: 'position'
             gameworld: gameworld
@@ -30,7 +33,7 @@ TestGame:
             updateable: True
             size_of_batches: 1024
             size_of_component_block: 128
-            shader_source: '../assets/glsl/positionshader.glsl'
+            shader_source: path.join(dirname(dirname(path.abspath(main.__file__))), 'assets', 'glsl', 'positionshader.glsl')
     GameScreenManager:
         id: gamescreenmanager
         size: root.size

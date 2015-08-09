@@ -1,4 +1,3 @@
-
 from libc.math cimport fmax, fmin, sqrt, M_PI as PI
 from libc.stdlib cimport rand, RAND_MAX
 

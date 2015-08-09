@@ -4,7 +4,7 @@ from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.factory import Factory
-from kivy.properties import ObjectProperty, NumericProperty
+from kivy.properties import ObjectProperty, NumericProperty, StringProperty
 
 
 cdef class PositionComponent2D(MemComponent):
@@ -63,6 +63,7 @@ cdef class PositionSystem2D(StaticMemGameSystem):
     '''
     type_size = NumericProperty(sizeof(PositionStruct2D))
     component_type = ObjectProperty(PositionComponent2D)
+    system_id = StringProperty('position')
         
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, str zone, args):

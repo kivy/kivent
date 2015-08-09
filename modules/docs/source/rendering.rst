@@ -16,8 +16,11 @@ Instructions
 
 Models
 ======
-.. autoclass:: kivent_core.rendering.vertmesh.VertMesh
+.. autoclass:: kivent_core.rendering.model.VertexModel
     :members:
+
+.. autoclass:: kivent_core.rendering.model.Vertex
+	:members:
 
 Vertex Formats
 ==============

@@ -1,0 +1,72 @@
+#:kivy 1.9.0
+#:import path os.path
+#:import dirname os.path.dirname
+#:import main __main__
+
+TestGame:
+
+
+<TestGame>:
+    gameworld: gameworld
+    GameWorld:
+        id: gameworld
+        gamescreenmanager: gamescreenmanager
+        size_of_gameworld: 100*1024
+        size_of_entity_block: 128
+        system_count: 4
+        size: root.size
+        pos: root.pos
+        zones: {'general': 10000}
+        PositionSystem2D:
+            system_id: 'position'
+            gameworld: gameworld
+            zones: ['general']
+            size_of_component_block: 128
+        ColorSystem:
+            system_id: 'color'
+            gameworld: gameworld
+            zones: ['general']
+        AnimationSystem:
+            system_id: 'animation'
+            gameworld: gameworld
+            update_time: 1.0
+            updateable: True
+        Renderer:
+            gameworld: gameworld
+            system_id: 'renderer'
+            zones: ['general']
+            frame_count: 3
+            updateable: True
+            system_names: ['renderer', 'position']
+            size_of_batches: 256
+            size_of_component_block: 128
+            shader_source: path.join(dirname(dirname(path.abspath(main.__file__))), 'assets', 'glsl', 'positionshader.glsl')
+    GameScreenManager:
+        id: gamescreenmanager
+        size: root.size
+        pos: root.pos
+        gameworld: gameworld
+
+
+<GameScreenManager>:
+    MainScreen:
+        id: main_screen
+
+
+<MainScreen@GameScreen>:
+    name: 'main'
+    FloatLayout:
+        DebugPanel:
+            size_hint: (.2, .1)
+            pos_hint: {'x': .225, 'y': .025}
+
+
+<DebugPanel>:
+    Label:
+        pos: root.pos
+        size: root.size
+        font_size: root.size[1]*.5
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1)
+        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'

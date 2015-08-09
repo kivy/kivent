@@ -13,7 +13,7 @@ from libc.math cimport M_PI_2
 cimport cython
 from kivy.factory import Factory
 from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem, 
-    ZonedAggregator, MemComponent)
+    MemComponent)
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.zone cimport MemoryZone
@@ -484,7 +484,6 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         for position and rotate components. '''
 
         self.space.step(dt)
-        gameworld = self.gameworld
 
         cdef void** component_data = <void**>(
             self.entity_components.memory_block.data)

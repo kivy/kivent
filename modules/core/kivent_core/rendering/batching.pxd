@@ -13,7 +13,7 @@ cdef class IndexedBatch:
     cdef list frame_data
     cdef unsigned int current_frame
     cdef unsigned int frame_count
-    cdef int tex_key
+    cdef unsigned int tex_key
     cdef unsigned int batch_id
     cdef GLuint mode
     cdef object mesh_instruction
@@ -29,6 +29,7 @@ cdef class IndexedBatch:
         unsigned int num_indices)
     cdef void* get_vbo_frame_to_draw(self)
     cdef FixedFrameData get_current_vbo(self)
+    cdef FixedFrameData get_next_vbo(self)
     cdef void* get_indices_frame_to_draw(self)
     cdef void set_index_count_for_frame(self, 
         unsigned int index_count)
@@ -60,11 +61,11 @@ cdef class BatchManager:
     cdef str get_mode(self)
     cdef unsigned int get_size(self)
     cdef unsigned int get_size_of_component_pointers(self)
-    cdef unsigned int create_batch(self, int tex_key) except -1
-    cdef void remove_batch(self, unsigned int batch_id)
-    cdef IndexedBatch get_batch_with_space(self, int tex_key, 
+    cdef unsigned int create_batch(self, unsigned int tex_key) except -1
+    cdef int remove_batch(self, unsigned int batch_id) except 0
+    cdef IndexedBatch get_batch_with_space(self, unsigned int tex_key, 
         unsigned int num_verts, unsigned int num_indices)
-    cdef tuple batch_entity(self, unsigned int entity_id, int tex_key,
+    cdef tuple batch_entity(self, unsigned int entity_id, unsigned int tex_key,
         unsigned int num_verts, unsigned int num_indices)
     cdef bint unbatch_entity(self, unsigned int entity_id, 
         unsigned int batch_id, unsigned int num_verts, 

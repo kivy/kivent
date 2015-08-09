@@ -64,14 +64,13 @@ cdef class memrange_iter:
         cdef unsigned int current = self.current
         cdef unsigned int pool_index, used
         cdef void* pointer
-
-        if current > self.end:
+        if current >= self.end:
             raise StopIteration
         else:
             pool_index = memory_zone.get_pool_index_from_index(current)
             used = memory_zone.get_pool_end_from_pool_index(pool_index)
             if current >= used:
-                self.current = memory_zone.get_start_of_pool(pool_index+1)
+                self.current = memory_zone.get_pool_range(pool_index)[1] + 1
                 return self.next()
             else:
                 pointer = memory_zone.get_pointer(current)

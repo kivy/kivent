@@ -8,16 +8,17 @@ import kivent_core
 import kivent_cymunk
 from kivent_core.gameworld import GameWorld
 from kivent_core.managers.resource_managers import texture_manager
-from kivent_core.rendering.vertmesh import VertMesh
 from kivent_core.systems.renderers import RotateRenderer
 from kivent_core.systems.position_systems import PositionSystem2D
 from kivent_core.systems.rotate_systems import RotateSystem2D
 from kivent_cymunk.interaction import CymunkTouchSystem
 from kivy.properties import StringProperty, NumericProperty
 from functools import partial
+from os.path import dirname, join, abspath
 
+texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets', 
+    'background_objects.atlas'))
 
-texture_manager.load_atlas('../assets/background_objects.atlas')
 
 
 class TestGame(Widget):
@@ -32,12 +33,7 @@ class TestGame(Widget):
         self.setup_states()
         self.set_state()
 
-    def destroy_created_entity(self, ent_id, dt):
-        self.gameworld.remove_entity(ent_id)
-        self.app.count -= 1
-
     def draw_some_stuff(self):
-        delete_time = 2.5
         gameview = self.gameworld.system_manager['camera1']
         x, y = int(-gameview.camera_pos[0]), int(-gameview.camera_pos[1])
         w, h =  int(gameview.size[0] + x), int(gameview.size[1] + y)

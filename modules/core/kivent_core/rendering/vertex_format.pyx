@@ -7,7 +7,7 @@ from kivy.graphics.shader cimport Shader
 from kivy.graphics.c_opengl cimport (GL_FLOAT, GLfloat, GLsizei, GL_FALSE,
     glVertexAttribPointer ,GLvoid, GL_BYTE, GLbyte, GL_SHORT, GLshort, 
     GL_INT, GLint, GL_UNSIGNED_BYTE, GLubyte, GL_UNSIGNED_SHORT, GLushort,
-    GL_UNSIGNED_INT, GLuint)
+    GL_UNSIGNED_INT, GLuint, GL_TRUE)
 from kivy.graphics.instructions cimport getActiveContext
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 
@@ -78,9 +78,13 @@ cdef class KEVertexFormat(VertexFormat):
             sizeof(Py_ssize_t)*self.vattr_count)
         if self.attr_offsets == NULL:
             raise MemoryError()
+        self.attr_normalize = attr_normalize = <int*>PyMem_Malloc(
+            sizeof(int)*self.vattr_count)
+        if self.attr_normalize == NULL:
+            raise MemoryError()
 
         index = 0
-        for name, size, tp, offset in fmt:
+        for name, size, tp, offset, do_normalize in fmt:
             attr = &self.vattr[index]
             attr_offsets[index] = offset
             # fill the vertex format
@@ -88,6 +92,10 @@ cdef class KEVertexFormat(VertexFormat):
             attr.name = <bytes>name
             attr.index = 0 # will be set by the shader itself
             attr.size = size
+            if do_normalize:
+                attr_normalize[index] = GL_TRUE
+            else:
+                attr_normalize[index] = GL_FALSE
 
             # only float is accepted as attribute format
             if tp == b'float':
@@ -136,6 +144,6 @@ cdef class KEVertexFormat(VertexFormat):
                 continue
             #commentout for sphinx
             glVertexAttribPointer(attr.index, attr.size, attr.type,
-                    GL_FALSE, <GLsizei>vbytesize, 
+                    self.attr_normalize[i], <GLsizei>vbytesize, 
                     <GLvoid*><long>offsets[i])
             gl_log_debug_message('KEVertexFormat.bind-glVertexAttribPointer')

@@ -199,6 +199,10 @@ cdef class GameSystem(CWidget):
             update(update_time)
             frame_time -= update_time
         self._frame_time = frame_time
+        if debug:
+            Logger.debug('KivEnt: {system_id} update finished'.format(
+                system_id=self.system_id))
+
 
     def init_component(self, component_index, entity_id, zone, args):
         '''Override this function to provide custom logic for setting up your 

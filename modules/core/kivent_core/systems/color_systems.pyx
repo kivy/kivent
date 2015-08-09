@@ -4,7 +4,7 @@ from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.factory import Factory
-from kivy.properties import ObjectProperty, NumericProperty
+from kivy.properties import ObjectProperty, NumericProperty, StringProperty
 
 
 cdef class ColorComponent(MemComponent):
@@ -15,13 +15,13 @@ cdef class ColorComponent(MemComponent):
         associated with. Will be <unsigned int>-1 if the component is 
         unattached.
 
-        **r** (float): The red channel, 0.0 to 1.0.
+        **r** (unsigned char): The red channel, 0 to 255.
 
-        **g** (float): The green channel, 0.0 to 1.0.
+        **g** (unsigned char): The green channel, 0 to 255.
 
-        **b** (float): The blue channel, 0.0 to 1.0.
+        **b** (unsigned char): The blue channel, 0 to 255.
 
-        **a** (float): The alpha channel, 0.0 to 1.0.
+        **a** (unsigned char): The alpha channel, 0 to 255.
     '''
 
     property entity_id:
@@ -32,34 +32,34 @@ cdef class ColorComponent(MemComponent):
     property r:
         def __get__(self):
             cdef ColorStruct* data = <ColorStruct*>self.pointer
-            return data.r
-        def __set__(self, float value):
+            return data.color[0]
+        def __set__(self, unsigned char value):
             cdef ColorStruct* data = <ColorStruct*>self.pointer
-            data.r = value
+            data.color[0] = value
 
     property g:
         def __get__(self):
             cdef ColorStruct* data = <ColorStruct*>self.pointer
-            return data.g
-        def __set__(self, float value):
+            return data.color[1]
+        def __set__(self, unsigned char value):
             cdef ColorStruct* data = <ColorStruct*>self.pointer
-            data.g = value
+            data.color[1] = value
 
     property b:
         def __get__(self):
             cdef ColorStruct* data = <ColorStruct*>self.pointer
-            return data.b
-        def __set__(self, float value):
+            return data.color[2]
+        def __set__(self, unsigned char value):
             cdef ColorStruct* data = <ColorStruct*>self.pointer
-            data.b = value
+            data.color[2] = value
 
     property a:
         def __get__(self):
             cdef ColorStruct* data = <ColorStruct*>self.pointer
-            return data.a
-        def __set__(self, float value):
+            return data.color[3]
+        def __set__(self, unsigned char value):
             cdef ColorStruct* data = <ColorStruct*>self.pointer
-            data.a = value
+            data.color[3] = value
 
 
 cdef class ColorSystem(StaticMemGameSystem):
@@ -73,33 +73,28 @@ cdef class ColorSystem(StaticMemGameSystem):
     '''
     type_size = NumericProperty(sizeof(ColorStruct))
     component_type = ObjectProperty(ColorComponent)
+    system_id = StringProperty('color')
 
     def init_component(self, unsigned int component_index, 
         unsigned int entity_id, str zone, args):
         '''A color component is always initialized with a tuple (r, g, b, a).
         '''
-        cdef float r = args[0]
-        cdef float g = args[1]
-        cdef float b = args[2]
-        cdef float a = args[3]
         cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef ColorStruct* component = <ColorStruct*>memory_zone.get_pointer(
             component_index)
         component.entity_id = entity_id
-        component.r = r
-        component.g = g
-        component.b = b
-        component.a = a
+        cdef int i
+        for i in range(4):
+            component.color[i] = args[i]
 
     def clear_component(self, unsigned int component_index):
         cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef ColorStruct* pointer = <ColorStruct*>memory_zone.get_pointer(
             component_index)
         pointer.entity_id = -1
-        pointer.r = 1.
-        pointer.g = 1.
-        pointer.b = 1.
-        pointer.a = 1.
+        cdef int i
+        for i in range(4):
+            pointer.color[i] = 255
 
 
 Factory.register('ColorSystem', cls=ColorSystem)

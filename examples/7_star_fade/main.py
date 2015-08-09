@@ -8,26 +8,18 @@ from kivent_core.gameworld import GameWorld
 from kivent_core.systems.position_systems import PositionSystem2D
 from kivent_core.systems.renderers import Renderer
 from kivent_core.systems.gamesystem import GameSystem
-from kivent_core.managers.resource_managers import (texture_manager, 
-    model_manager)
+from kivent_core.managers.resource_managers import texture_manager
 from kivy.properties import StringProperty, ObjectProperty
 from kivy.factory import Factory
+from kivent_core.managers.resource_managers import texture_manager
+from os.path import dirname, join, abspath
 
-texture_manager.load_atlas('assets/stars.atlas')
-keys = ['star1', 'star2', 'star3', 'star_circle', 'star_square']
-model_keys = []
-mk_a = model_keys.append
-load_textured_rectangle = model_manager.load_textured_rectangle
-for x in range(250):
-    model_key = 'star_m_' + str(x)
-    tex_key = choice(keys)
-    wh = randrange(1., 7.)
-    load_textured_rectangle(4, wh, wh, choice(keys), model_key)
-    mk_a((model_key, tex_key))
+texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets', 
+    'stars.atlas'))
 
 
 def lerp(v0, v1, t):
-    return (1-t)*v0 + t * v1
+    return (1.-t)*v0 + t * v1
 
 class FadingSystem(GameSystem):
     make_entity = ObjectProperty(None)
@@ -48,13 +40,15 @@ class FadingSystem(GameSystem):
                     self.gameworld.remove_entity(entity_id)
                     self.make_entity()
                 if current_time < fade_out_start:
-                    color_comp.a = lerp(0., 1., current_time / fade_out_start)
+                    color_comp.a = lerp(0., 255., 
+                        current_time / fade_out_start)
                 else:
-                    color_comp.a = lerp(1., 0., 
+                    color_comp.a = lerp(255., 0., 
                         (current_time - fade_out_start) / fade_out_time)
 
 
 Factory.register('FadingSystem', cls=FadingSystem)
+
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
@@ -65,24 +59,39 @@ class TestGame(Widget):
 
     def init_game(self):
         self.setup_states()
+        self.load_resources()
         self.set_state()
         self.draw_some_stuff()
 
+    def load_resources(self):
+        keys = ['star1', 'star2', 'star3', 'star_circle', 'star_square']
+        self.model_keys = model_keys = []
+        mk_a = model_keys.append
+        model_manager = self.gameworld.model_manager
+        load_textured_rectangle = model_manager.load_textured_rectangle
+        for x in range(100):
+            model_key = 'star_m_' + str(x)
+            tex_key = choice(keys)
+            wh = randrange(1., 7.)
+            real_name = load_textured_rectangle(
+                'vertex_format_4f', wh, wh, tex_key, model_key)
+            mk_a((model_key, tex_key))
+
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity
-        for x in range(5000):
+        for x in range(1000):
             self.draw_a_star()
 
     def draw_a_star(self):
-        model_to_use = choice(model_keys)
+        model_to_use = choice(self.model_keys)
         pos = randint(0, Window.width), randint(0, Window.height)
         fade_in = randrange(10., 15.)
         fade_out = randrange(10., 15.)
         create_dict = {
             'position': pos,
-            'color': (1., 1., 1., 0.),
+            'color': (255, 255, 255, 0),
             'renderer': {'texture': model_to_use[1], 
-                'vert_mesh_key': model_to_use[0]},
+                'model_key': model_to_use[0]},
             'fade': {'time': fade_in + fade_out,
                 'fade_out_start': fade_in, 
                 'current_time': 0,},

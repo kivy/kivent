@@ -3,11 +3,7 @@ from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 
 ctypedef struct ColorStruct:
     unsigned int entity_id
-    float r
-    float g
-    float b
-    float a
-
+    unsigned char[4] color
 
 cdef class ColorComponent(MemComponent):
     pass

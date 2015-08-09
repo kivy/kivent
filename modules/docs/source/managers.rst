@@ -17,7 +17,8 @@ System Management
 Resource Managers
 =================
 Resource handling is not quite done yet so consider these sections 
-slightly experimental and know they will probably change in the future.
+slightly experimental and know they will probably change in the future. As of 
+2.1 a new ModelManager has been introduced with slightly different functionality.
 
 .. autoclass:: kivent_core.managers.resource_managers.ModelManager
     :members:

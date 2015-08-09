@@ -1,9 +1,9 @@
 #!/bin/bash
 
-VERSION_kivent_particles=1.0.0
+VERSION_kivent_particles=2.0.0
 URL_kivent_particles=https://github.com/kivy/KivEnt/archive/master.zip
 MD5_kivent_particles=
-DEPS_kivent_particles=(python kivy kivent_core)
+DEPS_kivent_particles=(python kivy)
 BUILD_kivent_particles=$BUILD_PATH/kivent_particles/master/modules/particles
 RECIPE_kivent_particles=$RECIPES_PATH/kivent_particles
 
@@ -18,7 +18,6 @@ function build_kivent_particles() {
 
 	export LDSHARED="$LIBLINK"
 	export PYTHONPATH=$BUILD_kivy/:$PYTHONPATH
-	export PYTHONPATH=$BUILD_kivent_core/:$PYTHONPATH
 	try find . -iname '*.pyx' -exec $CYTHON {} \;
 	try $BUILD_PATH/python-install/bin/python.host setup.py build_ext -v
 	try find build/lib.* -name "*.o" -exec $STRIP {} \;

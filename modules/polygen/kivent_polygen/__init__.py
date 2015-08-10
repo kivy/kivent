@@ -1,2 +1,2 @@
-from kivent_polygen import vertex_formats
-from kivent_polygen import renderers
+from kivent_polygen import polygen_formats
+from kivent_polygen import polygen_renderers

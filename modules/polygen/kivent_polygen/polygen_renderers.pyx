@@ -1,7 +1,7 @@
 # cython: embedsignature=True
 from kivent_core.systems.renderers cimport Renderer, RenderStruct
-from kivent_polygen.vertex_formats cimport VertexFormat2F4UB
-from kivent_polygen.vertex_formats import vertex_format_2f4ub
+from kivent_polygen.polygen_formats cimport VertexFormat2F4UB
+from kivent_polygen.polygen_formats import vertex_format_2f4ub
 from kivy.graphics.c_opengl cimport GLushort
 from kivent_core.rendering.batching cimport BatchManager, IndexedBatch
 from kivent_core.rendering.vertex_format cimport KEVertexFormat

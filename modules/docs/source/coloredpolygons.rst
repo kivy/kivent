@@ -8,5 +8,5 @@ future more tools for generating geometry will be included.
 Rendering Systems
 =================
 
-.. autoclass:: kivent_polygen.renderers.ColorPolyRenderer
+.. autoclass:: kivent_polygen.polygen_renderers.ColorPolyRenderer
     :members:

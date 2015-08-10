@@ -25,18 +25,18 @@ do_clear_existing = True
 
 
 polygen_modules = {
-    'kivent_polygen.renderers': ['kivent_polygen/renderers.pyx',],
-    'kivent_polygen.vertex_formats': ['kivent_polygen/vertex_formats.pyx',],
+    'kivent_polygen.polygen_renderers': ['kivent_polygen/polygen_renderers.pyx',],
+    'kivent_polygen.polygen_formats': ['kivent_polygen/polygen_formats.pyx',],
 }
 
 polygen_modules_c = {
-    'kivent_polygen.renderers': ['kivent_polygen/renderers.c',],
-    'kivent_polygen.vertex_formats': ['kivent_polygen/vertex_formats.c',],
+    'kivent_polygen.polygen_renderers': ['kivent_polygen/polygen_renderers.c',],
+    'kivent_polygen.polygen_formats': ['kivent_polygen/polygen_formats.c',],
 }
 
 check_for_removal = [
-    'kivent_polygen/vertex_formats.c',
-    'kivent_polygen/renderers.c',
+    'kivent_polygen/polygen_formats.c',
+    'kivent_polygen/polygen_renderers.c',
 
     ]
 

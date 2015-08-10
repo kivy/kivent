@@ -30,5 +30,5 @@ Particles
 Renderers
 =========
 
-.. autoclass:: kivent_particles.renderers.ParticleRenderer
+.. autoclass:: kivent_particles.particle_renderers.ParticleRenderer
     :members:

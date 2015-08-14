@@ -14,8 +14,10 @@ from libc.math cimport trunc, sin, cos, fmin, fmax
 from kivent_core.systems.rotate_systems cimport RotateStruct2D
 from kivent_core.systems.position_systems cimport PositionStruct2D
 from kivent_particles.particle cimport ParticleSystem
-
-import cPickle as pickle
+try:
+    import cPickle as pickle
+except: 
+    import pickle
 from os import path
 
 include "particle_config.pxi"

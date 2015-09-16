@@ -7,7 +7,10 @@ from kivent_core.rendering.vertex_formats cimport format_registrar, FormatConfig
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.logger import Logger
-import cPickle as pickle
+try:
+    import cPickle as pickle
+except: 
+    import pickle
 
 cdef class ModelManager:
     '''
@@ -114,7 +117,7 @@ cdef class ModelManager:
 
     def pickle_model(self, str model_name, str directory_name):
         '''
-        Saves a model to disk using cPickle. Data will be stored as a 
+        Saves a model to disk using Pickle. Data will be stored as a 
         dictionary containing keys 'vertices', 'indices', and 'format_name'.
 
         The name of the file will be os.path.join(directory_name, 

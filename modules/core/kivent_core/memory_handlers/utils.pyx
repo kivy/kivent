@@ -53,10 +53,10 @@ cdef class memrange_iter:
         self.current = start
         self.end = end
 
-    def __iter__(memrange_iter self):
+    def __iter__(self):
         return self
 
-    def __next__(memrange_iter self):
+    def __next__(self):
         
         cdef IndexedMemoryZone memory_index = self.memory_index
         cdef MemoryZone memory_zone = memory_index.memory_zone

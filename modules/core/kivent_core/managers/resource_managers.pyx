@@ -382,6 +382,8 @@ cdef class ModelManager:
             model_name (str): Name of the model to unload.
 
         '''
+        cdef VertexModel model = self._models[model_name]
+        model.free_memory()
         del self._models[model_name]
         if model_name in self._model_register:
             del self._model_register[model_name]

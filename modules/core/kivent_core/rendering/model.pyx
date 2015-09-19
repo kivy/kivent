@@ -350,6 +350,11 @@ cdef class VertexModel:
             return self._vertex_count
 
     def free_memory(self):
+        '''
+        Frees the allocated memory. Do not use the VertexModel after
+        free_memory has been called. Typically called internally by the 
+        ModelManager.
+        '''
         if self.indices_block is not None:
             self.indices_block.remove_from_buffer()
             self.indices_block = None

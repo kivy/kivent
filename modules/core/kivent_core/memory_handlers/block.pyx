@@ -58,7 +58,7 @@ cdef class MemoryBlock(Buffer):
     cdef void remove_from_buffer(self):
         '''Replaces **deallocate_memory** used to free the memory previously
         acquired from **master_buffer**.'''
-        self.master_buffer.remove_data(self.master_index, self.size)
+        self.master_buffer.remove_data(self.master_index, self.size_in_blocks)
         self.master_index = 0
         self.master_buffer = None
 

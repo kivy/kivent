@@ -460,11 +460,7 @@ class GameWorld(Widget):
             system = systems[system_index]
             if system.updateable and not system.paused:
                 system._update(dt)
-        if debug:
-                Logger.debug('KivEnt: Frame Update done, removing entities')
         self.remove_entities()
-        if debug:
-                Logger.debug('KivEnt: Frame Update Finished')
 
     def remove_entities(self):
         '''Used internally to remove entities as part of the update tick'''
@@ -482,8 +478,9 @@ class GameWorld(Widget):
         '''Used to clear every entity in the GameWorld.'''
         entities = self.entities
         er = self.remove_entity
-        for entity in memrange(self.entities):
-            er(entity.entity_id)
+        entities_to_remove = [entity.entity_id for entity in memrange(self.entities)]
+        for entity_id in entities_to_remove:
+            er(entity_id)
 
     def delete_system(self, system_id):
         '''

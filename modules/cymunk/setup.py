@@ -86,4 +86,10 @@ setup(
     packages=[
         'kivent_cymunk',
         ],
-    package_dir={'kivent_cymunk': 'kivent_cymunk'})
+    package_dir={'kivent_cymunk': 'kivent_cymunk'},
+    package_data={'kivent_cymunk': [
+            '*.pxd',
+            'chipmunk/*.h',
+            'chipmunk/constraints/*.h'
+            ]}
+        )

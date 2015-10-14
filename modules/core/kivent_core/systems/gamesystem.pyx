@@ -193,15 +193,9 @@ cdef class GameSystem(CWidget):
         update_time = self.update_time
         update = self.update
         while frame_time >= update_time:
-            if debug:
-                Logger.debug('KivEnt: {system_id} update started'.format(
-                    system_id=self.system_id))
             update(update_time)
             frame_time -= update_time
         self._frame_time = frame_time
-        if debug:
-            Logger.debug('KivEnt: {system_id} update finished'.format(
-                system_id=self.system_id))
 
 
     def init_component(self, component_index, entity_id, zone, args):

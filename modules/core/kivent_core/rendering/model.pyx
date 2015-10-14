@@ -349,6 +349,19 @@ cdef class VertexModel:
         def __get__(self):
             return self._vertex_count
 
+    def free_memory(self):
+        '''
+        Frees the allocated memory. Do not use the VertexModel after
+        free_memory has been called. Typically called internally by the 
+        ModelManager.
+        '''
+        if self.indices_block is not None:
+            self.indices_block.remove_from_buffer()
+            self.indices_block = None
+        if self.vertices_block is not None:
+            self.vertices_block.remove_from_buffer()
+            self.vertices_block = None
+
     def copy_vertex_model(self, VertexModel to_copy):
         '''Copies all the data from the provided VertexModel to this one. Will 
         possibly change **vertex_count** and **index_count** so make sure to 

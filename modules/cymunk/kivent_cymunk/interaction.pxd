@@ -1,4 +1,5 @@
-from cymunk.cymunk cimport (Body, PivotJoint, GearJoint, cpBody, cpPivotJoint)
+from cymunk.cymunk cimport (Body, PivotJoint, GearJoint, cpBody, cpPivotJoint,
+    cpGearJoint)
 from cpython cimport bool
 from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem, 
     MemComponent)
@@ -15,10 +16,21 @@ cdef class CymunkTouchComponent(MemComponent):
 cdef class CymunkTouchSystem(StaticMemGameSystem):
     pass
 
-cdef class SteeringComponent: 
+ctypedef struct SteeringStruct:
+    unsigned int entity_id
+    cpBody* steering_body
+    cpPivotJoint* pivot
+    cpGearJoint* gear
+    float[2] target
+    float speed
+    float arrived_radius
+    bint active
+    bint has_target
+
+cdef class SteeringComponent(MemComponent):
     cdef Body _steering_body
     cdef PivotJoint _pivot
     cdef GearJoint _gear
-    cdef tuple _target
-    cdef float _speed
-    cdef bool _active
+
+cdef class SteeringSystem(StaticMemGameSystem):
+    pass

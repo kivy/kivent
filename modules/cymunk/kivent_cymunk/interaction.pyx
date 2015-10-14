@@ -1,13 +1,20 @@
 # cython: profile=True
 # cython: embedsignature=True
-from cymunk.cymunk cimport (GearJoint, PivotJoint, Vec2d, cpVect, cpv,
+from cymunk.cymunk cimport (
+    GearJoint, PivotJoint, Vec2d, cpVect, cpv,
     cpFloat, cpBool, cpvunrotate, cpvrotate, cpvdot, cpvsub, cpvnear,
-    cpBody, cpvmult, cpvlerp, Space)
-from kivy.properties import (ListProperty, NumericProperty, BooleanProperty,
-    StringProperty, ObjectProperty)
-from kivent_cymunk.physics cimport PhysicsComponent
-from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem, 
-    MemComponent)
+    cpBody, cpvmult, cpvlerp, Space
+    )
+from kivy.properties import (
+    ListProperty, NumericProperty, BooleanProperty,
+    StringProperty, ObjectProperty
+    )
+from kivent_cymunk.physics cimport (
+    PhysicsComponent, PhysicsStruct, CymunkPhysics
+    )
+from kivent_core.systems.staticmemgamesystem cimport (
+    StaticMemGameSystem, MemComponent
+    )
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
@@ -15,6 +22,7 @@ from kivent_core.systems.position_systems cimport (PositionComponent2D,
     PositionStruct2D)
 from kivent_core.systems.rotate_systems cimport RotateComponent2D
 cimport cython
+from kivent_core.entity cimport Entity
 from kivy.factory import Factory
 from libc.math cimport atan2, pow as cpow
 from kivent_core.managers.system_manager cimport SystemManager
@@ -359,14 +367,16 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
 
 cdef class SteeringComponent: 
 
-    def __cinit__(self, Body body, PivotJoint pivot, GearJoint gear,
-        float speed):
-        self._target = (None, None)
-        self._steering_body = body
-        self._pivot = pivot
-        self._gear = gear
-        self._speed = speed
-        self._active = True
+    def __cinit__(self, MemoryBlock memory_block, unsigned int index,
+            unsigned int offset):
+        self._pivot = None
+        self._steering_body = None
+        self._gear = None
+
+    property entity_id:
+        def __get__(self):
+            cdef SteeringStruct* data = <SteeringStruct*>self.pointer
+            return data.entity_id
 
     property steering_body:
         def __get__(self):
@@ -388,9 +398,13 @@ cdef class SteeringComponent:
 
     property target:
         def __get__(self):
-            return self._target
+            cdef SteeringStruct* data = <SteeringStruct*>self.pointer
+            return (data.target[0], data.target[1])
         def __set__(self, tuple target):
-            self._target = target
+            cdef SteeringStruct* data = <SteeringStruct*>self.pointer
+            data.target[0] = target[0]
+            data.target[1] = target[1]
+            data.has_target = 1
 
     property turn_speed:
         def __get__(self):
@@ -400,15 +414,19 @@ cdef class SteeringComponent:
 
     property active:
         def __get__(self):
-            return self._active
+            cdef SteeringStruct* data = <SteeringStruct*>self.pointer
+            return data.active
         def __set__(self, bool new):
-            self._active = new
+            cdef SteeringStruct* data = <SteeringStruct*>self.pointer
+            data.active = new
 
     property speed:
         def __get__(self):
-            return self._speed
+            cdef SteeringStruct* data = <SteeringStruct*>self.pointer
+            return data.speed
         def __set__(self, float speed):
-            self._speed = speed
+            cdef SteeringStruct* data = <SteeringStruct*>self.pointer
+            data.speed = speed
 
     property stability:
         def __get__(self):
@@ -422,107 +440,146 @@ cdef class SteeringComponent:
         def __set__(self, float force):
             self._pivot.max_force = force
 
-Factory.register('CymunkTouchSystem', cls=CymunkTouchSystem)
 
-# class SteeringSystem(GameSystem):
-#     physics_system = StringProperty(None)
-#     updateable = BooleanProperty(True)
+cdef class SteeringSystem(StaticMemGameSystem):
+    physics_system = StringProperty('cymunk_physics')
+    system_id = StringProperty('steering')
+    updateable = BooleanProperty(True)
+    system_names = ListProperty(['steering','cymunk_physics'])
+    processor = BooleanProperty(True)
+    type_size = NumericProperty(sizeof(SteeringStruct))
+    component_type = ObjectProperty(SteeringComponent)
 
-#     def generate_component(self, dict args):
-#         cdef Body body = args['body']
-#         cdef PivotJoint pivot = args['pivot']
-#         cdef GearJoint gear = args['gear']
-#         cdef float speed = args['speed']
-#         new_component = SteeringComponent.__new__(SteeringComponent, 
-#             body, pivot, gear, speed)
-#         return new_component
+    def init_component(self, unsigned int component_index, 
+        unsigned int entity_id, str zone, dict args):
 
-#     def create_component(self, object entity, dict args):
-#         cdef object gameworld = self.gameworld
-#         cdef dict systems = gameworld.systems
-#         cdef str physics_id = self.physics_system
-#         cdef object physics_system = systems[physics_id]
-#         cdef Body steering_body = Body(None, None)
-#         cdef PhysicsComponent physics_data = getattr(entity, physics_id)
-#         cdef Body body = physics_data.body
-#         cdef PivotJoint pivot = PivotJoint(steering_body, body, (0, 0), (0, 0))
-#         cdef GearJoint gear = GearJoint(steering_body, body, 0.0, 1.0)
-#         gear.error_bias = 0.
-#         pivot.max_bias = 0.0
-#         pivot.error_bias = 0.
-#         gear.max_bias = args['turn_speed']
-#         gear.max_force = args['stability']
-#         pivot.max_force = args['max_force']
-#         cdef Space space = physics_system.space
-#         space.add(pivot)
-#         space.add(gear)
-#         new_args = {'body': steering_body, 'pivot': pivot, 'gear': gear,
-#             'speed': args['speed']}
-#         super(SteeringSystem, self).create_component(entity, new_args)
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
+        cdef SteeringComponent py_component = self.components[
+            component_index]
+        cdef SteeringStruct* component = <SteeringStruct*>(
+            memory_zone.get_pointer(component_index))
+        component.entity_id = entity_id
+        gameworld = self.gameworld
+        cdef SystemManager system_manager = gameworld.system_manager
+        cdef str physics_id = self.physics_system
+        cdef CymunkPhysics physics_system = system_manager[physics_id]
+        cdef Body steering_body = Body(None, None)
+        cdef IndexedMemoryZone entities = gameworld.entities
+        cdef Entity entity = gameworld.entities[entity_id]
+        cdef PhysicsComponent physics_data = getattr(entity, physics_id)
+        cdef Body body = physics_data.body
+        cdef PivotJoint pivot = PivotJoint(steering_body, body, (0, 0), (0, 0))
+        cdef GearJoint gear = GearJoint(steering_body, body, 0.0, 1.0)
+        gear.error_bias = args.get('gear_error_bias', 0.0)
+        pivot.max_bias = args.get('pivot_max_bias', 0.0)
+        pivot.error_bias = args.get('pivot_error_Bias', 0.0)
+        gear.max_bias = args.get('turn_speed', 90.0)
+        gear.max_force = args.get('stability', 360.0)
+        pivot.max_force = args.get('max_force', 1000.0)
+        cdef Space space = physics_system.space
+        space.add(pivot)
+        space.add(gear)
+        component.gear = gear._gearjoint
+        component.pivot = pivot._pivotjoint
+        component.steering_body = steering_body._body
+        if 'target' in args:
+            component.has_target = 1
+        else:
+            component.has_target = 0
+        target = args.get('target', (0., 0.))
+        component.target[0] = target[0]
+        component.target[1] = target[1]
+        component.speed = args.get('speed', 250.)
+        component.arrived_radius = args.get('arrived_radius', 50.)
+        py_component._steering_body = steering_body
+        py_component._pivot = pivot
+        py_component._gear = gear
+        return self.entity_components.add_entity(entity_id, zone)
 
-#     def remove_entity(self, int entity_id):
-#         cdef str system_id = self.system_id
-#         cdef object gameworld = self.gameworld
-#         cdef list entities = gameworld.entities
-#         cdef object entity = entities[entity_id]
-#         cdef SteeringComponent steering_data = getattr(entity, system_id)
-#         cdef str physics_id = self.physics_system
-#         cdef object physics_system = gameworld.systems[physics_id]
-#         cdef Space space = physics_system.space
-#         space.remove(steering_data._gear)
-#         space.remove(steering_data._pivot)
-#         super(SteeringSystem, self).remove_entity(entity_id)
+    def clear_component(self, unsigned int component_index):
+        '''
+        Clears the component at **component_index**. We must set the 
+        pointers in the C struct to empty and the references in the 
+        CymunkTouchComponent to None.
+
+        Args:
+
+            component_index (unsigned int): Component to remove.
+
+        '''
+        cdef MemoryZone memory_zone = self.imz_components.memory_zone
+        cdef SteeringStruct* pointer = <SteeringStruct*>(
+            memory_zone.get_pointer(component_index))
+        cdef SteeringComponent py_component = self.components[
+            component_index]
+        pointer.entity_id = -1
+        pointer.steering_body = NULL
+        pointer.pivot = NULL
+        pointer.gear = NULL
+        pointer.target[0] = 0.
+        pointer.target[1] = 0.
+        pointer.has_target = 0
+        py_component._pivot = None
+        py_component._steering_body = None
+        py_component._gear = None
+
+    def remove_component(self, unsigned int component_index):
+        gameworld = self.gameworld
+        cdef SteeringComponent py_component = self.components[
+            component_index]
+        cdef str physics_id = self.physics_system
+        cdef CymunkPhysics physics_system = gameworld.system_manager[physics_id]
+        cdef Space space = physics_system.space
+        space.remove(py_component._pivot)
+        space.remove(py_component._gear)
+        self.entity_components.remove_entity(py_component.entity_id)
+        super(SteeringSystem, self).remove_component(component_index)
         
-#     def update(self, dt):
-#         cdef list entity_ids = self.entity_ids
-#         cdef object gameworld = self.gameworld
-#         cdef list entities = gameworld.entities
-#         cdef int entity_id
-#         cdef str system_id = self.system_id
-#         cdef str physics_id = self.physics_system
-#         cdef SteeringComponent steering_data
-#         cdef PhysicsComponent physics_data
-#         cdef Body body
-#         cdef Body steering_body
-#         cdef float angle
-#         cdef cpVect v1
-#         cdef cpVect target
-#         cdef tuple target_pos
-#         cdef cpVect move_delta
-#         cdef float turn
-#         cdef tuple velocity_rot
-#         cdef float speed
-#         cdef cpVect unrot
-#         cdef float x, y
-#         cdef bool solve
+    def update(self, dt):
 
-#         for entity_id in entity_ids:
-#             entity = entities[entity_id]
-#             steering_data = getattr(entity, system_id)
-#             physics_data = getattr(entity, physics_id)
-#             if steering_data._active:
-#                 body = physics_data._body
-#                 target_pos = steering_data._target
-#                 steering_body = steering_data._steering_body
-#                 try:
-#                     x, y = target_pos
-#                 except:
-#                     steering_body.velocity = (0., 0.)
-#                     continue
-#                 target = cpv(x, y)
-#                 body_pos = body._body.p
-#                 v1 = body._body.rot
-#                 angle = body.angle
-#                 speed = steering_data._speed
-#                 move_delta = cpvsub(target, body_pos)
-#                 unrot = cpvunrotate(v1, move_delta)
-#                 turn = atan2(unrot.y, unrot.x)
-#                 steering_body.angle = angle - turn
-#                 if cpvnear(target, body_pos, 75.0):
-#                     velocity_rot = (0., 0.)
-#                 elif turn <= -1.3 or turn >= 1.3:
-#                     velocity_rot = (0., 0.)
-#                 else:
-#                     new_vec = cpvrotate(v1, cpv(speed, 0.0))  
-#                     velocity_rot = (new_vec.x, new_vec.y)
-#                 steering_body.velocity = velocity_rot
+        gameworld = self.gameworld
+        cdef SteeringStruct* steering_component 
+        cdef PhysicsStruct* physics_component
+        cdef cpBody *body, *steering_body
+        cdef void** component_data = <void**>(
+            self.entity_components.memory_block.data)
+        cdef unsigned int component_count = self.entity_components.count
+        cdef unsigned int count = self.entity_components.memory_block.count
+        cdef unsigned int i, real_index
+        cdef cpVect target, body_pos, move_delta, v1, unrot, velocity_rot
+        cdef float turn
+        for i in range(count):
+            real_index = i*component_count
+            if component_data[real_index] == NULL:
+                continue
+            steering_component = <SteeringStruct*>component_data[real_index]
+            physics_component = <PhysicsStruct*>component_data[real_index+1]
+            if steering_component.active:
+                body = physics_component.body
+                steering_body = steering_component.steering_body
+                if not steering_component.has_target:
+                    steering_body.v = cpv(0., 0.)
+                    continue
+                target = cpv(
+                    steering_component.target[0], steering_component.target[1]
+                    )
+                body_pos = body.p
+                move_delta = cpvsub(target, body_pos)
+                v1 = body.rot
+                unrot = cpvunrotate(v1, move_delta)
+                turn = atan2(unrot.y, unrot.x)
+                steering_body.a = body.a - turn
+                if cpvnear(target, body_pos, steering_component.arrived_radius):
+                    velocity_rot = cpv(0., 0.)
+                    steering_component.active = False
+                elif (turn <= -1.3 or turn >= 1.3):
+                    velocity_rot = cpv(0., 0.)
+                else:
+                    velocity_rot = cpvrotate(
+                        v1, cpv(steering_component.speed, 0.0)
+                        )  
+                steering_body.v = velocity_rot
+
+
+Factory.register('CymunkTouchSystem', cls=CymunkTouchSystem)
+Factory.register('SteeringSystem', cls=SteeringSystem)

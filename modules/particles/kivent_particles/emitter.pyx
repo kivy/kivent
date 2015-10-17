@@ -667,7 +667,7 @@ cdef class EmitterSystem(StaticMemGameSystem):
             'pos_variance': {'count': 2, 'type': 'slider', 'step': 1.,
                 'name': 'Pos Variance', 'value_names': ['x', 'y'],
                 'bounds': [(0., 1000.), (0., 1000.)]},
-            'life_span': {'count': 1, 'type': 'slider', 'step': .25,
+            'life_span': {'count': 1, 'type': 'slider', 'step': .05,
                 'name': 'Lifespan',
                 'bounds': [(0., 20.)]},
             'number_of_particles': {'count': 1, 'type': 'slider', 'step': 1,

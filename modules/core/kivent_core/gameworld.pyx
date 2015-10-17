@@ -20,6 +20,7 @@ from kivent_core.memory_handlers.utils cimport memrange
 from kivent_core.rendering.vertex_formats cimport (format_registrar, 
     FormatConfig)
 from kivent_core.managers.resource_managers cimport ModelManager
+from kivent_core.managers.sound_manager import SoundManager
 from kivy.logger import Logger
 debug = False
 
@@ -124,6 +125,7 @@ class GameWorld(Widget):
         self._system_count = DEFAULT_SYSTEM_COUNT
         self.entities_to_remove = []
         self.system_manager = SystemManager()
+        self.sound_manager = SoundManager()
         self.master_buffer = None
         self.model_manager = ModelManager()
 
@@ -478,7 +480,9 @@ class GameWorld(Widget):
         '''Used to clear every entity in the GameWorld.'''
         entities = self.entities
         er = self.remove_entity
-        entities_to_remove = [entity.entity_id for entity in memrange(self.entities)]
+        entities_to_remove = [
+            entity.entity_id for entity in memrange(self.entities)
+            ]
         for entity_id in entities_to_remove:
             er(entity_id)
 

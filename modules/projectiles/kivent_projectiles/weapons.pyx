@@ -20,6 +20,7 @@ from cymunk.cymunk cimport (
     )
 from kivent_projectiles.projectiles cimport ProjectileSystem
 from libc.math cimport cos, sin
+from kivent_core.managers.sound_manager cimport SoundManager
 include "projectile_config.pxi"
 
 
@@ -28,7 +29,9 @@ cdef class WeaponTemplate:
     def __init__(self, float reload_time, int projectile_type, int ammo_count,
         float rate_of_fire, int clip_size, list barrel_offsets, 
         int barrel_count, int ammo_type, float projectile_width,
-        float projectile_height, float accel
+        float projectile_height, float accel, int reload_begin_sound,
+        int reload_end_sound, int fire_sound, int shot_count,
+        float time_between_shots, float spread
         ):
         self.weapon_data.reload_time = reload_time
         self.weapon_data.projectile_type = projectile_type
@@ -40,11 +43,19 @@ cdef class WeaponTemplate:
         self.weapon_data.projectile_width = projectile_width
         self.weapon_data.projectile_height = projectile_height
         self.weapon_data.accel = accel
+        self.weapon_data.in_clip = clip_size
+        self.weapon_data.shot_count = shot_count
+        self.weapon_data.spread = spread
+        self.weapon_data.time_between_shots = time_between_shots
+        self.weapon_data.current_shot = 0
         for i in range(barrel_count):
             self.weapon_data.barrel_offsets[2*i] = barrel_offsets[i][0]
             self.weapon_data.barrel_offsets[2*i+1] = barrel_offsets[i][1]
         self.weapon = Weapon()
         self.weapon.weapon_pointer = &self.weapon_data
+        self.weapon_data.fire_sound = fire_sound
+        self.weapon_data.reload_begin_sound = reload_begin_sound
+        self.weapon_data.reload_end_sound = reload_end_sound
 
     property weapon:
         def __get__(self):
@@ -228,6 +239,7 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
     component_type = ObjectProperty(ProjectileWeaponComponent)
     system_names = ListProperty(['projectile_weapons','cymunk_physics'])
     projectile_system = ObjectProperty(None)
+    player_entity = NumericProperty(None, allownone=True)
 
     def __init__(self, **kwargs):
         super(ProjectileWeaponSystem, self).__init__(**kwargs)
@@ -244,11 +256,14 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
         int projectile_type, int ammo_count,
         float rate_of_fire, int clip_size, list barrel_offsets, 
         int barrel_count, int ammo_type, float projectile_width,
-        float projectile_height, float accel):
+        float projectile_height, float accel, int reload_begin_sound=-1,
+        int reload_end_sound=-1, int fire_sound=-1, int shot_count=1,
+        float time_between_shots=0., float spread=0.):
         self.weapon_templates[template_name] = WeaponTemplate(
             reload_time, projectile_type, ammo_count, rate_of_fire, clip_size,
             barrel_offsets, barrel_count, ammo_type, projectile_width,
-            projectile_height, accel
+            projectile_height, accel, reload_begin_sound, reload_end_sound,
+            fire_sound, shot_count, time_between_shots, spread
             )
 
 
@@ -321,15 +336,130 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
         bullet_body = physics_data.body
         bullet_body.apply_impulse(force, force_offset)
 
+    cdef void fire_missle(self, unsigned int entity_id, float accel):
+        entities = self.gameworld.entities
+        bullet = entities[entity_id]
+        physics_data = bullet.cymunk_physics
+        unit_vector = physics_data.unit_vector
+        force = accel*unit_vector[0], accel*unit_vector[1]
+        force_offset = -unit_vector[0], -unit_vector[1]
+        bullet_body = physics_data.body
+        bullet_body.apply_force(force, force_offset)
+
+    cdef void handle_missle(self, ProjectileWeaponStruct* system_comp,
+        ProjectileWeapon* weapon, PhysicsStruct* physics_comp, 
+        SoundManager sound_manager, ProjectileSystem projectile_system,
+        float dt):
+
+        cdef cpBody* body
+        cdef float x_offset, y_offset
+        cdef cpVect rotated_vec, bullet_position
+        cdef int c, x
+        cdef float threshold = .00001
+
+
+        system_comp.cooldown += weapon.rate_of_fire
+        weapon.in_clip -= weapon.barrel_count * weapon.shot_count
+        system_comp.firing = 0
+        body = physics_comp.body
+        for c in range(weapon.shot_count):
+            for x in range(weapon.barrel_count):
+                x_offset = weapon.barrel_offsets[2*x] + (
+                    weapon.projectile_width*.5)
+                y_offset = weapon.barrel_offsets[2*x+1]
+                
+                rotated_vec = get_rotated_vector(
+                    random_variance(body.a, weapon.spread),
+                    x_offset, y_offset
+                    )
+                bullet_position = cpvadd(rotated_vec, body.p)
+                bullet_ent = projectile_system.create_projectile(
+                    weapon.ammo_type, 
+                    (bullet_position.x, bullet_position.y),
+                    body.a, system_comp.entity_id
+                    )
+                self.fire_missle(bullet_ent, weapon.accel)
+        if weapon.fire_sound != -1:
+            sound_manager.play_direct(weapon.fire_sound)
+
+    cdef void handle_single_shot(self, ProjectileWeaponStruct* system_comp,
+        ProjectileWeapon* weapon, PhysicsStruct* physics_comp, 
+        SoundManager sound_manager, ProjectileSystem projectile_system,
+        float dt):
+
+        cdef cpBody* body
+        cdef float x_offset, y_offset
+        cdef cpVect rotated_vec, bullet_position
+        cdef int c, x
+        cdef float threshold = .00001
+
+
+        system_comp.cooldown += weapon.rate_of_fire
+        weapon.in_clip -= weapon.barrel_count * weapon.shot_count
+        system_comp.firing = 0
+        body = physics_comp.body
+        for c in range(weapon.shot_count):
+            for x in range(weapon.barrel_count):
+                x_offset = weapon.barrel_offsets[2*x] + (
+                    weapon.projectile_width*.5)
+                y_offset = weapon.barrel_offsets[2*x+1]
+                
+                rotated_vec = get_rotated_vector(
+                    random_variance(body.a, weapon.spread),
+                    x_offset, y_offset
+                    )
+                bullet_position = cpvadd(rotated_vec, body.p)
+                bullet_ent = projectile_system.create_projectile(
+                    weapon.ammo_type, 
+                    (bullet_position.x, bullet_position.y),
+                    body.a, system_comp.entity_id
+                    )
+                self.fire_projectile(bullet_ent, weapon.accel)
+        if weapon.fire_sound != -1:
+            sound_manager.play_direct(weapon.fire_sound)
+
+
+    cdef void handle_multi_shot(self, ProjectileWeaponStruct* system_comp,
+        ProjectileWeapon* weapon, PhysicsStruct* physics_comp, 
+        SoundManager sound_manager, ProjectileSystem projectile_system,
+        float dt):
+
+        cdef cpBody* body
+        cdef float x_offset, y_offset
+        cdef cpVect rotated_vec, bullet_position
+        cdef int c, x
+        cdef float threshold = .00001
+
+        if weapon.current_shot == 0:
+            weapon.shot_timer = 0.0
+        weapon.shot_timer -= dt
+        if weapon.shot_timer <= threshold:
+            weapon.in_clip -= weapon.barrel_count
+            weapon.shot_timer += weapon.time_between_shots
+            for x in range(weapon.barrel_count):
+                x_offset = weapon.barrel_offsets[2*x] + (
+                    weapon.projectile_width*.5)
+                y_offset = weapon.barrel_offsets[2*x+1]
+                body = physics_comp.body
+                rotated_vec = get_rotated_vector(
+                    random_variance(body.a, weapon.spread),
+                    x_offset, y_offset
+                    )
+                bullet_position = cpvadd(rotated_vec, body.p)
+                bullet_ent = projectile_system.create_projectile(
+                    weapon.ammo_type, 
+                    (bullet_position.x, bullet_position.y),
+                    body.a, system_comp.entity_id
+                    )
+                self.fire_projectile(bullet_ent, weapon.accel)
+            if weapon.fire_sound != -1:
+                sound_manager.play_direct(weapon.fire_sound)
+            weapon.current_shot += 1
+            if weapon.current_shot == weapon.shot_count:
+                system_comp.firing = False
+                weapon.current_shot = 0
 
     def update(self, float dt):
-        #cooldown = min(0.0, cooldown - dt)
-        #check if need reload (in_clip == 0):
-        #cooldown += reload_time
-        #reloading = True
-        # if reloading = True and cooldown <= .00 reloading = False
-        #in_clip += clip_size
-        #check if firing and cooldown <= .00, fire projectile
         cdef ProjectileWeaponStruct* system_comp
         cdef PhysicsStruct* physics_comp
         cdef ProjectileWeapon* weapon
@@ -342,6 +472,7 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
         cdef float threshold = .00001
         cdef cpBody* body
         cdef cpVect rotated_vec, bullet_position
+        cdef SoundManager sound_manager = self.gameworld.sound_manager
 
         for i in range(count):
             real_index = i*component_count
@@ -352,32 +483,33 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
             physics_comp = <PhysicsStruct*>component_data[real_index+1]
             weapon = &system_comp.weapons[system_comp.current_weapon]
             system_comp.cooldown = max(0.0, system_comp.cooldown - dt)
-            if weapon.in_clip == 0 and not system_comp.reloading:
-                system_comp.cooldown += weapon.reload_time
-                system_comp.reloading = 1
-            if system_comp.reloading and system_comp.cooldown <= threshold:
+            if system_comp.reloading and system_comp.cooldown <= threshold \
+                and not weapon.projectile_type == NO_WEAPON:
                 system_comp.reloading = 0
                 weapon.in_clip = weapon.clip_size
-
-            if system_comp.firing and system_comp.cooldown <= threshold:
-                system_comp.cooldown += weapon.rate_of_fire
+                if weapon.reload_end_sound != -1:
+                        sound_manager.play_direct(weapon.reload_end_sound)
+                system_comp.cooldown += .2
                 system_comp.firing = 0
-                weapon.in_clip -= weapon.barrel_count
-                for x in range(weapon.barrel_count):
-                    x_offset = weapon.barrel_offsets[2*x] + (
-                        weapon.projectile_width*.5)
-                    y_offset = weapon.barrel_offsets[2*x+1]
-                    body = physics_comp.body
-                    rotated_vec = get_rotated_vector(
-                        body.a, x_offset, y_offset
-                        )
-                    bullet_position = cpvadd(rotated_vec, body.p)
-                    bullet_ent = projectile_system.create_projectile(
-                        weapon.ammo_type, 
-                        (bullet_position.x, bullet_position.y),
-                        body.a, system_comp.entity_id
-                        )
-                    self.fire_projectile(bullet_ent, weapon.accel)
+            if system_comp.firing and system_comp.cooldown <= threshold:
+                if weapon.in_clip == 0 and not system_comp.reloading:
+                    system_comp.cooldown += weapon.reload_time
+                    system_comp.reloading = 1
+                    system_comp.firing = 0
+                    if weapon.reload_begin_sound != -1:
+                            sound_manager.play_direct(
+                                weapon.reload_begin_sound)
+                elif weapon.projectile_type == SINGLESHOT:
+                    self.handle_single_shot(system_comp, weapon, physics_comp,
+                        sound_manager, projectile_system, dt)
+                elif weapon.projectile_type == MISSLE:
+                    self.handle_missle(system_comp, weapon, physics_comp,
+                        sound_manager, projectile_system, dt)
+                elif weapon.projectile_type == MULTISHOT:
+                    self.handle_multi_shot(system_comp, weapon, physics_comp,
+                        sound_manager, projectile_system, dt)
+
+
 
 
 

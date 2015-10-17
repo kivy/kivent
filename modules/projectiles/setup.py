@@ -22,16 +22,19 @@ print(kivent_cymunk.get_includes())
 noise_modules = {
     'kivent_projectiles.projectiles': ['kivent_projectiles/projectiles.pyx'], 
     'kivent_projectiles.weapons': ['kivent_projectiles/weapons.pyx'], 
+    'kivent_projectiles.combatstats': ['kivent_projectiles/combatstats.pyx'],
 }
 
 noise_modules_c = {
     'kivent_projectiles.weapons': ['kivent_projectiles/weapons.c'],
     'kivent_projectiles.projectiles': ['kivent_projectiles/projectiles.c'],
+    'kivent_projectiles.combatstats': ['kivent_projectiles/combatstats.c'],
 }
 
 check_for_removal = [
     'kivent_projectiles/weapons.c',
     'kivent_projectiles/projectiles.c',
+    'kivent_projectiles/combatstats.c',
     ]
 
 

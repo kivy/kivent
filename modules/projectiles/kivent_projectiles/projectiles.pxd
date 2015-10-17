@@ -5,6 +5,8 @@ from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem,
 cdef class ProjectileTemplate:
     cdef str texture
     cdef str model
+    cdef str tail_effect
+    cdef str main_effect
     cdef float damage
     cdef float armor_pierce
     cdef float width
@@ -14,12 +16,16 @@ cdef class ProjectileTemplate:
     cdef int collision_type
     cdef float speed
     cdef float rot_speed
+    cdef float lifespan
+
 
 ctypedef struct ProjectileStruct:
     unsigned int entity_id
     float damage
     float armor_pierce
     int projectile_type
+    int main_effect
+    int tail_effect
     unsigned int origin_entity
 
 
@@ -30,6 +36,8 @@ cdef class ProjectileComponent(MemComponent):
 cdef class ProjectileSystem(StaticMemGameSystem):
     cdef dict projectile_templates
     cdef dict projectile_keys
+    cdef dict collision_type_index
     cdef int projectile_count
     cdef unsigned int create_projectile(self, int ammo_type, tuple position,
         float rotation, unsigned int firing_entity)
+

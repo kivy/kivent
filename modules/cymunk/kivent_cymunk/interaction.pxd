@@ -34,3 +34,21 @@ cdef class SteeringComponent(MemComponent):
 
 cdef class SteeringSystem(StaticMemGameSystem):
     pass
+
+ctypedef struct SteeringAIStruct:
+    unsigned int entity_id
+    unsigned int target_id
+    float desired_angle
+    float desired_distance
+    float angle_variance
+    float distance_variance
+    float base_distance
+    float base_angle
+    float current_time
+    float recalculate_time
+
+cdef class SteeringAIComponent(MemComponent):
+    pass
+
+cdef class SteeringAISystem(StaticMemGameSystem):
+    pass

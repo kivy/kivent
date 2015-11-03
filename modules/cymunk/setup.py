@@ -18,7 +18,8 @@ else:
 
 do_clear_existing = True
 
-
+import cymunk
+print(cymunk.get_includes())
 
 cymunk_modules = {
     'kivent_cymunk.physics': ['kivent_cymunk/physics.pyx',],
@@ -36,7 +37,7 @@ check_for_removal = [
 
     ]
 
-def build_ext(ext_name, files, include_dirs=[]):
+def build_ext(ext_name, files, include_dirs=cymunk.get_includes()):
     return Extension(ext_name, files, include_dirs,
         extra_compile_args=[cstdarg, '-ffast-math',])
 
@@ -89,7 +90,5 @@ setup(
     package_dir={'kivent_cymunk': 'kivent_cymunk'},
     package_data={'kivent_cymunk': [
             '*.pxd',
-            'chipmunk/*.h',
-            'chipmunk/constraints/*.h'
             ]}
         )

@@ -6,8 +6,6 @@ An entity-component architecture is used to control game object state and the lo
 
 KivEnt is built with a modular architecture and designed to have both a python api and a c-level cython api that allows more performant access to your game data. This makes it suitable for quickly prototyping a mechanic completely in python, and relatively trivial to then deeply cythonize that GameSystem if you find it to be performance sensitive. This process has already been done for the built-in components meaning they are ready for you to build new, performant game systems on top of them.
 
-The entire framework is made available to you with an MIT license so that you have the freedom to build whatever you want on top of it and monetize it however you like. 
-
 ##Project Website: 
 http://www.kivent.org
 
@@ -93,3 +91,42 @@ Assuming you have KivEnt in the root folder for the portable package, in the kiv
 Tested with [master branch](https://github.com/kivy/kivy). Python 2.7 and Python 3.4.
 
 Tested on Asus Transformer TF101, Droid 4, Droid RAZR M, Ubuntu 14.04, and Windows 8.1
+
+Support
+-------
+
+If you need assistance, you can ask for help on our mailing list:
+
+* User Group : https://groups.google.com/group/kivy-users
+* Email      : kivy-users@googlegroups.com
+
+We also have an IRC channel:
+
+* Server  : irc.freenode.net
+* Port    : 6667, 6697 (SSL only)
+* Channel : #kivy
+
+Contributing
+------------
+
+We love pull requests and discussing novel ideas. Check out our
+[contribution guide](http://kivy.org/docs/contribute.html) and
+feel free to improve KivEnt.
+
+The following mailing list and IRC channel are used exclusively for
+discussions about developing the Kivy framework and its sister projects:
+
+* Dev Group : https://groups.google.com/group/kivy-dev
+* Email     : kivy-dev@googlegroups.com
+
+IRC channel:
+
+* Server  : irc.freenode.net
+* Port    : 6667, 6697 (SSL only)
+* Channel : #kivy-dev
+
+License
+-------
+
+KivEnt is released under the terms of the MIT License. Please refer to the
+LICENSE file.

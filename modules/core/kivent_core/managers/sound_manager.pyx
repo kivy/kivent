@@ -10,14 +10,14 @@ cdef class SoundManager(EventDispatcher):
         self.sound_keys = {}
         self.sound_count = 0
         
-    def load_sound(self, sound_name, file_address, count=5):
+    def load_sound(self, sound_name, file_address, track_count=5):
         count = self.sound_count
         sound_list = []
         self.sound_dict[count] = {
             'file_address': file_address,
             'sounds': sound_list,
         } 
-        for x in range(count):
+        for x in range(track_count):
             sound = SoundLoader.load(file_address)
             sound.seek(0)
             sound.bind(on_stop=self.reset_sound_position)
@@ -27,12 +27,13 @@ cdef class SoundManager(EventDispatcher):
 
         return count
 
-    cpdef play_direct(self, int sound_index):
+    cpdef play_direct(self, int sound_index, float volume):
         cdef list sounds = self.sound_dict[sound_index]['sounds']
         for each in sounds:
             if each.state == 'play':
                 continue
             else:
+                each.volume = volume
                 each.play()
                 return
 
@@ -45,8 +46,8 @@ cdef class SoundManager(EventDispatcher):
     def schedule_play(self, sound_name, dt):
         self.play(sound_name)
 
-    def play(self, sound_name):
-        self.sound_dict[self.sound_keys[sound_name]].play()
+    def play(self, sound_name, volume=1.):
+        self.play_direct(self.sound_keys[sound_name], volume)
 
     def stop(self, sound_name):
-        self.sound_dict[self.sound_keys[sound_name]].stop()
+        self.stop_direct(self.sound_keys[sound_name])

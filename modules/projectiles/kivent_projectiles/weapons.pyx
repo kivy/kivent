@@ -380,7 +380,7 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                     )
                 self.fire_missle(bullet_ent, weapon.accel)
         if weapon.fire_sound != -1:
-            sound_manager.play_direct(weapon.fire_sound)
+            sound_manager.play_direct(weapon.fire_sound, 1.0)
 
     cdef void handle_single_shot(self, ProjectileWeaponStruct* system_comp,
         ProjectileWeapon* weapon, PhysicsStruct* physics_comp, 
@@ -416,7 +416,7 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                     )
                 self.fire_projectile(bullet_ent, weapon.accel)
         if weapon.fire_sound != -1:
-            sound_manager.play_direct(weapon.fire_sound)
+            sound_manager.play_direct(weapon.fire_sound, 1.0)
 
 
     cdef void handle_multi_shot(self, ProjectileWeaponStruct* system_comp,
@@ -453,7 +453,7 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                     )
                 self.fire_projectile(bullet_ent, weapon.accel)
             if weapon.fire_sound != -1:
-                sound_manager.play_direct(weapon.fire_sound)
+                sound_manager.play_direct(weapon.fire_sound, 1.0)
             weapon.current_shot += 1
             if weapon.current_shot == weapon.shot_count:
                 system_comp.firing = False
@@ -488,8 +488,8 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                 system_comp.reloading = 0
                 weapon.in_clip = weapon.clip_size
                 if weapon.reload_end_sound != -1:
-                        sound_manager.play_direct(weapon.reload_end_sound)
-                system_comp.cooldown += .2
+                    sound_manager.play_direct(weapon.reload_end_sound, 1.0)
+                system_comp.cooldown += .5 + weapon.rate_of_fire
                 system_comp.firing = 0
             if system_comp.firing and system_comp.cooldown <= threshold:
                 if weapon.in_clip == 0 and not system_comp.reloading:
@@ -497,8 +497,9 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                     system_comp.reloading = 1
                     system_comp.firing = 0
                     if weapon.reload_begin_sound != -1:
-                            sound_manager.play_direct(
-                                weapon.reload_begin_sound)
+                        sound_manager.play_direct(
+                            weapon.reload_begin_sound, 1.0
+                            )
                 elif weapon.projectile_type == SINGLESHOT:
                     self.handle_single_shot(system_comp, weapon, physics_comp,
                         sound_manager, projectile_system, dt)

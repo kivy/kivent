@@ -17,6 +17,7 @@ cdef class ProjectileTemplate:
     cdef float speed
     cdef float rot_speed
     cdef float lifespan
+    cdef int hit_sound
 
 
 ctypedef struct ProjectileStruct:
@@ -26,6 +27,7 @@ ctypedef struct ProjectileStruct:
     int projectile_type
     int main_effect
     int tail_effect
+    int hit_sound
     unsigned int origin_entity
 
 

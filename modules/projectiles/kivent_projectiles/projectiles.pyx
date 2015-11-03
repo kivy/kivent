@@ -7,6 +7,7 @@ from kivent_core.entity cimport Entity
 from kivy.properties import StringProperty, ObjectProperty, NumericProperty
 import math
 from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivent_core.managers.sound_manager cimport SoundManager
 include "projectile_config.pxi"
 
 cdef class ProjectileTemplate:
@@ -14,7 +15,7 @@ cdef class ProjectileTemplate:
     def __init__(self, float damage, float armor_pierce, int projectile_type,
         str texture, str model, float width, float height, float mass,
         int collision_type, float speed, float rot_speed, str main_effect,
-        str tail_effect, float lifespan):
+        str tail_effect, float lifespan, int hit_sound):
         self.damage = damage
         self.armor_pierce = armor_pierce
         self.projectile_type = projectile_type
@@ -29,6 +30,7 @@ cdef class ProjectileTemplate:
         self.tail_effect = tail_effect
         self.rot_speed = rot_speed
         self.lifespan = lifespan
+        self.hit_sound = hit_sound
 
 cdef class ProjectileComponent(MemComponent):
 
@@ -69,6 +71,14 @@ cdef class ProjectileComponent(MemComponent):
             cdef ProjectileStruct* data = <ProjectileStruct*>self.pointer
             data.origin_entity = value
 
+    property hit_sound:
+        def __get__(self):
+            cdef ProjectileStruct* data = <ProjectileStruct*>self.pointer
+            return data.hit_sound
+        def __set__(self, int value):
+            cdef ProjectileStruct* data = <ProjectileStruct*>self.pointer
+            data.hit_sound = value
+
 
 cdef class ProjectileSystem(StaticMemGameSystem):
     system_id = StringProperty('projectiles')
@@ -80,6 +90,7 @@ cdef class ProjectileSystem(StaticMemGameSystem):
     emitter_system = ObjectProperty(None)
     physics_system = ObjectProperty(None)
     combat_stats_system = ObjectProperty(None)
+    player_system = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(ProjectileSystem, self).__init__(**kwargs)
@@ -120,13 +131,13 @@ cdef class ProjectileSystem(StaticMemGameSystem):
         float armor_pierce, int projectile_type, str texture_key,
         str model_key, float width, float height, float mass,
         float speed, float rot_speed, str main_effect=None,
-        str tail_effect=None, float lifespan=5.0):
+        str tail_effect=None, float lifespan=5.0, int hit_sound=-1):
         count = self.projectile_count
         self.projectile_keys[name] = count
         self.projectile_templates[count] = ProjectileTemplate(
             damage, armor_pierce, projectile_type, texture_key, model_key,
             width, height, mass, self.collision_type_index[projectile_type],
-            speed, rot_speed, main_effect, tail_effect, lifespan
+            speed, rot_speed, main_effect, tail_effect, lifespan, hit_sound
             )
         self.projectile_count += 1
         return count
@@ -172,9 +183,11 @@ cdef class ProjectileSystem(StaticMemGameSystem):
         cdef ProjectileComponent bullet_comp = projectile_entity.projectiles
         cdef ProjectileComponent bullet_comp2 = collided_entity.projectiles
         if bullet_comp.origin_entity != bullet_comp2.origin_entity:
-            self.combat_stats_system.damage_entity(collision_id,
+            self.combat_stats_system.damage_entity(
+                collision_id,
                 bullet_comp.damage, bullet_comp.armor_pierce)
-            self.combat_stats.damage_entity(bullet_id, bullet_comp.damage,
+            self.combat_stats_system.damage_entity(
+                bullet_id, bullet_comp.damage,
                 bullet_comp.armor_pierce)
         return True
 
@@ -183,11 +196,17 @@ cdef class ProjectileSystem(StaticMemGameSystem):
         collision_id = arbiter.shapes[1].body.data
         projectile_entity = self.gameworld.entities[bullet_id]
         cdef ProjectileComponent comp = projectile_entity.projectiles
+        damage_entity = self.combat_stats_system.damage_entity
+        cdef SoundManager sound_manager
         if comp.origin_entity != collision_id:
-            self.combat_stats_system.damage_entity(collision_id, comp.damage,
-                comp.armor_pierce)
-            self.combat_stats.damage_entity(bullet_id, comp.damage,
-                comp.armor_pierce)
+            damage_entity(collision_id, comp.damage, comp.armor_pierce)
+            damage_entity(bullet_id, comp.damage, comp.armor_pierce)
+            hit_sound = comp.hit_sound
+            if hit_sound != -1:
+                volume = self.player_system.get_distance_from_player_scalar(
+                    projectile_entity.position.pos, max_distance=1000.)
+                sound_manager = self.gameworld.sound_manager
+                sound_manager.play_direct(hit_sound, volume)
         return True
 
     cdef unsigned int create_projectile(self, int ammo_type, tuple position,
@@ -214,7 +233,8 @@ cdef class ProjectileSystem(StaticMemGameSystem):
             'damage': template.damage,
             'projectile_type': template.projectile_type,
             'armor_pierce': template.armor_pierce,
-            'origin_entity': firing_entity
+            'origin_entity': firing_entity,
+            'hit_sound': template.hit_sound
         }
         create_component_dict = {
             'position': position,
@@ -270,6 +290,7 @@ cdef class ProjectileSystem(StaticMemGameSystem):
         component.projectile_type = args.get('projectile_type', NO_WEAPON)
         component.armor_pierce = args.get('armor_pierce', 0.)
         component.origin_entity = args.get('origin_entity', -1)
+        component.hit_sound = args.get('hit_sound', -1)
 
 
     def clear_component(self, unsigned int component_index):
@@ -285,6 +306,7 @@ cdef class ProjectileSystem(StaticMemGameSystem):
         component.armor_pierce = 0.
         component.main_effect = -1
         component.tail_effect = -1
+        component.hit_sound = -1
 
 
 Factory.register('ProjectileSystem', cls=ProjectileSystem)

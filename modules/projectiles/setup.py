@@ -15,9 +15,9 @@ if platform == 'win32':
 	cstdarg = '-std=gnu99'
 else:
 	cstdarg = '-std=c99'
-import kivent_cymunk
 do_clear_existing = True
-print(kivent_cymunk.get_includes())
+import cymunk
+print(cymunk.get_includes())
 
 noise_modules = {
     'kivent_projectiles.projectiles': ['kivent_projectiles/projectiles.pyx'], 
@@ -39,7 +39,7 @@ check_for_removal = [
 
 
 
-def build_ext(ext_name, files, include_dirs=[]):
+def build_ext(ext_name, files, include_dirs=cymunk.get_includes()):
     return Extension(
         ext_name, files, include_dirs,
         extra_compile_args=[cstdarg, '-ffast-math',],
@@ -53,8 +53,7 @@ cmdclass = {}
 def build_extensions_for_modules_cython(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
-        ext = build_ext(module_name, modules[module_name],
-            include_dirs=kivent_cymunk.get_includes())
+        ext = build_ext(module_name, modules[module_name])
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)
@@ -63,8 +62,7 @@ def build_extensions_for_modules_cython(ext_list, modules):
 def build_extensions_for_modules(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
-        ext = build_ext(module_name, modules[module_name],
-            include_dirs=kivent_cymunk.get_includes())
+        ext = build_ext(module_name, modules[module_name])
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)

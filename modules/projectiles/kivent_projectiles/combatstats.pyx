@@ -65,8 +65,6 @@ cdef class CombatStatsSystem(StaticMemGameSystem):
     component_type = ObjectProperty(CombatStatsComponent)
     system_names = ListProperty(['combat_stats'])
 
-    # def __init__(self, **kwargs):
-    #     super(CombatStatsSystem, self).__init__(**kwargs)
 
     def damage_entity(self, unsigned int entity_id, float damage,
         float armor_pen):

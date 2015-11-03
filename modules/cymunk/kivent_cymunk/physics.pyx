@@ -262,7 +262,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         Queries collisions inside a box.
         '''
         cdef Space space = self.space
-        self.ignore_groups=ignore_groups
+        self.ignore_groups = ignore_groups
         bb = BB(
             box_to_query[0], box_to_query[1], box_to_query[2], box_to_query[3])
         self.bb_query_result = []

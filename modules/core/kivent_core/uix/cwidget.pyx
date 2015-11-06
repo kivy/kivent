@@ -84,8 +84,7 @@ cdef class CWidget(EventDispatcher):
         EventLoop.ensure_window()
 
         # Assign the default context of the widget creation.
-        if not hasattr(self, '_context'):
-            self._context = get_current_context()
+        self._context = get_current_context()
 
         no_builder = '__no_builder' in kwargs
         if no_builder:
@@ -959,3 +958,4 @@ cdef class CWidget(EventDispatcher):
     '''
 
 Factory.register('CWidget', cls=CWidget)
+

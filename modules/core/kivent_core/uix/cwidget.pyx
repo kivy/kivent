@@ -84,7 +84,8 @@ cdef class CWidget(EventDispatcher):
         EventLoop.ensure_window()
 
         # Assign the default context of the widget creation.
-        self._context = get_current_context()
+        if self._context is None:
+            self._context = get_current_context()
 
         no_builder = '__no_builder' in kwargs
         if no_builder:

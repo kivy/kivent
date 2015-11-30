@@ -37,8 +37,22 @@ cdef class SoundManager(EventDispatcher):
                 each.play()
                 return
 
+    cpdef play_direct_loop(self, int sound_index, float volume):
+        cdef list sounds = self.sound_dict[sound_index]['sounds']
+        for each in sounds:
+            if each.state == 'play':
+                continue
+            else:
+                each.volume = volume
+                each.loop = True
+                each.play()
+                return
+
     def stop_direct(self, sound_index):
-        self.sound_dict[sound_index].stop()
+        cdef list sounds = self.sound_dict[sound_index]['sounds']
+        for each in sounds:
+            each.stop()
+            each.loop = False
 
     def reset_sound_position(self, sound):
         sound.seek(0)
@@ -48,6 +62,9 @@ cdef class SoundManager(EventDispatcher):
 
     def play(self, sound_name, volume=1.):
         self.play_direct(self.sound_keys[sound_name], volume)
+
+    def play_loop(self, sound_name, volume=1.):
+        self.play_direct_loop(self.soud_keys[sound_name], volume)
 
     def stop(self, sound_name):
         self.stop_direct(self.sound_keys[sound_name])

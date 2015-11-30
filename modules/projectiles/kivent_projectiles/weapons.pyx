@@ -252,13 +252,25 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
         memcpy(<char *>weapon, &template.weapon_data, sizeof(ProjectileWeapon))
 
 
-    def register_weapon_template(self, str template_name, float reload_time, 
-        int projectile_type, int ammo_count,
-        float rate_of_fire, int clip_size, list barrel_offsets, 
-        int barrel_count, int ammo_type, float projectile_width,
-        float projectile_height, float accel, int reload_begin_sound=-1,
-        int reload_end_sound=-1, int fire_sound=-1, int shot_count=1,
-        float time_between_shots=0., float spread=0.):
+    def register_weapon_template(
+        self, str template_name,
+        float reload_time=1.0, 
+        int projectile_type=0,
+        int ammo_count=100,
+        float rate_of_fire=.25,
+        int clip_size=10,
+        list barrel_offsets=[], 
+        int barrel_count=2,
+        int ammo_type=0,
+        float projectile_width=10.,
+        float projectile_height=10.,
+        float accel=500,
+        int reload_begin_sound=-1,
+        int reload_end_sound=-1,
+        int fire_sound=-1,
+        int shot_count=1,
+        float time_between_shots=0.,
+        float spread=0.):
         self.weapon_templates[template_name] = WeaponTemplate(
             reload_time, projectile_type, ammo_count, rate_of_fire, clip_size,
             barrel_offsets, barrel_count, ammo_type, projectile_width,

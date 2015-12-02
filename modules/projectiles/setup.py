@@ -23,18 +23,21 @@ noise_modules = {
     'kivent_projectiles.projectiles': ['kivent_projectiles/projectiles.pyx'], 
     'kivent_projectiles.weapons': ['kivent_projectiles/weapons.pyx'], 
     'kivent_projectiles.combatstats': ['kivent_projectiles/combatstats.pyx'],
+    'kivent_projectiles.weapon_ai': ['kivent_projectiles/weapon_ai.pyx'],
 }
 
 noise_modules_c = {
     'kivent_projectiles.weapons': ['kivent_projectiles/weapons.c'],
     'kivent_projectiles.projectiles': ['kivent_projectiles/projectiles.c'],
     'kivent_projectiles.combatstats': ['kivent_projectiles/combatstats.c'],
+    'kivent_projectiles.weapon_ai': ['kivent_projectiles/weapon_ai.c'],
 }
 
 check_for_removal = [
     'kivent_projectiles/weapons.c',
     'kivent_projectiles/projectiles.c',
     'kivent_projectiles/combatstats.c',
+    'kivent_projectiles/weapon_ai.c',
     ]
 
 

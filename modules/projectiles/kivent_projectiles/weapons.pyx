@@ -371,7 +371,7 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
 
 
         system_comp.cooldown += weapon.rate_of_fire
-        weapon.in_clip -= weapon.barrel_count * weapon.shot_count
+        weapon.in_clip -= weapon.barrel_count
         system_comp.firing = 0
         body = physics_comp.body
         for c in range(weapon.shot_count):
@@ -407,7 +407,7 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
 
 
         system_comp.cooldown += weapon.rate_of_fire
-        weapon.in_clip -= weapon.barrel_count * weapon.shot_count
+        weapon.in_clip -= weapon.barrel_count
         system_comp.firing = 0
         body = physics_comp.body
         for c in range(weapon.shot_count):
@@ -480,11 +480,12 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
             self.entity_components.memory_block.data)
         cdef unsigned int component_count = self.entity_components.count
         cdef unsigned int count = self.entity_components.memory_block.count
-        cdef unsigned int i, real_index, x, bullet_ent
+        cdef unsigned int i, real_index, x, bullet_ent, entity_id
         cdef float threshold = .00001
         cdef cpBody* body
         cdef cpVect rotated_vec, bullet_position
         cdef SoundManager sound_manager = self.gameworld.sound_manager
+        player_entity = self.player_entity
 
         for i in range(count):
             real_index = i*component_count
@@ -495,11 +496,12 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
             physics_comp = <PhysicsStruct*>component_data[real_index+1]
             weapon = &system_comp.weapons[system_comp.current_weapon]
             system_comp.cooldown = max(0.0, system_comp.cooldown - dt)
+            entity_id = system_comp.entity_id
             if system_comp.reloading and system_comp.cooldown <= threshold \
                 and not weapon.projectile_type == NO_WEAPON:
                 system_comp.reloading = 0
                 weapon.in_clip = weapon.clip_size
-                if weapon.reload_end_sound != -1:
+                if weapon.reload_end_sound != -1 and player_entity == entity_id:
                     sound_manager.play_direct(weapon.reload_end_sound, 1.0)
                 system_comp.cooldown += .5 + weapon.rate_of_fire
                 system_comp.firing = 0
@@ -508,7 +510,8 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                     system_comp.cooldown += weapon.reload_time
                     system_comp.reloading = 1
                     system_comp.firing = 0
-                    if weapon.reload_begin_sound != -1:
+                    if weapon.reload_begin_sound != -1 and ( 
+                        player_entity == entity_id):
                         sound_manager.play_direct(
                             weapon.reload_begin_sound, 1.0
                             )

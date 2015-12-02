@@ -1,8 +1,9 @@
 from cymunk.cymunk cimport (Body, PivotJoint, GearJoint, cpBody, cpPivotJoint,
-    cpGearJoint)
+    cpGearJoint, cpVect)
 from cpython cimport bool
 from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem, 
     MemComponent)
+from kivent_cymunk.physics cimport PhysicsStruct
 
 ctypedef struct CymunkTouchStruct:
     unsigned int entity_id
@@ -25,7 +26,7 @@ ctypedef struct SteeringStruct:
     float speed
     float arrived_radius
     bint active
-    bint has_target
+    bint do_movement
 
 cdef class SteeringComponent(MemComponent):
     cdef Body _steering_body
@@ -46,9 +47,11 @@ ctypedef struct SteeringAIStruct:
     float base_angle
     float current_time
     float recalculate_time
+    float query_radius
 
 cdef class SteeringAIComponent(MemComponent):
     pass
 
 cdef class SteeringAISystem(StaticMemGameSystem):
-    pass
+    cdef cpVect calculate_avoid_vector(self, list obstacles,
+        PhysicsStruct* entity_physics, SteeringAIStruct* entity_ai)

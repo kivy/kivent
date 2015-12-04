@@ -128,5 +128,6 @@ IRC channel:
 License
 -------
 
-KivEnt is released under the terms of the MIT License. Please refer to the
-LICENSE file.
+KivEnt aims to be a full MIT licensed project. At the moment every module is MIT,
+however this could change in the future. To be sure of the licensing for a module
+refer to the LICENSE file inside that module.

@@ -97,8 +97,8 @@ Support
 
 If you need assistance, you can ask for help on our mailing list:
 
-* User Group : https://groups.google.com/group/kivy-users
-* Email      : kivy-users@googlegroups.com
+* User Group : https://groups.google.com/group/kivent
+* Email      : kivent@googlegroups.com
 
 We also have an IRC channel:
 

@@ -578,7 +578,7 @@ cdef class SteeringSystem(StaticMemGameSystem):
                     continue
                 if cpvnear(target, body_pos, steering_component.arrived_radius):
                     velocity_rot = cpv(0., 0.)
-                    steering_body.a = 0
+                    steering_component.active = False
                 elif (turn <= -1.3 or turn >= 1.3):
                     velocity_rot = cpv(0., 0.)
                 else:

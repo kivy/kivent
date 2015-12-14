@@ -31,7 +31,7 @@ cdef class WeaponTemplate:
         int barrel_count, int ammo_type, float projectile_width,
         float projectile_height, float accel, int reload_begin_sound,
         int reload_end_sound, int fire_sound, int shot_count,
-        float time_between_shots, float spread
+        float time_between_shots, float spread, int display_name_id,
         ):
         self.weapon_data.reload_time = reload_time
         self.weapon_data.projectile_type = projectile_type
@@ -48,6 +48,7 @@ cdef class WeaponTemplate:
         self.weapon_data.spread = spread
         self.weapon_data.time_between_shots = time_between_shots
         self.weapon_data.current_shot = 0
+        self.weapon_data.display_name_id = display_name_id
         for i in range(barrel_count):
             self.weapon_data.barrel_offsets[2*i] = barrel_offsets[i][0]
             self.weapon_data.barrel_offsets[2*i+1] = barrel_offsets[i][1]
@@ -66,6 +67,10 @@ cdef class Weapon:
 
     def __cinit__(self):
         self.weapon_pointer = NULL
+
+    property display_name_id:
+        def __get__(self):
+            return self.weapon_pointer.display_name_id
 
     property reload_time:
         def __get__(self):
@@ -170,6 +175,17 @@ cdef class ProjectileWeaponComponent(MemComponent):
                 )
             data.current_weapon = value
 
+    property equipped_weapon:
+        def __get__(self):
+            cdef ProjectileWeaponStruct* data = <ProjectileWeaponStruct*>(
+                self.pointer
+                )
+            cdef ProjectileWeapon* weapon_pointer = &data.weapons[
+                data.current_weapon]
+            cdef Weapon weapon = Weapon()
+            weapon.weapon_pointer = weapon_pointer
+            return weapon
+
     property weapons:
         def __get__(self):
             cdef ProjectileWeaponStruct* data = <ProjectileWeaponStruct*>(
@@ -244,6 +260,8 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
     def __init__(self, **kwargs):
         super(ProjectileWeaponSystem, self).__init__(**kwargs)
         self.weapon_templates = {}
+        self.weapon_count = 0
+        self.weapon_display_names = []
 
 
     cdef void copy_template_to_weapon(self, str template_name, 
@@ -254,6 +272,7 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
 
     def register_weapon_template(
         self, str template_name,
+        str display_name,
         float reload_time=1.0, 
         int projectile_type=0,
         int ammo_count=100,
@@ -271,11 +290,15 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
         int shot_count=1,
         float time_between_shots=0.,
         float spread=0.):
+        display_name_id = self.weapon_count
+        self.weapon_display_names.append(display_name)
+        self.weapon_count += 1
         self.weapon_templates[template_name] = WeaponTemplate(
             reload_time, projectile_type, ammo_count, rate_of_fire, clip_size,
             barrel_offsets, barrel_count, ammo_type, projectile_width,
             projectile_height, accel, reload_begin_sound, reload_end_sound,
-            fire_sound, shot_count, time_between_shots, spread
+            fire_sound, shot_count, time_between_shots, spread,
+            display_name_id,
             )
 
 
@@ -287,6 +310,12 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
             weapon_comp.pointer
             )
         self.copy_template_to_weapon(weapon_name, &data.weapons[index])
+
+    def get_current_weapon_name(self, unsigned int entity_id):
+        entity = self.gameworld.entities[entity_id]
+        weapon_comp = entity.projectile_weapons
+        weapon = weapon_comp.equipped_weapon
+        return self.weapon_display_names[weapon.display_name_id]
 
 
     def init_component(self, unsigned int component_index, 
@@ -441,12 +470,10 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
         cdef cpVect rotated_vec, bullet_position
         cdef int c, x
         cdef float threshold = .00001
-
+        weapon.shot_timer -= dt
         if weapon.current_shot == 0:
             weapon.shot_timer = 0.0
-        weapon.shot_timer -= dt
         if weapon.shot_timer <= threshold:
-            weapon.in_clip -= weapon.barrel_count
             weapon.shot_timer += weapon.time_between_shots
             for x in range(weapon.barrel_count):
                 x_offset = weapon.barrel_offsets[2*x] + (
@@ -468,8 +495,10 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                 sound_manager.play_direct(weapon.fire_sound, 1.0)
             weapon.current_shot += 1
             if weapon.current_shot == weapon.shot_count:
-                system_comp.firing = False
+                system_comp.firing = 0
                 weapon.current_shot = 0
+                system_comp.cooldown += weapon.rate_of_fire
+                weapon.in_clip -= weapon.barrel_count
 
     def update(self, float dt):
         cdef ProjectileWeaponStruct* system_comp
@@ -480,7 +509,7 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
             self.entity_components.memory_block.data)
         cdef unsigned int component_count = self.entity_components.count
         cdef unsigned int count = self.entity_components.memory_block.count
-        cdef unsigned int i, real_index, x, bullet_ent, entity_id
+        cdef unsigned int i, real_index, x, bullet_ent, entity_id, bullet_count
         cdef float threshold = .00001
         cdef cpBody* body
         cdef cpVect rotated_vec, bullet_position
@@ -500,7 +529,9 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
             if system_comp.reloading and system_comp.cooldown <= threshold \
                 and not weapon.projectile_type == NO_WEAPON:
                 system_comp.reloading = 0
-                weapon.in_clip = weapon.clip_size
+                bullet_count = min(weapon.clip_size, weapon.ammo_count)
+                weapon.ammo_count -= bullet_count
+                weapon.in_clip = bullet_count
                 if weapon.reload_end_sound != -1 and player_entity == entity_id:
                     sound_manager.play_direct(weapon.reload_end_sound, 1.0)
                 system_comp.cooldown += .5 + weapon.rate_of_fire

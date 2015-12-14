@@ -28,7 +28,7 @@ ctypedef struct ProjectileWeapon:
     int reload_begin_sound
     int reload_end_sound
     int fire_sound
-
+    int display_name_id
 
 
 cdef class Weapon:
@@ -52,9 +52,10 @@ ctypedef struct ProjectileWeaponStruct:
 cdef class ProjectileWeaponComponent(MemComponent):
     pass
 
-
 cdef class ProjectileWeaponSystem(StaticMemGameSystem):
     cdef dict weapon_templates
+    cdef list weapon_display_names
+    cdef int weapon_count
     cdef void copy_template_to_weapon(self, str template_name, 
         ProjectileWeapon *weapon)
     cdef void fire_projectile(self, unsigned int entity_id, float accel)

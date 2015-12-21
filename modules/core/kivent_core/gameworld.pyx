@@ -385,14 +385,22 @@ class GameWorld(Widget):
         entity.load_order = component_order
         cdef SystemManager system_manager = self.system_manager
         entity.system_manager = system_manager
+        cdef object component_args
         cdef unsigned int system_id
+        cdef Entity entity_to_copy
         if debug:
             debug_str = 'KivEnt: Entity {entity_id} created with components: '
         for component in component_order:
             system = system_manager[component]
             system_id = system_manager.get_system_index(component)
-            component_id = system.create_component(
-                entity_id, zone, components_to_use[component])
+            component_args = components_to_use[component]
+            if isinstance(component_args, Entity):
+                entity_to_copy = component_args
+                component_id = entity_to_copy.get_component_index(component)
+                system.copy_component(entity_id, component_id)
+            else:
+                component_id = system.create_component(
+                    entity_id, zone, component_args)
             if debug:
                 debug_str += component + ': ' + str(component_id) + ', '
 

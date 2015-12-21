@@ -11,6 +11,7 @@ try:
     import cPickle as pickle
 except: 
     import pickle
+from kivent_core.rendering.svg_loader cimport SVG, SVGModelInfo
 
 cdef class ModelManager:
     '''
@@ -64,6 +65,11 @@ cdef class ModelManager:
         self._models = {}
         self._key_counts = {}
         self._model_register = {}
+        self._svg_index = {}
+
+    property svg_index:
+        def __get__(self):
+            return self._svg_index
 
     property models:
         def __get__(self):
@@ -76,6 +82,7 @@ cdef class ModelManager:
     property model_register:
         def __get__(self):
             return self._model_register
+
 
     def register_entity_with_model(self, unsigned int entity_id, str system_id,
         str model_name):
@@ -228,6 +235,26 @@ cdef class ModelManager:
                 ind_space=str(index_size//1024),
                 ind_count=str(index_size//sizeof(unsigned short)),))
         return total_count
+
+    def load_svg(self, str source, str group_name=None):
+        cdef dict svg_index = self._svg_index
+        if group_name is None:
+            group_name = str(path.splitext(path.basename(source))[0])
+        if group_name in svg_index:
+            raise KeyError()
+        svg_index[group_name] = group_index = {}
+        cdef SVG svg = SVG(source)
+        cdef dict svg_data = svg.get_model_data()
+        cdef dict model_data = svg_data['model_data']
+        cdef SVGModelInfo element_data
+        for key in model_data:
+            element_data = model_data[key]
+            group_index[key] = self.load_model(
+                'vertex_format_2f4ub', element_data.vertex_count, 
+                element_data.index_count, group_name + '_' + str(key),
+                indices=element_data.indices, vertices=element_data.vertices,
+                )
+        return {'models': group_index, 'uuid_index': svg_data['uuid_index']}
 
     def load_model(self, str format_name, unsigned int vertex_count, 
         unsigned int index_count, str name, do_copy=False, indices=None,

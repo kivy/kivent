@@ -41,3 +41,6 @@ cdef class PhysicsRenderer(Renderer):
 
 cdef class ColorRenderer(Renderer):
     pass
+
+cdef class ColorPolyRenderer(Renderer):
+    pass

@@ -41,18 +41,27 @@ file_prefixes = {
 
 modules = {
     'core': ['entity', 'gameworld'],
-    'memory_handlers': ['block', 'membuffer', 'indexing', 'pool', 'utils', 
-        'zone', 'tests', 'zonedblock'],
-    'rendering': ['gl_debug', 'vertex_format', 'fixedvbo', 'cmesh', 'batching', 
-        'vertex_format', 'frame_objects','vertex_formats', 'model'],
-    'managers': ['resource_managers', 'system_manager', 'entity_manager', 
-        'sound_manager'],
+    'memory_handlers': [
+        'block', 'membuffer', 'indexing', 'pool', 'utils', 
+        'zone', 'tests', 'zonedblock'
+        ],
+    'rendering': [
+        'gl_debug', 'vertex_format', 'fixedvbo', 'cmesh', 'batching', 
+        'vertex_format', 'frame_objects','vertex_formats', 'model',
+        'svg_loader'
+        ],
+    'managers': [
+        'resource_managers', 'system_manager', 'entity_manager', 
+        'sound_manager',
+        ],
     'uix': ['cwidget', 'gamescreens'],
-    'systems': ['gamesystem', 'staticmemgamesystem', 'position_systems',
+    'systems': [
+        'gamesystem', 'staticmemgamesystem', 'position_systems',
         'gameview', 'scale_systems', 'rotate_systems', 'color_systems',
-        'gamemap', 'renderers', 'lifespan'],
-
-}
+        'gamemap', 'renderers', 'lifespan'
+        ],
+   }
+   
 core_modules = {}
 core_modules_c = {}
 check_for_removal = []

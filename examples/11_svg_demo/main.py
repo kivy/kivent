@@ -29,26 +29,27 @@ class TestGame(Widget):
             position.x += touch.dx
             position.y += touch.dy
 
-    def print_model_data(self, model_key):
-        model = self.gameworld.model_manager.models[model_key]
-        for vertex in model.vertices:
-            print(vertex.pos, vertex.v_color)
-
-
 
     def load_svg(self):
-        data = self.gameworld.model_manager.load_svg("tiger.svg")
-        # print(data)
+        model_manager = self.gameworld.model_manager
+        data = model_manager.get_model_info_for_svg("tiger.svg")
+        load_model_from_model_info = model_manager.load_model_from_model_info
         init_entity = self.gameworld.init_entity
-        model_data = data['models']
-        uuids = self.uuids
+        model_data = data['model_info']
+        svg_name = data['svg_name']
+        model_infos = []
         entity_to_copy = None
-        uuid_index = data['uuid_index']
-        for element_key in model_data:
-            model_name = model_data[element_key]
-            # self.print_model_data(model_name)
+        final_infos = model_manager.combine_model_infos(model_data)
+        svg_bounds = model_manager.get_center_and_bbox_from_infos(final_infos)
+        center = svg_bounds['center']
+        neg_center = [-center[0], -center[1]]
+        for model_info in final_infos:
+            model_name = load_model_from_model_info(model_info, svg_name)
+            model = model_manager.models[model_name]
+            print(model.vertex_count)
+            model.add_all_vertex_attribute('pos', neg_center)
             create_dict = {
-                'position': (0, 0),
+                'position': (300, 300),
                 'poly_renderer': {'model_key': model_name},
             }
             if entity_to_copy is not None:
@@ -57,12 +58,8 @@ class TestGame(Widget):
             if entity_to_copy is None:
                 entity_to_copy = self.gameworld.entities[ent]
                 self.entity_id = ent
-            if element_key in uuid_index:
-                uuids[uuid_index[element_key]] = ent
-        for each in uuids:
-            entity = self.gameworld.entities[uuids[each]]
-            model = entity.poly_renderer.model
-            model.set_all_vertex_attribute('v_color', [255, 0, 0, 255])
+
+
 
 
     def setup_states(self):

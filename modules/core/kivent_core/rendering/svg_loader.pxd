@@ -27,8 +27,10 @@ cdef class SVGModelInfo:
     cdef dict vertices
     cdef int vertex_count
     cdef int index_count
-    cdef int last_index
-    cdef int last_indexed_index 
+    cdef str title
+    cdef str description
+    cdef str label
+    cdef str element_id
 
 cdef class Matrix:
     cdef matrix_t mat
@@ -48,7 +50,10 @@ cdef class SVG:
     cdef float opacity
     cdef float x
     cdef float y
-    cdef str uuid
+    cdef str element_id
+    cdef str title
+    cdef str description
+    cdef str label
     cdef bint fill_was_none
     cdef object el_id
     cdef int close_index
@@ -78,10 +83,10 @@ cdef class SVG:
     cdef void curve_to(self, float x1, float y1, float x2, float y2,
                        float x, float y)
     cdef void end_path(self)
-    cdef SVGModelInfo push_mesh(self, float[:] path, fill, Matrix transform, mode,
-        SVGModelInfo prior_info=*)
-    cdef SVGModelInfo get_model_info(self, float *vertices, int vindex, int count,
-                                     int mode=*, SVGModelInfo prior_info=*)
-    cdef SVGModelInfo push_line_mesh(self, float[:] path, fill, Matrix transform,
-                                     float line_width, bint fill_was_none,
-                                     SVGModelInfo prior_info=*)
+    cdef SVGModelInfo push_mesh(self, float[:] path, fill, Matrix transform, 
+                                mode)
+    cdef SVGModelInfo get_model_info(self, float *vertices, int vindex,
+                                     int count, int mode=*)
+    cdef SVGModelInfo push_line_mesh(self, float[:] path, fill,
+                                     Matrix transform,
+                                     float line_width, bint fill_was_none)

@@ -310,16 +310,95 @@ class RadialGradient(Gradient):
     def grad_value(self, x, y):
         return sqrt((x - self.cx) ** 2 + (y - self.cy) ** 2)/self.r
 
+class NotEnoughRoomForVertices(Exception):
+    pass
+
 cdef class SVGModelInfo:
 
-    def __init__(self, list indices, dict vertices, int last_index,
-        int last_indexed):
+    def __init__(self, list indices, dict vertices,
+        str title=None, str label=None, str element_id=None,
+        str description=None):
         self.indices = indices
         self.vertices = vertices
         self.index_count = len(indices)
         self.vertex_count = len(vertices)
-        self.last_index = last_index
-        self.last_indexed_index = last_indexed
+        self.description = description
+        self.title = title
+        self.label = label
+        self.element_id = element_id
+
+    def combine_model_info(self, SVGModelInfo new_info):
+        '''
+        Returns a new SVGModelInfo object that contains the combined vertex
+        and index data for this object and the SVGModelInfo object provided 
+        by the new_info argument. 
+
+        If there is not enough room to combine the 2 models, vertex_counts 
+        together exceed 65535 vertices, than a NotEnoughRoomForVertices 
+        exception will be raised.
+
+        Args:
+            new_info (SVGModelInfo): The info to combine with this info.
+
+        Return:
+            SVGModelInfo: The new SVGModelInfo object representing the combined
+            meshes.
+
+        '''
+        cdef int vertex_offset = self.vertex_count
+        cdef dict vertices
+        cdef list indices
+        if self.vertex_count + new_info.vertex_count >= 65535:
+            raise NotEnoughRoomForVertices()
+        else:
+            indices = [x for x in self.indices]
+            vertices = self.vertices.copy()
+            for i in range(new_info.vertex_count):
+                vertices[i+vertex_offset] = new_info.vertices[i]
+            indices.extend([x + vertex_offset for x in new_info.indices])
+
+            return SVGModelInfo(
+                                indices, 
+                                vertices,
+                                label=self.label,
+                                description=self.description,
+                                element_id=self.element_id,
+                                title=self.title,
+                                )
+
+
+    property title:
+        def __get__(self):
+            return self.title
+
+    property label:
+        def __get__(self):
+            return self.label
+
+    property element_id:
+        def __get__(self):
+            return self.element_id
+
+    property description:
+        def __get__(self):
+            return self.description
+
+    property indices:
+        def __get__(self):
+            return self.indices
+
+    property vertices:
+        def __get__(self):
+            return self.vertices
+
+    property index_count:
+        def __get__(self):
+            return self.index_count
+
+    property vertex_count:
+        def __get__(self):
+            return self.vertex_count
+
 
 
 cdef class SVG:
@@ -366,7 +445,9 @@ cdef class SVG:
         self.bezier_coefficients = None
         self.gradients = GradientContainer()
         self.anchor_x = anchor_x
-        self.el_id = None
+        self.element_id = None
+        self.title = None
+        self.description = None
         self.fill_was_none = False
         self.anchor_y = anchor_y
         self.line_texture = Texture.create(
@@ -446,24 +527,11 @@ cdef class SVG:
             else:
                 fd = open(filename, 'rb')
             try:
-        #save the tree for later reloading
                 self.tree = parse(fd)
-                #self.reload()
                 end = time()
                 Logger.debug("Svg: Loaded {} in {:.2f}s".format(filename, end - start))
             finally:
                 fd.close()
-
-    # cdef void reload(self):
-    #         # parse tree
-    #         start = time()
-    #         self.parse_tree(self.tree)
-    #         end1 = time()
-    #         with self:
-    #             self.render()
-    #         end2 = time()
-    #         Logger.debug("Svg: Parsed in {:.2f}s, rendered in {:.2f}s".format(
-    #                 end1 - start, end2 - end1))
 
     cdef parse_tree(self, tree):
         root = tree._root
@@ -498,8 +566,10 @@ cdef class SVG:
         stroke_opacity = float(e.get('stroke-opacity', 1))
         stroke_width = float(e.get('stroke-width', 1.))
         oldtransform = self.transform
-        self.uuid = e.get('uuid', None)
-        el_id = e.get('id')
+        self.element_id = e.get('id', None)
+        self.title = e.get('title', None)
+        self.description = e.get('description', None)
+        self.label = e.get('label', None)
         for t in self.parse_transform(e.get('transform')):
             self.transform *= Matrix(t)
 
@@ -515,11 +585,6 @@ cdef class SVG:
             if 'stroke-opacity' in sdict:
                 stroke_opacity *= float(sdict['stroke-opacity'])
         fill = self.fill
-        if el_id in ['path450', 'path454', 'path458', 'path446']:
-            print(e.tag)
-            self.el_id = el_id
-        else:
-            self.el_id = None
         stroke = self.stroke
         self.fill_was_none = False
         if fill == 'none' and not self.is_none_or_undef(stroke):
@@ -533,6 +598,7 @@ cdef class SVG:
             self.stroke[3] = 0
         elif stroke is None and fill == 'none':
             self.stroke = [0, 0, 0, 255]
+            stroke_width = stroke_width *2.
         elif self.is_none_or_undef(stroke):
             self.stroke = [0, 0, 0, 0]
         if isinstance(self.stroke, list):
@@ -542,7 +608,7 @@ cdef class SVG:
         if e.tag.endswith('path'):
             if stroke_width < 1.0:
                 for i in range(3):
-                    self.stroke[i] = (self.fill[i] + 3*self.stroke[i])/4.
+                    self.stroke[i] = (self.fill[i] + self.stroke[i])/2.
                 self.stroke[3] = stroke_width * 225 + 30
             self.set_line_width(stroke_width)
             self.parse_path(e.get('d', ''))
@@ -641,8 +707,6 @@ cdef class SVG:
         # will be relative to that current_pos. This is useful.
         elements = list(_tokenize_path(pathdef))
         # Reverse for easy use of .pop() 
-        if self.el_id is not None:
-            print(elements)
         elements.reverse()
         command = None
 
@@ -815,8 +879,6 @@ cdef class SVG:
         self.loop = array('f', [])
 
     cdef void close_path(self):
-        #self.loop.append(self.loop[0])
-        #self.loop.append(self.loop[1])
         self.path.append(self.loop)
         self.loop = array('f', [])
 
@@ -919,8 +981,12 @@ cdef class SVG:
             t1 = f_bc[i * 4 + 1]
             t2 = f_bc[i * 4 + 2]
             t3 = f_bc[i * 4 + 3]
-            f_loop[ilast + i * 2] = px = t0 * self.x + t1 * x1 + t2 * x2 + t3 * x
-            f_loop[ilast + i * 2 + 1] = py = t0 * self.y + t1 * y1 + t2 * y2 + t3 * y
+            f_loop[ilast + i * 2] = px = (
+                t0 * self.x + t1 * x1 + t2 * x2 + t3 * x
+                )
+            f_loop[ilast + i * 2 + 1] = py = (
+                t0 * self.y + t1 * y1 + t2 * y2 + t3 * y
+                )
         self.x, self.y = px, py
 
     cdef void end_path(self):
@@ -935,8 +1001,6 @@ cdef class SVG:
                 tess.add_contour_data(loop.data.as_voidptr, len(loop) / 2)
             tess.tesselate()
             tris = tess.vertices
-        else:
-            print('skipping triangulation')
 
         # Add the stroke for the first subpath, and the fill for all
         # subpaths.
@@ -948,8 +1012,11 @@ cdef class SVG:
             self.fill,
             self.transform,
             self.line_width,
-            self.uuid,
-            self.fill_was_none
+            self.element_id,
+            self.fill_was_none,
+            self.title,
+            self.description,
+            self.label,
             ))
 
 
@@ -963,15 +1030,17 @@ cdef class SVG:
                     None,
                     self.transform,
                     self.line_width,
-                    self.uuid,
-                    self.fill_was_none
+                    self.element_id,
+                    self.fill_was_none,
+                    self.title,
+                    self.description,
+                    self.label,
                     ))
         self.path = []
 
     @cython.boundscheck(False)
     cdef SVGModelInfo push_mesh(self, float[:] 
-                                path, fill, Matrix transform, mode,
-                                SVGModelInfo prior_info=None):
+                                path, fill, Matrix transform, mode):
         cdef float *vertices
         cdef int index, vindex
         cdef float *f_tris
@@ -1016,34 +1085,23 @@ cdef class SVG:
                 vindex += 8
 
         cdef SVGModelInfo info = self.get_model_info(vertices, vindex, count,
-            mode=0,
-            prior_info=prior_info)
+            mode=0)
         free(vertices)
         return info
 
-    cdef SVGModelInfo get_model_info(self, float *vertices, int vindex, int count,
-            int mode=0, SVGModelInfo prior_info=None):
+    cdef SVGModelInfo get_model_info(self, float *vertices, int vindex,
+        int count, int mode=0):
         cdef list indices
         cdef dict vertices_dict
-        cdef int index, actual_index, vertex_offset, last_index, last_indexed
+        cdef int index, actual_index, vertex_offset, i
 
-        if prior_info is None:
-            indices = []
-            vertices_dict = {}
-            vertex_offset = 0
-            last_index = 0
-            last_indexed = 0
-        else:
-            indices = prior_info.indices
-            vertices_dict = prior_info.vertices
-            vertex_offset = prior_info.vertex_count
-            last_index = prior_info.last_index
-            last_indexed = prior_info.last_indexed_index
+        indices = []
+        vertices_dict = {}
 
         cdef int offset=vindex // count
         for index in range(count):
             actual_index = offset * index
-            vertices_dict[index + vertex_offset] = {
+            vertices_dict[index] = {
                 'pos': (vertices[actual_index], vertices[actual_index+1]),
                 'v_color': (
                             int(vertices[actual_index+4]), 
@@ -1053,24 +1111,22 @@ cdef class SVG:
                             ),
             }
 
-        cdef int istart = 0
         if mode == 0:
             #polygon
             for i in range(count / 2):
-                indices.extend((last_index+i, last_index + (count - i - 1)))
+                indices.extend((i, (count - i - 1)))
             else:
                 if count % 2 == 1:
-                    indices.append(last_index + count / 2)
+                    indices.append(count / 2)
         elif mode == 1:
             # line
             for i in range(count):
-                indices.append(last_index + i)
+                indices.append(i)
 
-        return SVGModelInfo(indices, vertices_dict, count+istart+last_index,
-            indices[last_index + count + istart - 1])
+        return SVGModelInfo(indices, vertices_dict)
 
-    cdef SVGModelInfo push_line_mesh(self, float[:] path, fill, Matrix transform,
-        float line_width, bint fill_was_none, SVGModelInfo prior_info=None):
+    cdef SVGModelInfo push_line_mesh(self, float[:] path, fill, 
+        Matrix transform, float line_width, bint fill_was_none):
         # Tentative to use smooth line, doesn't work completly yet.
         # Caps and joint are missing
         cdef int index, vindex = 0, odd = 0, i
@@ -1150,8 +1206,7 @@ cdef class SVG:
             vindex += 32
 
         cdef SVGModelInfo info = self.get_model_info(
-            vertices, vindex, (vindex / 32) * 4, mode=1,
-            prior_info=prior_info)
+            vertices, vindex, (vindex / 32) * 4, mode=1)
         free(vertices)
         return info
 
@@ -1159,30 +1214,29 @@ cdef class SVG:
         # start = time()
 
         self.parse_tree(self.tree)
-        cdef dict final_vertices, elements = {}
-        cdef dict uuid_index = {}
+        cdef dict final_vertices = {}
         cdef list subelements
+        cdef list elements = []
         cdef list real_indices
         cdef int index, index_count
         cdef SVGModelInfo element
         # Logger.debug("Svg: Parsed in {:.2f}s, rendered in {:.2f}s".format(
         #         end1 - start, end2 - end1))
-        cdef int element_count = 0
         cdef int vert_offset
         cdef list indices, final_indices
         cdef int last_vert_count, index_offset, i
         
-        for path, stroke, tris, fill, transform, line_width, uuid, fill_was_none in self.paths:
+        for (path, stroke, tris, fill, transform, 
+             line_width, element_id, fill_was_none,
+             title, description, label) in self.paths:
             element = None
             subelements = []
-            # if element_count > 300:
-            #     return elements
             if fill_was_none and line_width <= 1.:
                 if tris:
                     for item in tris:
                         element = self.push_mesh(
-                            item, fill, transform, 'triangle_strip',
-                            prior_info=element)
+                            item, fill, transform, 'triangle_strip'
+                            )
                         new_indices = []
                         indices = element.indices
                         index_count = element.index_count
@@ -1198,8 +1252,8 @@ cdef class SVG:
                         element = None
                 if path:
                     element = self.push_line_mesh(
-                        path, stroke, transform, line_width, fill_was_none,
-                        prior_info=element)
+                        path, stroke, transform, line_width, fill_was_none
+                        )
                     new_indices = []
                     indices = element.indices
                     index_count = element.index_count
@@ -1216,8 +1270,8 @@ cdef class SVG:
             else:
                 if path:
                     element = self.push_line_mesh(
-                        path, stroke, transform, line_width, fill_was_none,
-                        prior_info=element)
+                        path, stroke, transform, line_width, fill_was_none
+                        )
                     new_indices = []
                     indices = element.indices
                     index_count = element.index_count
@@ -1234,8 +1288,8 @@ cdef class SVG:
                 if tris:
                     for item in tris:
                         element = self.push_mesh(
-                            item, fill, transform, 'triangle_strip',
-                            prior_info=element)
+                            item, fill, transform, 'triangle_strip'
+                            )
                         new_indices = []
                         indices = element.indices
                         index_count = element.index_count
@@ -1259,10 +1313,13 @@ cdef class SVG:
                 for x in range(element.vertex_count):
                     final_vertices[x+vert_offset] = vertices[x]
                 vert_offset += element.vertex_count
-            elements[element_count] = SVGModelInfo(
-                final_indices, final_vertices, 0, 0)
-            if uuid is not None:
-                uuid_index[element_count] = uuid
-            element_count += 1
+            elements.append(SVGModelInfo(
+                                        final_indices, 
+                                        final_vertices,
+                                        label=label,
+                                        description=description,
+                                        element_id=element_id,
+                                        title=title,
+                                        ))
 
-        return {'model_data': elements, 'uuid_index': uuid_index}
+        return elements

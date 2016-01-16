@@ -379,7 +379,14 @@ class GameWorld(Widget):
         This is the function used to create a new entity. It returns the 
         entity_id of the created entity. components_to_use is a dict of 
         system_id, args to generate_component function. component_order is
-        the order in which the components should be initialized'''
+        the order in which the components should be initialized
+
+        If an Entity is provided as the value in the components_to_use dict,
+        instead of creating a new component the new Entity will use the 
+        provided Entity's component. Be careful to always remove the parent
+        Entity last. This accounting is not currently done for you, you must
+        keep track of Entities linked in this way on your own.
+        '''
         cdef unsigned int entity_id = self.get_entity(zone)
         cdef Entity entity = self.entities[entity_id]
         entity.load_order = component_order
@@ -439,11 +446,16 @@ class GameWorld(Widget):
         cdef Entity entity = self.entities[entity_id]
         cdef EntityManager entity_manager = self.entity_manager
         cdef SystemManager system_manager = self.system_manager
+        cdef GameSystem system
         entity._load_order.reverse()
         load_order = entity._load_order
         for system_name in load_order:
-            system_manager[system_name].remove_component(
-                entity.get_component_index(system_name))
+            system = system_manager[system_name]
+            if entity_id not in system.copied_components:
+                system_manager[system_name].remove_component(
+                    entity.get_component_index(system_name))
+            else:
+                del system.copied_components[entity_id]
             if debug:
                 Logger.debug(('Remove component {comp_id} from entity'
                 ' {entity_id}').format(

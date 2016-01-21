@@ -85,7 +85,6 @@ class TileSystem(GameSystem):
                 ent = init_entity(create_dict, ['position', 'renderer'])
                 tile_comp.current_entity = ent
             
-
     def on_camera_size(self, instance, value):
         self.tile_trigger()
 
@@ -107,7 +106,7 @@ class TileSystem(GameSystem):
         else:
             origin_x = (cx // tile_max_x) * tile_max_x
         if tile_pos[1] < tile_at_camera_pos[1]:
-            origin_y = (cx // tile_max_y + 1) * tile_max_y
+            origin_y = (cy // tile_max_y + 1) * tile_max_y
         else:
             origin_y = (cy // tile_max_y) * tile_max_y
         return origin_x + world_pos[0], origin_y + world_pos[1]
@@ -157,8 +156,8 @@ class TileSystem(GameSystem):
         component.current_entity = None
         self.tiles[tile_pos[0]][tile_pos[1]] = component_index
 
-
 Factory.register('TileSystem', cls=TileSystem)
+
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
@@ -184,7 +183,6 @@ class TestGame(Widget):
         model_manager.load_textured_rectangle('vertex_format_4f', 64., 64., 
             'blue-tile', 'blue-tile')
 
-
     def setup_tiles(self):
         init_entity = self.gameworld.init_entity
         tile_system = self.ids.tiles
@@ -199,8 +197,6 @@ class TestGame(Widget):
 
         tile_system.tile_trigger()
 
-
-
     def setup_states(self):
         self.gameworld.add_state(state_name='main', 
             systems_added=['renderer'],
@@ -210,6 +206,7 @@ class TestGame(Widget):
 
     def set_state(self):
         self.gameworld.state = 'main'
+
 
 class DebugPanel(Widget):
     fps = StringProperty(None)

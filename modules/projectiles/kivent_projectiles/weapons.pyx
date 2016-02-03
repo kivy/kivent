@@ -256,6 +256,8 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
     system_names = ListProperty(['projectile_weapons','cymunk_physics'])
     projectile_system = ObjectProperty(None)
     player_entity = NumericProperty(None, allownone=True)
+    player_system = ObjectProperty(None)
+    sound_distance = NumericProperty(1250.)
 
     def __init__(self, **kwargs):
         super(ProjectileWeaponSystem, self).__init__(**kwargs)
@@ -421,7 +423,9 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                     )
                 self.fire_missle(bullet_ent, weapon.accel)
         if weapon.fire_sound != -1:
-            sound_manager.play_direct(weapon.fire_sound, 1.0)
+            volume = self.player_system.get_distance_from_player_scalar(
+                    (body.p.x, body.p.y), max_distance=self.sound_distance)
+            sound_manager.play_direct(weapon.fire_sound, volume)
 
     cdef void handle_single_shot(self, ProjectileWeaponStruct* system_comp,
         ProjectileWeapon* weapon, PhysicsStruct* physics_comp, 
@@ -457,7 +461,9 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                     )
                 self.fire_projectile(bullet_ent, weapon.accel)
         if weapon.fire_sound != -1:
-            sound_manager.play_direct(weapon.fire_sound, 1.0)
+            volume = self.player_system.get_distance_from_player_scalar(
+                    (body.p.x, body.p.y), max_distance=self.sound_distance)
+            sound_manager.play_direct(weapon.fire_sound, volume)
 
 
     cdef void handle_multi_shot(self, ProjectileWeaponStruct* system_comp,
@@ -492,7 +498,9 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                     )
                 self.fire_projectile(bullet_ent, weapon.accel)
             if weapon.fire_sound != -1:
-                sound_manager.play_direct(weapon.fire_sound, 1.0)
+                volume = self.player_system.get_distance_from_player_scalar(
+                    (body.p.x, body.p.y), max_distance=self.sound_distance)
+                sound_manager.play_direct(weapon.fire_sound, volume)
             weapon.current_shot += 1
             if weapon.current_shot == weapon.shot_count:
                 system_comp.firing = 0
@@ -511,10 +519,12 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
         cdef unsigned int count = self.entity_components.memory_block.count
         cdef unsigned int i, real_index, x, bullet_ent, entity_id, bullet_count
         cdef float threshold = .00001
+        cdef float volume
         cdef cpBody* body
         cdef cpVect rotated_vec, bullet_position
         cdef SoundManager sound_manager = self.gameworld.sound_manager
         player_entity = self.player_entity
+        player_system = self.player_system
 
         for i in range(count):
             real_index = i*component_count
@@ -532,8 +542,11 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                 bullet_count = min(weapon.clip_size, weapon.ammo_count)
                 weapon.ammo_count -= bullet_count
                 weapon.in_clip = bullet_count
-                if weapon.reload_end_sound != -1 and player_entity == entity_id:
-                    sound_manager.play_direct(weapon.reload_end_sound, 1.0)
+                if weapon.reload_end_sound != -1:
+                    volume = player_system.get_distance_from_player_scalar(
+                        (physics_comp.body.p.x, physics_comp.body.p.y),
+                        max_distance=self.sound_distance)
+                    sound_manager.play_direct(weapon.reload_end_sound, volume)
                 system_comp.cooldown += .5 + weapon.rate_of_fire
                 system_comp.firing = 0
             if system_comp.firing and system_comp.cooldown <= threshold:
@@ -541,11 +554,12 @@ cdef class ProjectileWeaponSystem(StaticMemGameSystem):
                     system_comp.cooldown += weapon.reload_time
                     system_comp.reloading = 1
                     system_comp.firing = 0
-                    if weapon.reload_begin_sound != -1 and ( 
-                        player_entity == entity_id):
-                        sound_manager.play_direct(
-                            weapon.reload_begin_sound, 1.0
-                            )
+                    if weapon.reload_begin_sound != -1:
+                        volume = player_system.get_distance_from_player_scalar(
+                            (physics_comp.body.p.x, physics_comp.body.p.y),
+                            max_distance=self.sound_distance)
+                        sound_manager.play_direct(weapon.reload_begin_sound,
+                                                  volume)
                 elif weapon.projectile_type == SINGLESHOT:
                     self.handle_single_shot(system_comp, weapon, physics_comp,
                         sound_manager, projectile_system, dt)

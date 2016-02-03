@@ -18,6 +18,7 @@ cdef class ProjectileTemplate:
     cdef float rot_speed
     cdef float lifespan
     cdef int hit_sound
+    cdef object destruction_callback
 
 
 ctypedef struct ProjectileStruct:

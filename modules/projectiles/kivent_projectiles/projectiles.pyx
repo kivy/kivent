@@ -13,9 +13,10 @@ include "projectile_config.pxi"
 cdef class ProjectileTemplate:
 
     def __init__(self, float damage, float armor_pierce, int projectile_type,
-        str texture, str model, float width, float height, float mass,
-        int collision_type, float speed, float rot_speed, str main_effect,
-        str tail_effect, float lifespan, int hit_sound):
+                 str texture, str model, float width, float height, float mass,
+                 int collision_type, float speed, float rot_speed,
+                 str main_effect, str tail_effect, float lifespan,
+                 int hit_sound, object destruction_callback):
         self.damage = damage
         self.armor_pierce = armor_pierce
         self.projectile_type = projectile_type
@@ -31,6 +32,7 @@ cdef class ProjectileTemplate:
         self.rot_speed = rot_speed
         self.lifespan = lifespan
         self.hit_sound = hit_sound
+        self.destruction_callback = destruction_callback
 
 cdef class ProjectileComponent(MemComponent):
 
@@ -131,13 +133,15 @@ cdef class ProjectileSystem(StaticMemGameSystem):
         float armor_pierce, int projectile_type, str texture_key,
         str model_key, float width, float height, float mass,
         float speed, float rot_speed, str main_effect=None,
-        str tail_effect=None, float lifespan=5.0, int hit_sound=-1):
+        str tail_effect=None, float lifespan=5.0, int hit_sound=-1,
+        object destruction_callback=None):
         count = self.projectile_count
         self.projectile_keys[name] = count
         self.projectile_templates[count] = ProjectileTemplate(
             damage, armor_pierce, projectile_type, texture_key, model_key,
             width, height, mass, self.collision_type_index[projectile_type],
-            speed, rot_speed, main_effect, tail_effect, lifespan, hit_sound
+            speed, rot_speed, main_effect, tail_effect, lifespan, hit_sound,
+            destruction_callback
             )
         self.projectile_count += 1
         return count
@@ -160,6 +164,19 @@ cdef class ProjectileSystem(StaticMemGameSystem):
             begin_func=self.on_collision_begin_projectiles)
         physics_system.add_collision_handler(multishot_type, multishot_type,
             begin_func=self.on_collision_begin_projectiles)
+
+    def add_custom_collision_type(self, int type_to_register, object callback):
+        type_index = self.collision_type_index
+        singleshot_type = type_index[1]
+        missle_type = type_index[2]
+        multishot_type = type_index[3]
+        physics_system = self.physics_system
+        physics_system.add_collision_handler(singleshot_type, type_to_register,
+            begin_func=callback)
+        physics_system.add_collision_handler(missle_type, type_to_register,
+            begin_func=callback)
+        physics_system.add_collision_handler(multishot_type, type_to_register,
+            begin_func=callback)
 
     def add_origin_collision_type(self, int type_to_register):
         type_index = self.collision_type_index
@@ -204,7 +221,7 @@ cdef class ProjectileSystem(StaticMemGameSystem):
             hit_sound = comp.hit_sound
             if hit_sound != -1:
                 volume = self.player_system.get_distance_from_player_scalar(
-                    projectile_entity.position.pos, max_distance=1000.)
+                    projectile_entity.position.pos, max_distance=500.)
                 sound_manager = self.gameworld.sound_manager
                 sound_manager.play_direct(hit_sound, volume)
         return True
@@ -243,7 +260,10 @@ cdef class ProjectileSystem(StaticMemGameSystem):
             'projectiles': projectile_dict,
             'emitters': [],
             'lifespan': {'lifespan': template.lifespan},
-            'combat_stats': {'health': template.damage},
+            'combat_stats': {
+                        'health': template.damage,
+                        'destruction_callback': template.destruction_callback
+                        },
             'rotate_renderer': {
                 'model_key': template.model, 'texture': template.texture
                 }

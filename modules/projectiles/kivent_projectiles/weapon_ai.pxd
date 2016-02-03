@@ -6,6 +6,8 @@ ctypedef struct WeaponAIStruct:
     float line_of_sight
     int team
     bint active
+    unsigned int target_id
+    float cone_size
 
 cdef class WeaponAISystem(StaticMemGameSystem):
     pass

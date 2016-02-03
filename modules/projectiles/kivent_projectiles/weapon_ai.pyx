@@ -17,6 +17,7 @@ from kivent_projectiles.weapons cimport ProjectileWeaponStruct
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
+from math import radians
 
 cdef class WeaponAIComponent: 
 
@@ -24,6 +25,15 @@ cdef class WeaponAIComponent:
         def __get__(self):
             cdef WeaponAIStruct* data = <WeaponAIStruct*>self.pointer
             return data.entity_id
+
+    property target_id:
+        def __get__(self):
+            cdef WeaponAIStruct* data = <WeaponAIStruct*>self.pointer
+            return data.target_id
+
+        def __set__(self, unsigned int value):
+            cdef WeaponAIStruct* data = <WeaponAIStruct*>self.pointer
+            data.target_id = value
 
     property line_of_sight:
         def __get__(self):
@@ -33,6 +43,15 @@ cdef class WeaponAIComponent:
         def __set__(self, float value):
             cdef WeaponAIStruct* data = <WeaponAIStruct*>self.pointer
             data.line_of_sight = value
+
+    property cone_size:
+        def __get__(self):
+            cdef WeaponAIStruct* data = <WeaponAIStruct*>self.pointer
+            return data.cone_size
+
+        def __set__(self, float value):
+            cdef WeaponAIStruct* data = <WeaponAIStruct*>self.pointer
+            data.cone_size = value
 
 
 cdef class WeaponAISystem(StaticMemGameSystem):
@@ -54,6 +73,8 @@ cdef class WeaponAISystem(StaticMemGameSystem):
         component.line_of_sight = args.get('line_of_sight', 1000.)
         component.team = args.get('team', -1)
         component.active = args.get('active', True)
+        component.cone_size = args.get('cone_size', 10.)
+        component.target_id = args.get('target_id', -1)
         return self.entity_components.add_entity(entity_id, zone)
 
 
@@ -71,8 +92,10 @@ cdef class WeaponAISystem(StaticMemGameSystem):
         cdef CymunkPhysics physics_system = self.physics_system
         cdef object query_segment = physics_system.query_segment
         cdef list in_sight
+        cdef set entities_in_sight
         cdef cpBody* body
-        cdef cpVect unit_vector, sight_end
+        cdef cpVect unit_vector, sight_end, unit2, unit3
+        cdef cpVect sight_end2, sight_end3
         for i in range(count):
             real_index = i*component_count
             if component_data[real_index] == NULL:
@@ -84,10 +107,23 @@ cdef class WeaponAISystem(StaticMemGameSystem):
             if not ai_component.active:
                 continue
             body = physics_component.body
-            sight_end = cpvmult(body.rot, ai_component.line_of_sight)
+            unit2 = cpvforangle(body.a + radians(ai_component.cone_size))
+            unit3 = cpvforangle(body.a + radians(-ai_component.cone_size))
+            sight_end2 = cpvadd(cpvmult(
+                unit2, ai_component.line_of_sight), body.p)
+            sight_end3 = cpvadd(cpvmult(
+                unit3, ai_component.line_of_sight), body.p)
+            sight_end = cpvadd(cpvmult(
+                body.rot, ai_component.line_of_sight), body.p)
             in_sight = query_segment((body.p.x, body.p.y),
                                      (sight_end.x, sight_end.y))
-            if len(in_sight) > 0:
+            in_sight2 = query_segment((body.p.x, body.p.y),
+                                      (sight_end2.x, sight_end2.y))
+            in_sight3 = query_segment((body.p.x, body.p.y),
+                                      (sight_end3.x, sight_end3.y))
+            entities_in_sight = set(
+                [element[0] for element in in_sight + in_sight2 + in_sight3])
+            if ai_component.target_id in entities_in_sight:
                 weapons_component.firing = True
 
 
@@ -111,6 +147,7 @@ cdef class WeaponAISystem(StaticMemGameSystem):
         component.line_of_sight = 1000.
         component.team = -1
         component.active = False
+        component.target_id = -1
 
 
 

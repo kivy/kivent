@@ -82,10 +82,18 @@ cdef class CWidget(EventDispatcher):
     def __init__(self, **kwargs):
         # Before doing anything, ensure the windows exist.
         EventLoop.ensure_window()
-        cdef unsigned int test = -1
+
         # Assign the default context of the widget creation.
-        self._context = get_current_context()
-        self._proxy_ref = None
+        if self._context is None:
+            self._context = get_current_context()
+
+        no_builder = '__no_builder' in kwargs
+        if no_builder:
+            del kwargs['__no_builder']
+        on_args = {k: v for k, v in kwargs.items() if k[:3] == 'on_'}
+        for key in on_args:
+            del kwargs[key]
+
         super(CWidget, self).__init__(**kwargs)
 
         # Create the default canvas if it does not exist.
@@ -93,7 +101,7 @@ cdef class CWidget(EventDispatcher):
             self.canvas = Canvas(opacity=self.opacity)
 
         # Apply all the styles.
-        if '__no_builder' not in kwargs:
+        if not no_builder:
             #current_root = Builder.idmap.get('root')
             #Builder.idmap['root'] = self
             Builder.apply(self)
@@ -103,9 +111,9 @@ cdef class CWidget(EventDispatcher):
             #    Builder.idmap.pop('root')
 
         # Bind all the events.
-        for argument in kwargs:
-            if argument[:3] == 'on_':
-                self.bind(**{argument: kwargs[argument]})
+        if on_args:
+            self.bind(**on_args)
+
 
     @property
     def proxy_ref(self):
@@ -951,3 +959,4 @@ cdef class CWidget(EventDispatcher):
     '''
 
 Factory.register('CWidget', cls=CWidget)
+

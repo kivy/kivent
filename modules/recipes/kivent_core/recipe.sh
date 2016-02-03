@@ -22,7 +22,7 @@ function build_kivent_core() {
 	try $BUILD_PATH/python-install/bin/python.host setup.py build_ext -v
 	try find build/lib.* -name "*.o" -exec $STRIP {} \;
 
-	export PYTHONPATH=$BUILD_hostpython/Lib/site-packages
+	export PYTHONPATH=$BUILD_PATH/python-install/lib/python2.7/site-packages:$PYTHONPATH
 	try $BUILD_hostpython/hostpython setup.py install -O2 --root=$BUILD_PATH/python-install --install-lib=lib/python2.7/site-packages
 
 	unset LDSHARED

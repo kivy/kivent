@@ -701,15 +701,15 @@ cdef class SteeringAISystem(StaticMemGameSystem):
             memory_zone.get_pointer(component_index))
         component.entity_id = entity_id
         component.target_id = args.get('target', -1)
-        component.desired_angle = args.get('desired_angle', radians(0.))
-        component.desired_distance = args.get('desired_distance', 100.)
-        component.angle_variance = args.get('angle_variance', radians(180.))
-        component.distance_variance = args.get('distance_variance', 150.)
+        component.desired_angle = args.get('desired_angle', radians(180.))
+        component.desired_distance = args.get('desired_distance', 250.)
+        component.angle_variance = args.get('angle_variance', radians(45.))
+        component.distance_variance = args.get('distance_variance', 75.)
         component.base_distance = args.get('base_distance', 250.)
         component.base_angle = args.get('base_angle', radians(0.))
         component.current_time = 0.
-        component.query_radius = args.get('query_radius', 500.)
-        component.recalculate_time = args.get('recalculate_time', 15.)
+        component.query_radius = args.get('query_radius', 150.)
+        component.recalculate_time = args.get('recalculate_time', 30.)
 
         return self.entity_components.add_entity(entity_id, zone)
 
@@ -735,12 +735,13 @@ cdef class SteeringAISystem(StaticMemGameSystem):
                 obst_body = obst_pointer.body
                 entity_body = entity_physics.body
                 dist = cpvlength(
-                    cpvsub(obst_body.p, entity_body.p))
+                    cpvsub(entity_body.p, obst_body.p))
                 scale_factor = (
                     (entity_ai.query_radius-dist)/entity_ai.query_radius)
+                scale_factor *= (obst_body.m / entity_body.m)
                 avoid_vec = cpvmult(
                     cpvnormalize(
-                        cpvsub(entity_body.p, obst_body.p)
+                        cpvsub(obst_body.p, entity_body.p)
                         ),
                     scale_factor
                     )
@@ -755,7 +756,7 @@ cdef class SteeringAISystem(StaticMemGameSystem):
         cdef IndexedMemoryZone entities = gameworld.entities
         cdef SteeringStruct* steering_component 
         cdef PhysicsStruct* physics_component
-        cdef cpBody *body, *steering_body
+        cdef cpBody *body, *steering_body, *target_body
         cdef void** component_data = <void**>(
             self.entity_components.memory_block.data)
         cdef unsigned int component_count = self.entity_components.count
@@ -763,10 +764,12 @@ cdef class SteeringAISystem(StaticMemGameSystem):
         cdef unsigned int i, real_index
         cdef Entity target_entity, current_entity
         cdef PositionComponent2D target_position
+        cdef PhysicsComponent target_physics
         cdef CymunkPhysics physics_system = self.physics_system
         cdef cpVect target_pos, unit_vector, actual_target, body_pos, avoid_vec
         cdef list touch_box, touched_ids
         cdef float radius
+        cdef float distance_between
         for i in range(count):
             real_index = i*component_count
             if component_data[real_index] == NULL:
@@ -791,12 +794,18 @@ cdef class SteeringAISystem(StaticMemGameSystem):
                 target_entity = entities[ai_component.target_id]
                 if not hasattr(target_entity, 'position'):
                     continue
-                target_position = target_entity.position
-                target_pos = cpVect(target_position.x, target_position.y)
-                unit_vector = cpvforangle(ai_component.desired_angle)
+                target_physics = target_entity.cymunk_physics
+                target_body = target_physics._body._body
+                target_pos = target_body.p
+                unit_vector = cpvforangle(
+                    ai_component.desired_angle +target_body.a)
+                distance_between = cpvlength(cpvsub(target_pos, body_pos))
                 actual_target = cpvadd(
-                    cpvmult(unit_vector, ai_component.desired_distance),
-                    target_pos
+                    cpvmult(
+                        unit_vector, ai_component.desired_distance),
+                        cpvadd(target_pos, 
+                               cpvmult(target_body.v,
+                               distance_between / steering_component.speed))
                     )
                 radius = ai_component.query_radius
                 touch_box = [
@@ -807,12 +816,21 @@ cdef class SteeringAISystem(StaticMemGameSystem):
                 avoid_vec = cpvmult(
                     self.calculate_avoid_vector(
                         touched_ids, physics_component, ai_component),
-                    steering_component.speed * 3.
+                    steering_component.speed
                     )
                 actual_target = cpvadd(actual_target, avoid_vec)
                 steering_component.target[0] = actual_target.x
                 steering_component.target[1] = actual_target.y
-                steering_component.do_movement = True
+                desired_distance = ai_component.desired_distance
+                distance_variance = ai_component.distance_variance
+                if desired_distance - distance_variance <= distance_between \
+                   <= desired_distance + distance_variance:
+                    actual_target = target_body.p
+                    #If we are near the goal, stop moving and just turn.
+                    steering_component.do_movement = False
+                else:
+
+                    steering_component.do_movement = True
                 steering_component.active = True
 
             else:

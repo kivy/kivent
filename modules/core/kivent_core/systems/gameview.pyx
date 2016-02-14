@@ -187,9 +187,11 @@ cdef class GameView(GameSystem):
         old_x, old_y = touch.x, touch.y
         touch.x = cx
         touch.y = cy
+        touch.pos = (cx, cy)
         super_result = super(GameView, self).on_touch_down(touch)
         touch.x = old_x 
         touch.y = old_y
+        touch.pos = (old_x, old_y)
         if self.collide_point(*touch.pos) and not self.touch_pass_through:
             touch.grab(self)
             self._touch_count += 1
@@ -320,21 +322,21 @@ cdef class GameView(GameSystem):
         cdef float camera_top = cy + h
         cdef float sw = w * xr
         cdef float sh = h * xy
-        if mw <= sw:
+        if mw < sw:
             if cx + distance_x < x:
                 distance_x = x - cx
-            elif cx + distance_x > x + mw:
-                distance_x = x + mw - cx
+            elif cx + distance_x + mw > x + sw:
+                distance_x = x + sw - cx - mw
         else:
             if cx + distance_x > x + marg_x:
                 distance_x = x - cx + marg_x
             elif cx + mw + distance_x <= x + sw - marg_x:
                 distance_x = x + sw - marg_x - cx - mw
-        if mh <= sh:
+        if mh < sh:
             if cy + distance_y < y:
                 distance_y = y - cy
-            elif cy + distance_y > y + mh:
-                distance_y = y + mh - cy
+            elif cy + distance_y + mh > y + sh:
+                distance_y = y + sh - cy - mh
         else:
             if cy + distance_y > y + marg_y:
                 distance_y = y - cy + marg_y 

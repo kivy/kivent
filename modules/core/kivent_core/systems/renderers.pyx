@@ -4,7 +4,8 @@ from cpython cimport bool
 from kivy.properties import (
     BooleanProperty, StringProperty, NumericProperty, ListProperty
     )
-from kivy.graphics import RenderContext, Callback
+from kivy.graphics import Callback
+from kivy.graphics.instructions cimport RenderContext
 from kivent_core.rendering.vertex_formats cimport (
     VertexFormat4F, VertexFormat2F4UB, VertexFormat7F, VertexFormat4F4UB,
     VertexFormat7F4UB
@@ -346,7 +347,8 @@ cdef class Renderer(StaticMemGameSystem):
     component_type = ObjectProperty(RenderComponent)
     
     def __init__(self, **kwargs):
-        self.canvas = RenderContext(use_parent_projection=True, nocompiler=True)
+        self.canvas = RenderContext(use_parent_projection=True,
+                                    nocompiler=True)
         if 'shader_source' in kwargs:
             self.canvas.shader.source = kwargs.get('shader_source')
         super(Renderer, self).__init__(**kwargs)
@@ -355,6 +357,7 @@ cdef class Renderer(StaticMemGameSystem):
         with self.canvas.after:
             Callback(self._reset_blend_func)
         self.update_trigger = Clock.create_trigger(partial(self.update, True))
+
 
     property update_trigger:
 
@@ -367,6 +370,7 @@ cdef class Renderer(StaticMemGameSystem):
         to set up the blend function, it will obey **blend_factor_source**
         and **blend_factor_dest** properties.
         '''
+        gl_log_debug_message('Renderer._set_blend_func-preglBlendFunc')
         glBlendFunc(self.blend_factor_source, self.blend_factor_dest)
         gl_log_debug_message('Renderer._set_blend_func-glBlendFunc')
 

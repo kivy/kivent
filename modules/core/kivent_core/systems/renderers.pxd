@@ -25,6 +25,7 @@ cdef class RenderComponent(MemComponent):
 cdef class Renderer(StaticMemGameSystem):
     cdef BatchManager batch_manager
     cdef object update_trigger
+    cdef bint do_texture
     cdef void* _batch_entity(self, unsigned int entity_id, 
         RenderStruct* component_data) except NULL
     cdef void* _unbatch_entity(self, unsigned int entity_id, 

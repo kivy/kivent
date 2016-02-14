@@ -496,13 +496,20 @@ class GameWorld(Widget):
             remove_entity(entity_id)
             er(entity_id)
 
-    def clear_entities(self):
+    def clear_entities(self, zones=[]):
         '''Used to clear every entity in the GameWorld.'''
         entities = self.entities
         er = self.remove_entity
-        entities_to_remove = [
-            entity.entity_id for entity in memrange(self.entities)
-            ]
+        if zones == []:    
+            entities_to_remove = [
+                entity.entity_id for entity in memrange(self.entities)
+                ]
+        else:
+            entities_to_remove = []
+            rem_ex = entities_to_remove.extend
+            for zone in zones:
+                rem_ex([entity.entity_id for entity in memrange(
+                        self.entities, zone=zone)])
         for entity_id in entities_to_remove:
             er(entity_id)
 

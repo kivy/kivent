@@ -1296,9 +1296,8 @@ cdef class ScaledPolyRenderer(Renderer):
                         vert_offset = render_comp.vert_index
                         model = <VertexModel>render_comp.model
                         if render_comp.render:
-                            pos_comp = <PositionStruct2D*>component_data[
-                                ri+1]
-                            scale_comp = <ScaleStruct2D*>components[ri+2]
+                            pos_comp = <PositionStruct2D*>component_data[ri+1]
+                            scale_comp = <ScaleStruct2D*>component_data[ri+2]
                             model_vertices = <VertexFormat2F4UB*>(
                                 model.vertices_block.data)
                             model_indices = <GLushort*>model.indices_block.data
@@ -1308,8 +1307,12 @@ cdef class ScaledPolyRenderer(Renderer):
                             for n in range(model._vertex_count):
                                 vertex = &frame_data[n + vert_offset]
                                 model_vertex = model_vertices[n]
-                                vertex.pos[0] = pos_comp.x + model_vertex.pos[0]
-                                vertex.pos[1] = pos_comp.y + model_vertex.pos[1]
+                                vertex.pos[0] = pos_comp.x + (
+                                                model_vertex.pos[0] * 
+                                                scale_comp.sx)
+                                vertex.pos[1] = pos_comp.y + (
+                                                model_vertex.pos[1] * 
+                                                scale_comp.sy)
                                 vertex.v_color[0] = model_vertex.v_color[0]
                                 vertex.v_color[1] = model_vertex.v_color[1]
                                 vertex.v_color[2] = model_vertex.v_color[2]

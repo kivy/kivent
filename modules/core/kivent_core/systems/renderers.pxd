@@ -50,3 +50,6 @@ cdef class PolyRenderer(Renderer):
 
 cdef class ColorPolyRenderer(Renderer):
     pass
+
+cdef class ScaledRenderer(Renderer):
+    pass

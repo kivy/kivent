@@ -9,14 +9,14 @@ else:
     libraries = []
 
 setup(
-    name='KivEnt Velocity Module',
-    description='''A game engine for the Kivy Framework. 
+    name='KivEnt.Velocity',
+    description='''A game engine for the Kivy Framework.
         https://github.com/Kovak/KivEnt for more info.''',
     author='Jacob Kovac',
     author_email='kovac1066@gmail.com',
     packages=find_packages(),
     package_data={
-        '': ['*.pxd']
+        '': ['*.pxd', '*.so']
     },
     setup_requires=['cython', 'setuptools.autocythonize'],
     auto_cythonize={

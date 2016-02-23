@@ -17,7 +17,7 @@ setup(
     author_email='kovac1066@gmail.com',
     packages=find_packages(),
     package_data={
-        '': ['*.pxd']
+        '': ['*.pxd', '*.so']
         },
     setup_requires=['cython', 'setuptools.autocythonize'],
     auto_cythonize={

@@ -51,7 +51,7 @@ or
 
 If you want to install into a system python on something like ubuntu you may need to:
 
-    sudo python setup.py install
+    sudo python setup.py build_ext install
 
 If you would like to develop on one of the modules while using it
 
@@ -65,7 +65,7 @@ Because of the 'develop' install type, your kivent module will be loading the
 .pyd or .so files from the same directory as the .pyx code and thus build_ext --inplace
 is all thats needed to update the necessary files for the changes you made
 
-If you want to make sure all the cython files are re compiled
+If you want to make sure all the cython files are re compiled for your develop install
 
     python setup.py cythoninze --clean build_ext --inplace
 

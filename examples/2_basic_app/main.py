@@ -11,7 +11,7 @@ from kivent_core.managers.resource_managers import texture_manager
 from kivy.properties import StringProperty
 from os.path import dirname, join, abspath
 
-texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets', 
+texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets',
     'background_objects.atlas'))
 
 
@@ -30,9 +30,9 @@ class TestGame(Widget):
 
     def load_models(self):
         model_manager = self.gameworld.model_manager
-        model_manager.load_textured_rectangle('vertex_format_4f', 7., 7., 
+        model_manager.load_textured_rectangle('vertex_format_4f', 7., 7.,
             'star1', 'star1-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 10., 10., 
+        model_manager.load_textured_rectangle('vertex_format_4f', 10., 10.,
             'star1', 'star1-4-2')
 
     def draw_some_stuff(self):
@@ -42,7 +42,7 @@ class TestGame(Widget):
             model_key = choice(['star1-4', 'star1-4-2'])
             create_dict = {
                 'position': pos,
-                'renderer': {'texture': 'star1', 
+                'renderer': {'texture': 'star1',
                     'model_key': model_key},
             }
             ent = init_entity(create_dict, ['position', 'renderer'])
@@ -51,7 +51,7 @@ class TestGame(Widget):
 
 
     def setup_states(self):
-        self.gameworld.add_state(state_name='main', 
+        self.gameworld.add_state(state_name='main',
             systems_added=['renderer'],
             systems_removed=[], systems_paused=[],
             systems_unpaused=['renderer'],
@@ -79,4 +79,3 @@ class YourAppNameApp(App):
 
 if __name__ == '__main__':
     YourAppNameApp().run()
-    

@@ -14,7 +14,7 @@ class TestGame(Widget):
         self.set_state()
 
     def setup_states(self):
-        self.gameworld.add_state(state_name='main', 
+        self.gameworld.add_state(state_name='main',
             systems_added=[],
             systems_removed=[], systems_paused=[],
             systems_unpaused=[],

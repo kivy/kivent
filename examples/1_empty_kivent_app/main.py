@@ -3,7 +3,6 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 import kivent_core
 
-
 class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
@@ -23,11 +22,9 @@ class TestGame(Widget):
     def set_state(self):
         self.gameworld.state = 'main'
 
-
 class YourAppNameApp(App):
     def build(self):
         pass
-
 
 if __name__ == '__main__':
     YourAppNameApp().run()

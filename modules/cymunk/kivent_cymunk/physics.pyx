@@ -308,8 +308,11 @@ cdef class CymunkPhysics(StaticMemGameSystem):
                 'angle': radians, 
                 'angular_velocity': radians, 
                 'mass': float, 
-                'col_shapes': [col_shape_dicts]
+                'col_shapes': [col_shape_dicts],
+                'moment': float
                 }
+
+        moment if not specified will be computed from component shapes
 
         The col_shape_dicts look like: 
 
@@ -364,32 +367,36 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         cdef list shapes
         cdef Shape new_shape
         space = self.space
-        moment = 0
-        for a_shape in cshapes:
-            shape_info = a_shape['shape_info']
-            if a_shape['shape_type'] == 'circle':
-                moment += cymunk.moment_for_circle(
-                    shape_info['mass'], 
-                    shape_info['inner_radius'], 
-                    shape_info['outer_radius'], 
-                    shape_info['offset'])
-            elif a_shape['shape_type'] == 'box':
-                moment += cymunk.moment_for_box(
-                    shape_info['mass'], 
-                    shape_info['width'], 
-                    shape_info['height'])
-            elif a_shape['shape_type'] == 'poly':
-                moment += cymunk.moment_for_poly(
-                    shape_info['mass'], 
-                    shape_info['vertices'], 
-                    shape_info['offset'])
-            elif a_shape['shape_type'] == 'segment':
-                moment += cymunk.moment_for_segment(
-                    shape_info['mass'], 
-                    shape_info['a'], 
-                    shape_info['b'])
-            else:
-                print 'error: shape ', a_shape['shape_type'], 'not supported'
+
+        if 'moment' in args.keys():
+            moment = args['moment']
+        else:
+            moment = 0
+            for a_shape in cshapes:
+                shape_info = a_shape['shape_info']
+                if a_shape['shape_type'] == 'circle':
+                    moment += cymunk.moment_for_circle(
+                        shape_info['mass'], 
+                        shape_info['inner_radius'], 
+                        shape_info['outer_radius'], 
+                        shape_info['offset'])
+                elif a_shape['shape_type'] == 'box':
+                    moment += cymunk.moment_for_box(
+                        shape_info['mass'], 
+                        shape_info['width'], 
+                        shape_info['height'])
+                elif a_shape['shape_type'] == 'poly':
+                    moment += cymunk.moment_for_poly(
+                        shape_info['mass'], 
+                        shape_info['vertices'], 
+                        shape_info['offset'])
+                elif a_shape['shape_type'] == 'segment':
+                    moment += cymunk.moment_for_segment(
+                        shape_info['mass'], 
+                        shape_info['a'], 
+                        shape_info['b'])
+                else:
+                    print 'error: shape ', a_shape['shape_type'], 'not supported'
         if args['mass'] == 0:
             body = Body(None, None)
         else:

@@ -13,25 +13,22 @@ from kivy.properties import StringProperty
 from kivy.factory import Factory
 from os.path import dirname, join, abspath
 
-texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets', 
+texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets',
     'background_objects.atlas'))
 
-
 class VelocitySystem2D(GameSystem):
-    
+
     def update(self, dt):
         entities = self.gameworld.entities
         for component in self.components:
             if component is not None:
                 entity_id = component.entity_id
                 entity = entities[entity_id]
-                position_comp = entity.position 
+                position_comp = entity.position
                 position_comp.x += component.vx * dt
                 position_comp.y += component.vy * dt
 
-
 Factory.register('VelocitySystem2D', cls=VelocitySystem2D)
-
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
@@ -48,9 +45,9 @@ class TestGame(Widget):
 
     def load_models(self):
         model_manager = self.gameworld.model_manager
-        model_manager.load_textured_rectangle('vertex_format_4f', 7., 7., 
+        model_manager.load_textured_rectangle('vertex_format_4f', 7., 7.,
             'star1', 'star1-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 10., 10., 
+        model_manager.load_textured_rectangle('vertex_format_4f', 10., 10.,
             'star1', 'star1-4-2')
 
     def draw_some_stuff(self):
@@ -61,14 +58,16 @@ class TestGame(Widget):
             create_dict = {
                 'position': pos,
                 'velocity': {'vx': randint(-75, 75), 'vy': randint(-75, 75)},
-                'renderer': {'texture': 'star1', 
+                'renderer': {'texture': 'star1',
                     'model_key': model_key},
             }
-            ent = init_entity(create_dict, ['position', 'velocity', 
+            ent = init_entity(create_dict, ['position', 'velocity',
                 'renderer'])
+        #If you do not set Renderer.force_update to True, call update_trigger
+        #self.ids.renderer.update_trigger()
 
     def setup_states(self):
-        self.gameworld.add_state(state_name='main', 
+        self.gameworld.add_state(state_name='main',
             systems_added=['renderer'],
             systems_removed=[], systems_paused=[],
             systems_unpaused=['renderer', 'velocity'],
@@ -76,7 +75,6 @@ class TestGame(Widget):
 
     def set_state(self):
         self.gameworld.state = 'main'
-
 
 class DebugPanel(Widget):
     fps = StringProperty(None)
@@ -89,12 +87,9 @@ class DebugPanel(Widget):
         self.fps = str(int(Clock.get_fps()))
         Clock.schedule_once(self.update_fps, .05)
 
-
 class YourAppNameApp(App):
     def build(self):
         Window.clearcolor = (0, 0, 0, 1.)
 
-
 if __name__ == '__main__':
     YourAppNameApp().run()
-    

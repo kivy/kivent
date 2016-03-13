@@ -247,7 +247,6 @@ cdef class GameView(GameSystem):
         '''Set the camera to be focused at pos.'''
         camera_size = self.size
         camera_scale = self.camera_scale
-        camera_pos = self.camera_pos
         self.camera_pos[0] = -pos[0] + camera_size[0]*.5*camera_scale
         self.camera_pos[1] = -pos[1] + camera_size[1]*.5*camera_scale
 

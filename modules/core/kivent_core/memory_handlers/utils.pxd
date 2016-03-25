@@ -9,4 +9,3 @@ cdef class memrange:
     cdef IndexedMemoryZone memory_index
     cdef unsigned int start
     cdef unsigned int end
-    

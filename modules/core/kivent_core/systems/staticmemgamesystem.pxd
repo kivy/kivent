@@ -28,7 +28,7 @@ cdef class ZonedAggregator:
     cdef unsigned int get_size(self)
     cdef void clear(self)
     cdef int remove_entity(self, unsigned int entity_id) except 0
-    cdef unsigned int add_entity(self, unsigned int entity_id, 
+    cdef unsigned int add_entity(self, unsigned int entity_id,
         str zone_name) except -1
 
 

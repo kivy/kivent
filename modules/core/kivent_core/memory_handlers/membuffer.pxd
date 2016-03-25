@@ -12,10 +12,10 @@ cdef class Buffer:
     cdef unsigned int size_in_blocks
 
     cdef unsigned int add_data(self, unsigned int block_count) except -1
-    cdef void remove_data(self, unsigned int block_index, 
+    cdef void remove_data(self, unsigned int block_index,
         unsigned int block_count)
     cdef unsigned int get_largest_free_block(self)
-    cdef unsigned int get_first_free_block_that_fits(self, 
+    cdef unsigned int get_first_free_block_that_fits(self,
         unsigned int block_count)
     cdef unsigned int get_blocks_on_tail(self)
     cdef bool can_fit_data(self, unsigned int block_count)

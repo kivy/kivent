@@ -12,16 +12,16 @@ cdef class GameMap(GameSystem):
     other GameSystems
 
     **Attributes:**
-        **map_size** (ListProperty): Sets the size of this map, used to 
-        determine scrolling bounds. If the map size is smaller than the 
+        **map_size** (ListProperty): Sets the size of this map, used to
+        determine scrolling bounds. If the map size is smaller than the
         window it will be centered inside the window.
 
-        **margins** (ListProperty): The amount of scrolling beyond the size of 
-        the map in x, y directions to be allowed. If the map is smaller than 
+        **margins** (ListProperty): The amount of scrolling beyond the size of
+        the map in x, y directions to be allowed. If the map is smaller than
         the window. This value is calculated automatically.
 
-        **default_margins** (ListProperty): The amount of margin if the map is 
-        larger than the window, defaults to (0, 0) which means no scrolling 
+        **default_margins** (ListProperty): The amount of margin if the map is
+        larger than the window, defaults to (0, 0) which means no scrolling
         beyond edge of GameMap.
 
     '''

@@ -12,10 +12,10 @@ cdef class ScaleComponent2D(MemComponent):
 
     **Attributes:**
         **entity_id** (unsigned int): The entity_id this component is currently
-        associated with. Will be <unsigned int>-1 if the component is 
+        associated with. Will be <unsigned int>-1 if the component is
         unattached.
 
-        **s** (float): The arithmetic average of the x scale and y scale, when 
+        **s** (float): The arithmetic average of the x scale and y scale, when
         set the x scale and y scale will be set to the value provided. Useful
         if you want uniform scaling in both axes.
 
@@ -23,7 +23,7 @@ cdef class ScaleComponent2D(MemComponent):
 
         **sy** (float): The y axis scaling of the entity.
     '''
-    
+
     property entity_id:
         def __get__(self):
             cdef ScaleStruct2D* data = <ScaleStruct2D*>self.pointer
@@ -58,19 +58,19 @@ cdef class ScaleComponent2D(MemComponent):
 cdef class ScaleSystem2D(StaticMemGameSystem):
     '''
     ScaleSystem2D abstracts 2 dimensional scale data out into its own
-    system so that all other GameSystem can interact with the scale factor of 
-    an Entity without having to know specifically about dependent systems 
-    actually controlling the scale. This GameSystem does no processing of its 
+    system so that all other GameSystem can interact with the scale factor of
+    an Entity without having to know specifically about dependent systems
+    actually controlling the scale. This GameSystem does no processing of its
     own, just holding data.
     '''
     system_id = StringProperty('scale')
     type_size = NumericProperty(sizeof(ScaleStruct2D))
     component_type = ObjectProperty(ScaleComponent2D)
 
-    def init_component(self, unsigned int component_index, 
+    def init_component(self, unsigned int component_index,
         unsigned int entity_id, str zone, args):
         '''A ScaleComponent2D can be initialized with either a separate
-        scaling factor for x axis and y axis or a single scaling factor for 
+        scaling factor for x axis and y axis or a single scaling factor for
         both. If args is a tuple sx will be args[0] and sy will be args[1],
         otherwise sx = sy = args.
         '''

@@ -12,7 +12,7 @@ cdef class ColorComponent(MemComponent):
 
     **Attributes:**
         **entity_id** (unsigned int): The entity_id this component is currently
-        associated with. Will be <unsigned int>-1 if the component is 
+        associated with. Will be <unsigned int>-1 if the component is
         unattached.
 
         **r** (unsigned char): The red channel, 0 to 255.
@@ -63,10 +63,10 @@ cdef class ColorComponent(MemComponent):
 
 
 cdef class ColorSystem(StaticMemGameSystem):
-    '''ColorSystem abstracts color data out into its own system so that all 
-    other GameSystem can interact with the color of an Entity without having to 
-    know about whatever system is controlling the actual color the entity. It 
-    is suitable for controlling a color that is applied over the whole model 
+    '''ColorSystem abstracts color data out into its own system so that all
+    other GameSystem can interact with the color of an Entity without having to
+    know about whatever system is controlling the actual color the entity. It
+    is suitable for controlling a color that is applied over the whole model
     of an entity tinting its texture or coloring every vertex.
 
     This GameSystem does no processing of its own, just holding data.
@@ -75,7 +75,7 @@ cdef class ColorSystem(StaticMemGameSystem):
     component_type = ObjectProperty(ColorComponent)
     system_id = StringProperty('color')
 
-    def init_component(self, unsigned int component_index, 
+    def init_component(self, unsigned int component_index,
         unsigned int entity_id, str zone, args):
         '''A color component is always initialized with a tuple (r, g, b, a).
         '''

@@ -2,40 +2,40 @@ from cpython cimport bool
 from libc.stdlib cimport malloc, free
 
 cdef class Buffer:
-    '''The KivEnt Buffer allocates a static amount of memory and manages it by 
+    '''The KivEnt Buffer allocates a static amount of memory and manages it by
     keeping a list of free_blocks. This type of memory handling is suitable for
-    the pooling of objects. The Buffer is the only object of this type that 
+    the pooling of objects. The Buffer is the only object of this type that
     calls malloc or free directly. The MemoryBlock, MemoryPool, and MemoryZone
-    are all designed to allocate themselves from a Buffer or another 
-    MemoryBlock. The Buffer does not change its size. 
+    are all designed to allocate themselves from a Buffer or another
+    MemoryBlock. The Buffer does not change its size.
 
     The physical size of the buffer will be **size_in_bytes** and this will be
-    split into **size_in_bytes** // **type_size** 'blocks'. 
+    split into **size_in_bytes** // **type_size** 'blocks'.
 
     You must call **allocate_memory** on a Buffer in order to actually acquire
-    the memory. In KivEnt, this will nearly always be done as part of the 
+    the memory. In KivEnt, this will nearly always be done as part of the
     GameWorld.allocate.
 
     **Attributes: (Cython Access Only)**
-        **size** (unsigned int): The number of blocks (**real_size** / 
+        **size** (unsigned int): The number of blocks (**real_size** /
         **type_size**) that will fit in the Buffer.
-        
+
         **data** (void*): Pointer to the beginning of the data array.
 
         **used_count** (unsigned int): The number of blocks currently in use,
         use is either actively storing memory or in the free list waiting for
         reuse.
 
-        **free_blocks** (list): A list of previously used blocks or a 
+        **free_blocks** (list): A list of previously used blocks or a
         contiguous collection of blocks, each entrant is a tuple of block_index,
-        block_count. 
+        block_count.
 
-        **free_block_count** (unsigned int): The number of entrants in the 
+        **free_block_count** (unsigned int): The number of entrants in the
         **free_blocks** list, a single entrant could actually be comprised of
         multiple blocks, held contiguously.
 
-        **data_in_free** (unsigned int): The actual number of blocks held in 
-        the **free_blocks** list. 
+        **data_in_free** (unsigned int): The actual number of blocks held in
+        the **free_blocks** list.
 
         **type_size** (unsigned int): The size of a single block in bytes.
 
@@ -48,15 +48,15 @@ cdef class Buffer:
 
     def __cinit__(self, unsigned int size_in_blocks, unsigned int type_size,
         unsigned int master_block_size):
-        '''When we initialize a buffer we pass in the size we want the buffer 
+        '''When we initialize a buffer we pass in the size we want the buffer
         to be split into 2 parts, the size_in_blocks and the size of the blocks,
         and the size of the type we will be storing in the Buffer.
-        The **real_size** of the Buffer will be calculated by 
-        size_in_blocks*master_block_size. 
+        The **real_size** of the Buffer will be calculated by
+        size_in_blocks*master_block_size.
 
         When allocating directly typically master_block_size will be 1,
         type_size will be 1, and size_in_blocks will be the number of bytes
-        desired for the Buffer. type_size and master_block_size become more 
+        desired for the Buffer. type_size and master_block_size become more
         important for MemoryBlock allocation.
 
         Args:
@@ -85,7 +85,7 @@ cdef class Buffer:
         self.deallocate_memory()
 
     cdef bool check_empty(self):
-        '''Checks to see if the Buffer is completely unused (No blocks in 
+        '''Checks to see if the Buffer is completely unused (No blocks in
             either the **free_blocks** list or actively in use).
         Return:
             bool: True if used_count == 0, else False
@@ -104,23 +104,23 @@ cdef class Buffer:
         return self.data
 
     cdef void deallocate_memory(self):
-        '''Frees the existing memory located at **data**, typically called 
+        '''Frees the existing memory located at **data**, typically called
         in the __dealloc__ method.'''
         if self.data != NULL:
             free(self.data)
 
     cdef unsigned int add_data(self, unsigned int block_count) except -1:
         '''Adds block_count worth of data to the Buffer. The basic process is:
-        1. Check if there is enough blocks in the free list. -> If so get the 
-        largest chunk of free_blocks. -> If that is large enough lets take 
+        1. Check if there is enough blocks in the free list. -> If so get the
+        largest chunk of free_blocks. -> If that is large enough lets take
         one of those blocks.
-        2. If not 1: Check if we have enough unused blocks. -> Allocate from 
+        2. If not 1: Check if we have enough unused blocks. -> Allocate from
         tail.
         3. If not 2: raise MemoryError()
 
-        This process is subject to fragmentation if all blocks aren't equal in 
-        size. It should be suitable if you are frequently reusing the same size 
-        of things however. 
+        This process is subject to fragmentation if all blocks aren't equal in
+        size. It should be suitable if you are frequently reusing the same size
+        of things however.
 
         Args:
             block_count (unsigned int): The number of blocks to add
@@ -149,15 +149,15 @@ cdef class Buffer:
             raise MemoryError()
         return index
 
-    cdef void remove_data(self, unsigned int block_index, 
+    cdef void remove_data(self, unsigned int block_index,
         unsigned int block_count):
         '''Marks data as free, adding it the **free_blocks**
-        (block_index, block_count) will be added to the free list. If 
+        (block_index, block_count) will be added to the free list. If
         **data_in_free** become >=  **used_count** (meaning all used blocks are
         also currently free) we will call **clear**, returning the Buffer to its
         empty state.
         Args:
-            block_index (unsigned int): The starting index of the data, 
+            block_index (unsigned int): The starting index of the data,
             previously returned by **add_data**
 
             block_count (unsigned int): The number of data blocks that were
@@ -170,8 +170,8 @@ cdef class Buffer:
             self.clear()
 
     cdef void* get_pointer(self, unsigned int block_index) except NULL:
-        '''Returns a pointer to somewhere in the allocated data, performs no 
-        bounds checking so make sure to ask for the right data. 
+        '''Returns a pointer to somewhere in the allocated data, performs no
+        bounds checking so make sure to ask for the right data.
         Args:
             block_index (unsigned int): Which block to return.
 
@@ -203,9 +203,9 @@ cdef class Buffer:
                 largest_block_count = block_count
         return largest_block_count
 
-    cdef unsigned int get_first_free_block_that_fits(self, 
+    cdef unsigned int get_first_free_block_that_fits(self,
         unsigned int block_count):
-        '''Used internally as part of **add_data**, returns the first entry in 
+        '''Used internally as part of **add_data**, returns the first entry in
         the free list that is either the size of or larger than block_count.
 
         Args:
@@ -244,7 +244,7 @@ cdef class Buffer:
         '''
         return (block_count <= self.get_blocks_on_tail() or (
             block_count <= self.get_largest_free_block()))
-  
+
     cdef void clear(self):
         '''Clear the whole buffer and mark all blocks as available.
         '''

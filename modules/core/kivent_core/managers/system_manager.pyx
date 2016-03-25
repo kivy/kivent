@@ -1,22 +1,22 @@
 # cython: embedsignature=True
 '''
 GameWorld uses these system management classes to keep track of the GameSystems
-attached to it, their indexes in the EntityManager memory, and the 
+attached to it, their indexes in the EntityManager memory, and the
 configuration of each of the systems IndexedMemoryZone.
 '''
 cdef unsigned int DEFAULT_SYSTEM_COUNT = 8
 cdef unsigned int DEFAULT_COUNT = 10000
 
 cdef class ZoneConfig:
-    '''Stores the configuration information for a zone in the GameWorld's 
-    GameSystems. 
+    '''Stores the configuration information for a zone in the GameWorld's
+    GameSystems.
 
     **Attributes: (Cython Access Only)**
         **count** (unsigned int): Number of entities in this zone.
 
         **zone_name** (str): Name of the zone.
 
-        **systems** (list): List of the names of the GameSystem that will 
+        **systems** (list): List of the names of the GameSystem that will
         reserve space for this zone.
     '''
 
@@ -28,8 +28,8 @@ cdef class ZoneConfig:
         Args:
             name (str): The name of the zone.
 
-            count (unsigned int): The number of entities to be stored in the 
-            zone.    
+            count (unsigned int): The number of entities to be stored in the
+            zone.
         '''
         self.count = count
         self.zone_name = name
@@ -43,7 +43,7 @@ class SystemAlreadyAddedError(Exception):
 
 cdef class SystemConfig:
     '''Organizes the ZoneConfigs for a GameWorld. Responsible for adding
-    new zones to the GameWorld and adding systems to those zones. 
+    new zones to the GameWorld and adding systems to those zones.
 
     **Attributes: (Cython Access Only)**
         **zone_configs** (dict): Hashmap of ZoneConfig objects stored by
@@ -55,8 +55,8 @@ cdef class SystemConfig:
 
     def get_config_dict(self, system_name):
         '''Returns the config_dict for a specific system_name. This will be
-        a dictionary of zone_name, zone_count pairings. If the default zone, 
-        'general', is not registered with the Zone it will be inserted 
+        a dictionary of zone_name, zone_count pairings. If the default zone,
+        'general', is not registered with the Zone it will be inserted
         automatically with a DEFAULT_COUNT.
 
         Args:
@@ -88,7 +88,7 @@ cdef class SystemConfig:
         cdef list systems = config.systems
         if system_name in systems:
             raise SystemAlreadyAddedError('The system {name} has already been'
-                'added to zone {zone_name}'.format(name=system_name, 
+                'added to zone {zone_name}'.format(name=system_name,
                     zone_name=zone_name))
         systems.append(system_name)
 
@@ -115,21 +115,21 @@ cdef class SystemManager:
     configuration for systems which use the IndexedMemoryZone for holding
     entity data. Supports dictionary style key access of systems directly.
     There are two types of GameSystem in KivEnt, systems with components, and
-    systems without. The GameWorld will reserve **system_count** spaces for 
-    components for each Entity, meaning that we cannot have more than 
-    **system_count** number of GameSystems that expect to attach components. 
-    This value will typically be set with **set_system_count** as part of 
-    GameWorld initialization. If **set_system_count** is not called, 
+    systems without. The GameWorld will reserve **system_count** spaces for
+    components for each Entity, meaning that we cannot have more than
+    **system_count** number of GameSystems that expect to attach components.
+    This value will typically be set with **set_system_count** as part of
+    GameWorld initialization. If **set_system_count** is not called,
     system_count will be system_manager.DEFAULT_SYSTEM_COUNT. Component systems
     will take up the first N spaces in the systems list, with non-component
-    systems appearing afterwards. There is no limit to the number of 
+    systems appearing afterwards. There is no limit to the number of
     non-component GameSystem.
 
     **Attributes: (Cython Acces Only)**
         **systems** (list): List of the currently active systems, unused
         slots will have a value of None.
 
-        **system_index** (dict): Maps the name of the systems to their index 
+        **system_index** (dict): Maps the name of the systems to their index
         in the systems list, which corresponds to the component index in the
         gameworld.entities IndexedMemoryZone.
 
@@ -140,7 +140,7 @@ cdef class SystemManager:
         with space reserved in the gameworld.entities IndexedMemoryZone.
 
         **current_count** (unsigned int): The number of component systems
-        currently in use. 
+        currently in use.
 
         **free_indices** (list): List used internally to track component system
         slots that have had their system removed and are available for reuse.
@@ -151,11 +151,11 @@ cdef class SystemManager:
         **free_non_component_indices** (list): List used internally to track
         slots for systems that have been removed that do not use components.
 
-        **update_order** (list): *Accessible from Python*. Provides a list of 
-        indices that dictate the order the GameWorld should update the systems 
+        **update_order** (list): *Accessible from Python*. Provides a list of
+        indices that dictate the order the GameWorld should update the systems
         in. When setting provide the system_name and internally the appropriate
-        index will be found. From cython you can work directly with the 
-        **_update_order** attribute. 
+        index will be found. From cython you can work directly with the
+        **_update_order** attribute.
     '''
 
     def __getitem__(self, str name):
@@ -190,7 +190,7 @@ cdef class SystemManager:
         self.system_config.add_zone(zone_name, count)
 
     cdef unsigned int get_system_index(self, str system_name):
-        '''Cython typed function for retrieving the system_index from the 
+        '''Cython typed function for retrieving the system_index from the
         system_name. Only usable from Cython.
         Args:
             system_name (str): Name of the system.
@@ -260,8 +260,8 @@ cdef class SystemManager:
                 self._update_order.append(index)
 
     def get_system_config_dict(self, system_name):
-        '''Gets the config dict for a specific system_name from 
-        **system_config**, which is a zone_name, zone_count pairing for each 
+        '''Gets the config dict for a specific system_name from
+        **system_config**, which is a zone_name, zone_count pairing for each
         zone that system will allocate.
         Args:
             system_name (str): Name of the system to get the config_dict for
@@ -283,18 +283,18 @@ cdef class SystemManager:
             self.free_non_component_indices.append(system_index)
         self._update_order.remove(system_index)
         del self.system_index[system_name]
-        
+
     def configure_system_allocation(self, system_name):
-        '''Configures a GameSystem with the **system_config** using the 
+        '''Configures a GameSystem with the **system_config** using the
         GameSystem.zones list property. The GameSystem will be registered to
         use all zones who have their name listed in zones. This should be called
-        during GameWorld.allocate after SystemManager.add_system has been 
+        during GameWorld.allocate after SystemManager.add_system has been
         called.
         Args:
             system_name (str): name of the system to be configured
         '''
         system = self[system_name]
         zones = system.zones
-        cdef SystemConfig system_config = self.system_config 
+        cdef SystemConfig system_config = self.system_config
         for zone in zones:
             system_config.add_system_to_zone(system_name, zone)

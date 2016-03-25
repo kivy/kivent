@@ -11,7 +11,7 @@ from kivy.context import get_current_context
 from weakref import proxy
 from functools import partial
 from itertools import islice
-from kivy.uix.widget import (_widget_destructors, WidgetException, 
+from kivy.uix.widget import (_widget_destructors, WidgetException,
     _widget_destructor, Widget, WidgetMetaclass)
 
 
@@ -940,7 +940,7 @@ cdef class CWidget(EventDispatcher):
         if canvas is not None:
             canvas.opacity = value
 
-    
+
 
     disabled = BooleanProperty(False)
     '''Indicates whether this widget can interact with input or not.
@@ -959,4 +959,3 @@ cdef class CWidget(EventDispatcher):
     '''
 
 Factory.register('CWidget', cls=CWidget)
-

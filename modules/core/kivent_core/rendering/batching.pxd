@@ -19,19 +19,19 @@ cdef class IndexedBatch:
     cdef object mesh_instruction
     cdef ComponentPointerAggregator entity_components
 
-    cdef tuple add_entity(self, unsigned int entity_id, unsigned int num_verts, 
+    cdef tuple add_entity(self, unsigned int entity_id, unsigned int num_verts,
         unsigned int num_indices)
-    cdef void remove_entity(self, unsigned int entity_id, 
-        unsigned int num_verts, unsigned int vert_index, 
+    cdef void remove_entity(self, unsigned int entity_id,
+        unsigned int num_verts, unsigned int vert_index,
         unsigned int num_indices, unsigned int ind_index)
     cdef bool check_empty(self)
-    cdef bool can_fit_data(self, unsigned int num_verts, 
+    cdef bool can_fit_data(self, unsigned int num_verts,
         unsigned int num_indices)
     cdef void* get_vbo_frame_to_draw(self)
     cdef FixedFrameData get_current_vbo(self)
     cdef FixedFrameData get_next_vbo(self)
     cdef void* get_indices_frame_to_draw(self)
-    cdef void set_index_count_for_frame(self, 
+    cdef void set_index_count_for_frame(self,
         unsigned int index_count)
     cdef void draw_frame(self)
     cdef void clear_frames(self)
@@ -63,12 +63,12 @@ cdef class BatchManager:
     cdef unsigned int get_size_of_component_pointers(self)
     cdef unsigned int create_batch(self, unsigned int tex_key) except -1
     cdef int remove_batch(self, unsigned int batch_id) except 0
-    cdef IndexedBatch get_batch_with_space(self, unsigned int tex_key, 
+    cdef IndexedBatch get_batch_with_space(self, unsigned int tex_key,
         unsigned int num_verts, unsigned int num_indices)
     cdef tuple batch_entity(self, unsigned int entity_id, unsigned int tex_key,
         unsigned int num_verts, unsigned int num_indices)
-    cdef bint unbatch_entity(self, unsigned int entity_id, 
-        unsigned int batch_id, unsigned int num_verts, 
+    cdef bint unbatch_entity(self, unsigned int entity_id,
+        unsigned int batch_id, unsigned int num_verts,
         unsigned int num_indices, unsigned int vert_index,
         unsigned int ind_index) except 0
     cdef list get_vbos(self)

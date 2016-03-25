@@ -4,16 +4,16 @@ from kivent_core.memory_handlers.membuffer cimport Buffer
 cdef class BlockZone:
     '''A BlockZone manages a specific subsection of the ZonedBlock for a single
     zone of the data. It will store data from index **start** to index **start**
-    + **total**. 
+    + **total**.
 
     **Attributes: (Cython Access Only)**
         **used_count** (unsigned int): The number of memory blocks used up.
 
-        **total** (unsigned int): The total number of memory blocks found in 
+        **total** (unsigned int): The total number of memory blocks found in
         this BlockZone.
 
         **start** (unsigned int): The starting index of this zone in the overall
-        ZonedBlock. The index in a specific BlockZone will be index in the 
+        ZonedBlock. The index in a specific BlockZone will be index in the
         ZonedBlock - this value.
 
         **data_in_free** (unsigned int): The total number of blocks currently
@@ -28,7 +28,7 @@ cdef class BlockZone:
     def __cinit__(self, str name, unsigned int start, unsigned int total):
         '''To initialize a BlockZone we just need to know the name, starting
         index, and the total count for the memory blocks it will represent.
-        Note: This does not mean the data has been allocated this will not 
+        Note: This does not mean the data has been allocated this will not
         happen until ZonedBlock.allocate_memory_with_buffer has been called.
         Args:
             name (str): The name of this zone.
@@ -48,10 +48,10 @@ cdef class BlockZone:
         '''Adds data of block_count slots to the zone. Typically called by
         ZonedBlock.add_data rather than used directly.
         Args:
-            block_count (unsigned int): The number of contiguous slots to 
+            block_count (unsigned int): The number of contiguous slots to
             take up.
         Return:
-            unsigned int: The index of the first slot (adjusted for location in 
+            unsigned int: The index of the first slot (adjusted for location in
             the ZonedBlock by adding **start**)
         '''
         cdef unsigned int largest_free_block = 0
@@ -70,9 +70,9 @@ cdef class BlockZone:
             raise MemoryError()
         return index + self.start
 
-    cdef void remove_data(self, unsigned int block_index, 
+    cdef void remove_data(self, unsigned int block_index,
         unsigned int block_count):
-        '''Frees data previously allocated, marking it for reuse by adding it 
+        '''Frees data previously allocated, marking it for reuse by adding it
         to **free_blocks**.
         Args:
             block_index (unsigned int): The index of the starting slot to free.
@@ -86,7 +86,7 @@ cdef class BlockZone:
             self.clear()
 
     cdef unsigned int get_largest_free_block(self):
-        '''Returns the largest block in **free_blocks**. 
+        '''Returns the largest block in **free_blocks**.
         Return:
             unsigned int: Number of blocks in the largest free block.
         '''
@@ -103,9 +103,9 @@ cdef class BlockZone:
                 largest_block_count = block_count
         return largest_block_count
 
-    cdef unsigned int get_first_free_block_that_fits(self, 
+    cdef unsigned int get_first_free_block_that_fits(self,
         unsigned int block_count):
-        '''Get the first free block that will have the appropriate space 
+        '''Get the first free block that will have the appropriate space
         to fit the number of blocks required. If the free block is larger than
         required it will be split up and the remainder will be readded to the
         **free_blocks** list.
@@ -160,32 +160,32 @@ cdef class BlockZone:
 
 
 cdef class ZonedBlock:
-    '''The ZonedBlock is like a MemoryBlock in that the data is stored 
-    contiguously. It is also somewhat like a MemoryZone in that the data is 
+    '''The ZonedBlock is like a MemoryBlock in that the data is stored
+    contiguously. It is also somewhat like a MemoryZone in that the data is
     split into several regions each of which keep track of their own free list.
     This allows for a single contiguous block of memory that can be iterated
-    through efficiently while still separating the memory appropriately to 
-    allow processing all data of a certain type at the same time. there will be 
-    no extra space unlike in MemoryZone and the counts for each zone will be 
+    through efficiently while still separating the memory appropriately to
+    allow processing all data of a certain type at the same time. there will be
+    no extra space unlike in MemoryZone and the counts for each zone will be
     exact.
 
     **Attributes: (Cython Access Only)**
-        **zones** (dict): Dict containing the BlockZones, keyed by the name of 
+        **zones** (dict): Dict containing the BlockZones, keyed by the name of
         the zone.
 
         **master_buffer** (Buffer): The Buffer from which this ZonedBlock will
         allocate its memory.
 
-        **master_index** (unsigned int): The location of the data in the 
+        **master_index** (unsigned int): The location of the data in the
         **master_buffer**
 
-        **size** (unsigned int): The size in bytes of the whole ZonedBlock 
+        **size** (unsigned int): The size in bytes of the whole ZonedBlock
         allocation.
 
-        **type_size** (unsigned int): The size of each slot in the ZonedBlock 
+        **type_size** (unsigned int): The size of each slot in the ZonedBlock
         in bytes.
 
-        **count** (unsigned int): The number of slots in the ZonedBlock, each 
+        **count** (unsigned int): The number of slots in the ZonedBlock, each
         slot will be **type_size** in bytes.
 
         **data** (void*): Pointer to the actual data in memory.
@@ -196,10 +196,10 @@ cdef class ZonedBlock:
         Sets up the ZonedBlock and each individual BlockZone. Note that memory
         has not been allocated until **allocate_memory_with_buffer** is called.
         Args:
-            type_size (unsigned int): The size in bytes of the data to fit in 
+            type_size (unsigned int): The size in bytes of the data to fit in
             each slot. Typically the result of a sizeof().
 
-            zone_dict (dict): Dict of zone_name, zone_count key, val pairs. 
+            zone_dict (dict): Dict of zone_name, zone_count key, val pairs.
             Space int he ZonedBlock will be made for the sum of all zone_counts.
         '''
         cdef unsigned int zone_index = 0
@@ -218,7 +218,7 @@ cdef class ZonedBlock:
         self.type_size = type_size
 
     cdef bool check_empty(self):
-        '''Determines whether the entire ZonedBlock is empty by checking the 
+        '''Determines whether the entire ZonedBlock is empty by checking the
         used count of each individual BlockZone.
         Return:
             bool: True if used_count for every BlockZone is 0 else False.'''
@@ -230,13 +230,13 @@ cdef class ZonedBlock:
             used += zone.used_count
         return used == 0
 
-    cdef void* allocate_memory_with_buffer(self, 
+    cdef void* allocate_memory_with_buffer(self,
         Buffer master_buffer) except NULL:
         '''Allocates the memory for storing the ZonedBlock from the Buffer.
         Args:
             master_buffer (Buffer): Buffer to allocate from
         Return:
-            void*: Pointer to the newly allocated data or NULL if allocation 
+            void*: Pointer to the newly allocated data or NULL if allocation
             has failed. (An exception will be raised if this is the case)
         '''
         self.master_buffer = master_buffer
@@ -246,14 +246,14 @@ cdef class ZonedBlock:
         return self.data
 
     cdef void remove_from_buffer(self):
-        '''Free the memory allocated by this ZonedBlock, returning it for 
+        '''Free the memory allocated by this ZonedBlock, returning it for
         reuse to the **master_buffer**'''
         self.master_buffer.remove_data(self.master_index, self.size)
         self.master_index = 0
 
-    cdef unsigned int add_data(self, unsigned int block_count, 
+    cdef unsigned int add_data(self, unsigned int block_count,
         str zone_name) except -1:
-        '''Claims a contiguous amount of data block_count in size from the 
+        '''Claims a contiguous amount of data block_count in size from the
         appropriate zone.
         Args:
             block_count (unsigned int): The number of blocks of **type_size**
@@ -261,14 +261,14 @@ cdef class ZonedBlock:
 
             zone_name (str): The name of the zone to add the data to.
         Return:
-            unsigned int: The index of the slot that holds the start of the 
+            unsigned int: The index of the slot that holds the start of the
             data. Will be <unsigned int>-1 if allocate fails (an exception will
             be raised in this case).
         '''
         cdef BlockZone zone = self.zones[zone_name]
         return zone.add_data(block_count)
 
-    cdef void remove_data(self, unsigned int block_index, 
+    cdef void remove_data(self, unsigned int block_index,
         unsigned int block_count):
         '''Frees data previously allocated, adding it back to the BlockZone
         free list.
@@ -284,7 +284,7 @@ cdef class ZonedBlock:
     cdef BlockZone get_zone_from_index(self, unsigned int block_index):
         '''Returns the BlockZone that contains a slot at block_index.
         Args:
-            block_index (unsigned int): The slot index of your data as returned 
+            block_index (unsigned int): The slot index of your data as returned
             by **add_data**.
         Return:
             BlockZone: the zone containing the actual data.

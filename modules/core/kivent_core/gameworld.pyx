@@ -1,7 +1,7 @@
 # cython: profile=True
 # cython: embedsignature=True
 from kivy.uix.widget import Widget, WidgetException
-from kivy.properties import (StringProperty, ListProperty, NumericProperty, 
+from kivy.properties import (StringProperty, ListProperty, NumericProperty,
 DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 from functools import partial
@@ -11,13 +11,13 @@ from kivent_core.systems.position_systems cimport PositionSystem2D
 from kivent_core.uix.cwidget cimport CWidget
 from kivent_core.entity cimport Entity
 from kivent_core.managers.entity_manager cimport EntityManager
-from kivent_core.managers.system_manager cimport (SystemManager, 
+from kivent_core.managers.system_manager cimport (SystemManager,
     DEFAULT_SYSTEM_COUNT, DEFAULT_COUNT)
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.utils cimport memrange
-from kivent_core.rendering.vertex_formats cimport (format_registrar, 
+from kivent_core.rendering.vertex_formats cimport (format_registrar,
     FormatConfig)
 from kivent_core.managers.resource_managers cimport ModelManager
 from kivy.logger import Logger
@@ -54,43 +54,43 @@ class GameWorld(Widget):
     managing which GameSystems are added, removed, and paused.
 
     **Attributes:**
-        **state** (StringProperty): State is a string property that corresponds 
-        to the current state for your application in the states dict. It will 
-        control the current screen of the gamescreenmanager, as well as which 
+        **state** (StringProperty): State is a string property that corresponds
+        to the current state for your application in the states dict. It will
+        control the current screen of the gamescreenmanager, as well as which
         systems are currently added or removed from canvas or paused.
 
-        **number_entities** (NumericProperty): This is the current number of 
-        entities in the system. Do not modify directly, used to generate 
+        **number_entities** (NumericProperty): This is the current number of
+        entities in the system. Do not modify directly, used to generate
         entity_ids.
 
-        **gamescreenmanager** (ObjectProperty): Reference to the 
+        **gamescreenmanager** (ObjectProperty): Reference to the
         GameScreenManager your game will use for UI screens.
 
-        **entities** (list): entities is a list of all entity objects, 
+        **entities** (list): entities is a list of all entity objects,
         entity_id corresponds to position in this list.
 
-        **states** (dict): states is a dict of lists of system_ids with keys 
+        **states** (dict): states is a dict of lists of system_ids with keys
         'systems_added','systems_removed', 'systems_paused', 'systems_unpaused'
 
-        **entities_to_remove** (list): list of entity_ids that will be cleaned 
+        **entities_to_remove** (list): list of entity_ids that will be cleaned
         up in the next cleanup update tick
 
         **system_manager** (SystemManager): Registers all the GameSystem added
-        to the GameWorld and contains information for allocation and use of 
+        to the GameWorld and contains information for allocation and use of
         those GameSystem.
 
         **master_buffer** (object): Typically a Buffer, the base memory from
         which all other static allocating memory objects will allocate from.
 
-        **system_count** (NumericProperty): The number of systems that will 
+        **system_count** (NumericProperty): The number of systems that will
         have memory allocated for them in the entities array.
 
         **update_time** (NumericProperty): The update interval.
 
-        **size_of_entity_block** (NumericProperty): The size in kibibytes of 
+        **size_of_entity_block** (NumericProperty): The size in kibibytes of
         the Entity MemoryBlocks.
 
-        **size_of_gameworld** (NumericProperty): The size in kibibytes of the 
+        **size_of_gameworld** (NumericProperty): The size in kibibytes of the
         entire GameWorld's static allocation.
 
         **zones** (DictProperty): The zone name and count pairings for static
@@ -99,7 +99,7 @@ class GameWorld(Widget):
         **model_manager** (ModelManager): Handles the loading of VertexModels.
         You should only load model data using this ModelManager. Do not
         instantiate your own.
-        
+
     '''
     state = StringProperty('initial')
     gamescreenmanager = ObjectProperty(None)
@@ -109,8 +109,8 @@ class GameWorld(Widget):
     update_time = NumericProperty(1./60.)
     system_count = NumericProperty(DEFAULT_SYSTEM_COUNT)
     model_format_allocations = DictProperty({})
- 
-    
+
+
     def __init__(self, **kwargs):
         self.canvas = RenderContext(use_parent_projection=True,
             use_parent_modelview=True)
@@ -129,11 +129,11 @@ class GameWorld(Widget):
 
     def ensure_startup(self, list_of_systems):
         '''Run during **init_gameworld** to determine whether or not it is safe
-        to begin allocation. Safe in this situation means that every system_id 
+        to begin allocation. Safe in this situation means that every system_id
         that has been listed in list_of_systems has been added to the GameWorld.
 
         Args:
-            list_of_systems (list): List of the system_id (string) names of 
+            list_of_systems (list): List of the system_id (string) names of
             the GameSystems we expect to have initialized.
 
         Return:
@@ -143,8 +143,8 @@ class GameWorld(Widget):
         for each in list_of_systems:
             if each not in systems_to_add:
                 Logger.error(
-                    'GameSystem: System_id: {system_id} not attached retrying ' 
-                    'in 1 sec. If you see this error once or twice, we are ' 
+                    'GameSystem: System_id: {system_id} not attached retrying '
+                    'in 1 sec. If you see this error once or twice, we are '
                     'probably just waiting on the KV file to load. If you see '
                     'it a whole bunch something is probably wrong. Make sure '
                     'all systems are setup properly.'.format(system_id=each))
@@ -153,11 +153,11 @@ class GameWorld(Widget):
 
     def allocate(self):
         '''Typically called interally as part of init_gameworld, this function
-        allocates the **master_buffer** for the gameworld, registers the 
-        zones, allocates the EntityManager, and calls allocate on all 
+        allocates the **master_buffer** for the gameworld, registers the
+        zones, allocates the EntityManager, and calls allocate on all
         GameSystem with do_allocation == True.
         '''
-        cdef Buffer master_buffer = Buffer(self.size_of_gameworld*1024, 
+        cdef Buffer master_buffer = Buffer(self.size_of_gameworld*1024,
             1, 1)
         self.master_buffer = master_buffer
         cdef SystemManager system_manager = self.system_manager
@@ -185,7 +185,7 @@ class GameWorld(Widget):
         for each in self.systems_to_add:
             system_manager.add_system(each.system_id, each)
         self.systems_to_add = None
-        self.entity_manager = entity_manager = EntityManager(master_buffer, 
+        self.entity_manager = entity_manager = EntityManager(master_buffer,
             self.size_of_entity_block, copy_from_obs_dict, system_count)
         self.entities = entity_manager.memory_index
         system_names = system_manager.system_index
@@ -201,36 +201,36 @@ class GameWorld(Widget):
                 config_dict = system_manager.get_system_config_dict(name)
                 size_estimate = system.get_size_estimate(config_dict)
                 if total_count//1024 + size_estimate > real_size//1024:
-                    raise GameWorldOutOfSpaceError(('System Name: {name} will ' 
-                        'need {size_estimate} KiB, we have only: ' 
-                        '{left} KiB').format(name=name, 
-                        size_estimate=str(size_estimate), 
+                    raise GameWorldOutOfSpaceError(('System Name: {name} will '
+                        'need {size_estimate} KiB, we have only: '
+                        '{left} KiB').format(name=name,
+                        size_estimate=str(size_estimate),
                         left=str((real_size-total_count)//1024),
                         ))
 
                 system.allocate(master_buffer, config_dict)
                 system_size = system.get_system_size()
-                Logger.info(('KivEnt: {system_name} allocated {system_size} '  
-                    'KiB').format(system_name=str(name), 
+                Logger.info(('KivEnt: {system_name} allocated {system_size} '
+                    'KiB').format(system_name=str(name),
                     system_size=str(system_size//1024)))
                 total_count += system_size
-        total_count += self.model_manager.allocate(master_buffer, 
+        total_count += self.model_manager.allocate(master_buffer,
             dict(self.model_format_allocations))
 
         Logger.info(('KivEnt: We will need {total_count} KiB for game, we ' +
-            'have {real_size} KiB').format(total_count=str(total_count//1024), 
+            'have {real_size} KiB').format(total_count=str(total_count//1024),
                 real_size=str(real_size//1024)))
 
     def init_gameworld(self, list_of_systems, callback=None):
         '''This function should be called once by your application during
-        initialization. It will handle ensuring all GameSystem added in 
+        initialization. It will handle ensuring all GameSystem added in
         kv lang have been initialized and call **allocate** afterwards.
         Once allocation has finished, the **update** for GameWorld will be
         Clock.schedule_interval for **update_time**. If kwarg callback is not
         None your callback will be called with no extra arguments.
 
         Args:
-            list_of_systems (list): list of system_id (string) names for the 
+            list_of_systems (list): list of system_id (string) names for the
             GameSystems we want to check have been initialized and added to
             GameWorld.
 
@@ -245,23 +245,23 @@ class GameWorld(Widget):
                 callback()
         else:
             Clock.schedule_once(
-                lambda dt: self.init_gameworld(list_of_systems, 
+                lambda dt: self.init_gameworld(list_of_systems,
                     callback=callback), 1.0)
 
-    def add_state(self, state_name, screenmanager_screen=None, 
-        systems_added=None, systems_removed=None, systems_paused=None, 
+    def add_state(self, state_name, screenmanager_screen=None,
+        systems_added=None, systems_removed=None, systems_paused=None,
         systems_unpaused=None, on_change_callback=None):
         '''
         Args:
             state_name (str): Name for this state, should be unique.
 
         Kwargs:
-            screenmanager_screen (str): Name of the screen for 
+            screenmanager_screen (str): Name of the screen for
             GameScreenManager to make current when this state is transitioned
             into. Default None.
 
             systems_added (list): List of system_id that should be added
-            to the GameWorld canvas when this state is transitioned into. 
+            to the GameWorld canvas when this state is transitioned into.
             Default None.
 
             systems_removed (list): List of system_id that should be removed
@@ -271,7 +271,7 @@ class GameWorld(Widget):
             systems_paused (list): List of system_id that will be paused
             when this state is transitioned into. Default None.
 
-            systems_unpaused (list): List of system_id that will be unpaused 
+            systems_unpaused (list): List of system_id that will be unpaused
             when this state is transitioned into. Default None.
 
             on_change_callback (object): Callback function that will receive
@@ -293,16 +293,16 @@ class GameWorld(Widget):
             systems_paused = []
         if systems_unpaused is None:
             systems_unpaused = []
-        self.states[state_name] = {'systems_added': systems_added, 
-            'systems_removed': systems_removed, 
-            'systems_paused': systems_paused, 
+        self.states[state_name] = {'systems_added': systems_added,
+            'systems_removed': systems_removed,
+            'systems_paused': systems_paused,
             'systems_unpaused': systems_unpaused}
         self.gamescreenmanager.states[state_name] = screenmanager_screen
         self.state_callbacks[state_name] = on_change_callback
 
     def on_state(self, instance, value):
         '''State change is handled here, systems will be added or removed
-        in the order that they are listed. This allows control over the 
+        in the order that they are listed. This allows control over the
         arrangement of rendering layers. Later systems will be rendered on top
         of earlier.
 
@@ -315,7 +315,7 @@ class GameWorld(Widget):
         '''
         try:
             state_dict = self.states[value]
-        except KeyError: 
+        except KeyError:
             self.state = 'initial'
             self._last_state = 'initial'
             print('State does not exist, resetting to initial')
@@ -367,15 +367,15 @@ class GameWorld(Widget):
         '''
         Args:
             components_to_use (dict): A dict where keys are the system_id and
-            values correspond to the component creation args for that 
+            values correspond to the component creation args for that
             GameSystem.
 
             component_order (list): Should contain all system_id in
             components_to_use arg, ordered in the order you want component
             initialization to happen.
 
-        This is the function used to create a new entity. It returns the 
-        entity_id of the created entity. components_to_use is a dict of 
+        This is the function used to create a new entity. It returns the
+        entity_id of the created entity. components_to_use is a dict of
         system_id, args to generate_component function. component_order is
         the order in which the components should be initialized'''
         cdef unsigned int entity_id = self.get_entity(zone)
@@ -401,14 +401,14 @@ class GameWorld(Widget):
     def timed_remove_entity(self, unsigned int entity_id, dt):
         '''
         Args:
-            entity_id (unsigned int): The entity_id of the Entity to be removed 
+            entity_id (unsigned int): The entity_id of the Entity to be removed
             from the GameWorld.
 
             dt (float): Time argument passed by Kivy's Clock.schedule.
 
         This function can be used to schedule the destruction of an entity
         for a time in the future using partial and kivy's Clock.schedule_once
-        
+
         Like:
             Clock.schedule_once(partial(
                 gameworld.timed_remove_entity, entity_id))
@@ -421,9 +421,9 @@ class GameWorld(Widget):
             entity_id (int): The entity_id of the Entity to be removed from
             the GameWorld
 
-        This function immediately removes an entity from the gameworld. The 
+        This function immediately removes an entity from the gameworld. The
         entity will have components removed in the reverse order from
-        its load_order. 
+        its load_order.
         '''
 
         cdef Entity entity = self.entities[entity_id]
@@ -437,7 +437,7 @@ class GameWorld(Widget):
             if debug:
                 Logger.debug(('Remove component {comp_id} from entity'
                 ' {entity_id}').format(
-                    comp_id=system_name, 
+                    comp_id=system_name,
                     entity_id=str(entity_id)))
         entity.load_order = []
         entity_manager.remove_entity(entity_id)
@@ -445,11 +445,11 @@ class GameWorld(Widget):
     def update(self, dt):
         '''
         Args:
-            dt (float): Time argument, usually passed in automatically 
+            dt (float): Time argument, usually passed in automatically
             by Kivy's Clock.
 
         Call the update function in order to advance time in your gameworld.
-        Any GameSystem that is updateable and not paused will be updated. 
+        Any GameSystem that is updateable and not paused will be updated.
         Typically you will call this function using either Clock.schedule_once
         or Clock.schedule_interval
         '''
@@ -497,7 +497,7 @@ class GameWorld(Widget):
 
     def add_system(self, widget):
         '''Used internally by add_widget. Will register a previously unseen
-        GameSystem with the system_manager, and call the GameSystem's 
+        GameSystem with the system_manager, and call the GameSystem's
         on_add_system function.
 
         Args:
@@ -579,7 +579,7 @@ class GameWorld(Widget):
             if next_index == 0 and canvas.has_before:
                 next_index = 1
             canvas.insert(next_index, widget.canvas)
-        
+
     def remove_widget(self, widget):
         '''Same as Widget.remove_widget except that if the removed widget is a
         GameSystem, on_remove_system of that GameSystem will be ran.

@@ -17,4 +17,3 @@ class GameScreenManager(ScreenManager):
 
 class GameScreen(Screen):
     name = StringProperty('default_screen_id')
-

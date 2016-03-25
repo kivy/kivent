@@ -7,40 +7,40 @@ from kivent_core.entity cimport Entity
 cdef class EntityManager:
     '''
     The EntityManager will keep track of the entities in your GameWorld.
-    An Entity is technically nothing more than an entry in an array of 
+    An Entity is technically nothing more than an entry in an array of
     unsigned int. The entity is made up of system_count + 1 entries.
     The first entry is the actual identity of the entity, if it is inactive
     this will be <unsigned int>-1.
-    The rest of the entries will correspond to the components of your 
+    The rest of the entries will correspond to the components of your
     GameSystem with do_components set to True. When a component is active its
-    id will be stored here, if it is inactive the entry will be 
+    id will be stored here, if it is inactive the entry will be
     <unsigned int>-1.
 
-    This means technically there is a limit to the number of components and 
+    This means technically there is a limit to the number of components and
     entities you can have at 4,294,967,294. It is however extremely unlikely
-    your game will consist of this many entities or components. Probably KivEnt 
-    will also be hopelessly overwhelmed. 
+    your game will consist of this many entities or components. Probably KivEnt
+    will also be hopelessly overwhelmed.
 
     EntityManager is typically allocated as part of your GameWorld.allocate.
 
     **Attributes: (Cython Access Only):
 
-        **memory_index** (IndexedMemoryZone): Zoned memory for storing the 
-        Entity indices. 
+        **memory_index** (IndexedMemoryZone): Zoned memory for storing the
+        Entity indices.
 
-        **system_count** (unsigned int): The number of slots reserved per 
-        Entitywill be one more than the initialization system_count arg as the 
-        first entry is used internally to determine whether an entity is 
+        **system_count** (unsigned int): The number of slots reserved per
+        Entitywill be one more than the initialization system_count arg as the
+        first entry is used internally to determine whether an entity is
         active.
 
     '''
 
-    def __cinit__(self, Buffer master_buffer, unsigned int pool_block_size, 
+    def __cinit__(self, Buffer master_buffer, unsigned int pool_block_size,
         dict reserve_spec, unsigned int system_count):
         '''
         Args:
             master_buffer (Buffer): The buffer from which the space for the
-            entity IndexedMemoryZone will be allocated. 
+            entity IndexedMemoryZone will be allocated.
 
             pool_block_size (unsigned int): size in kibibytes of the individual
             MemoryBlock in the IndexedMemoryZone.
@@ -48,14 +48,14 @@ cdef class EntityManager:
             reserve_spec (dict): Dict of zone_name, zone_count that should be
             allocated in the IndexedMemoryZone.
 
-            system_count (unsigned int): The number of systems to make room 
+            system_count (unsigned int): The number of systems to make room
             for, internally system_count + 1 entries will actually be reserved
             for your Entity as the first slot will be used to store whether
             or not that entity is active.
         '''
         system_count = system_count + 1
-        self.memory_index = IndexedMemoryZone(master_buffer, 
-            pool_block_size, sizeof(unsigned int)*system_count, reserve_spec, 
+        self.memory_index = IndexedMemoryZone(master_buffer,
+            pool_block_size, sizeof(unsigned int)*system_count, reserve_spec,
             Entity)
         self.system_count = system_count
 
@@ -73,22 +73,22 @@ cdef class EntityManager:
         cdef unsigned int i
         for i in range(system_count):
             pointer[i] = -1
- 
+
     cdef unsigned int get_size(self):
         '''
         Returns the size of the IndexedMemoryZone in bytes.
         '''
         return self.memory_index.get_size()
 
-    cdef void set_component(self, unsigned int entity_id, 
+    cdef void set_component(self, unsigned int entity_id,
         unsigned int component_id, unsigned int system_id):
         '''
-        Sets the component_id for the system at system_id in the 
+        Sets the component_id for the system at system_id in the
         entity data for Entity entity_id. Typically called by the GameSystem
         create_component automatically as part of initializing an entity.
         If you wish to change a component you should use the GameSystem's
-        remove_component and create_component rather than manually calling 
-        this function, unless you really know the implications of what you are 
+        remove_component and create_component rather than manually calling
+        this function, unless you really know the implications of what you are
         doing.
 
         Args:
@@ -123,14 +123,14 @@ cdef class EntityManager:
 
     cdef unsigned int generate_entity(self, str zone) except -1:
         '''
-        Activates a new entity in zone of **memory_index. Typically 
+        Activates a new entity in zone of **memory_index. Typically
         called internally as part of GameWorld.get_entity
 
         Args:
             zone (str): The zone to initialize the entity in.
 
         Return:
-            new_id (unsigned int): The entity_id by which the new Entity will 
+            new_id (unsigned int): The entity_id by which the new Entity will
             be referred to.
 
         '''
@@ -144,7 +144,7 @@ cdef class EntityManager:
     def get_entity_entry(self, entity_id):
         '''Will return a list of **system_count** items corresponding to all
         the indices that make up the entity. If a value is 4,294,967,295,
-        which is <unsigned int>-1, that component is inactive. If the first 
+        which is <unsigned int>-1, that component is inactive. If the first
         value is <unsigned int>-1 the entity itself is currently inactive.
 
         Args:

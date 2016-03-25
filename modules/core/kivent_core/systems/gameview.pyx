@@ -1,6 +1,6 @@
 # cython: embedsignature=True
 from gamesystem cimport GameSystem
-from kivy.properties import (StringProperty, ListProperty, 
+from kivy.properties import (StringProperty, ListProperty,
     NumericProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 from kivy.vector import Vector
@@ -14,43 +14,43 @@ from kivy.input import MotionEvent
 cdef class GameView(GameSystem):
     '''
     GameView provides a simple camera system that will control the rendering
-    view of any other **GameSystem** that has had the **gameview** property set 
+    view of any other **GameSystem** that has had the **gameview** property set
     **GameSystem** that have a **gameview** will be added to the GameView
-    canvas instead of the GameWorld canvas. 
+    canvas instead of the GameWorld canvas.
 
     **Attributes:**
-        **do_scroll_lock** (BooleanProperty): If True the scrolling will be 
+        **do_scroll_lock** (BooleanProperty): If True the scrolling will be
         locked to the bounds of the GameWorld's currentmap.
 
         **camera_pos** (ListProperty): Current position of the camera
-        
-        **camera_scale** (NumericProperty): Current scale of the camera. The 
-        scale is equal to the amount of the game world that will be shown 
-        compared to the physical size of the GameView, therefore 2x will show 
-        twice as much of your gameworld, appearing 'zoomed out', while .5 will 
-        show half as much of the gameworld, appearing 'zoomed in'.  
 
-        **focus_entity** (BooleanProperty): If True the camera will follow the 
+        **camera_scale** (NumericProperty): Current scale of the camera. The
+        scale is equal to the amount of the game world that will be shown
+        compared to the physical size of the GameView, therefore 2x will show
+        twice as much of your gameworld, appearing 'zoomed out', while .5 will
+        show half as much of the gameworld, appearing 'zoomed in'.
+
+        **focus_entity** (BooleanProperty): If True the camera will follow the
         entity set in entity_to_focus
 
         **do_scroll** (BooleanProperty): If True touches will scroll the camera
 
-        **entity_to_focus** (NumericProperty): Entity entity_id for the camera 
+        **entity_to_focus** (NumericProperty): Entity entity_id for the camera
         to focus on if focus_entity is True.
 
-        **camera_speed_multiplier** (NumericProperty): Time it will take camera 
-        to reach focused entity, Speed will be 1.0/camera_speed_multiplier 
+        **camera_speed_multiplier** (NumericProperty): Time it will take camera
+        to reach focused entity, Speed will be 1.0/camera_speed_multiplier
         seconds to close the distance
 
-        **render_system_order** (ListProperty): List of **system_id** in the 
-        desired order of rendering last to first. **GameSystem** with 
+        **render_system_order** (ListProperty): List of **system_id** in the
+        desired order of rendering last to first. **GameSystem** with
         **system_id** not in **render_system_order** will be inserted at
-        position 0. 
- 
-        **move_speed_multiplier** (NumericProperty): Multiplier to further 
-        control the speed of touch dragging of camera. Example Usage: 
+        position 0.
+
+        **move_speed_multiplier** (NumericProperty): Multiplier to further
+        control the speed of touch dragging of camera. Example Usage:
         Bind to the size of your gameview divided by the size of the window
-        to ensure that apparent dragging speed stays consistent. 
+        to ensure that apparent dragging speed stays consistent.
 
         **do_touch_zoom** (BooleanProperty): If True the camera will zoom with
         2 finger touch interaction.
@@ -61,7 +61,7 @@ cdef class GameView(GameSystem):
         when manually manipulated **camera_scale**.
 
         **scale_max** (NumericProperty): The maximum scale factor that will be
-        allowed when touch zoom is being used. This will be the most 'zoomed 
+        allowed when touch zoom is being used. This will be the most 'zoomed
         out' your camera will be allowed to go. This limit do not apply
         when manually manipulated **camera_scale**.
 
@@ -107,9 +107,9 @@ cdef class GameView(GameSystem):
         x, y = self.pos
         camera_scale = self.camera_scale
         proj = self.matrix.view_clip(
-            -camera_pos[0], 
-            camera_size[0]*camera_scale + -camera_pos[0], 
-            -camera_pos[1], 
+            -camera_pos[0],
+            camera_size[0]*camera_scale + -camera_pos[0],
+            -camera_pos[1],
             camera_size[1]*camera_scale + -camera_pos[1],
             0., 100, 0)
 
@@ -132,7 +132,7 @@ cdef class GameView(GameSystem):
                 Clock.schedule_once(lambda dt: gameworld.add_system(widget))
         else:
             super(GameView, self).add_widget(widget)
-        
+
 
     def remove_widget(self, widget):
         if isinstance(widget, GameSystem):
@@ -161,7 +161,7 @@ cdef class GameView(GameSystem):
             camera_speed_multiplier = self.camera_speed_multiplier
             camera_size = self.size
             camera_scale = self.camera_scale
-            size = camera_size[0] * camera_scale, camera_size[1] * camera_scale 
+            size = camera_size[0] * camera_scale, camera_size[1] * camera_scale
             dist_x = -camera_pos[0] - position_data.x + size[0]*.5
             dist_y = -camera_pos[1] - position_data.y + size[1]*.5
             if self.do_scroll_lock:
@@ -211,7 +211,7 @@ cdef class GameView(GameSystem):
         touch.x = converted_pos[0]
         touch.y = converted_pos[1]
         super(GameView, self).on_touch_up(touch)
-        touch.x = old_x 
+        touch.x = old_x
         touch.y = old_y
         if touch.grab_current is self:
             self._touch_count -= 1
@@ -258,7 +258,7 @@ cdef class GameView(GameSystem):
         touch.x = converted_pos[0]
         touch.y = converted_pos[1]
         super(GameView, self).on_touch_move(touch)
-        touch.x = old_x 
+        touch.x = old_x
         touch.y = old_y
         if touch.grab_current is self:
             move_speed_multiplier = self.move_speed_multiplier
@@ -291,7 +291,7 @@ cdef class GameView(GameSystem):
                     camera_scale = self.camera_scale
                     dist_x = touch.dx * camera_scale * move_speed_multiplier
                     dist_y = touch.dy * camera_scale * move_speed_multiplier
-                
+
                     if self.do_scroll_lock and self.currentmap:
                         dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
                     self.camera_pos[0] += dist_x

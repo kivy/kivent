@@ -5,22 +5,22 @@ cdef extern from "Python.h":
 
 cdef class FormatConfig:
     '''
-    FormatConfig keeps track of data describing the structure of vertex data 
-    for GL. This data is needed both in the construction and submission of GL 
-    VBO's and the creation of kivent_core.rendering.model.VertexModel. 
+    FormatConfig keeps track of data describing the structure of vertex data
+    for GL. This data is needed both in the construction and submission of GL
+    VBO's and the creation of kivent_core.rendering.model.VertexModel.
 
     **Attributes:**
-        **format** (list): The format list description that gets used during 
+        **format** (list): The format list description that gets used during
         the binding of a vertex format and ultimately the glVertexAttribPointer
         calls that tells GL what our vertex data will look like.
 
-        **format_dict** (dict): The same information as found in **format**, 
+        **format_dict** (dict): The same information as found in **format**,
         formated so that we can more easily use it for accessing the underlying
         struct through the kivent_core.rendering.model.Vertex.
 
         **size** (unsigned int): The size in bytes of the actual struct.
 
-        **name** (str): The name of this vertex format, as registered with the 
+        **name** (str): The name of this vertex format, as registered with the
         VertexFormatRegister.
 
     '''
@@ -53,7 +53,7 @@ cdef class FormatConfig:
 
 cdef class VertexFormatRegister:
     '''
-    Registers FormatConfigs for vertex_format lists so that we can use the 
+    Registers FormatConfigs for vertex_format lists so that we can use the
     formats throughout the engine. A global instance of this class is declared
     in the module so that you can register new vertex formats in your own code.
     If you need to register a format, do not instantiate this class instead use
@@ -64,7 +64,7 @@ cdef class VertexFormatRegister:
     .. code-block:: python
 
         vertex_format_4f = [
-            (b'pos', 2, b'float', pos_offset), 
+            (b'pos', 2, b'float', pos_offset),
             (b'uvs', 2, b'float', uvs_offset),
             ]
 
@@ -76,30 +76,30 @@ cdef class VertexFormatRegister:
             GLfloat[2] pos
             GLfloat[2] uvs
 
-    The first value in the tuple is the bytes name of the attribute, this will 
-    be the name of the attribute used in your vertex shader. It does not need 
-    to be the same name as the name of the attribute in the struct, but it is 
-    probably easier if you do keep them consistent. The second value is the 
-    count for how many values are in the array for this attribute. The third 
-    is the type of the attribute. 
+    The first value in the tuple is the bytes name of the attribute, this will
+    be the name of the attribute used in your vertex shader. It does not need
+    to be the same name as the name of the attribute in the struct, but it is
+    probably easier if you do keep them consistent. The second value is the
+    count for how many values are in the array for this attribute. The third
+    is the type of the attribute.
 
     Supported attribute types are:
         'float': GLfloat
-        'byte': GLbyte 
+        'byte': GLbyte
         'ubyte': GLubyte
         'int': GLint
         'uint': GLuint
         'short': GLshort
         'ushort': GLushort
 
-    Finally, the last value is where in the struct this value begins. It 
-    is the equivalent of calling offsetof on your struct's attribute. 
+    Finally, the last value is where in the struct this value begins. It
+    is the equivalent of calling offsetof on your struct's attribute.
 
     .. code-block:: c
 
         offsetof(struct VertexFormat4F, pos)
 
-    However, in cython we do not have access tot his macro. The workaround is 
+    However, in cython we do not have access tot his macro. The workaround is
     a bit more verbose and looks like:
 
     .. code-block:: cython
@@ -109,7 +109,7 @@ cdef class VertexFormatRegister:
             tmp1))
 
     **Attributes:**
-        **vertex_formats** (dict): Dict of FormatConfig, keyed by their 
+        **vertex_formats** (dict): Dict of FormatConfig, keyed by their
         **name**.
 
     '''
@@ -117,18 +117,18 @@ cdef class VertexFormatRegister:
     def __cinit__(self):
         self._vertex_formats = {}
 
-    def register_vertex_format(self, str format_name, list format, 
+    def register_vertex_format(self, str format_name, list format,
         unsigned int size):
         '''
-        Call this function to register a new FormatConfig. 
+        Call this function to register a new FormatConfig.
 
         Args:
-            format_name (str): Name of this format. We will use the name to 
+            format_name (str): Name of this format. We will use the name to
             reference the format throughout the engine.
 
             format (list): List of the tuples describing the vertex format.
 
-            size (unsigned int): Result of calling sizeof on the underlying 
+            size (unsigned int): Result of calling sizeof on the underlying
             struct.
 
         '''
@@ -147,7 +147,7 @@ pos_offset = <Py_ssize_t> (<Py_intptr_t>(tmp1.pos) - <Py_intptr_t>(tmp1))
 uvs_offset = <Py_ssize_t> (<Py_intptr_t>(tmp1.uvs) - <Py_intptr_t>(tmp1))
 
 vertex_format_4f = [
-    (b'pos', 2, b'float', pos_offset, False), 
+    (b'pos', 2, b'float', pos_offset, False),
     (b'uvs', 2, b'float', uvs_offset, False),
     ]
 
@@ -161,7 +161,7 @@ rot_offset = <Py_ssize_t> (<Py_intptr_t>(&tmp2.rot) - <Py_intptr_t>(tmp2))
 center_offset = <Py_ssize_t> (<Py_intptr_t>(tmp2.center) - <Py_intptr_t>(tmp2))
 
 vertex_format_7f = [
-    (b'pos', 2, b'float', pos_offset, False), 
+    (b'pos', 2, b'float', pos_offset, False),
     (b'uvs', 2, b'float', uvs_offset, False),
     (b'rot', 1, b'float', rot_offset, False),
     (b'center', 2, b'float', center_offset, False),
@@ -176,7 +176,7 @@ uvs_offset = <Py_ssize_t> (<Py_intptr_t>(tmp3.uvs) - <Py_intptr_t>(tmp3))
 color_offset = <Py_ssize_t> (<Py_intptr_t>(tmp3.vColor) - <Py_intptr_t>(tmp3))
 
 vertex_format_4f4ub = [
-    (b'pos', 2, b'float', pos_offset, False), 
+    (b'pos', 2, b'float', pos_offset, False),
     (b'uvs', 2, b'float', uvs_offset, False),
     (b'vColor', 4, b'ubyte', color_offset, True),
     ]

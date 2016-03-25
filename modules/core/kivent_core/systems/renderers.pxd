@@ -25,12 +25,12 @@ cdef class RenderComponent(MemComponent):
 cdef class Renderer(StaticMemGameSystem):
     cdef BatchManager batch_manager
     cdef object update_trigger
-    cdef void* _batch_entity(self, unsigned int entity_id, 
+    cdef void* _batch_entity(self, unsigned int entity_id,
         RenderStruct* component_data) except NULL
-    cdef void* _unbatch_entity(self, unsigned int entity_id, 
+    cdef void* _unbatch_entity(self, unsigned int entity_id,
         RenderStruct* component_data) except NULL
-    cdef void* _init_component(self, unsigned int component_index, 
-        unsigned int entity_id, bool render, VertexModel model, 
+    cdef void* _init_component(self, unsigned int component_index,
+        unsigned int entity_id, bool render, VertexModel model,
         unsigned int texkey) except NULL
     cdef void* setup_batch_manager(self, Buffer master_buffer) except NULL
 

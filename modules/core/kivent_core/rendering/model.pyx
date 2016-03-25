@@ -35,32 +35,32 @@ class AttributeCountError(Exception):
 cdef class Vertex:
     '''
     The Vertex class allows you to interface with the underlying C structs
-    representing a VertexModel's vertices from Python. It does this by 
-    automatically wrapping the struct based on data from 
-    kivent_core.rendering.vertex_formats. 
+    representing a VertexModel's vertices from Python. It does this by
+    automatically wrapping the struct based on data from
+    kivent_core.rendering.vertex_formats.
 
-    You will not create a Vertex manually, instead it will typically be 
+    You will not create a Vertex manually, instead it will typically be
     returned from indexing into a VertexModel. For instance:
 
-    .. code-block:: python 
-    
+    .. code-block:: python
+
         vertex = instance_of_VertexModel[0] #retrieve the first vertex
         pos = vertex.pos #retrieve data from a vertex
         vertex.pos = [1., 2.] #set data
 
     The attributes for a Vertex will depend on the actual vertex format of the
-    model. See the documentation for 
-    kivent_core.rendering.vertex_formats.VertexFormatRegister for more 
-    information. 
+    model. See the documentation for
+    kivent_core.rendering.vertex_formats.VertexFormatRegister for more
+    information.
 
-    Keep in mind: When getting data from a Vertex you are retrieving a copy of 
-    that data. Not the original, modifying the returned list will not affect 
-    the underlying data, instead you must call set. 
+    Keep in mind: When getting data from a Vertex you are retrieving a copy of
+    that data. Not the original, modifying the returned list will not affect
+    the underlying data, instead you must call set.
 
     '''
 
     def __cinit__(self, dict format):
-        self.vertex_format = format 
+        self.vertex_format = format
 
     def __getattr__(self, name):
         cdef int count
@@ -110,7 +110,7 @@ cdef class Vertex:
                 return ret
         else:
             raise AttributeError()
-        
+
     def __setattr__(self, name, value):
         cdef int count
         cdef unsigned int offset
@@ -136,7 +136,7 @@ cdef class Vertex:
             offset = attribute_tuple[2]
             if len(value) != count:
                 raise AttributeCountError('Expected list of length {count} got'
-                    'list of size {length}'.format(count=count, 
+                    'list of size {length}'.format(count=count,
                     length=len(value)))
             for x in range(count):
                 if attr_type == b'float':
@@ -168,81 +168,81 @@ cdef class Vertex:
 
 cdef class VertexModel:
     '''
-    A VertexModel allows you to interact with arbitrary structs with GL types. 
-    A Model is made up of 2 main parts, the vertex data associated with each 
-    vertex in the model, and the indices describing how those vertices are 
-    related. For instance a sprite would be represented as a 4 vertex quad, 
+    A VertexModel allows you to interact with arbitrary structs with GL types.
+    A Model is made up of 2 main parts, the vertex data associated with each
+    vertex in the model, and the indices describing how those vertices are
+    related. For instance a sprite would be represented as a 4 vertex quad,
     with indices: [0, 1, 2, 2, 3, 0]
 
-    The quad is constructed out of 2 triangle faces, the triangle reprsented by 
+    The quad is constructed out of 2 triangle faces, the triangle reprsented by
     vertices 0, 1, 2, and the triangle represented by 2, 3, 0, this looks like:
 
     1__2
-    | /|  
+    | /|
     0/_3
 
-    A Vertex can hold arbitrary data, but it will typically hold its x, y 
+    A Vertex can hold arbitrary data, but it will typically hold its x, y
     position on the screen at the very least, and very often the u,v position
-    mapping texture coordinates to the geometric. 
+    mapping texture coordinates to the geometric.
 
     A vertex of the model can be accessed by indexing into the object
 
-    .. code-block:: python 
+    .. code-block:: python
 
-        vertex_model = VertexModel(4, 6, format_config, index_buffer, 
+        vertex_model = VertexModel(4, 6, format_config, index_buffer,
             vertex_buffer, 'my_model_name')
         vertex = vertex_model[0]
 
-    This will retrieve a Vertex object that can manipulate the data of the 
-    specified vertex. You should be careful about holding onto the vertex 
-    objects as if you either adjust the **index_count** or **vertex_count** 
-    the location in memory WILL change, and the old objects will not manipulate 
-    the correct data. In addition it is possible for a VertexModel to be GC'd 
-    while you keep a Vertex alive, also resulting into the Vertex manipulating 
+    This will retrieve a Vertex object that can manipulate the data of the
+    specified vertex. You should be careful about holding onto the vertex
+    objects as if you either adjust the **index_count** or **vertex_count**
+    the location in memory WILL change, and the old objects will not manipulate
+    the correct data. In addition it is possible for a VertexModel to be GC'd
+    while you keep a Vertex alive, also resulting into the Vertex manipulating
     the wrong data.
 
-    You can change the size of either the index or vertex data on a model, but 
-    you cannot change its FormatConfig. If you need to change a model's vertex 
-    format, you should instead create a new model. If you change a model, you 
-    should first unbatch all entities that are using that model and then 
-    rebatch them after changes have been completed. If your model is only used 
-    by a single entity, the RenderComponent properties will assist in doing 
-    this. 
+    You can change the size of either the index or vertex data on a model, but
+    you cannot change its FormatConfig. If you need to change a model's vertex
+    format, you should instead create a new model. If you change a model, you
+    should first unbatch all entities that are using that model and then
+    rebatch them after changes have been completed. If your model is only used
+    by a single entity, the RenderComponent properties will assist in doing
+    this.
 
     [Add Note about model entity tracking when implemented]
 
     **Attributes:**
 
     **Attributes: (Cython Access Only)**
-        **vertices_block** (MemoryBlock): The MemoryBlock holding the vertex 
+        **vertices_block** (MemoryBlock): The MemoryBlock holding the vertex
         data for this model.
 
-        **indices_block** (MemoryBlock): The MemoryBlock holding the indices 
+        **indices_block** (MemoryBlock): The MemoryBlock holding the indices
         data for this model.
 
-        **index_buffer** (Buffer):  The Buffer from which we will actually 
+        **index_buffer** (Buffer):  The Buffer from which we will actually
         allocate the **indices_block**. Used when **index_count** changes.
 
         **vertex_buffer** (Buffer):  The Buffer from which we will actually
         allocate the **vertices_block**. Used when **vertex_count** changes.
 
     **Attributes:**
-        **index_count** (unsigned int): The number of indices in your model. 
+        **index_count** (unsigned int): The number of indices in your model.
         Unbatch any active entities before setting and rebatch afterwards.
 
-        **vertex_count** (unsigned int): The number of vertices in your model. 
+        **vertex_count** (unsigned int): The number of vertices in your model.
         Unbatch any active entities before setting and rebatch afterwards.
 
-        **name** (str): The name of this model, as kept track of by the 
+        **name** (str): The name of this model, as kept track of by the
         ModelManager.
 
-        **format_config** (FormatConfig): The vertex format for this model. 
+        **format_config** (FormatConfig): The vertex format for this model.
         Will be set on creation and should not be changed.
 
-        **vertices** (list): Returns a list of Vertex objects for every vertex 
-        in the model. Be careful about keeping the results around. You need to 
-        retrieve a new copy of the list if you for instance change 
-        **vertex_count**. You can supply a dict of key: index of vertex, value 
+        **vertices** (list): Returns a list of Vertex objects for every vertex
+        in the model. Be careful about keeping the results around. You need to
+        retrieve a new copy of the list if you for instance change
+        **vertex_count**. You can supply a dict of key: index of vertex, value
         dict of attribute, value pairs in order to set all vertices at once.
 
         For instance:
@@ -256,18 +256,18 @@ cdef class VertexModel:
                     4: {'pos': (5., -5.), uvs: (1., 0.)},
                 }
 
-        **indices** (list): Returns a list of unsigned shorts specifying the 
-        indices for this model. This is a copy of the actual data, do not 
+        **indices** (list): Returns a list of unsigned shorts specifying the
+        indices for this model. This is a copy of the actual data, do not
         manipulate the returned list directly instead:
 
             .. code-block:: python
 
                 vertex_model.indices = [new index data]
-                
+
     '''
-    
+
     def __cinit__(self, unsigned int vert_count, unsigned int index_count,
-        FormatConfig config, Buffer index_buffer, Buffer vertex_buffer, 
+        FormatConfig config, Buffer index_buffer, Buffer vertex_buffer,
         str name):
         self._format_config = config
         self._vertex_count = vert_count
@@ -315,11 +315,11 @@ cdef class VertexModel:
                 new_indices.allocate_memory_with_buffer(self.index_buffer)
                 if new_count < old_count:
                     old_count = new_count
-                memcpy(<char*>new_indices.data, self.indices_block.data, 
+                memcpy(<char*>new_indices.data, self.indices_block.data,
                     old_count*sizeof(GLushort))
                 self.indices_block.remove_from_buffer()
                 self.indices_block = new_indices
- 
+
         def __get__(self):
             return self._index_count
 
@@ -336,12 +336,12 @@ cdef class VertexModel:
             if new_count != old_count:
                 self._vertex_count = new_count
                 new_vertices = MemoryBlock(
-                    new_count*self._format_config._size, 
+                    new_count*self._format_config._size,
                     self._format_config._size, 1)
                 new_vertices.allocate_memory_with_buffer(self.vertex_buffer)
                 if new_count < old_count:
                     old_count = new_count
-                memcpy(<char*>new_vertices.data, self.vertices_block.data, 
+                memcpy(<char*>new_vertices.data, self.vertices_block.data,
                     old_count*self._format_config._size)
                 self.vertices_block.remove_from_buffer()
                 self.vertices_block = new_vertices
@@ -352,7 +352,7 @@ cdef class VertexModel:
     def free_memory(self):
         '''
         Frees the allocated memory. Do not use the VertexModel after
-        free_memory has been called. Typically called internally by the 
+        free_memory has been called. Typically called internally by the
         ModelManager.
         '''
         if self.indices_block is not None:
@@ -363,11 +363,11 @@ cdef class VertexModel:
             self.vertices_block = None
 
     def copy_vertex_model(self, VertexModel to_copy):
-        '''Copies all the data from the provided VertexModel to this one. Will 
-        possibly change **vertex_count** and **index_count** so make sure to 
-        unbatch and rebatch any Entity referencing this model before and after 
-        calling copy_vertex_model. If you know the models have the same counts 
-        you do not need to do so. 
+        '''Copies all the data from the provided VertexModel to this one. Will
+        possibly change **vertex_count** and **index_count** so make sure to
+        unbatch and rebatch any Entity referencing this model before and after
+        calling copy_vertex_model. If you know the models have the same counts
+        you do not need to do so.
 
         Args:
             to_copy (VertexModel): The model to copy.
@@ -376,22 +376,22 @@ cdef class VertexModel:
         self.vertex_count = to_copy._vertex_count
         self.index_count = to_copy._index_count
         self._format_config = to_copy._format_config
-        memcpy(<char *>self.indices_block.data, to_copy.indices_block.data, 
+        memcpy(<char *>self.indices_block.data, to_copy.indices_block.data,
             self._index_count*sizeof(GLushort))
-        memcpy(<char *>self.vertices_block.data, to_copy.vertices_block.data, 
+        memcpy(<char *>self.vertices_block.data, to_copy.vertices_block.data,
             self._vertex_count * self._format_config._size)
 
     def set_all_vertex_attribute(self, str attribute_name, value):
         '''
-        Sets all vertices attribute to the provided value. More optimized than 
-        doing the same thing on the list provided by **vertices** as only one 
+        Sets all vertices attribute to the provided value. More optimized than
+        doing the same thing on the list provided by **vertices** as only one
         Vertex will be made and its pointer shifted.
 
         Args:
             attribute_name (str): The name of the attribute we will be
             modifying.
 
-            value (any): The value or values to set the attributes of each 
+            value (any): The value or values to set the attributes of each
             vertex to.
 
         '''
@@ -405,17 +405,17 @@ cdef class VertexModel:
 
     def add_all_vertex_attribute(self, str attribute_name, value):
         '''
-        Adds value to the specified attribute of all vertices. More optimized 
-        than doing the same thing on the list provided by **vertices** as only 
+        Adds value to the specified attribute of all vertices. More optimized
+        than doing the same thing on the list provided by **vertices** as only
         one Vertex will be made and its pointer shifted.
 
         Args:
             attribute_name (str): The name of the attribute we will be
             modifying.
 
-            value (any): The value or values to set the attributes of each 
-            vertex to. If the attribute is an array, you can either provide 
-            a separate value for each place or one value that will be added 
+            value (any): The value or values to set the attributes of each
+            vertex to. If the attribute is an array, you can either provide
+            a separate value for each place or one value that will be added
             to all places.
 
         '''
@@ -436,7 +436,7 @@ cdef class VertexModel:
 
     def mult_all_vertex_attribute(self, str attribute_name, value):
         '''
-        Mulitplies value to the specified attribute of all vertices. More 
+        Mulitplies value to the specified attribute of all vertices. More
         optimized than doing the same thing on the list provided by **vertices**
         as only one Vertex will be made and its pointer shifted.
 
@@ -444,9 +444,9 @@ cdef class VertexModel:
             attribute_name (str): The name of the attribute we will be
             modifying.
 
-            value (any): The value or values to set the attributes of each 
-            vertex to. If the attribute is an array, you can either provide 
-            a separate value for each place or one value that will be mulitplied 
+            value (any): The value or values to set the attributes of each
+            vertex to. If the attribute is an array, you can either provide
+            a separate value for each place or one value that will be mulitplied
             to all places.
 
         '''
@@ -467,8 +467,8 @@ cdef class VertexModel:
 
     def set_textured_rectangle(self, float width, float height, list uvs):
         '''
-        Prepare a 4 vertex_count, 6 index_count textured quad (sprite) of 
-        size: width x height. Normally called internally when creating sprites. 
+        Prepare a 4 vertex_count, 6 index_count textured quad (sprite) of
+        size: width x height. Normally called internally when creating sprites.
         Will assume your vertex format have a 'pos' and 'uvs' array of size 2.
 
         Args:
@@ -476,9 +476,9 @@ cdef class VertexModel:
 
             height (float): Height of the quad
 
-            uvs (list): Should be a list of 4 values representing the uv texture 
-            coordinates of the quad. For a texture that took up the whole size 
-            of the image this will be [0., 0., 1., 1.]. uv coordinates are 
+            uvs (list): Should be a list of 4 values representing the uv texture
+            coordinates of the quad. For a texture that took up the whole size
+            of the image this will be [0., 0., 1., 1.]. uv coordinates are
             normalized inside their texture.
 
         '''
@@ -513,7 +513,7 @@ cdef class VertexModel:
 
         def __set__(self, dict vert_dict):
             cdef int vert_count = max(vert_dict)
-            cdef int i 
+            cdef int i
             cdef dict vertex_data
             if vert_count + 1 != self._vertex_count:
                 raise Exception("Provided data doesn't match internal size")

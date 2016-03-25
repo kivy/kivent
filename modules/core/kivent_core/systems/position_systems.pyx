@@ -12,7 +12,7 @@ cdef class PositionComponent2D(MemComponent):
 
     **Attributes:**
         **entity_id** (unsigned int): The entity_id this component is currently
-        associated with. Will be <unsigned int>-1 if the component is 
+        associated with. Will be <unsigned int>-1 if the component is
         unattached.
 
         **x** (float): The x position of the center of the entity.
@@ -21,7 +21,7 @@ cdef class PositionComponent2D(MemComponent):
 
         **pos** (tuple): A tuple of the (x, y) position.
     '''
-    
+
     property entity_id:
         def __get__(self):
             cdef PositionStruct2D* data = <PositionStruct2D*>self.pointer
@@ -56,16 +56,16 @@ cdef class PositionComponent2D(MemComponent):
 cdef class PositionSystem2D(StaticMemGameSystem):
     '''
     PositionSystem2D abstracts 2 dimensional position data out into its own
-    system so that all other GameSystem can interact with the position of an 
-    Entity without having to know specifically about dependent systems such as 
-    the CymunkPhysics system or any other method of determining the actual 
+    system so that all other GameSystem can interact with the position of an
+    Entity without having to know specifically about dependent systems such as
+    the CymunkPhysics system or any other method of determining the actual
     position. This GameSystem does no processing of its own, just holding data.
     '''
     type_size = NumericProperty(sizeof(PositionStruct2D))
     component_type = ObjectProperty(PositionComponent2D)
     system_id = StringProperty('position')
-        
-    def init_component(self, unsigned int component_index, 
+
+    def init_component(self, unsigned int component_index,
         unsigned int entity_id, str zone, args):
         '''A PositionComponent2D is initialized with an args tuple of (x, y).
         '''

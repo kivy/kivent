@@ -22,4 +22,3 @@ cdef class CMesh(VertexInstruction):
             self._batch.current_frame += 1
             self.flag_update_done()
         self._batch.draw_frame()
-

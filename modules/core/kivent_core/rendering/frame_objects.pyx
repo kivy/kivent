@@ -2,20 +2,20 @@ from kivent_core.memory_handlers.block cimport MemoryBlock
 from vertex_format cimport KEVertexFormat
 from fixedvbo cimport FixedVBO
 
-cdef class FixedFrameData: 
+cdef class FixedFrameData:
     '''The FixedFrameData manages 2 FixedVBO, suitable for rendering using the
-    GL_TRIANGLES mode. One FixedVBO will hold the indices data and the other 
-    the actual vertex data. 
+    GL_TRIANGLES mode. One FixedVBO will hold the indices data and the other
+    the actual vertex data.
 
     **Attributes: (Cython Access Only)**
-        **index_vbo** (FixedVBO): The FixedVBO holding indices data. Will 
+        **index_vbo** (FixedVBO): The FixedVBO holding indices data. Will
         have the target: GL_ELEMENTS_ARRAY_BUFFER.
 
-        **vertex_vbo** (FixedVBO): The FixedVBO holding vertex data. Will 
+        **vertex_vbo** (FixedVBO): The FixedVBO holding vertex data. Will
         have the target: GL_ARRAY_BUFFER.
     '''
 
-    def __cinit__(self, MemoryBlock index_block, MemoryBlock vertex_block, 
+    def __cinit__(self, MemoryBlock index_block, MemoryBlock vertex_block,
         KEVertexFormat vertex_format):
         '''When initializing a FixedFrameData we must pass in the MemoryBlock
         that will be used to store the data, and the KEVertexFormat specifying
@@ -34,7 +34,7 @@ cdef class FixedFrameData:
             vertex_format, vertex_block, 'stream', 'array')
 
     cdef void return_memory(self):
-        '''Returns the memory held by **index_vbo** and **vertex_vbo** by 
+        '''Returns the memory held by **index_vbo** and **vertex_vbo** by
         calling their respective return_memory functions'''
         self.index_vbo.return_memory()
         self.vertex_vbo.return_memory()

@@ -20,8 +20,8 @@ cdef class MemoryZone:
     cdef unsigned int get_block_from_index(self, unsigned int index)
     cdef unsigned int get_slot_index_from_index(self, unsigned int index)
     cdef MemoryBlock get_memory_block_from_index(self, unsigned int index)
-    cdef unsigned int get_index_from_slot_block_pool_index(self, 
-        unsigned int slot_index, unsigned int block_index, 
+    cdef unsigned int get_index_from_slot_block_pool_index(self,
+        unsigned int slot_index, unsigned int block_index,
         unsigned int pool_index)
     cdef tuple get_pool_block_slot_indices(self, unsigned int index)
     cdef unsigned int get_free_slot(self, str reserved_hint) except -1
@@ -32,9 +32,3 @@ cdef class MemoryZone:
     cdef unsigned int get_pool_index_from_name(self, str zone_name)
     cdef unsigned int get_pool_offset(self, unsigned int pool_index)
     cdef unsigned int get_size(self)
-
-
-
-
-
-

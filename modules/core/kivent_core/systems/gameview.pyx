@@ -9,6 +9,7 @@ from kivy.graphics.transformation import Matrix
 from kivy.graphics import RenderContext
 from kivy.factory import Factory
 from kivy.input import MotionEvent
+from math import sin, cos
 
 
 cdef class GameView(GameSystem):
@@ -70,6 +71,7 @@ cdef class GameView(GameSystem):
     do_scroll_lock = BooleanProperty(True)
     camera_pos = ListProperty((0, 0))
     camera_scale = NumericProperty(1.0)
+    camera_rotate = NumericProperty(0)
     focus_entity = BooleanProperty(False)
     do_touch_zoom = BooleanProperty(False)
     do_scroll = BooleanProperty(True)
@@ -92,6 +94,11 @@ cdef class GameView(GameSystem):
         self._touches = []
         self.canvas = RenderContext()
 
+    def _rotate_point(self, point, angle):
+        cos_r, sin_r = cos(angle), sin(angle)
+        return (cos_r * point[0] + sin_r * point[1],
+                -sin_r * point[0] + cos_r * point[1])
+
     def get_camera_centered(self, map_size, camera_size, camera_scale):
         x = max((camera_size[0]*camera_scale - map_size[0])/2., 0.)
         y = max((camera_size[1]*camera_scale - map_size[1])/2., 0.)
@@ -106,12 +113,15 @@ cdef class GameView(GameSystem):
         camera_size = self.window_size
         x, y = self.pos
         camera_scale = self.camera_scale
-        proj = self.matrix.view_clip(
-            -camera_pos[0],
-            camera_size[0]*camera_scale + -camera_pos[0],
-            -camera_pos[1],
-            camera_size[1]*camera_scale + -camera_pos[1],
-            0., 100, 0)
+        proj = Matrix()
+        proj.translate(camera_pos[0], camera_pos[1], 0)
+        proj.rotate(self.camera_rotate, 0, 0, 1)
+        proj = Matrix().view_clip(
+                0,
+                camera_size[0]*camera_scale,
+                0,
+                camera_size[1]*camera_scale,
+                0., 100, 0).multiply(proj)
 
         self.canvas['projection_mat'] = proj
 
@@ -237,9 +247,12 @@ cdef class GameView(GameSystem):
         rx, ry = self.pos
         cx, cy = self.camera_pos
         #touch pos converted to widget space
-        wx, wy = x - rx, y - ry
+        wx, wy = x - rx - cx, y - ry - cy
+        #rotate the translated point by -camera_rotate
+        camera_x, camera_y = self._rotate_point((wx,wy),self.camera_rotate)
+
         camera_scale = self.camera_scale
-        camera_x, camera_y = (wx * camera_scale) - cx, (wy * camera_scale) - cy
+        camera_x, camera_y = (camera_x * camera_scale), (camera_y * camera_scale)
 
         return camera_x, camera_y
 

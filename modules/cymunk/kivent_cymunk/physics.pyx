@@ -23,9 +23,10 @@ from kivent_core.managers.system_manager cimport SystemManager
 
 cdef class PhysicsComponent(MemComponent):
     '''
-    The PhysicsComponent mainly exposes the ability to retrieve cymunk 
-    objects you will want to review the documentation for the various parts of 
-    cymunk (and Chipmunk2D's documentation) to properly use this system.
+    The PhysicsComponent mainly exposes the ability to retrieve cymunk
+    objects. You will want to review the documentation for the various parts of
+    cymunk (and `Chipmunk2D's documentation <https://chipmunk-physics.net/>`_)
+    to properly use this system.
 
 
     **Attributes:**
@@ -33,8 +34,8 @@ cdef class PhysicsComponent(MemComponent):
         associated with. Will be <unsigned int>-1 if the component is
         unattached.
 
-        **body** (Body): returns the cymunk.Body for your physics component.
-        Only set this if you are handling the adding and removal of your 
+        **body** (Body): returns the `cymunk.Body` for your physics component.
+        Only set this if you are handling the adding and removal of your
         physics body from the cymunk.Space yourself.
 
         **unit_vector** (tuple): Returns the current unit_vector describing
@@ -86,23 +87,28 @@ cdef class PhysicsComponent(MemComponent):
 
 
 cdef class CymunkPhysics(StaticMemGameSystem):
-    '''
-    Processing Depends On: PositionSystem2D, RotateSystem2D, CymunkPhysics
+    '''Processing Depends On: :class:`~kivent_core.systems.position_systems.PositionSystem2D`,
+    :class:`~kivent_core.systems.rotate_systems.RotateSystem2D`,
+    :class:`~kivent_cymunk.physics.CymunkPhysics`
 
-    CymunkPhysics is a GameSystem that interacts with the Cymunk Port of
-    the Chipmunk2d Physics Engine. Check the docs for Chipmunk2d to get an
-    overview of how to work with Cymunk. https://chipmunk-physics.net/
+    CymunkPhysics is a **GameSystem** that interacts with the
+    Cymunk Port of the `Chipmunk2d Physics Engine
+    <https://chipmunk-physics.net/>`_.  Check the `docs for Chipmunk2d
+    <https://chipmunk-physics.net/documentation.php>`_ to get an
+    overview of how to work with Cymunk.
 
-    This GameSystem is dependent on the PositionComponent2D and 
-    RotateComponent2d in addition to its own component. It will write out 
-    the position and rotation of the cymunk.Body associated with your entity 
-    every frame to these components.
+    This GameSystem is dependent on the
+    :class:`~kivent_core.systems.position_systems.PositionComponent2D`
+    and :class:`~kivent_core.systems.rotate_systems.RotateComponent2D`
+    in addition to its own component. It will write out the position
+    and rotation of the `cymunk.Body` associated with your entity every
+    frame to these components.
 
     **Attributes:**
         **space** (ObjectProperty): The Cymunk Space the physics system is
         using
 
-        **gravity** (ListProperty): The (x, y) gravity for the space.
+        **gravity** (ListProperty): The (x, y) gravity vector for the space.
 
         **iterations** (NumericProperty): Number of solving iterations
         for the Space
@@ -110,12 +116,12 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         **sleep_time_threshold** (NumericProperty): How long a Body is
         inactive in order to be slept in the space
 
-        **collision_slop** (NumericProperty): Collision_slop for the Space 
-        (how much collisions can overlap)
+        **collision_slop** (NumericProperty): Collision_slop for the Space;
+        i.e. how much collisions can overlap.
 
-        **damping** (NumericProperty): Damping for the Space, this is sort of 
-        like a global kind of friction, all velocities will be reduced to 
-        damping*initial_velocity every update tick. 
+        **damping** (NumericProperty): Damping for the Space. This is sort of
+        like a global kind of friction. All velocities will be reduced to
+        ``damping*initial_velocity`` every update tick.
 
     '''
     system_id = StringProperty('cymunk_physics')
@@ -163,7 +169,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
 
         Kwargs:
 
-            begin_func (function): calledwhen collision between 2 shapes begins
+            begin_func (function): called (once) when collision between 2 shapes first begins
 
             pre_solve_func (function): called before every solve of the physics
             space where a collision persists
@@ -171,8 +177,8 @@ cdef class CymunkPhysics(StaticMemGameSystem):
             post_solve_func (function): called after every solve of the physics
             space where a collision persists
 
-            separate_func (function): called when collision between 2 shapes 
-            ends
+            separate_func (function): called (once) when collision between 2 shapes
+            finally ends
 
 
         Function to add collision handlers for collisions between
@@ -182,7 +188,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         to be ignored
 
         Functions should accept args: space, arbiter
-        You can then retrieve the entity_id's of the colliding shapes with:
+        You can then retrieve the ``entity_id``'s of the colliding shapes with:
 
         .. code-block:: python
 
@@ -301,18 +307,20 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         .. code-block:: python
 
             args = {
-                'entity_id': id, 
-                'main_shape': string_shape_name, 
-                'velocity': (x, y), 
-                'position': (x, y), 
-                'angle': radians, 
-                'angular_velocity': radians, 
-                'mass': float, 
+                'entity_id': id,
+                'main_shape': string_shape_name,
+                'velocity': (x, y),
+                'vel_limit': float,
+                'position': (x, y),
+                'angle': radians,
+                'angular_velocity': radians,
+                'ang_vel_limit': float,
+                'mass': float,
                 'col_shapes': [col_shape_dicts],
                 'moment': float
                 }
 
-        moment if not specified will be computed from component shapes
+        moment (if not specified) will be computed from component shapes
 
         The col_shape_dicts look like:
 

@@ -109,7 +109,7 @@ cdef class GameView(GameSystem):
         Used internally by gameview to update the projection matrix to properly
         reflect the settings for camera_size, camera_pos, and the pos and size
         of gameview.'''
-        camera_pos = self._rotate_point(self.camera_pos, self.camera_rotate)
+        camera_pos = self._rotate_point(self.camera_pos, -self.camera_rotate)
         camera_size = self.size
         x, y = self.pos
         camera_scale = self.camera_scale
@@ -167,13 +167,19 @@ cdef class GameView(GameSystem):
             entity_to_focus = self.entity_to_focus
             entity = gameworld.entities[entity_to_focus]
             position_data = entity.position
+            # camera_pos = self._rotate_point(self.camera_pos, self.camera_rotate)
             camera_pos = self.camera_pos
             camera_speed_multiplier = self.camera_speed_multiplier
             camera_size = self.size
             camera_scale = self.camera_scale
             size = camera_size[0] * camera_scale, camera_size[1] * camera_scale
-            dist_x = -camera_pos[0] - position_data.x + size[0]*.5
-            dist_y = -camera_pos[1] - position_data.y + size[1]*.5
+
+            screen_center = (size[0]*0.5, size[1]*0.5)
+            screen_center = self._rotate_point(screen_center, self.camera_rotate)
+
+            dist_x = -camera_pos[0] - position_data.x + screen_center[0]
+            dist_y = -camera_pos[1] - position_data.y + screen_center[1]
+
             if self.do_scroll_lock:
                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
             self.camera_pos[0] += dist_x*camera_speed_multiplier*dt
@@ -246,11 +252,11 @@ cdef class GameView(GameSystem):
         #pos of widget
         rx, ry = self.pos
         cx, cy = self.camera_pos
-        #touch pos converted to widget space
+        #rotated touch pos converted to widget space
+        x, y = self._rotate_point((x, y), self.camera_rotate)
         wx, wy = x - rx - cx, y - ry - cy
-        #rotate the translated point by -camera_rotate
-        camera_x, camera_y = self._rotate_point((wx,wy),self.camera_rotate)
 
+        camera_x, camera_y = wx, wy
         camera_scale = self.camera_scale
         camera_x, camera_y = (camera_x * camera_scale), (camera_y * camera_scale)
 

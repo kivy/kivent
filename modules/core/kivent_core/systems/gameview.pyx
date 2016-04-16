@@ -1,7 +1,7 @@
 # cython: embedsignature=True
 from gamesystem cimport GameSystem
 from kivy.properties import (StringProperty, ListProperty,
-    NumericProperty, BooleanProperty, ObjectProperty)
+    NumericProperty, BooleanProperty, ObjectProperty, AliasProperty)
 from kivy.clock import Clock
 from kivy.vector import Vector
 from kivent_core.managers.system_manager cimport SystemManager
@@ -9,7 +9,7 @@ from kivy.graphics.transformation import Matrix
 from kivy.graphics import RenderContext
 from kivy.factory import Factory
 from kivy.input import MotionEvent
-from math import sin, cos
+from libc.math cimport sin, cos
 
 
 cdef class GameView(GameSystem):
@@ -30,6 +30,11 @@ cdef class GameView(GameSystem):
         compared to the physical size of the GameView, therefore 2x will show
         twice as much of your gameworld, appearing 'zoomed out', while .5 will
         show half as much of the gameworld, appearing 'zoomed in'.
+
+        **camera_rotate** (NumericProperty): Current angle in radians by which the
+        camera is rotated anti-clockwise with respect to the world x-axis.
+        Every time this value is updated, the rotation takes place about the
+        center of the screen.
 
         **focus_entity** (BooleanProperty): If True the camera will follow the
         entity set in entity_to_focus
@@ -87,6 +92,7 @@ cdef class GameView(GameSystem):
     window_size = ListProperty((100., 100.))
     touch_pass_through = BooleanProperty(False)
 
+
     def __init__(self, **kwargs):
         super(GameView, self).__init__(**kwargs)
         self.matrix = Matrix()
@@ -99,6 +105,25 @@ cdef class GameView(GameSystem):
         return (cos_r * point[0] + sin_r * point[1],
                 -sin_r * point[0] + cos_r * point[1])
 
+    def convert_to_rotated_space(self, point):
+        camera_pos = self.camera_pos
+        camera_size = self.size
+        camera_scale = self.camera_scale
+        camera_rotate =self.camera_rotate
+
+        screen_center = (camera_size[0] * camera_scale * 0.5 - camera_pos[0],
+                         camera_size[1] * camera_scale * 0.5 - camera_pos[1])
+        screen_center_rotated = self._rotate_point(screen_center, -camera_rotate)
+
+        m = Matrix()
+        m.translate(screen_center[0], screen_center[1], 0)
+        m.rotate(self.camera_rotate, 0, 0, 1)
+        m.translate(-screen_center_rotated[0], -screen_center_rotated[1], 0)
+
+        p = (point[0] * m[0] + point[1] * m[4] + m[12],
+             point[0] * m[1] + point[1] * m[5] + m[13])
+        return p
+
     def get_camera_centered(self, map_size, camera_size, camera_scale):
         x = max((camera_size[0]*camera_scale - map_size[0])/2., 0.)
         y = max((camera_size[1]*camera_scale - map_size[1])/2., 0.)
@@ -109,7 +134,8 @@ cdef class GameView(GameSystem):
         Used internally by gameview to update the projection matrix to properly
         reflect the settings for camera_size, camera_pos, and the pos and size
         of gameview.'''
-        camera_pos = self._rotate_point(self.camera_pos, -self.camera_rotate)
+        camera_pos = self.convert_to_rotated_space(self.camera_pos)
+        print camera_pos
         camera_size = self.size
         x, y = self.pos
         camera_scale = self.camera_scale
@@ -167,8 +193,7 @@ cdef class GameView(GameSystem):
             entity_to_focus = self.entity_to_focus
             entity = gameworld.entities[entity_to_focus]
             position_data = entity.position
-            # camera_pos = self._rotate_point(self.camera_pos, self.camera_rotate)
-            camera_pos = self.camera_pos
+            camera_pos = self.convert_to_rotated_space(self.camera_pos)
             camera_speed_multiplier = self.camera_speed_multiplier
             camera_size = self.size
             camera_scale = self.camera_scale
@@ -251,7 +276,7 @@ cdef class GameView(GameSystem):
         x,y = pos
         #pos of widget
         rx, ry = self.pos
-        cx, cy = self.camera_pos
+        cx, cy = self.convert_to_rotated_space(self.camera_pos)
         #rotated touch pos converted to widget space
         x, y = self._rotate_point((x, y), self.camera_rotate)
         wx, wy = x - rx - cx, y - ry - cy

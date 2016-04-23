@@ -54,7 +54,7 @@ def test_multi_buffer(self, num_buffers, size_in_kb):
 def test_buffer(size_in_kb):
     master_buffer = Buffer(size_in_kb, 1024, 1)
     master_buffer.allocate_memory()
-    
+
     mem_blocks = []
     for x in range(8):
         mem_blocks.append(test_block(master_buffer, x))
@@ -99,7 +99,7 @@ def test_block_read(MemoryBlock mem_block, float block_index):
         mem_test = <Test*>mem_block.get_pointer(i)
         assert(mem_test.x==block_index)
         assert(mem_test.y==block_index)
-    
+
 def test_block(master_buffer, float block_index):
     cdef Test* mem_test
     mem_block_1 = MemoryBlock(1, 16, sizeof(Test))
@@ -108,7 +108,7 @@ def test_block(master_buffer, float block_index):
         mem_test = <Test*>mem_block_1.get_pointer(i)
         mem_test.x = block_index
         mem_test.y = block_index
-    
+
     return mem_block_1
 
 def test_pool(size_in_kb, size_of_pool):
@@ -214,7 +214,7 @@ def test_zone_index(size_in_kb, pool_block_size, general_count, test_count):
         assert(test_mem.x==float(i))
         assert(test_mem.y==float(i))
 
-def test_indexed_memory_zone(size_in_kb, pool_block_size, 
+def test_indexed_memory_zone(size_in_kb, pool_block_size,
     general_count, test_count):
     reserved_spec = {
         'general': 200,
@@ -222,9 +222,9 @@ def test_indexed_memory_zone(size_in_kb, pool_block_size,
     }
     master_buffer = Buffer(size_in_kb, 1024, 1)
     master_buffer.allocate_memory()
-    cdef IndexedMemoryZone memory_index = IndexedMemoryZone(master_buffer, 
+    cdef IndexedMemoryZone memory_index = IndexedMemoryZone(master_buffer,
         pool_block_size, sizeof(int)*8, reserved_spec, TestComponent)
-    cdef IndexedMemoryZone memory_index_2 = IndexedMemoryZone(master_buffer, 
+    cdef IndexedMemoryZone memory_index_2 = IndexedMemoryZone(master_buffer,
         pool_block_size, sizeof(Test), {'general': 200}, TestComponent)
     cdef unsigned int index
     cdef list indices = []
@@ -252,11 +252,9 @@ def test_indexed_memory_zone(size_in_kb, pool_block_size,
         print(entity._id, index, 'in creation')
         entity = memory_index_2[index2]
         print(entity._id, index, 'in creation 2')
-        
+
     for entity in memrange(memory_index):
         print entity._id
 
     for entity in memrange(memory_index, zone='test'):
         print entity._id
-
-

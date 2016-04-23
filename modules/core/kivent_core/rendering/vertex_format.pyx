@@ -5,7 +5,7 @@ from cython cimport Py_ssize_t
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from kivy.graphics.shader cimport Shader
 from kivy.graphics.c_opengl cimport (GL_FLOAT, GLfloat, GLsizei, GL_FALSE,
-    glVertexAttribPointer ,GLvoid, GL_BYTE, GLbyte, GL_SHORT, GLshort, 
+    glVertexAttribPointer ,GLvoid, GL_BYTE, GLbyte, GL_SHORT, GLshort,
     GL_INT, GLint, GL_UNSIGNED_BYTE, GLubyte, GL_UNSIGNED_SHORT, GLushort,
     GL_UNSIGNED_INT, GLuint, GL_TRUE)
 from kivy.graphics.instructions cimport getActiveContext
@@ -13,14 +13,14 @@ from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 
 
 cdef class KEVertexFormat(VertexFormat):
-    '''VertexFormat is used to describe the layout of the vertex data stored 
+    '''VertexFormat is used to describe the layout of the vertex data stored
     in vertex arrays/vbo's. It differs from the Kivy VertexFormat by tracking
-    the offsets of the individual attributes so that you can interleave 
+    the offsets of the individual attributes so that you can interleave
     non-homogenous data types.
 
     Supported attribute types are:
         'float': GLfloat
-        'byte': GLbyte 
+        'byte': GLbyte
         'ubyte': GLubyte
         'int': GLint
         'uint': GLuint
@@ -28,9 +28,9 @@ cdef class KEVertexFormat(VertexFormat):
         'ushort': GLushort
 
     **Attributes: (Cython Access Only)**
-        attr_offsets (Py_ssize_t*): Pointer to the array containing the 
-        offsets for each attribute of the VertexFormat. Separate from 
-        the rest of the data to maintain compatibility with the Kivy 
+        attr_offsets (Py_ssize_t*): Pointer to the array containing the
+        offsets for each attribute of the VertexFormat. Separate from
+        the rest of the data to maintain compatibility with the Kivy
         VertexFormat.
     '''
     def __cinit__(self, size_in_bytes, *fmt):
@@ -46,17 +46,17 @@ cdef class KEVertexFormat(VertexFormat):
 
     def __init__(self, size_in_bytes, *fmt):
         '''When creating a KEVertexFormat size_in_bytes should be the sizeof
-        result for the struct being used to hold vertex data. The vertex fmt 
-        arg differs slightly from the one found in the default kivy by 
-        including the offset in bytes of the attr in the struct. You can 
+        result for the struct being used to hold vertex data. The vertex fmt
+        arg differs slightly from the one found in the default kivy by
+        including the offset in bytes of the attr in the struct. You can
         see examples in the vertex_formats.pyx.
 
         Args:
             size_in_bytes (unsigned int): The sizeof of the struct being used
             to hold vertex data.
 
-            fmt (list): List of ('vert name' (bytes), count(unsigned int), 
-            'type'(str), offsetof(attr)(unsigned int)) tuples representing the 
+            fmt (list): List of ('vert name' (bytes), count(unsigned int),
+            'type'(str), offsetof(attr)(unsigned int)) tuples representing the
             vertex data.
         '''
         cdef vertex_attr_t *attr
@@ -144,6 +144,6 @@ cdef class KEVertexFormat(VertexFormat):
                 continue
             #commentout for sphinx
             glVertexAttribPointer(attr.index, attr.size, attr.type,
-                    self.attr_normalize[i], <GLsizei>vbytesize, 
+                    self.attr_normalize[i], <GLsizei>vbytesize,
                     <GLvoid*><long>offsets[i])
             gl_log_debug_message('KEVertexFormat.bind-glVertexAttribPointer')

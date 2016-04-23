@@ -12,11 +12,11 @@ cdef class MemoryPool:
     cdef MemoryBlock master_block
     cdef unsigned int block_count
     cdef unsigned int slots_per_block
-    
+
     cdef unsigned int get_block_from_index(self, unsigned int index)
     cdef unsigned int get_slot_index_from_index(self, unsigned int index)
     cdef MemoryBlock get_memory_block_from_index(self, unsigned int index)
-    cdef unsigned int get_index_from_slot_index_and_block(self, 
+    cdef unsigned int get_index_from_slot_index_and_block(self,
         unsigned int slot_index, unsigned int block_index)
     cdef void* get_pointer(self, unsigned int index) except NULL
     cdef unsigned int get_free_slot(self) except -1

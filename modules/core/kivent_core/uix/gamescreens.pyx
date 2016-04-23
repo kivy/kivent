@@ -19,10 +19,9 @@ class GameScreenManager(ScreenManager):
 
     def on_touch_up(self, touch):
         super(GameScreenManager, self).on_touch_up(touch)
-        
+
     def on_touch_move(self, touch):
         super(GameScreenManager, self).on_touch_move(touch)
-        
+
 class GameScreen(Screen):
     name = StringProperty('default_screen_id')
-

@@ -1,6 +1,8 @@
 import os
 import sys
 from setuptools import setup, find_packages
+
+os.environ['KIVY_DOC_INCLUDE'] = '1'
 import kivy
 
 os.environ['KIVENT_PREVENT_INIT'] = '1'

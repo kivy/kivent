@@ -1,5 +1,8 @@
+import os
 import sys
 from setuptools import setup, find_packages
+
+os.environ['KIVY_DOC_INCLUDE'] = '1'
 import kivy
 
 if sys.platform == 'win32':

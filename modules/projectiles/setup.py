@@ -1,6 +1,10 @@
+import os
 import sys
 from setuptools import setup, find_packages
 import cymunk
+
+os.environ['KIVENT_PREVENT_INIT'] = '1'
+from kivent_projectiles import __VERSION__
 
 if sys.platform == 'win32':
     compile_args = ['-std=gnu99', '-ffast-math']
@@ -11,6 +15,7 @@ else:
 
 setup(
     name='KivEnt.Projectiles',
+    version=__VERSION__,
     description='''A game engine for the Kivy Framework.
         https://github.com/Kovak/KivEnt for more info.''',
     author='Jacob Kovac',

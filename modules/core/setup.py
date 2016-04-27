@@ -1,6 +1,12 @@
+import os
 import sys
 from setuptools import setup, find_packages
+
+os.environ['KIVY_DOC_INCLUDE'] = '1'
 import kivy
+
+os.environ['KIVENT_PREVENT_INIT'] = '1'
+from kivent_core import __VERSION__
 
 if sys.platform == 'win32':
     compile_args = ['-std=gnu99', '-ffast-math']
@@ -11,6 +17,7 @@ else:
 
 setup(
     name='KivEnt.Core',
+    version=__VERSION__,
     description='''A game engine for the Kivy Framework.
         https://github.com/Kovak/KivEnt for more info.''',
     author='Jacob Kovac',

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION_kivent_particles=2.0.0
+VERSION_kivent_particles=1.0.0
 URL_kivent_particles=https://github.com/kivy/KivEnt/archive/master.zip
 MD5_kivent_particles=
 DEPS_kivent_particles=(python kivy)

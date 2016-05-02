@@ -1,11 +1,11 @@
 # cython: embedsignature=True
 from gamesystem cimport GameSystem
 from kivy.properties import (StringProperty, ListProperty,
-    NumericProperty, BooleanProperty, ObjectProperty, AliasProperty)
+    NumericProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
 from kivy.vector import Vector
 from kivent_core.managers.system_manager cimport SystemManager
-from kivy.graphics.transformation import Matrix
+from kivy.graphics.transformation cimport Matrix
 from kivy.graphics import RenderContext
 from kivy.factory import Factory
 from kivy.input import MotionEvent
@@ -32,7 +32,7 @@ cdef class GameView(GameSystem):
         show half as much of the gameworld, appearing 'zoomed in'.
 
         **camera_rotate** (NumericProperty): Current angle in radians by which the
-        camera is rotated anti-clockwise with respect to the world x-axis.
+        camera is rotated clockwise with respect to the world x-axis.
         Every time this value is updated, the rotation takes place about the
         center of the screen.
 
@@ -105,11 +105,12 @@ cdef class GameView(GameSystem):
         return (cos_r * point[0] + sin_r * point[1],
                 -sin_r * point[0] + cos_r * point[1])
 
-    def convert_to_rotated_space(self, point):
+    def convert_to_rotated_space(self, point, invert=False):
+        '''Convert a point from normal to rotated space and back using the invert parameter'''
         camera_pos = self.camera_pos
         camera_size = self.size
         camera_scale = self.camera_scale
-        camera_rotate =self.camera_rotate
+        camera_rotate = self.camera_rotate
 
         screen_center = (camera_size[0] * camera_scale * 0.5 - camera_pos[0],
                          camera_size[1] * camera_scale * 0.5 - camera_pos[1])
@@ -117,8 +118,11 @@ cdef class GameView(GameSystem):
 
         m = Matrix()
         m.translate(screen_center[0], screen_center[1], 0)
-        m.rotate(self.camera_rotate, 0, 0, 1)
+        m.rotate(camera_rotate, 0, 0, 1)
         m.translate(-screen_center_rotated[0], -screen_center_rotated[1], 0)
+
+        if invert:
+            m = m.inverse()
 
         p = (point[0] * m[0] + point[1] * m[4] + m[12],
              point[0] * m[1] + point[1] * m[5] + m[13])
@@ -134,8 +138,7 @@ cdef class GameView(GameSystem):
         Used internally by gameview to update the projection matrix to properly
         reflect the settings for camera_size, camera_pos, and the pos and size
         of gameview.'''
-        camera_pos = self.convert_to_rotated_space(self.camera_pos)
-        print camera_pos
+        camera_pos = self.convert_to_rotated_space((-self.camera_pos[0], -self.camera_pos[0]))
         camera_size = self.size
         x, y = self.pos
         camera_scale = self.camera_scale
@@ -193,20 +196,23 @@ cdef class GameView(GameSystem):
             entity_to_focus = self.entity_to_focus
             entity = gameworld.entities[entity_to_focus]
             position_data = entity.position
-            camera_pos = self.convert_to_rotated_space(self.camera_pos)
+            camera_pos = self.camera_pos
             camera_speed_multiplier = self.camera_speed_multiplier
             camera_size = self.size
             camera_scale = self.camera_scale
             size = camera_size[0] * camera_scale, camera_size[1] * camera_scale
 
             screen_center = (size[0]*0.5, size[1]*0.5)
-            screen_center = self._rotate_point(screen_center, self.camera_rotate)
+            # screen_center = self._rotate_point(screen_center, -self.camera_rotate)
 
             dist_x = -camera_pos[0] - position_data.x + screen_center[0]
             dist_y = -camera_pos[1] - position_data.y + screen_center[1]
 
             if self.do_scroll_lock:
                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
+
+            print position_data.x, position_data.y, camera_pos, screen_center
+            # dist_x, dist_y = self.convert_to_rotated_space((dist_x, dist_y))
             self.camera_pos[0] += dist_x*camera_speed_multiplier*dt
             self.camera_pos[1] += dist_y*camera_speed_multiplier*dt
         self.update_render_state()
@@ -273,17 +279,16 @@ cdef class GameView(GameSystem):
     def convert_from_screen_to_world(self, pos):
         '''Converts the coordinates of pos from screen space to camera space'''
         #pos of touch
-        x,y = pos
+        x,y = self.convert_to_rotated_space(pos, invert=True)
         #pos of widget
         rx, ry = self.pos
-        cx, cy = self.convert_to_rotated_space(self.camera_pos)
+        cx, cy = self.camera_pos
         #rotated touch pos converted to widget space
-        x, y = self._rotate_point((x, y), self.camera_rotate)
         wx, wy = x - rx - cx, y - ry - cy
 
-        camera_x, camera_y = wx, wy
         camera_scale = self.camera_scale
-        camera_x, camera_y = (camera_x * camera_scale), (camera_y * camera_scale)
+        camera_x, camera_y = wx * camera_scale, wy * camera_scale
+        print camera_x, camera_y
 
         return camera_x, camera_y
 

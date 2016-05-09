@@ -1,20 +1,17 @@
 from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
+from rendering.animation cimport FrameList, Frame
+from cpython cimport bool
 
 
 ctypedef struct AnimationStruct:
     unsigned int entity_id
-    FrameStruct** frames
-    unsigned int frame_count
-    unsigned int current_frame
+    FrameList* frame_list
+    unsigned int current_frame_index
     unsigned int current_duration
-
-ctypedef struct FrameStruct:
-    unsigned int texkey
-    void* model
-    unsigned int duration
+    bool loop
 
 cdef class AnimationComponent(MemComponent):
-    cdef FrameStruct* get_current_frame(self)
+    cdef Frame get_current_frame(self)
 
 cdef class AnimationSystem(StaticMemGameSystem):
     pass

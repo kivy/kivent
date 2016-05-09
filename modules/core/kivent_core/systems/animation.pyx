@@ -16,23 +16,14 @@ cdef class AnimationComponent(MemComponent):
             cdef AnimationStruct* data = <AnimationStruct*>self.pointer
             return data.entity_id
 
-    property frame_count:
+    property current_frame_index:
         def __get__(self):
             cdef AnimationStruct* data = <AnimationStruct*>self.pointer
-            return data.frame_count
+            return data.current_frame_index
 
         def __set__(self, unsigned int value):
             cdef AnimationStruct* data = <AnimationStruct*>self.pointer
-            data.frame_count = value
-
-    property current_frame:
-        def __get__(self):
-            cdef AnimationStruct* data = <AnimationStruct*>self.pointer
-            return data.current_frame
-
-        def __set__(self, unsigned int value):
-            cdef AnimationStruct* data = <AnimationStruct*>self.pointer
-            data.current_frame = value
+            data.current_frame_index = value
 
     property current_duration:
         def __get__(self):
@@ -42,10 +33,6 @@ cdef class AnimationComponent(MemComponent):
         def __set__(self, unsigned int value):
             cdef AnimationStruct* data = <AnimationStruct*>self.pointer
             data.current_duration = value
-
-    cdef FrameStruct* get_current_frame(self):
-        cdef AnimationStruct* data = <AnimationStruct*>self.pointer
-        return data.frames[data.current_frame]
 
 
 cdef class AnimationSystem(StaticMemGameSystem):

@@ -1,18 +1,19 @@
-from managers.resource_managers cimport ModelManager, texture_manager
+from kivent_core.managers.resource_managers cimport ModelManager
+from kivent_core.managers.resource_managers import texture_manager
+from kivent_core.rendering.model cimport VertexModel
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.block cimport MemoryBlock
 
 
 cdef class Frame:
-    cdef FrameStruct* frame_pointer
-    cdef ModelManager model_manager
 
     def __cinit__(self, ModelManager model_manager):
         self.model_manager = model_manager
 
     property model:
         def __get__(self):
-            return self.frame_pointer.model.name
+            cdef VertexModel model = <VertexModel>self.frame_pointer.model
+            return model.name
 
         def __set__(self, value):
             self.frame_pointer.model = <void*>self.model_manager.models[value]
@@ -33,14 +34,11 @@ cdef class Frame:
 
 
 cdef class FrameList:
-    cdef MemoryBlock frames_block
-    cdef Buffer frame_buffer
-    cdef ModelManager model_manager
-    cdef unsigned int _frame_count
 
-    def  __cinit__(self, frame_count, frame_buffer, model_manager):
+    def  __cinit__(self, frame_count, frame_buffer, model_manager, name):
         self._frame_count = frame_count
         self.model_manager = model_manager
+        self.name = name
 
         cdef MemoryBlock frames_block = MemoryBlock(
             frame_count*sizeof(FrameStruct), sizeof(FrameStruct), 1)
@@ -60,7 +58,7 @@ cdef class FrameList:
             raise IndexError()
 
         cdef Frame frame = Frame(self.model_manager)
-        frame.frame_pointer = self.frames_block.get_pointer(i)
+        frame.frame_pointer = <FrameStruct*>self.frames_block.get_pointer(i)
         return frame
 
     def free_memory(self):

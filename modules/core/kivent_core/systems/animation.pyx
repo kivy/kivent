@@ -2,7 +2,9 @@
 from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem,
     MemComponent)
 from kivent_core.memory_handlers.zone cimport MemoryZone
-from kivent_core.systems.renderers cimport RenderStruct
+from kivent_core.systems.renderers cimport RenderStruct, Renderer
+from kivent_core.rendering.animation cimport FrameList, Frame, FrameStruct
+from kivent_core.rendering.model cimport VertexModel
 from kivent_core.managers.resource_managers import texture_manager
 from kivy.properties import (StringProperty, ObjectProperty, NumericProperty,
         BooleanProperty, ListProperty)
@@ -57,30 +59,16 @@ cdef class AnimationSystem(StaticMemGameSystem):
     def init_component(self, unsigned int component_index,
                        unsigned int entity_id, str zone, args):
         model_manager = self.gameworld.model_manager
-        texture_manager = self.gameworld.texture_manager
+        animation_manager = self.gameworld.animation_manager
 
-        cdef unsigned int frame_count = len(args.frames)
         cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef AnimationStruct* component = <AnimationStruct*>(
             memory_zone.get_pointer(component_index))
+        cdef FrameList frame_list = animation_manager.animations[args]
         component.entity_id = entity_id
-        component.frame_count = frame_count
-        component.current_frame = 0
+        component.frames = <void*>frame_list
+        component.current_frame_index = <unsigned int>-1
         component.current_duration = 0
-
-        cdef FrameStruct* frames_array[100]
-        cdef FrameStruct frame
-        cdef unsigned int i = 0
-        for i in range(frame_count):
-            frame_data = args.frames[i]
-
-            frame.texkey = <unsigned int> texture_manager.get_texkey_from_name(frame_data['texture'])
-            frame.model = <void*> model_manager.models[frame_data['model']]
-            frame.duration = <unsigned int> frame_data['duration']
-
-            frames_array[i] = &frame
-
-        component.frames = <FrameStruct**>frames_array
 
         return self.entity_components.add_entity(entity_id, zone)
 
@@ -90,8 +78,7 @@ cdef class AnimationSystem(StaticMemGameSystem):
             memory_zone.get_pointer(component_index))
         pointer.entity_id = -1
         pointer.frames = NULL
-        pointer.frame_count = 0
-        pointer.current_frame = 0
+        pointer.current_frame_index = 0
         pointer.current_duration = 0
 
 
@@ -100,6 +87,7 @@ cdef class AnimationSystem(StaticMemGameSystem):
         self.entity_components.remove_entity(component.entity_id)
         super(AnimationSystem, self).remove_component(component_index)
 
+
     def update(self, dt):
         gameworld = self.gameworld
         cdef void** component_data = <void**>(
@@ -107,8 +95,15 @@ cdef class AnimationSystem(StaticMemGameSystem):
         cdef unsigned int component_count = self.entity_components.count
         cdef unsigned int count = self.entity_components.memory_block.count
         cdef unsigned int i, real_index
+        cdef FrameList frame_list
         cdef AnimationStruct* anim_comp
         cdef RenderStruct* render_comp
+        cdef FrameStruct* next_frame
+        cdef unsigned int groupkey
+        cdef VertexModel new_model
+        cdef Renderer renderer
+        cdef float u0, u1, v0, v1
+        cdef list uv_list
 
         for i in range(count):
             real_index = i*component_count
@@ -116,16 +111,37 @@ cdef class AnimationSystem(StaticMemGameSystem):
                 continue
             anim_comp = <AnimationStruct*>component_data[real_index]
             render_comp = <RenderStruct*>component_data[real_index+1]
-            current_frame = <FrameStruct*>anim_comp.frames[anim_comp.current_frame]
+            frame_data = anim_comp.frames[anim_comp.current_frame_index]
 
             anim_comp.current_duration += dt
-            if current_frame.duration < anim_comp.current_duration:
+            if frame_data.duration < anim_comp.current_duration:
                 anim_comp.current_duration = 0
-                anim_comp.current_frame += 1
-                next_frame = <FrameStruct*>anim_comp.frames[anim_comp.current_frame]
+                anim_comp.current_frame_index += 1
+                frame_list = <FrameList>anim_comp.frames
+                next_frame = <FrameStruct*>(frame_list[anim_comp.current_frame_index].frame_pointer)
 
+                groupkey = (texture_manager.get_groupkey_from_texkey(
+                                                next_frame.texkey))
+                uv_list = texture_manager.get_uvs(next_frame.texkey)
+                u0 = uv_list[0]
+                v0 = uv_list[1]
+                u1 = uv_list[2]
+                v1 = uv_list[3]
+                same_batch = texture_manager.get_texkey_in_group(next_frame.texkey, groupkey)
+                model = <VertexModel>next_frame.model
+                renderer = <Renderer>render_comp.renderer
+                if not same_batch:
+                    renderer._unbatch_entity(render_comp.entity_id,
+                        render_comp)
                 render_comp.texkey = next_frame.texkey
                 render_comp.model = next_frame.model
+                model[0].uvs = [u0, v0]
+                model[1].uvs = [u0, v1]
+                model[2].uvs = [u1, v1]
+                model[3].uvs = [u1, v0]
+                if not same_batch:
+                    renderer._batch_entity(render_comp.entity_id,
+                        render_comp)
 
 
-Factory.register('animation', cls=AnimationSystem)
+Factory.register('AnimationSystem', cls=AnimationSystem)

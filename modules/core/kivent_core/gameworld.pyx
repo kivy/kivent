@@ -20,6 +20,7 @@ from kivent_core.memory_handlers.utils cimport memrange
 from kivent_core.managers.resource_managers cimport ModelManager
 from kivent_core.managers.sound_manager import SoundManager
 from kivent_core.managers.resource_managers import texture_manager
+from kivent_core.managers.animation_manager import AnimationManager
 from kivy.logger import Logger
 debug = False
 
@@ -147,6 +148,8 @@ class GameWorld(Widget):
         self.model_manager = ModelManager()
         self.register_manager("model_manager", self.model_manager)
         self.register_manager("texture_manager", texture_manager)
+        self.animation_manager = AnimationManager()
+        self.register_manager("animation_manager", self.animation_manager)
 
 
 

@@ -6,7 +6,7 @@ from kivent_core.memory_handlers.block cimport MemoryBlock
 ctypedef struct FrameStruct:
     unsigned int texkey
     void* model
-    unsigned int duration
+    float duration
 
 
 cdef class Frame:
@@ -18,4 +18,4 @@ cdef class FrameList:
     cdef MemoryBlock frames_block
     cdef ModelManager model_manager
     cdef str name
-    cdef unsigned int _frame_count
+    cdef unsigned int frame_count

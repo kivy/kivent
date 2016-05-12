@@ -23,20 +23,20 @@ cdef class Frame:
             return texture_manager.get_texname_from_texkey(self.frame_pointer.texkey)
 
         def __set__(self, str value):
-            self.frame_pointer.texkey = texture_manager.get_texkey_from_texname(value)
+            self.frame_pointer.texkey = texture_manager.get_texkey_from_name(value)
 
     property duration:
         def __get__(self):
             return self.frame_pointer.duration
 
-        def __set__(self, unsigned int value):
+        def __set__(self, float value):
             self.frame_pointer.duration = value
 
 
 cdef class FrameList:
 
     def  __cinit__(self, frame_count, frame_buffer, model_manager, name):
-        self._frame_count = frame_count
+        self.frame_count = frame_count
         self.model_manager = model_manager
         self.name = name
 
@@ -53,8 +53,8 @@ cdef class FrameList:
         self.model_manager = None
 
     def __getitem__(self, unsigned int i):
-        cdef unsigned int frame_count = self._frame_count
-        if i < frame_count:
+        cdef unsigned int frame_count = self.frame_count
+        if i >= frame_count:
             raise IndexError()
 
         cdef Frame frame = Frame(self.model_manager)
@@ -69,7 +69,7 @@ cdef class FrameList:
     property frames:
         def __get__(self):
             frame_list = []
-            for i in range(self._frame_count):
+            for i in range(self.frame_count):
                 frame_list.append(self[i])
             return frame_list
 
@@ -77,9 +77,9 @@ cdef class FrameList:
             cdef unsigned int frame_count = len(frames)
             cdef int i
             cdef dict data
-            if frame_count + 1 != self._frame_count:
+            if frame_count != self.frame_count:
                 raise Exception("Provided frames list doesn't match internal size")
-            for i in range(frame_count + 1):
+            for i in range(frame_count):
                 data = frames[i]
                 frame = self[i]
                 frame.model = data['model']

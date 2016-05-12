@@ -17,10 +17,11 @@ cdef class AnimationManager(GameManager):
 
         cdef MemoryBlock memory_block = MemoryBlock(self.allocation_size, 1, 1)
         memory_block.allocate_memory_with_buffer(master_buffer)
+        self.memory_block = memory_block
 
         return self.allocation_size
 
-    def load_animation(self, name, frame_count, frames=None, loop=False):
+    def load_animation(self, name, frame_count, frames=None):
         cdef FrameList frame_list = FrameList(frame_count,
                                             self.memory_block,
                                             self.model_manager,

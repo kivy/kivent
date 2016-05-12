@@ -32,9 +32,27 @@ cdef class AnimationComponent(MemComponent):
             cdef AnimationStruct* data = <AnimationStruct*>self.pointer
             return data.current_duration
 
-        def __set__(self, unsigned int value):
+        def __set__(self, float value):
             cdef AnimationStruct* data = <AnimationStruct*>self.pointer
             data.current_duration = value
+
+    property loop:
+        def __get__(self):
+            cdef AnimationStruct* data = <AnimationStruct*>self.pointer
+            return data.loop
+
+        def __set__(self, bint value):
+            cdef AnimationStruct* data = <AnimationStruct*>self.pointer
+            data.loop = value
+
+    property dirty:
+        def __get__(self):
+            cdef AnimationStruct* data = <AnimationStruct*>self.pointer
+            return data.dirty
+
+        def __set__(self, bint value):
+            cdef AnimationStruct* data = <AnimationStruct*>self.pointer
+            data.dirty = value
 
 
 cdef class AnimationSystem(StaticMemGameSystem):
@@ -52,6 +70,7 @@ cdef class AnimationSystem(StaticMemGameSystem):
 
     system_id = StringProperty('animation')
     processor = BooleanProperty(True)
+    updateable = BooleanProperty(True)
     type_size = NumericProperty(sizeof(AnimationStruct))
     component_type = ObjectProperty(AnimationComponent)
     system_names = ListProperty(['animation','renderer'])
@@ -64,11 +83,12 @@ cdef class AnimationSystem(StaticMemGameSystem):
         cdef MemoryZone memory_zone = self.imz_components.memory_zone
         cdef AnimationStruct* component = <AnimationStruct*>(
             memory_zone.get_pointer(component_index))
-        cdef FrameList frame_list = animation_manager.animations[args]
+        cdef FrameList frame_list = animation_manager.animations[args['name']]
         component.entity_id = entity_id
         component.frames = <void*>frame_list
-        component.current_frame_index = <unsigned int>-1
+        component.current_frame_index = 0
         component.current_duration = 0
+        component.loop = args['loop']
 
         return self.entity_components.add_entity(entity_id, zone)
 
@@ -78,7 +98,7 @@ cdef class AnimationSystem(StaticMemGameSystem):
             memory_zone.get_pointer(component_index))
         pointer.entity_id = -1
         pointer.frames = NULL
-        pointer.current_frame_index = 0
+        pointer.current_frame_index = <unsigned int>-1
         pointer.current_duration = 0
 
 
@@ -96,14 +116,17 @@ cdef class AnimationSystem(StaticMemGameSystem):
         cdef unsigned int count = self.entity_components.memory_block.count
         cdef unsigned int i, real_index
         cdef FrameList frame_list
+        cdef Frame frame
         cdef AnimationStruct* anim_comp
         cdef RenderStruct* render_comp
-        cdef FrameStruct* next_frame
+        cdef FrameStruct* frame_data, next_frame
+        cdef unsigned int current_index
         cdef unsigned int groupkey
         cdef VertexModel new_model
         cdef Renderer renderer
         cdef float u0, u1, v0, v1
         cdef list uv_list
+
 
         for i in range(count):
             real_index = i*component_count
@@ -111,30 +134,29 @@ cdef class AnimationSystem(StaticMemGameSystem):
                 continue
             anim_comp = <AnimationStruct*>component_data[real_index]
             render_comp = <RenderStruct*>component_data[real_index+1]
-            frame_data = anim_comp.frames[anim_comp.current_frame_index]
 
-            anim_comp.current_duration += dt
-            if frame_data.duration < anim_comp.current_duration:
-                anim_comp.current_duration = 0
-                anim_comp.current_frame_index += 1
-                frame_list = <FrameList>anim_comp.frames
-                next_frame = <FrameStruct*>(frame_list[anim_comp.current_frame_index].frame_pointer)
+            frame_list = <FrameList>anim_comp.frames
+            current_index = anim_comp.current_frame_index
+            frame = frame_list[current_index]
+            frame_data = <FrameStruct*>frame.frame_pointer
 
+            # print "update %s at %d" % (frame_list.name, current_index)
+            if current_index != <unsigned int>-1 and anim_comp.dirty:
                 groupkey = (texture_manager.get_groupkey_from_texkey(
-                                                next_frame.texkey))
-                uv_list = texture_manager.get_uvs(next_frame.texkey)
+                                                frame_data.texkey))
+                uv_list = texture_manager.get_uvs(frame_data.texkey)
                 u0 = uv_list[0]
                 v0 = uv_list[1]
                 u1 = uv_list[2]
                 v1 = uv_list[3]
-                same_batch = texture_manager.get_texkey_in_group(next_frame.texkey, groupkey)
-                model = <VertexModel>next_frame.model
+                same_batch = texture_manager.get_texkey_in_group(frame_data.texkey, groupkey)
+                render_comp.model = frame_data.model
+                model = <VertexModel>render_comp.model
                 renderer = <Renderer>render_comp.renderer
                 if not same_batch:
                     renderer._unbatch_entity(render_comp.entity_id,
                         render_comp)
-                render_comp.texkey = next_frame.texkey
-                render_comp.model = next_frame.model
+                render_comp.texkey = frame_data.texkey
                 model[0].uvs = [u0, v0]
                 model[1].uvs = [u0, v1]
                 model[2].uvs = [u1, v1]
@@ -142,6 +164,23 @@ cdef class AnimationSystem(StaticMemGameSystem):
                 if not same_batch:
                     renderer._batch_entity(render_comp.entity_id,
                         render_comp)
+                anim_comp.dirty = False
+
+            anim_comp.current_duration += dt * 1000
+
+            # print frame_data.duration, anim_comp.current_duration, dt
+            if frame_data.duration < anim_comp.current_duration:
+                # print "update frame"
+                current_index += 1
+                if current_index == frame_list.frame_count:
+                    if anim_comp.loop:
+                        current_index = 0
+                    else:
+                        current_index = <unsigned int>-1
+
+                anim_comp.current_frame_index = current_index
+                anim_comp.current_duration = 0
+                anim_comp.dirty = True
 
 
 Factory.register('AnimationSystem', cls=AnimationSystem)

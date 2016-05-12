@@ -1,13 +1,14 @@
 from kivent_core.systems.staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 from kivent_core.rendering.animation cimport FrameList, Frame, FrameStruct
-from libcpp cimport bool
 
 
 ctypedef struct AnimationStruct:
     unsigned int entity_id
     void* frames
     unsigned int current_frame_index
-    unsigned int current_duration
+    float current_duration
+    bint loop
+    bint dirty
 
 cdef class AnimationComponent(MemComponent):
     pass

@@ -6,6 +6,17 @@ from kivent_core.memory_handlers.block cimport MemoryBlock
 
 
 cdef class Frame:
+    '''
+    The Frame class allows you to access the render information
+    for one frame of the animation sequence from python.
+    It internally stores a pointer to a FrameStruct and provides
+    python apis to access model and texture names of the frame.
+
+    Attributes:
+        model (str): The model name to be rendered for this frame
+        texture (str): The texture name of the texture to be rendered for this frame.
+        duration (int): The duration of this frame.
+    '''
 
     def __cinit__(self, ModelManager model_manager):
         self.model_manager = model_manager
@@ -34,6 +45,14 @@ cdef class Frame:
 
 
 cdef class FrameList:
+    '''
+    The FrameList class is used to store the animation as an
+    array of FrameStructs in memory.
+
+    Attributes:
+        frames (list): Array of Frame objects corresponding to
+        each frame in the sequence.
+    '''
 
     def  __cinit__(self, frame_count, frame_buffer, model_manager, name):
         self.frame_count = frame_count

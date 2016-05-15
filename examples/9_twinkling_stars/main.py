@@ -13,7 +13,7 @@ from kivy.properties import StringProperty
 from os.path import dirname, join, abspath
 
 texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets',
-    'background_objects.atlas'))
+    'stars.atlas'))
 
 
 class TestGame(Widget):
@@ -32,49 +32,40 @@ class TestGame(Widget):
 
     def load_models(self):
         model_manager = self.gameworld.model_manager
-        model_manager.load_textured_rectangle('vertex_format_4f', 7., 7.,
+        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
             'star1', 'star1-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 10., 10.,
-            'star1', 'star1-4-2')
+        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+            'star2', 'star2-4')
+        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+            'star3', 'star3-4')
 
     def load_animations(self):
         animation_manager = self.gameworld.animation_manager
-        animation_frames_1 = [
-                {'texture': 'star1',
-                 'model' : 'star1-4-2',
-                 'duration' : 400 },
-                {'texture': 'star1',
-                 'model' : 'star1-4',
-                 'duration' : 700 }]
-        animation_frames_2 = [
-                {'texture': 'star1',
-                 'model' : 'star1-4',
-                 'duration' : 300 },
-                {'texture': 'star1',
-                 'model' : 'star1-4-2',
-                 'duration' : 200 }]
-        animation_frames_3 = [
-                {'texture': 'star1',
-                 'model' : 'star1-4',
-                 'duration' : 500 },
-                {'texture': 'star1',
-                 'model' : 'star1-4-2',
-                 'duration' : 500 }]
-        animation_manager.load_animation('star-animation-1', 2, animation_frames_1)
-        animation_manager.load_animation('star-animation-2', 2, animation_frames_2)
-        animation_manager.load_animation('star-animation-3', 2, animation_frames_3)
+        for i in range(50):
+            time = randint(100,700)
+            animation_frames = [
+                    {'texture': 'star1',
+                     'model' : 'star1-4',
+                     'duration' : time },
+                    {'texture': 'star2',
+                     'model' : 'star2-4',
+                     'duration' : time },
+                    {'texture': 'star3',
+                     'model' : 'star3-4',
+                     'duration' : time }]
+            animation_manager.load_animation('star-animation-%d' % i, 3, animation_frames)
 
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity
-        for x in range(1000):
+        for x in range(3000):
             pos = randint(0,Window.width), randint(0, Window.height)
-            model_key = choice(['star1-4', 'star1-4-2'])
-            animation = choice(['star-animation-1', 'star-animation-2', 'star-animation-3'])
+            model_key = choice(['star1-4', 'star1-4'])
+            animation = randint(0,49)
             create_dict = {
                 'position': pos,
                 'renderer': {'texture': 'star1',
                     'model_key': model_key},
-                'animation': {'name': animation, 'loop': True}
+                'animation': {'name': 'star-animation-%d' % animation, 'loop': True}
             }
             ent = init_entity(create_dict, ['position', 'renderer', 'animation'])
 

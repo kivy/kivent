@@ -12,6 +12,31 @@ from kivy.factory import Factory
 
 
 cdef class AnimationComponent(MemComponent):
+    '''The component associated with AnimationSystem. Stores the current
+    state of the sprite's animation: current frame, duration passed while
+    on this frame, whether to loop the animation, and a dirty flag to
+    indicate frame needs to be rendered.
+
+    **Attributes:**
+        **entity_id** (unsigned int): The entity_id this component is currently
+        associated with. Will be <unsigned int>-1 if the component is
+        unattached.
+
+        **current_frame_index:** (unsigned int): The current frame being
+        displayed of the animation and <unsigned int>-1 if the animation
+        is stopped.
+
+        **current_duration:** (float): The time in milliseconds the sprite
+        has spent on the current frame. Used internally by the system's
+        update method to increment this.
+
+        **loop:** (bint): Whether to loop this animation or not.
+
+        **dirty:** (bint): Flag denoting whether this animation
+        needs to be re-rendered i.e. the texture and model
+        need to be set to the RenderComponent.
+    '''
+
 
     property entity_id:
         def __get__(self):
@@ -56,17 +81,12 @@ cdef class AnimationComponent(MemComponent):
 
 
 cdef class AnimationSystem(StaticMemGameSystem):
-    '''Accepts a dict in the following format:
-        {
-            'frames': [ <array of frame objects> ]
-        }
+    '''
+    Processing depends on: Renderer, AnimationSystem
 
-        Where a sinlge frame object is of the format:
-        {
-            'texture': <texture-name>,
-            'model': <model-name>,
-            'duration': <duration>
-        }'''
+    This GameSystem updates the model and texkey of the RenderComponent
+    as per frames of the animation.
+    '''
 
     system_id = StringProperty('animation')
     processor = BooleanProperty(True)
@@ -77,6 +97,14 @@ cdef class AnimationSystem(StaticMemGameSystem):
 
     def init_component(self, unsigned int component_index,
                        unsigned int entity_id, str zone, args):
+        '''
+        Function to initialise an AnimationComponent
+
+        Optional Args:
+
+            name (str): name of the animation which is registered in animation_manager
+            loop (bool): whether to loop this animation or not
+        '''
         model_manager = self.gameworld.model_manager
         animation_manager = self.gameworld.animation_manager
 
@@ -140,8 +168,27 @@ cdef class AnimationSystem(StaticMemGameSystem):
             frame = frame_list[current_index]
             frame_data = <FrameStruct*>frame.frame_pointer
 
-            # print "update %s at %d" % (frame_list.name, current_index)
+            anim_comp.current_duration += dt * 1000
+
+            if frame_data.duration < anim_comp.current_duration:
+                # Switch to next frame
+                current_index += 1
+                if current_index == frame_list.frame_count:
+                    if anim_comp.loop:
+                        current_index = 0
+                    else:
+                        current_index = <unsigned int>-1
+
+                anim_comp.current_frame_index = current_index
+                # store the difference of current duration and frame duration to account for
+                # overshoot errors
+                anim_comp.current_duration = anim_comp.current_duration - frame_data.duration
+                anim_comp.dirty = True
+
             if current_index != <unsigned int>-1 and anim_comp.dirty:
+                # Animation is dirty, update texture and model in RenderComponent
+                frame = frame_list[current_index]
+                frame_data = <FrameStruct*>frame.frame_pointer
                 groupkey = (texture_manager.get_groupkey_from_texkey(
                                                 frame_data.texkey))
                 uv_list = texture_manager.get_uvs(frame_data.texkey)
@@ -165,22 +212,6 @@ cdef class AnimationSystem(StaticMemGameSystem):
                     renderer._batch_entity(render_comp.entity_id,
                         render_comp)
                 anim_comp.dirty = False
-
-            anim_comp.current_duration += dt * 1000
-
-            # print frame_data.duration, anim_comp.current_duration, dt
-            if frame_data.duration < anim_comp.current_duration:
-                # print "update frame"
-                current_index += 1
-                if current_index == frame_list.frame_count:
-                    if anim_comp.loop:
-                        current_index = 0
-                    else:
-                        current_index = <unsigned int>-1
-
-                anim_comp.current_frame_index = current_index
-                anim_comp.current_duration = 0
-                anim_comp.dirty = True
 
 
 Factory.register('AnimationSystem', cls=AnimationSystem)

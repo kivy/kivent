@@ -12,7 +12,7 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         self.gameworld.init_gameworld(['position', 'scale', 'rotate',
-            'color', 'particles', 'emitters', 'particles_renderer', 'renderer'],
+            'color', 'particles', 'emitters', 'particle_renderer', 'renderer'],
             callback=self.init_game)
 
     def init_game(self):
@@ -36,9 +36,9 @@ class TestGame(Widget):
 
     def setup_states(self):
         self.gameworld.add_state(state_name='main', 
-            systems_added=['particles_renderer', 'renderer'],
+            systems_added=['particle_renderer', 'renderer'],
             systems_removed=[], systems_paused=[],
-            systems_unpaused=['particles_renderer', 'renderer'],
+            systems_unpaused=['particle_renderer', 'renderer'],
             screenmanager_screen='main')
 
     def set_state(self):

@@ -1,0 +1,22 @@
+{
+    "star-animation-50" : [
+            {"texture": "star1",
+             "model" : "star1-4",
+             "duration" : 300 },
+            {"texture": "star2",
+             "model" : "star2-4",
+             "duration" : 300 },
+            {"texture": "star3",
+             "model" : "star3-4",
+             "duration" : 300 }],
+    "star-animation-51" : [
+            {"texture": "star1",
+             "model" : "star1-4",
+             "duration" : 400 },
+            {"texture": "star2",
+             "model" : "star2-4",
+             "duration" : 400 },
+            {"texture": "star3",
+             "model" : "star3-4",
+             "duration" : 400 }]
+}

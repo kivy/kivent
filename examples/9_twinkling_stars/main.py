@@ -29,6 +29,7 @@ class TestGame(Widget):
         self.load_animations()
         self.set_state()
         self.draw_some_stuff()
+        self.save_animations()
 
     def load_models(self):
         model_manager = self.gameworld.model_manager
@@ -54,13 +55,21 @@ class TestGame(Widget):
                      'model' : 'star3-4',
                      'duration' : time }]
             animation_manager.load_animation('star-animation-%d' % i, 3, animation_frames)
+        animation_manager.load_json('../assets/animations.json')
+
+    def save_animations(self):
+        animation_manager = self.gameworld.animation_manager
+        animation_manager.save_to_json(['star-animation-1', 'star-animation-2'],
+                                       '/tmp/anim.json')
+        animation_manager.save_to_json(['star-animation-3'],
+                                       '/tmp/anim.json')
 
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity
         for x in range(3000):
             pos = randint(0,Window.width), randint(0, Window.height)
             model_key = choice(['star1-4', 'star1-4'])
-            animation = randint(0,49)
+            animation = randint(0,51)
             create_dict = {
                 'position': pos,
                 'renderer': {'texture': 'star1',

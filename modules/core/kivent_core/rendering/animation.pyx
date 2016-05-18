@@ -33,7 +33,7 @@ cdef class Frame:
         def __get__(self):
             return texture_manager.get_texname_from_texkey(self.frame_pointer.texkey)
 
-        def __set__(self, str value):
+        def __set__(self, value):
             self.frame_pointer.texkey = texture_manager.get_texkey_from_name(value)
 
     property duration:
@@ -57,7 +57,7 @@ cdef class FrameList:
     def  __cinit__(self, frame_count, frame_buffer, model_manager, name):
         self.frame_count = frame_count
         self.model_manager = model_manager
-        self.name = name
+        self.name = name.encode('utf-8')
 
         cdef MemoryBlock frames_block = MemoryBlock(
             frame_count*sizeof(FrameStruct), sizeof(FrameStruct), 1)

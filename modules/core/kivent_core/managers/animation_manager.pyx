@@ -4,6 +4,9 @@ from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.rendering.animation cimport FrameList
 from kivent_core.managers.game_manager cimport GameManager
 
+import json
+import os
+
 
 cdef class AnimationManager(GameManager):
     '''
@@ -57,6 +60,41 @@ cdef class AnimationManager(GameManager):
         if frames:
             frame_list.frames = frames
         self._animations[name] = frame_list
+
+    def load_json(self, filename):
+        '''
+        Parser for a json file containing animation
+        '''
+        with open(filename) as anim_file:
+            animations = json.load(anim_file)
+            for name in animations:
+                frames = animations[name]
+                self.load_animation(name, len(frames), frames)
+
+    def save_to_json(self, names, filename):
+        '''
+        Saves the animation specified by items in `names` to `filename`
+
+        Parameters:
+            names (list): List of animation names to be stored in
+            the json file
+
+            filename (str): Path to json file
+        '''
+        if os.path.isfile(filename):
+            with open(filename) as json_file:
+                json_obj = json.load(json_file)
+        else:
+            json_obj = {}
+
+        for name in names:
+            json_obj[name] = [{'model':frame.model,
+                            'texture':frame.texture,
+                            'duration':frame.duration}
+                            for frame in self.animations[name].frames]
+
+        with open(filename, 'w+') as json_file:
+            json.dump(json_obj, json_file)
 
     property animations:
         def __get__(self):

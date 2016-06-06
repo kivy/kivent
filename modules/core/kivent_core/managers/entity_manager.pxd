@@ -1,6 +1,7 @@
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
+from kivent_core.managers.game_manager cimport GameManager
 
-cdef class EntityManager:
+cdef class EntityManager(GameManager):
     cdef IndexedMemoryZone memory_index
     cdef unsigned int system_count
 

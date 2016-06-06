@@ -12,8 +12,9 @@ try:
 except: 
     import pickle
 from kivent_core.rendering.svg_loader cimport SVG, SVGModelInfo
+from kivent_core.managers.game_manager cimport GameManager
 
-cdef class ModelManager:
+cdef class ModelManager(GameManager):
     '''
     The ModelManager is responsible for managing all VertexModel that will be
     used during your game's rendering. A model is a collection of vertex and
@@ -178,7 +179,7 @@ cdef class ModelManager:
         return self.load_model(format_name, vertex_count, index_count,
             model_name, indices=indices, vertices=vertices)
 
-    def allocate(self, Buffer master_buffer, dict formats_to_allocate):
+    def allocate(self, master_buffer, gameworld):
         '''
         Allocates space for loading models. Typically called as part of
         Gameworld.allocate.
@@ -194,8 +195,7 @@ cdef class ModelManager:
         Args:
             master_buffer (Buffer): The buffer to do allocation from.
 
-            formats_to_allocate (dict): Dict with keys of format names, values
-            of tuples (bytes for vertex data, bytes for index data).
+            gameworld (GameWorld):
 
         Return:
             unsigned int: Number of bytes actually used by the ModelManager
@@ -204,9 +204,20 @@ cdef class ModelManager:
         #Either for each format in formats to allocate, or use default behavior
         #Load 10 mb of space for each registered vertex format.
         #(index space, vertex_space) for val at format_name key.
+
+
+        cdef FormatConfig format_config
+        for each in format_registrar._vertex_formats:
+            format_config = format_registrar._vertex_formats[each]
+            Logger.info('KivEnt: Vertex Format: {name} registered. Size per '
+                'vertex is: {size}. Format is {format}.'.format(
+                name=format_config._name,
+                size=str(format_config._size),
+                format=format_config._format))
+
+        formats_to_allocate = gameworld.model_format_allocations
         cdef MemoryBlock indices_block
         cdef MemoryBlock vertices_block
-        cdef FormatConfig format_config
         vertex_formats = format_registrar._vertex_formats
         cdef dict memory_blocks = self.memory_blocks
         cdef unsigned int total_count = 0
@@ -510,7 +521,7 @@ cdef class ModelManager:
             del self._key_counts[model_name]
 
 
-cdef class TextureManager:
+cdef class TextureManager(GameManager):
     '''
     The TextureManager handles the loading of all image resources into our
     game engine. Use **load_image** for image files and **load_atlas** for

@@ -1,6 +1,6 @@
-from kivy._event cimport EventDispatcher
+from kivent_core.managers.game_manager cimport GameManager
 
-cdef class SoundManager(EventDispatcher):
+cdef class SoundManager(GameManager):
     cdef dict sound_dict
     cdef dict sound_keys
     cdef int sound_count

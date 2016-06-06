@@ -17,10 +17,9 @@ from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.utils cimport memrange
-from kivent_core.rendering.vertex_formats cimport (format_registrar,
-    FormatConfig)
 from kivent_core.managers.resource_managers cimport ModelManager
 from kivent_core.managers.sound_manager import SoundManager
+from kivent_core.managers.resource_managers import texture_manager
 from kivy.logger import Logger
 debug = False
 
@@ -46,6 +45,12 @@ def test_gameworld():
 
 
 class GameWorldOutOfSpaceError(Exception):
+    pass
+
+class GameManagerAlreadyRegistered(Exception):
+    pass
+
+class GameManagerNotRegistered(Exception):
     pass
 
 
@@ -101,6 +106,12 @@ class GameWorld(Widget):
         You should only load model data using this ModelManager. Do not
         instantiate your own.
 
+        **managers** (dict): Map of all game manageres registered with this
+        GameWorld. Will contain 'texture_manager', 'model_manager',
+        'sound_manager', and 'system_manager' by default. Other GameSystems
+        may register managers or remove them with the *register_mnanager*
+        and *unregister_manager* fucntions.
+
     '''
     state = StringProperty('initial')
     gamescreenmanager = ObjectProperty(None)
@@ -119,18 +130,60 @@ class GameWorld(Widget):
         super(GameWorld, self).__init__(**kwargs)
         self.states = {}
         self.state_callbacks = {}
+        self.managers = {}
         self.entity_manager = None
         self.entities = None
         self._last_state = 'initial'
         self._system_count = DEFAULT_SYSTEM_COUNT
         self.entities_to_remove = []
         self.system_manager = SystemManager()
+        self.manager_order = []
+        self.register_manager("system_manager", self.system_manager)
+        self.entity_manager = EntityManager()
+        self.register_manager("entity_manager", self.entity_manager)
         self.sound_manager = SoundManager()
+        self.register_manager("sound_manager", self.sound_manager)
         self.master_buffer = None
         self.model_manager = ModelManager()
+        self.register_manager("model_manager", self.model_manager)
+        self.register_manager("texture_manager", texture_manager)
+
+
+
+    def register_manager(self, str manager_name, object manager_object):
+        '''
+        Registers a new GameManager. If manager_name is already registered
+        a GameManagerAlreadyRegistered exception will be raised.
+
+        Args:
+            manager_name (str): The name of the manager to register.
+
+            manager_object (GameManager): The GameManager object to register.
+        '''
+        if manager_name in self.managers:
+            raise GameManagerAlreadyRegistered(
+                "{} is already registered".format(manager_name))
+        self.manager_order.append(manager_name)
+        self.managers[manager_name] = manager_object
+
+    def unregister_manager(self, str manager_name):
+        '''
+        Unregisters a previously registered GameManager. If no manager was
+        registered under this name a GameManagerNotRegistered will be
+        raised.
+
+        Args:
+            manager_name (str): The name the GameManager was registered under.
+        '''
+        if manager_name not in self.managers:
+            raise GameManagerNotRegistered(
+                "{} is not a registered GameManager".format(manager_name))
+        self.manager_order.remove(manager_name)
+        del self.managers[manager_name]
 
     def ensure_startup(self, list_of_systems):
-        '''Run during **init_gameworld** to determine whether or not it is safe
+        '''
+        Run during **init_gameworld** to determine whether or not it is safe
         to begin allocation. Safe in this situation means that every system_id
         that has been listed in list_of_systems has been added to the GameWorld.
 
@@ -154,7 +207,8 @@ class GameWorld(Widget):
         return True
 
     def allocate(self):
-        '''Typically called interally as part of init_gameworld, this function
+        '''
+        Typically called interally as part of init_gameworld, this function
         allocates the **master_buffer** for the gameworld, registers the
         zones, allocates the EntityManager, and calls allocate on all
         GameSystem with do_allocation == True.
@@ -165,36 +219,12 @@ class GameWorld(Widget):
         cdef SystemManager system_manager = self.system_manager
         master_buffer.allocate_memory()
         cdef unsigned int real_size = master_buffer.real_size
-        cdef FormatConfig format_config
-        for each in format_registrar._vertex_formats:
-            format_config = format_registrar._vertex_formats[each]
-            Logger.info('KivEnt: Vertex Format: {name} registered. Size per '
-                'vertex is: {size}. Format is {format}.'.format(
-                name=format_config._name,
-                size=str(format_config._size),
-                format=format_config._format))
-        zones = self.zones
-        if 'general' not in zones:
-            zones['general'] = DEFAULT_COUNT
-        cdef dict copy_from_obs_dict = {}
-        for key in zones:
-            copy_from_obs_dict[key] = zones[key]
-            system_manager.add_zone(key, zones[key])
-        system_count = self.system_count
-        if system_count is None:
-            system_count = self._system_count
-        system_manager.set_system_count(system_count)
-        for each in self.systems_to_add:
-            system_manager.add_system(each.system_id, each)
-        self.systems_to_add = None
-        self.entity_manager = entity_manager = EntityManager(master_buffer,
-            self.size_of_entity_block, copy_from_obs_dict, system_count)
-        self.entities = entity_manager.memory_index
+        total_count = 0
+        for manager_name in self.manager_order:
+            total_count += self.managers[manager_name].allocate(master_buffer,
+                                                                self)
         system_names = system_manager.system_index
         systems = system_manager.systems
-        cdef MemoryZone memory_zone
-        cdef IndexedMemoryZone memory_index
-        total_count = entity_manager.get_size()
         for name in system_names:
             system_id = system_names[name]
             system = systems[system_id]
@@ -216,8 +246,6 @@ class GameWorld(Widget):
                     'KiB').format(system_name=str(name),
                     system_size=str(system_size//1024)))
                 total_count += system_size
-        total_count += self.model_manager.allocate(master_buffer,
-            dict(self.model_format_allocations))
 
         Logger.info(('KivEnt: We will need {total_count} KiB for game, we ' +
             'have {real_size} KiB').format(total_count=str(total_count//1024),

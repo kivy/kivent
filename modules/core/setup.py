@@ -52,7 +52,7 @@ modules = {
         ],
     'managers': [
         'resource_managers', 'system_manager', 'entity_manager', 
-        'sound_manager',
+        'sound_manager', 'game_manager',
         ],
     'uix': ['cwidget', 'gamescreens'],
     'systems': [

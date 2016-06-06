@@ -3,8 +3,9 @@ from kivy._event cimport EventDispatcher
 from kivy.clock import Clock
 from kivy.properties import NumericProperty, StringProperty, BooleanProperty
 from random import choice, uniform
+from kivent_core.managers.game_manager cimport GameManager
 
-cdef class SoundManager(EventDispatcher):
+cdef class SoundManager(GameManager):
     '''
     The SoundManager provides additional features on top of Kivy's Sound and
     SoundLoader classes, making it easier for you to integrate sounds into
@@ -39,7 +40,6 @@ cdef class SoundManager(EventDispatcher):
         return track_name
 
     def on_track_stop(self, sound):
-        print('track stopped', sound)
         if self.loop_music:
             Clock.schedule_once(
                 lambda dt: self.play_track(choice(self.music_dict.keys())),

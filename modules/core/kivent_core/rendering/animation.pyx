@@ -54,10 +54,10 @@ cdef class FrameList:
         each frame in the sequence.
     '''
 
-    def  __cinit__(self, frame_count, frame_buffer, model_manager, name):
+    def  __cinit__(self, frame_count, frame_buffer, model_manager, str name):
         self.frame_count = frame_count
         self.model_manager = model_manager
-        self.name = name.encode('utf-8')
+        self.name = name
 
         cdef MemoryBlock frames_block = MemoryBlock(
             frame_count*sizeof(FrameStruct), sizeof(FrameStruct), 1)
@@ -68,7 +68,6 @@ cdef class FrameList:
         if self.frames_block is not None:
             self.frames_block.remove_from_buffer()
             self.frames_block = None
-        self.frame_buffer = None
         self.model_manager = None
 
     def __getitem__(self, unsigned int i):

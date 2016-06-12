@@ -3,6 +3,7 @@ from kivent_core.managers.resource_managers import texture_manager
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.rendering.animation cimport FrameList
 from kivent_core.managers.game_manager cimport GameManager
+from kivy.compat import PY2
 
 import json
 import os
@@ -51,6 +52,9 @@ cdef class AnimationManager(GameManager):
             frames (list): The list of frames, each item in the list
             is a dict containing 'texture','model' and 'duration'.
         '''
+
+        if PY2:
+            name = name.encode('utf-8')
 
         cdef FrameList frame_list = FrameList(frame_count,
                                             self.memory_block,

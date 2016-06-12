@@ -60,9 +60,9 @@ class TestGame(Widget):
     def save_animations(self):
         animation_manager = self.gameworld.animation_manager
         animation_manager.save_to_json(['star-animation-1', 'star-animation-2'],
-                                       '/tmp/anim.json')
+                                       'anim.json')
         animation_manager.save_to_json(['star-animation-3'],
-                                       '/tmp/anim.json')
+                                       'anim.json')
 
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity

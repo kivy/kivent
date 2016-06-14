@@ -9,3 +9,4 @@ from . import position_systems
 from . import gamemap
 from . import renderers
 from . import lifespan
+from . import animation

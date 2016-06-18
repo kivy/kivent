@@ -425,7 +425,11 @@ cdef class VertexModel:
 
         '''
         cdef int vert_count = self._vertex_count
-        if not attribute_name in self._format_config._format_dict:
+        if isinstance(attribute_name, unicode):
+            attribute_bytes = bytes(attribute_name, 'utf-8')
+        else:
+            attribute_bytes = attribute_name
+        if not attribute_bytes in self._format_config._format_dict:
             raise AttributeError()
         cdef Vertex vertex = Vertex(self._format_config._format_dict)
         for i from 0 <= i < vert_count:
@@ -449,7 +453,11 @@ cdef class VertexModel:
 
         '''
         cdef int vert_count = self._vertex_count
-        if not attribute_name in self._format_config._format_dict:
+        if isinstance(attribute_name, unicode):
+            attribute_bytes = bytes(attribute_name, 'utf-8')
+        else:
+            attribute_bytes = attribute_name
+        if not attribute_bytes in self._format_config._format_dict:
             raise AttributeError()
         cdef Vertex vertex = Vertex(self._format_config._format_dict)
         for i from 0 <= i < vert_count:
@@ -480,7 +488,11 @@ cdef class VertexModel:
 
         '''
         cdef int vert_count = self._vertex_count
-        if not attribute_name in self._format_config._format_dict:
+        if isinstance(attribute_name, unicode):
+            attribute_bytes = bytes(attribute_name, 'utf-8')
+        else:
+            attribute_bytes = attribute_name
+        if not attribute_bytes in self._format_config._format_dict:
             raise AttributeError()
         cdef Vertex vertex = Vertex(self._format_config._format_dict)
         for i from 0 <= i < vert_count:

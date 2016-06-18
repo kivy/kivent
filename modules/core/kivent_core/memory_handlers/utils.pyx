@@ -71,10 +71,10 @@ cdef class memrange_iter:
             used = memory_zone.get_pool_end_from_pool_index(pool_index)
             if current >= used:
                 self.current = memory_zone.get_pool_range(pool_index)[1] + 1
-                return self.__next__()
+                return next(self)
             else:
                 pointer = memory_zone.get_pointer(current)
                 self.current += 1
                 if <unsigned int>pointer == -1:
-                    return self.next()
+                    return next(self)
                 return zone_index.get_component_from_index(current)

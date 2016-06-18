@@ -102,7 +102,8 @@ cdef class AnimationSystem(StaticMemGameSystem):
 
         Optional Args:
 
-            name (str): name of the animation which is registered in animation_manager
+            name (str): name of the animation which is registered
+                        in animation_manager
             loop (bool): whether to loop this animation or not
         '''
         model_manager = self.gameworld.model_manager
@@ -147,13 +148,10 @@ cdef class AnimationSystem(StaticMemGameSystem):
         cdef Frame frame
         cdef AnimationStruct* anim_comp
         cdef RenderStruct* render_comp
-        cdef FrameStruct* frame_data, next_frame
+        cdef FrameStruct* frame_data
         cdef unsigned int current_index
         cdef unsigned int groupkey
-        cdef VertexModel new_model
         cdef Renderer renderer
-        cdef float u0, u1, v0, v1
-        cdef list uv_list
 
 
         for i in range(count):
@@ -180,34 +178,28 @@ cdef class AnimationSystem(StaticMemGameSystem):
                         current_index = <unsigned int>-1
 
                 anim_comp.current_frame_index = current_index
-                # store the difference of current duration and frame duration to account for
-                # overshoot errors
-                anim_comp.current_duration = anim_comp.current_duration - frame_data.duration
+                # store the difference of current duration and frame duration
+                # to account for overshoot errors
+                anim_comp.current_duration = (anim_comp.current_duration
+                                              - frame_data.duration)
                 anim_comp.dirty = True
 
             if current_index != <unsigned int>-1 and anim_comp.dirty:
-                # Animation is dirty, update texture and model in RenderComponent
+                # Animation is dirty
+                # update texture and model in RenderComponent
                 frame = frame_list[current_index]
                 frame_data = <FrameStruct*>frame.frame_pointer
                 groupkey = (texture_manager.get_groupkey_from_texkey(
                                                 frame_data.texkey))
-                uv_list = texture_manager.get_uvs(frame_data.texkey)
-                u0 = uv_list[0]
-                v0 = uv_list[1]
-                u1 = uv_list[2]
-                v1 = uv_list[3]
-                same_batch = texture_manager.get_texkey_in_group(frame_data.texkey, groupkey)
+                same_batch = texture_manager.get_texkey_in_group(
+                                                render_comp.texkey,
+                                                groupkey)
                 render_comp.model = frame_data.model
-                model = <VertexModel>render_comp.model
                 renderer = <Renderer>render_comp.renderer
                 if not same_batch:
                     renderer._unbatch_entity(render_comp.entity_id,
                         render_comp)
                 render_comp.texkey = frame_data.texkey
-                model[0].uvs = [u0, v0]
-                model[1].uvs = [u0, v1]
-                model[2].uvs = [u1, v1]
-                model[3].uvs = [u1, v0]
                 if not same_batch:
                     renderer._batch_entity(render_comp.entity_id,
                         render_comp)

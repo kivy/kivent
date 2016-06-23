@@ -74,14 +74,14 @@ elif platform == 'darwin':
 do_clear_existing = True
 import cymunk
 
-noise_modules = {
+projectiles_modules = {
     'kivent_projectiles.projectiles': ['kivent_projectiles/projectiles.pyx'], 
     'kivent_projectiles.weapons': ['kivent_projectiles/weapons.pyx'], 
     'kivent_projectiles.combatstats': ['kivent_projectiles/combatstats.pyx'],
     'kivent_projectiles.weapon_ai': ['kivent_projectiles/weapon_ai.pyx'],
 }
 
-noise_modules_c = {
+projectiles_modules_c = {
     'kivent_projectiles.weapons': ['kivent_projectiles/weapons.c'],
     'kivent_projectiles.projectiles': ['kivent_projectiles/projectiles.c'],
     'kivent_projectiles.combatstats': ['kivent_projectiles/combatstats.c'],
@@ -103,7 +103,7 @@ def build_ext(ext_name, files, include_dirs=cymunk.get_includes()):
         library_dirs=library_dirs)
 
 extensions = []
-noise_extensions = []
+projectiles_extensions = []
 cmdclass = {}
 
 def build_extensions_for_modules_cython(ext_list, modules):
@@ -129,19 +129,19 @@ if have_cython:
         for file_name in check_for_removal:
             if isfile(file_name):
                 remove(file_name)
-    noise_extensions = build_extensions_for_modules_cython(
-        noise_extensions, noise_modules)
+    projectiles_extensions = build_extensions_for_modules_cython(
+        projectiles_extensions, projectiles_modules)
 else:
-    noise_extensions = build_extensions_for_modules(noise_extensions, 
-        noise_modules_c)
+    projectiles_extensions = build_extensions_for_modules(
+        projectiles_extensions, projectiles_modules_c)
 
 setup(
-    name='KivEnt noise',
+    name='KivEnt projectiles',
     description='''A game engine for the Kivy Framework. 
         https://github.com/Kovak/KivEnt for more info.''',
     author='Jacob Kovac',
     author_email='kovac1066@gmail.com',
-    ext_modules=noise_extensions,
+    ext_modules=projectiles_extensions,
     cmdclass=cmdclass,
     packages=[
         'kivent_projectiles',

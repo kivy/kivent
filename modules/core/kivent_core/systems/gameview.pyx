@@ -205,6 +205,7 @@ cdef class GameView(GameSystem):
         else:
             return False
 
+
     def on_touch_up(self, touch):
         converted_pos = self.convert_from_screen_to_world(touch.pos)
         old_x, old_y = touch.x, touch.y
@@ -285,6 +286,7 @@ cdef class GameView(GameSystem):
                         self.camera_scale = new_scale
                     self.look_at(anchor_touch.ud['world_pos'])
                     return True
+
             if not self.focus_entity and self.do_scroll:
                 if self._touch_count == 1:
                     camera_scale = self.camera_scale

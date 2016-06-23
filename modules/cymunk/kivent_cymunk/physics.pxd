@@ -1,5 +1,5 @@
 from cymunk.cymunk cimport Body, cpBody, Space
-from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem, 
+from kivent_core.systems.staticmemgamesystem cimport (StaticMemGameSystem,
     MemComponent)
 
 
@@ -21,10 +21,6 @@ cdef class CymunkPhysics(StaticMemGameSystem):
     cdef int collision_type_count
     cdef dict collision_type_index
 
-    cdef unsigned int _init_component(self, unsigned int component_index, 
+    cdef unsigned int _init_component(self, unsigned int component_index,
         unsigned int entity_id, cpBody* body, str zone_name) except -1
     cdef int _clear_component(self, unsigned int component_index) except 0
-
-
-
-

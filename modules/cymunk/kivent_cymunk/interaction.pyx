@@ -19,7 +19,7 @@ from kivent_core.systems.staticmemgamesystem cimport (
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
-from kivent_core.systems.position_systems cimport (PositionComponent2D, 
+from kivent_core.systems.position_systems cimport (PositionComponent2D,
     PositionStruct2D)
 from kivent_core.systems.rotate_systems cimport RotateComponent2D
 cimport cython
@@ -33,24 +33,24 @@ from kivent_core.managers.system_manager cimport SystemManager
 
 cdef class CymunkTouchComponent(MemComponent):
     '''
-    The CymunkTouchComponent keeps track of a PivotJoint and a Body that has 
-    not been added to the cymunk Space in order to control physics objects 
+    The CymunkTouchComponent keeps track of a PivotJoint and a Body that has
+    not been added to the cymunk Space in order to control physics objects
     actually added to the world. The PivotJoint is bound to the **touch_body**
     of this component and the Body of the touched Entity.
 
 
     **Attributes:**
         **entity_id** (unsigned int): The entity_id this component is currently
-        associated with. Will be <unsigned int>-1 if the component is 
+        associated with. Will be <unsigned int>-1 if the component is
         unattached.
 
         **touch_body** (Body): This is a rogue body (unattached to the space)
         that influences another Body through a cymunk.constraint interaction.
 
-        **pivot** (PivotJoint): The constraint that acts on this body and the 
-        one it is attached to. 
+        **pivot** (PivotJoint): The constraint that acts on this body and the
+        one it is attached to.
 
-        **max_force** (float): Maximum force the joint can exert on the 
+        **max_force** (float): Maximum force the joint can exert on the
         attached body.
 
         **error_bias** (float): The rate at which the joint is corrected.
@@ -95,37 +95,37 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
     '''
     Processing Depends On: PositionSystem2D, CymunkTouchSystem
 
-    The CymunkTouchSystem provides a way to interact with the entities in a 
-    CymunkPhysics GameSystem, either through touches or mouse clicks. Touched 
-    entities will be 'dragged'. This system will generate new entities when 
-    receiving an on_touch_down event that collides with an entity in the 
+    The CymunkTouchSystem provides a way to interact with the entities in a
+    CymunkPhysics GameSystem, either through touches or mouse clicks. Touched
+    entities will be 'dragged'. This system will generate new entities when
+    receiving an on_touch_down event that collides with an entity in the
     space of the CymunkPhysics GameSystem with system_id: **physics_system**.
 
-    The entities will be generated in zone **zone_to_use** so make sure to set 
-    this up appropriately. This zone should not need more than 100 entities 
+    The entities will be generated in zone **zone_to_use** so make sure to set
+    this up appropriately. This zone should not need more than 100 entities
     unless you are planning on receiving very many simultaneous touches.
 
-    This system will be dependent on its own component and a 
+    This system will be dependent on its own component and a
     PositionComponent2D (default system_id: 'position') for processing.
 
     **Attributes:**
-        **physics_system** (StringProperty): Name (system_id) of the physics 
+        **physics_system** (StringProperty): Name (system_id) of the physics
         system to use with this system. Defaults to 'cymunk_physics'.
 
-        **touch_radius** (NumericProperty): Size of the touch query to see 
+        **touch_radius** (NumericProperty): Size of the touch query to see
         which entities we are touching. Defaults to 20.
 
-        **max_force** (NumericProperty): Maximum force the PivotJoint will be 
+        **max_force** (NumericProperty): Maximum force the PivotJoint will be
         able to exert. Defaults to 2500000.
 
-        **max_bias** (NumericProperty): The rate at which the joints for 
+        **max_bias** (NumericProperty): The rate at which the joints for
         touch entities will be corrected. Defaults to 10000.
 
-        **ignore_groups** (ListProperty): List of collision_type (int) to 
-        ignore when performing the collision query in on_touch_down. Defaults 
+        **ignore_groups** (ListProperty): List of collision_type (int) to
+        ignore when performing the collision query in on_touch_down. Defaults
         to [].
 
-        **zone_to_use** (StringProperty): Name of the zone to create entities 
+        **zone_to_use** (StringProperty): Name of the zone to create entities
         in. Defaults to 'touch'.
 
     '''
@@ -143,23 +143,23 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
     system_names = ListProperty(['cymunk_touch','position'])
 
 
-    def init_component(self, unsigned int component_index, 
+    def init_component(self, unsigned int component_index,
         unsigned int entity_id, str zone, dict args):
         '''
-        The entities for this system are typically generated by its 
-        on_touch_down event. However, if you do need to create a component 
-        the args dict looks like: 
+        The entities for this system are typically generated by its
+        on_touch_down event. However, if you do need to create a component
+        the args dict looks like:
 
-        You will also definitely want to look over how this GameSystem 
+        You will also definitely want to look over how this GameSystem
         manipulates its components in the on_touch_down, on_touch_move,
         and on_touch_up event handling.
 
         Args:
 
-            component_index (unsigned int): Index of the component to be 
-            initialized. 
+            component_index (unsigned int): Index of the component to be
+            initialized.
 
-            entity_id (usigned int): Identity of the entity we will be 
+            entity_id (usigned int): Identity of the entity we will be
             adding this component to.
 
             zone (str): Name of the zone this entities memory will use.
@@ -172,10 +172,10 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
         .. code-block:: python
 
             args = {
-                'touch_pos': (float, float), 
+                'touch_pos': (float, float),
                 #Tuple of the position this touch is occuring at
 
-                'touched_ent': (unsigned int), 
+                'touched_ent': (unsigned int),
                 #The id of the entity that was touched.
 
                 'max_bias': float,
@@ -206,7 +206,7 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
         cdef Body body = physics_data.body
         cdef cpVect body_local = body.world_to_local(touch_pos)
         cdef tuple body_pos = (body_local.x, body_local.y)
-        cdef PivotJoint pivot = PivotJoint(touch_body, body, (0., 0.), 
+        cdef PivotJoint pivot = PivotJoint(touch_body, body, (0., 0.),
             body_pos)
         touch_body._body.p = cpv(touch_pos[0], touch_pos[1])
         pivot.max_bias = args['max_bias']
@@ -222,8 +222,8 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
 
     def clear_component(self, unsigned int component_index):
         '''
-        Clears the component at **component_index**. We must set the 
-        pointers in the C struct to empty and the references in the 
+        Clears the component at **component_index**. We must set the
+        pointers in the C struct to empty and the references in the
         CymunkTouchComponent to None.
 
         Args:
@@ -244,15 +244,15 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
 
     def remove_component(self, unsigned int component_index):
         '''
-        Before we clear the component we perform some cleanup on the 
-        physics objects, removing the _pivot PivotJoint from our Space. We 
-        also remove our entity from the **entity_components** aggregator at 
+        Before we clear the component we perform some cleanup on the
+        physics objects, removing the _pivot PivotJoint from our Space. We
+        also remove our entity from the **entity_components** aggregator at
         this time.
 
         Args:
 
             component_index (unsigned int): Component to remove.
-            
+
         '''
         cdef CymunkTouchComponent component = self.components[component_index]
         self.entity_components.remove_entity(component.entity_id)
@@ -263,25 +263,25 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
         cdef Space space = physics_system.space
         space.remove(component._pivot)
         super(CymunkTouchSystem, self).remove_component(component_index)
-    
+
     def on_touch_down(self, touch):
         '''
-        The touch down handling for the CymunkTouchSystem queries the 
-        CymunkPhysics GameSystem with system_id: **physics_system** to see 
+        The touch down handling for the CymunkTouchSystem queries the
+        CymunkPhysics GameSystem with system_id: **physics_system** to see
         if any touches occur withtin a square of x +- **touch_radius**, y +-
-        **touch_radius**. 
+        **touch_radius**.
 
-        If we do collide with an entity, we will take the first one and 
-        bind a new rogue body (unattached from the physics Space) together 
+        If we do collide with an entity, we will take the first one and
+        bind a new rogue body (unattached from the physics Space) together
         with the touched entity's physics Body by creating a PivotJoint.
-        The new entity representing the PivotJoint will be created in zone: 
-        **zone_to_use**.  
+        The new entity representing the PivotJoint will be created in zone:
+        **zone_to_use**.
 
         '''
         cdef object gameworld = self.gameworld
         cdef SystemManager system_manager = gameworld.system_manager
         cdef object physics_system = system_manager[self.physics_system]
-        cdef float tx = touch.x 
+        cdef float tx = touch.x
         cdef float ty = touch.y
         cdef str system_id = self.system_id
         cdef float max_force = self.max_force
@@ -292,11 +292,11 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
             ignore_groups=self.ignore_groups)
         if len(touched_ids) > 0:
             entity_id = touched_ids[0]
-            creation_dict = {system_id: 
+            creation_dict = {system_id:
                 {'touched_ent': entity_id, 'touch_pos': (tx, ty),
-                'max_force': max_force, 'max_bias':max_bias}, 
+                'max_force': max_force, 'max_bias':max_bias},
                 'position': (tx, ty)}
-            touch_ent = gameworld.init_entity(creation_dict, ['position', 
+            touch_ent = gameworld.init_entity(creation_dict, ['position',
                 system_id], zone=self.zone_to_use)
             touch.ud['ent_id'] = touch_ent
             touch.ud['touched_ent_id'] = entity_id
@@ -306,18 +306,18 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
 
     def on_touch_move(self, touch):
         '''
-        The touch move handling keeps track of the touch entity generated in 
+        The touch move handling keeps track of the touch entity generated in
         on_touch_down, updating its position to the new position of the touch.
         '''
 
-        cdef object gameworld 
+        cdef object gameworld
         cdef SystemManager system_manager
         cdef object gameview
         cdef IndexedMemoryZone entities
         cdef tuple camera_pos
         cdef tuple touch_pos = (touch.x, touch.y)
-        cdef float camera_scale 
-        cdef tuple converted_pos 
+        cdef float camera_scale
+        cdef tuple converted_pos
         cdef unsigned int entity_id
         cdef object entity
         cdef PositionComponent2D pos_comp
@@ -332,8 +332,8 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
 
     def on_touch_up(self, touch):
         '''
-        On touch up, if we have previously set the ud['ent_id'] in 
-        on_touch_down we will remove this entity from the GameWorld as the 
+        On touch up, if we have previously set the ud['ent_id'] in
+        on_touch_down we will remove this entity from the GameWorld as the
         touch is now over.
         '''
         if 'ent_id' in touch.ud:
@@ -341,7 +341,7 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
 
     def update(self, float dt):
         gameworld = self.gameworld
-        cdef CymunkTouchStruct* system_component 
+        cdef CymunkTouchStruct* system_component
         cdef PositionStruct2D* pos_comp
         cdef cpBody* body
         cdef cpVect p_position
@@ -368,7 +368,7 @@ cdef class CymunkTouchSystem(StaticMemGameSystem):
             body.p = new_point
 
 
-cdef class SteeringComponent: 
+cdef class SteeringComponent:
 
     def __cinit__(self, MemoryBlock memory_block, unsigned int index,
             unsigned int offset):
@@ -710,7 +710,6 @@ cdef class SteeringAISystem(StaticMemGameSystem):
         component.current_time = 0.
         component.query_radius = args.get('query_radius', 150.)
         component.recalculate_time = args.get('recalculate_time', 30.)
-
         return self.entity_components.add_entity(entity_id, zone)
 
     cdef cpVect calculate_avoid_vector(self, list obstacles,

@@ -211,8 +211,9 @@ cdef class SystemManager(GameManager):
             master_buffer (Buffer): The buffer from which the space for the
             entity IndexedMemoryZone will be allocated.
 
-        """
+            gameworld (GameWorld): The GameWorld for your application.
 
+        """
         system_count = gameworld.system_count
         if system_count is None:
             system_count = gameworld._system_count

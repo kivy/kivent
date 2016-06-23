@@ -35,7 +35,6 @@ cdef class EntityManager(GameManager):
         active.
 
     '''
-
     def __cinit__(self):
         '''
         '''

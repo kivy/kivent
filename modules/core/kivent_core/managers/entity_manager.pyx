@@ -3,8 +3,9 @@ from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.zone cimport MemoryZone
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.entity cimport Entity
+from kivent_core.managers.game_manager cimport GameManager
 
-cdef class EntityManager:
+cdef class EntityManager(GameManager):
     '''
     The EntityManager will keep track of the entities in your GameWorld.
     An Entity is technically nothing more than an entry in an array of
@@ -34,30 +35,28 @@ cdef class EntityManager:
         active.
 
     '''
-
-    def __cinit__(self, Buffer master_buffer, unsigned int pool_block_size,
-        dict reserve_spec, unsigned int system_count):
+    def __cinit__(self):
         '''
-        Args:
-            master_buffer (Buffer): The buffer from which the space for the
-            entity IndexedMemoryZone will be allocated.
-
-            pool_block_size (unsigned int): size in kibibytes of the individual
-            MemoryBlock in the IndexedMemoryZone.
-
-            reserve_spec (dict): Dict of zone_name, zone_count that should be
-            allocated in the IndexedMemoryZone.
-
-            system_count (unsigned int): The number of systems to make room
-            for, internally system_count + 1 entries will actually be reserved
-            for your Entity as the first slot will be used to store whether
-            or not that entity is active.
         '''
-        system_count = system_count + 1
-        self.memory_index = IndexedMemoryZone(master_buffer,
-            pool_block_size, sizeof(unsigned int)*system_count, reserve_spec,
+        pass
+
+    def allocate(self, master_buffer, gameworld):
+        cdef dict zones_dict = {}
+        zones = gameworld.zones
+        system_manager = gameworld.managers['system_manager']
+        self.system_count = gameworld.system_count + 1
+        if 'general' not in zones:
+            zones['general'] = gameworld.DEFAULT_COUNT
+        for key in zones:
+            zones_dict[key] = zones[key]
+            system_manager.add_zone(key, zones[key])
+        self.memory_index = IndexedMemoryZone(
+            master_buffer, gameworld.size_of_entity_block, 
+            sizeof(unsigned int)*self.system_count, zones_dict,
             Entity)
-        self.system_count = system_count
+        gameworld.entities = self.memory_index
+        return self.get_size()
+
 
     cdef void clear_entity(self, unsigned int entity_id):
         '''

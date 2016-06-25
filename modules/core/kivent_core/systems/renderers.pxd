@@ -25,6 +25,8 @@ cdef class RenderComponent(MemComponent):
 cdef class Renderer(StaticMemGameSystem):
     cdef BatchManager batch_manager
     cdef object update_trigger
+    cdef bint do_texture
+
     cdef void* _batch_entity(self, unsigned int entity_id,
         RenderStruct* component_data) except NULL
     cdef void* _unbatch_entity(self, unsigned int entity_id,
@@ -35,9 +37,21 @@ cdef class Renderer(StaticMemGameSystem):
     cdef void* setup_batch_manager(self, Buffer master_buffer) except NULL
 
 
-cdef class PhysicsRenderer(Renderer):
+cdef class RotateRenderer(Renderer):
     pass
 
+cdef class RotateColorRenderer(Renderer):
+    pass
 
 cdef class ColorRenderer(Renderer):
     pass
+    
+cdef class PolyRenderer(Renderer):
+    pass
+
+cdef class ColorPolyRenderer(Renderer):
+    pass
+
+cdef class ScaledRenderer(Renderer):
+    pass
+

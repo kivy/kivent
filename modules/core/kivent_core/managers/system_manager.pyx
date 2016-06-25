@@ -1,4 +1,5 @@
 # cython: embedsignature=True
+from kivent_core.managers.game_manager cimport GameManager
 '''
 GameWorld uses these system management classes to keep track of the GameSystems
 attached to it, their indexes in the EntityManager memory, and the
@@ -110,7 +111,7 @@ cdef class SystemConfig:
 class TooManySystemsError(Exception):
     pass
 
-cdef class SystemManager:
+cdef class SystemManager(GameManager):
     '''Manages the GameSystems attached to the GameWorld as well as the zone
     configuration for systems which use the IndexedMemoryZone for holding
     entity data. Supports dictionary style key access of systems directly.
@@ -199,7 +200,28 @@ cdef class SystemManager:
             system_index (unsigned int): Index of the system in the **systems**
             list.
         '''
-        return self.system_index[system_name]
+        try:
+            return self.system_index[system_name]
+        except KeyError:
+            return -1
+
+    def allocate(self, master_buffer, gameworld):
+        """
+        Args:
+            master_buffer (Buffer): The buffer from which the space for the
+            entity IndexedMemoryZone will be allocated.
+
+            gameworld (GameWorld): The GameWorld for your application.
+
+        """
+        system_count = gameworld.system_count
+        if system_count is None:
+            system_count = gameworld._system_count
+        self.set_system_count(system_count)
+        for each in gameworld.systems_to_add:
+            self.add_system(each.system_id, each)
+        gameworld.systems_to_add = None
+        return 0
 
     def set_system_count(self, unsigned int system_count):
         '''Set the system_count, which is the number of systems that will

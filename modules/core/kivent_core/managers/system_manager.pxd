@@ -1,3 +1,4 @@
+from kivent_core.managers.game_manager cimport GameManager
 cdef unsigned int DEFAULT_SYSTEM_COUNT
 cdef unsigned int DEFAULT_COUNT
 
@@ -11,7 +12,7 @@ cdef class SystemConfig:
     cdef dict zone_configs
 
 
-cdef class SystemManager:
+cdef class SystemManager(GameManager):
     cdef list systems
     cdef dict zones
     cdef dict system_index

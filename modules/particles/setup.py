@@ -1,5 +1,5 @@
 from os import environ, remove
-from os.path import dirname, join, isfile
+from os.path import dirname, join, isfile, exists
 from distutils.core import setup
 from distutils.extension import Extension
 import kivy
@@ -10,14 +10,68 @@ try:
 except ImportError:
     have_cython = False
 import sys
-
 platform = sys.platform
-if platform == 'win32':
+cstdarg = '-std=gnu99'
+libraries = ['GL']
+extra_compile_args = []
+extra_link_args = []
+global_include_dirs = []
+library_dirs = []
+
+if environ.get('NDKPLATFORM') and environ.get('LIBLINK'):
+    platform = 'android'
+    libraries = ['GLESv2']
+elif environ.get('KIVYIOSROOT'):
+    platform = 'ios'
+    libraries = ['GLESv2']
+    sysroot = environ.get('IOSSDKROOT', environ.get('SDKROOT'))
+    global_include_dirs = [sysroot]
+    extra_compile_args = ['-isysroot', sysroot]
+    extra_link_args = ['-isysroot', sysroot, '-framework', 'OpenGLES']
+elif exists('/opt/vc/include/bcm_host.h'):
+    platform = 'rpi'
+    global_include_dirs = ['/opt/vc/include',
+                           '/opt/vc/include/interface/vcos/pthreads',
+                           '/opt/vc/include/interface/vmcs_host/linux']
+    library_dirs = ['/opt/vc/lib']
+    libraries = ['bcm_host', 'EGL', 'GLESv2']
+elif exists('/usr/lib/arm-linux-gnueabihf/libMali.so'):
+    platform = 'mali'
+    global_include_dirs = ['/usr/include']
+    library_dirs = ['/usr/lib/arm-linux-gnueabihf']
+    libraries = ['GLESv2']
+elif platform == 'win32':
     cstdarg = '-std=gnu99'
     libraries = ['opengl32', 'glu32','glew32']
-else:
-    cstdarg = '-std=c99'
+elif platform.startswith('freebsd'):
+    localbase = environ.get('LOCALBASE', '/usr/local')
+    global_include_dirs = [join(localbase, 'include')]
+    extra_link_args = ['-L', join(localbase, 'lib')]
+elif platform.startswith('openbsd'):
+    global_include_dirs = ['/usr/X11R6/include']
+    extra_link_args = ['-L', '/usr/X11R6/lib']
+elif platform == 'darwin':
+    if sys.maxsize > 2 ** 32:
+        osx_arch = 'x86_64'
+    else:
+        osx_arch = 'i386'
+    v = os.uname()
+    if v[2] >= '13.0.0':
+        import platform as _platform
+        xcode_dev = getoutput('xcode-select -p').spltilines()[0]
+        sdk_mac_ver = '.'.join(_platform.mac_ver()[0].split('.')[:2])
+        sysroot = join(xcode_dev.decode('utf-8'),
+                       'Platforms/MacOSX.platform/Developer/SDKs',
+                       'MacOSX{}.sdk'.format(sdk_mac_ver),
+                       'System/Library/Frameworks')
+    else:
+        sysroot = ('/System/Library/Frameworks/'
+                   'ApplicationServices.framework/Frameworks')
+    extra_compile_args = ['-F' + sysroot, '-arch', osx_arch]
+    extra_link_args = ['-F' + sysroot, '-arch', osx_arch,
+                       '-framework', 'OpenGL']
     libraries = []
+
 
 
 do_clear_existing = True
@@ -27,15 +81,23 @@ do_clear_existing = True
 particles_modules = {
     'kivent_particles.particle': ['kivent_particles/particle.pyx'],
     'kivent_particles.emitter': ['kivent_particles/emitter.pyx',],
-    'kivent_particles.particle_formats': ['kivent_particles/particle_formats.pyx',],
-    'kivent_particles.particle_renderers': ['kivent_particles/particle_renderers.pyx',],
+    'kivent_particles.particle_formats': [
+        'kivent_particles/particle_formats.pyx',
+        ],
+    'kivent_particles.particle_renderers': [
+        'kivent_particles/particle_renderers.pyx',
+        ],
 }
 
 particles_modules_c = {
     'kivent_particles.particle': ['kivent_particles/particle.c',],
     'kivent_particles.emitter': ['kivent_particles/emitter.c',],
-    'kivent_particles.particle_formats': ['kivent_particles/particle_formats.c',],
-    'kivent_particles.particle_renderers': ['kivent_particles/particle_renderers.c',],
+    'kivent_particles.particle_formats': [
+        'kivent_particles/particle_formats.c',
+        ],
+    'kivent_particles.particle_renderers': [
+        'kivent_particles/particle_renderers.c',
+        ],
 }
 
 check_for_removal = [
@@ -43,13 +105,13 @@ check_for_removal = [
     'kivent_particles.emitter.c',
     'kivent_particles/particle_formats.c',
     'kivent_particles/particle_renderers.c',
-
     ]
 
 def build_ext(ext_name, files, include_dirs=[]):
-    return Extension(ext_name, files, include_dirs,
-        extra_compile_args=[cstdarg, '-ffast-math',],
-        libraries=libraries,)
+    return Extension(ext_name, files, global_include_dirs + include_dirs,
+        extra_compile_args=[cstdarg, '-ffast-math',] + extra_compile_args,
+        libraries=libraries, extra_link_args=extra_link_args,
+        library_dirs=library_dirs)
 
 extensions = []
 particles_extensions = []
@@ -99,4 +161,6 @@ setup(
     packages=[
         'kivent_particles',
         ],
-    package_dir={'kivent_particles': 'kivent_particles'})
+    package_dir={'kivent_particles': 'kivent_particles'},
+    package_data={'kivent_particles': ['*.pxd',]}
+    )

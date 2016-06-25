@@ -1,0 +1,77 @@
+#:kivy 1.9.0
+#:kivy 1.9.0
+#:import path os.path
+#:import dirname os.path.dirname
+#:import main __main__
+
+TestGame:
+
+<TestGame>:
+    gameworld: gameworld
+    test: 'test'
+    GameWorld:
+        id: gameworld
+        gamescreenmanager: gamescreenmanager
+        size_of_gameworld: 100*1024
+        size_of_entity_block: 128
+        system_count: 3
+        camera_size: root.size
+        pos: root.pos
+        zones: {'general': 10000}
+        PositionSystem2D:
+            system_id: 'position'
+            gameworld: gameworld
+            zones: ['general']
+            size_of_component_block: 128
+        Renderer:
+            id: renderer
+            gameworld: gameworld
+            system_id: 'renderer'
+            zones: ['general']
+            frame_count: 2
+            updateable: True
+            force_update: True
+            size_of_batches: 128
+            size_of_component_block: 128
+            shader_source: path.join(dirname(dirname(path.abspath(main.__file__))), 'assets', 'glsl', 'positionshader.glsl')
+            gameview: 'camera1'
+        AnimationSystem:
+            id: animation
+            gameworld: gameworld
+            system_id: 'animation'
+            zones: ['general']
+        GameView:
+            system_id: 'camera1'
+            gameworld: gameworld
+            size: root.size
+            pos: root.pos
+            camera_pos: (0, 0)
+            do_scroll_lock: False
+            updateable: True
+    GameScreenManager:
+        id: gamescreenmanager
+        size: root.size
+        pos: root.pos
+        gameworld: gameworld
+
+<GameScreenManager>:
+    MainScreen:
+        id: main_screen
+
+<MainScreen@GameScreen>:
+    name: 'main'
+    FloatLayout:
+        DebugPanel:
+            size_hint: (.2, .1)
+            pos_hint: {'x': .225, 'y': .025}
+
+
+<DebugPanel>:
+    Label:
+        pos: root.pos
+        size: root.size
+        font_size: root.size[1]*.5
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1)
+        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'

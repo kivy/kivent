@@ -42,7 +42,8 @@ cdef class SoundManager(GameManager):
     def on_track_stop(self, sound):
         if self.loop_music:
             Clock.schedule_once(
-                lambda dt: self.play_track(choice(self.music_dict.keys())),
+                lambda dt: self.play_track(
+                    choice(list(self.music_dict.keys()))),
                 uniform(0., self.max_wait_for_music)
                 )
             

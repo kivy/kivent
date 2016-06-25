@@ -479,19 +479,19 @@ cdef class Renderer(StaticMemGameSystem):
             texture (str): If 'texture' is in args, the appropriate texture
             will be loaded from managers.resource_managers.texture_manager.
             #change to model_key
-            vert_mesh_key (str): If 'vert_mesh_key' is in args, the associated 
+            vert_mesh_key (str): If 'vert_mesh_key' is in args, the associated
             model from managers.resource_managers.model_manager will be loaded.
-            Otherwise, it will be assumed we are rendering a sprite and the 
-            appropriate model for that sprite will either be generated or 
-            loaded from the model_manager if it already exists. If this occurs 
+            Otherwise, it will be assumed we are rendering a sprite and the
+            appropriate model for that sprite will either be generated or
+            loaded from the model_manager if it already exists. If this occurs
             the models name will be str(**attribute_count**) + texture_key.
 
             size (tuple): If size is provided and there is no 'vert_mesh_key'
-            and the sprite has not been loaded before the size of the newly 
+            and the sprite has not been loaded before the size of the newly
             generated sprite VertMesh will be set to (width, height).
 
-            render (bool): If 'render' is in args, the components render 
-            attribute will be set to the provided, otherwise it defaults to 
+            render (bool): If 'render' is in args, the components render
+            attribute will be set to the provided, otherwise it defaults to
             True.
 
         Keep in mind that all RenderComponent will share the same VertMesh if

@@ -9,7 +9,7 @@ from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivy.logger import Logger
 try:
     import cPickle as pickle
-except: 
+except:
     import pickle
 from kivent_core.rendering.svg_loader cimport SVG, SVGModelInfo
 from kivent_core.managers.game_manager cimport GameManager
@@ -184,17 +184,9 @@ cdef class ModelManager(GameManager):
         Allocates space for loading models. Typically called as part of
         Gameworld.allocate.
 
-        If you pass in a dict keyed by the name of registered vertex_formats
-        with a tuple value of (bytes for vertex data, bytes for index data)
-        you can control the formats loaded and the data loaded. If you do not
-        provide instructions, every registered vertex format will have
-        75 KiB allocated for vertex data and 25 KiB for index data by default.
-        This default allocation can be controlled by **allocation_size**
-        if set before initalization.
 
         Args:
             master_buffer (Buffer): The buffer to do allocation from.
-
             gameworld (GameWorld):
 
         Return:
@@ -204,6 +196,13 @@ cdef class ModelManager(GameManager):
         #Either for each format in formats to allocate, or use default behavior
         #Load 10 mb of space for each registered vertex format.
         #(index space, vertex_space) for val at format_name key.
+        #         If you pass in a dict keyed by the name of registered vertex_formats
+        # with a tuple value of (bytes for vertex data, bytes for index data)
+        # you can control the formats loaded and the data loaded. If you do not
+        # provide instructions, every registered vertex format will have
+        # 75 KiB allocated for vertex data and 25 KiB for index data by default.
+        # This default allocation can be controlled by **allocation_size**
+        # if set before initalization.
 
 
         cdef FormatConfig format_config
@@ -527,7 +526,8 @@ cdef class TextureManager(GameManager):
     game engine. Use **load_image** for image files and **load_atlas** for
     .atlas files. Do not load 2 images with the same name even in different
     atlas files. Prefer to access kivent.renderers.texture_manager than
-    making your own instance.'''
+    making your own instance.
+    '''
 
     def __init__(self):
         #maps texkey to textures

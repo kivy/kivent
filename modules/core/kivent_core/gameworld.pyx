@@ -210,6 +210,7 @@ class GameWorld(Widget):
         return True
 
     def allocate(self):
+
         '''
         Typically called interally as part of init_gameworld, this function
         allocates the **master_buffer** for the gameworld, registers the
@@ -249,7 +250,6 @@ class GameWorld(Widget):
                     'KiB').format(system_name=str(name),
                     system_size=str(system_size//1024)))
                 total_count += system_size
-
         Logger.info(('KivEnt: We will need {total_count} KiB for game, we ' +
             'have {real_size} KiB').format(total_count=str(total_count//1024),
                 real_size=str(real_size//1024)))

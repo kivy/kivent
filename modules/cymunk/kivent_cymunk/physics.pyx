@@ -28,7 +28,6 @@ cdef class PhysicsComponent(MemComponent):
     cymunk (and `Chipmunk2D's documentation <https://chipmunk-physics.net/>`_)
     to properly use this system.
 
-
     **Attributes:**
         **entity_id** (unsigned int): The entity_id this component is currently
         associated with. Will be <unsigned int>-1 if the component is
@@ -87,7 +86,9 @@ cdef class PhysicsComponent(MemComponent):
 
 
 cdef class CymunkPhysics(StaticMemGameSystem):
-    '''Processing Depends On: :class:`~kivent_core.systems.position_systems.PositionSystem2D`,
+    '''
+    Processing Depends On: 
+    :class:`~kivent_core.systems.position_systems.PositionSystem2D`,
     :class:`~kivent_core.systems.rotate_systems.RotateSystem2D`,
     :class:`~kivent_cymunk.physics.CymunkPhysics`
 
@@ -103,6 +104,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
     in addition to its own component. It will write out the position
     and rotation of the `cymunk.Body` associated with your entity every
     frame to these components.
+
 
     **Attributes:**
         **space** (ObjectProperty): The Cymunk Space the physics system is
@@ -157,8 +159,9 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         self.collision_type_count += 1
         return count
 
-    def add_collision_handler(self, type_a, type_b, begin_func=None,
-        pre_solve_func=None, post_solve_func=None, separate_func=None):
+    def add_collision_handler(self, int type_a, int type_b, begin_func=None,
+                              pre_solve_func=None, post_solve_func=None,
+                              separate_func=None):
         '''
         Args:
             type_a (int): the collision_type for the first Shape in the
@@ -169,7 +172,8 @@ cdef class CymunkPhysics(StaticMemGameSystem):
 
         Kwargs:
 
-            begin_func (function): called (once) when collision between 2 shapes first begins
+            begin_func (function): called (once) when collision between 2 
+            shapes first begins
 
             pre_solve_func (function): called before every solve of the physics
             space where a collision persists
@@ -177,9 +181,8 @@ cdef class CymunkPhysics(StaticMemGameSystem):
             post_solve_func (function): called after every solve of the physics
             space where a collision persists
 
-            separate_func (function): called (once) when collision between 2 shapes
-            finally ends
-
+            separate_func (function): called (once) when collision between 2
+            shapes ends.
 
         Function to add collision handlers for collisions between
         pairs of collision_type. Collision functions
@@ -375,7 +378,6 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         cdef list shapes
         cdef Shape new_shape
         space = self.space
-
         if 'moment' in args.keys():
             moment = args['moment']
         else:
@@ -404,7 +406,8 @@ cdef class CymunkPhysics(StaticMemGameSystem):
                         shape_info['a'],
                         shape_info['b'])
                 else:
-                    print 'error: shape ', a_shape['shape_type'], 'not supported'
+                    print('error: shape ', a_shape['shape_type'], 
+                          'not supported')
         if args['mass'] == 0:
             body = Body(None, None)
         else:

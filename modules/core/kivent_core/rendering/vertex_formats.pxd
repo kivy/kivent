@@ -13,18 +13,7 @@ ctypedef struct VertexFormat7F:
 ctypedef struct VertexFormat4F4UB:
     GLfloat[2] pos
     GLfloat[2] uvs
-    GLubyte[4] v_color #we don't want to clash with Kivy's 'color' uniform
-
-ctypedef struct VertexFormat2F4UB:
-    GLfloat[2] pos
-    GLubyte[4] v_color
-
-ctypedef struct VertexFormat7F4UB:
-    GLfloat[2] pos
-    GLfloat[2] uvs
-    GLfloat rot
-    GLfloat[2] center
-    GLubyte[4] v_color
+    GLubyte[4] vColor
 
 cdef class FormatConfig:
     cdef unsigned int _size

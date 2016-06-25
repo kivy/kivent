@@ -66,7 +66,6 @@ cdef class KEVertexFormat(VertexFormat):
         cdef unsigned int vbytesize
         if not fmt:
             raise VertexFormatException('No format specified')
-        self.fmt = fmt
 
         self.last_shader = None
         self.vattr_count = len(fmt)

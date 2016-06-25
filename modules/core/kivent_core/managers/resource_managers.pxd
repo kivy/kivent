@@ -1,6 +1,4 @@
-from kivent_core.managers.game_manager cimport GameManager
-
-cdef class TextureManager(GameManager):
+cdef class TextureManager:
     cdef dict _textures
     cdef dict _keys
     cdef dict _sizes
@@ -10,10 +8,9 @@ cdef class TextureManager(GameManager):
     cdef dict _texkey_index
     cdef int _key_count
 
-cdef class ModelManager(GameManager):
+cdef class ModelManager:
     cdef dict memory_blocks
     cdef unsigned int allocation_size
     cdef dict _models
     cdef dict _key_counts
     cdef dict _model_register
-    cdef dict _svg_index

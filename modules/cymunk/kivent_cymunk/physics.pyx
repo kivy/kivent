@@ -24,16 +24,16 @@ from kivent_core.managers.system_manager cimport SystemManager
 cdef class PhysicsComponent(MemComponent):
     '''
     The PhysicsComponent mainly exposes the ability to retrieve cymunk
-    objects. You will want to review the documentation for the various parts of
-    cymunk (and `Chipmunk2D's documentation <https://chipmunk-physics.net/>`_)
-    to properly use this system.
+    objects you will want to review the documentation for the various parts of
+    cymunk (and Chipmunk2D's documentation) to properly use this system.
+
 
     **Attributes:**
         **entity_id** (unsigned int): The entity_id this component is currently
         associated with. Will be <unsigned int>-1 if the component is
         unattached.
 
-        **body** (Body): returns the `cymunk.Body` for your physics component.
+        **body** (Body): returns the cymunk.Body for your physics component.
         Only set this if you are handling the adding and removal of your
         physics body from the cymunk.Space yourself.
 
@@ -87,30 +87,22 @@ cdef class PhysicsComponent(MemComponent):
 
 cdef class CymunkPhysics(StaticMemGameSystem):
     '''
-    Processing Depends On: 
-    :class:`~kivent_core.systems.position_systems.PositionSystem2D`,
-    :class:`~kivent_core.systems.rotate_systems.RotateSystem2D`,
-    :class:`~kivent_cymunk.physics.CymunkPhysics`
+    Processing Depends On: PositionSystem2D, RotateSystem2D, CymunkPhysics
 
-    CymunkPhysics is a **GameSystem** that interacts with the
-    Cymunk Port of the `Chipmunk2d Physics Engine
-    <https://chipmunk-physics.net/>`_.  Check the `docs for Chipmunk2d
-    <https://chipmunk-physics.net/documentation.php>`_ to get an
-    overview of how to work with Cymunk.
+    CymunkPhysics is a GameSystem that interacts with the Cymunk Port of
+    the Chipmunk2d Physics Engine. Check the docs for Chipmunk2d to get an
+    overview of how to work with Cymunk. https://chipmunk-physics.net/
 
-    This GameSystem is dependent on the
-    :class:`~kivent_core.systems.position_systems.PositionComponent2D`
-    and :class:`~kivent_core.systems.rotate_systems.RotateComponent2D`
-    in addition to its own component. It will write out the position
-    and rotation of the `cymunk.Body` associated with your entity every
-    frame to these components.
-
+    This GameSystem is dependent on the PositionComponent2D and
+    RotateComponent2d in addition to its own component. It will write out
+    the position and rotation of the cymunk.Body associated with your entity
+    every frame to these components.
 
     **Attributes:**
         **space** (ObjectProperty): The Cymunk Space the physics system is
         using
 
-        **gravity** (ListProperty): The (x, y) gravity vector for the space.
+        **gravity** (ListProperty): The (x, y) gravity for the space.
 
         **iterations** (NumericProperty): Number of solving iterations
         for the Space
@@ -118,12 +110,12 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         **sleep_time_threshold** (NumericProperty): How long a Body is
         inactive in order to be slept in the space
 
-        **collision_slop** (NumericProperty): Collision_slop for the Space;
-        i.e. how much collisions can overlap.
+        **collision_slop** (NumericProperty): Collision_slop for the Space
+        (how much collisions can overlap)
 
-        **damping** (NumericProperty): Damping for the Space. This is sort of
-        like a global kind of friction. All velocities will be reduced to
-        ``damping*initial_velocity`` every update tick.
+        **damping** (NumericProperty): Damping for the Space, this is sort of
+        like a global kind of friction, all velocities will be reduced to
+        damping*initial_velocity every update tick.
 
     '''
     system_id = StringProperty('cymunk_physics')
@@ -150,18 +142,9 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         self.bb_query_result = []
         self.segment_query_result = []
         self.init_physics()
-        self.collision_type_count = 0
-        self.collision_type_index = {}
-
-    def register_collision_type(self, str type_name):
-        count = self.collision_type_count
-        self.collision_type_index[type_name] = count
-        self.collision_type_count += 1
-        return count
 
     def add_collision_handler(self, int type_a, int type_b, begin_func=None,
-                              pre_solve_func=None, post_solve_func=None,
-                              separate_func=None):
+        pre_solve_func=None, post_solve_func=None, separate_func=None):
         '''
         Args:
             type_a (int): the collision_type for the first Shape in the
@@ -172,8 +155,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
 
         Kwargs:
 
-            begin_func (function): called (once) when collision between 2 
-            shapes first begins
+            begin_func (function): calledwhen collision between 2 shapes begins
 
             pre_solve_func (function): called before every solve of the physics
             space where a collision persists
@@ -181,8 +163,9 @@ cdef class CymunkPhysics(StaticMemGameSystem):
             post_solve_func (function): called after every solve of the physics
             space where a collision persists
 
-            separate_func (function): called (once) when collision between 2
-            shapes ends.
+            separate_func (function): called when collision between 2 shapes
+            ends
+
 
         Function to add collision handlers for collisions between
         pairs of collision_type. Collision functions
@@ -191,7 +174,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         to be ignored
 
         Functions should accept args: space, arbiter
-        You can then retrieve the ``entity_id``'s of the colliding shapes with:
+        You can then retrieve the entity_id's of the colliding shapes with:
 
         .. code-block:: python
 
@@ -199,16 +182,10 @@ cdef class CymunkPhysics(StaticMemGameSystem):
             second_id = arbiter.shapes[1].body.data
 
         '''
-        if isinstance(type_a, str):
-            type_a = self.collision_type_index[type_a]
-        if isinstance(type_b, str):
-            type_b = self.collision_type_index[type_b]
         cdef Space space = self.space
-        space.add_collision_handler(
-            type_a, type_b,
+        space.add_collision_handler(type_a, type_b,
             begin_func, pre_solve_func,
-            post_solve_func, separate_func
-            )
+            post_solve_func, separate_func)
 
     def on_gravity(self, instance, value):
         '''Event handler that sets the gravity of **space**.'''
@@ -271,7 +248,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         Queries collisions inside a box.
         '''
         cdef Space space = self.space
-        self.ignore_groups = ignore_groups
+        self.ignore_groups=ignore_groups
         bb = BB(
             box_to_query[0], box_to_query[1], box_to_query[2], box_to_query[3])
         self.bb_query_result = []
@@ -313,17 +290,12 @@ cdef class CymunkPhysics(StaticMemGameSystem):
                 'entity_id': id,
                 'main_shape': string_shape_name,
                 'velocity': (x, y),
-                'vel_limit': float,
                 'position': (x, y),
                 'angle': radians,
                 'angular_velocity': radians,
-                'ang_vel_limit': float,
                 'mass': float,
-                'col_shapes': [col_shape_dicts],
-                'moment': float
+                'col_shapes': [col_shape_dicts]
                 }
-
-        moment (if not specified) will be computed from component shapes
 
         The col_shape_dicts look like:
 
@@ -378,36 +350,32 @@ cdef class CymunkPhysics(StaticMemGameSystem):
         cdef list shapes
         cdef Shape new_shape
         space = self.space
-        if 'moment' in args.keys():
-            moment = args['moment']
-        else:
-            moment = 0
-            for a_shape in cshapes:
-                shape_info = a_shape['shape_info']
-                if a_shape['shape_type'] == 'circle':
-                    moment += cymunk.moment_for_circle(
-                        shape_info['mass'],
-                        shape_info['inner_radius'],
-                        shape_info['outer_radius'],
-                        shape_info['offset'])
-                elif a_shape['shape_type'] == 'box':
-                    moment += cymunk.moment_for_box(
-                        shape_info['mass'],
-                        shape_info['width'],
-                        shape_info['height'])
-                elif a_shape['shape_type'] == 'poly':
-                    moment += cymunk.moment_for_poly(
-                        shape_info['mass'],
-                        shape_info['vertices'],
-                        shape_info['offset'])
-                elif a_shape['shape_type'] == 'segment':
-                    moment += cymunk.moment_for_segment(
-                        shape_info['mass'],
-                        shape_info['a'],
-                        shape_info['b'])
-                else:
-                    print('error: shape ', a_shape['shape_type'], 
-                          'not supported')
+        moment = 0
+        for a_shape in cshapes:
+            shape_info = a_shape['shape_info']
+            if a_shape['shape_type'] == 'circle':
+                moment += cymunk.moment_for_circle(
+                    shape_info['mass'],
+                    shape_info['inner_radius'],
+                    shape_info['outer_radius'],
+                    shape_info['offset'])
+            elif a_shape['shape_type'] == 'box':
+                moment += cymunk.moment_for_box(
+                    shape_info['mass'],
+                    shape_info['width'],
+                    shape_info['height'])
+            elif a_shape['shape_type'] == 'poly':
+                moment += cymunk.moment_for_poly(
+                    shape_info['mass'],
+                    shape_info['vertices'],
+                    shape_info['offset'])
+            elif a_shape['shape_type'] == 'segment':
+                moment += cymunk.moment_for_segment(
+                    shape_info['mass'],
+                    shape_info['a'],
+                    shape_info['b'])
+            else:
+                print 'error: shape ', a_shape['shape_type'], 'not supported'
         if args['mass'] == 0:
             body = Body(None, None)
         else:
@@ -443,8 +411,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
             new_shape.friction = shape['friction']
             new_shape.elasticity = shape['elasticity']
             new_shape.collision_type = shape['collision_type']
-            if 'group' in shape:
-                new_shape.group = shape['group']
+            if 'group' in shape: new_shape.group = shape['group']
             shapes.append(new_shape)
             space.add(new_shape)
             space.reindex_shape(new_shape)

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION_kivent_core=2.1.0
+VERSION_kivent_core=2.0.0
 URL_kivent_core=https://github.com/kivy/KivEnt/archive/master.zip
 MD5_kivent_core=
 DEPS_kivent_core=(python kivy)

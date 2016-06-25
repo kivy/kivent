@@ -362,35 +362,6 @@ cdef class VertexModel:
             self.vertices_block.remove_from_buffer()
             self.vertices_block = None
 
-    def center_model(self):
-        '''
-        Centers the models vertices around (0, 0). Only works if the 
-        vertex format has a pos method.
-        '''
-        cdef float top, left, right, bot, x, y
-        initial_pos = self[0].pos
-        top = bot = initial_pos[1]
-        left = right = initial_pos[0]
-        for i in range(self.vertex_count):
-            x, y = self[i].pos
-            if x < left:
-                left = x
-            elif x > right:
-                right = x
-            if y < bot:
-                bot = y
-            elif y > top:
-                top = y
-        bot_left = (bot, left)
-        top_left = (top, left)
-        bot_right = (bot, right)
-        top_right = (top, right)
-        center_y = bot + (top - bot) / 2.
-        center_x = left + (right - left) / 2.
-        self.add_all_vertex_attribute('pos', [-center_x, -center_y])
-        return (center_x, center_y)
-
-
     def copy_vertex_model(self, VertexModel to_copy):
         '''Copies all the data from the provided VertexModel to this one. Will
         possibly change **vertex_count** and **index_count** so make sure to
@@ -425,11 +396,7 @@ cdef class VertexModel:
 
         '''
         cdef int vert_count = self._vertex_count
-        if isinstance(attribute_name, unicode):
-            attribute_bytes = bytes(attribute_name, 'utf-8')
-        else:
-            attribute_bytes = attribute_name
-        if not attribute_bytes in self._format_config._format_dict:
+        if not attribute_name in self._format_config._format_dict:
             raise AttributeError()
         cdef Vertex vertex = Vertex(self._format_config._format_dict)
         for i from 0 <= i < vert_count:
@@ -453,11 +420,7 @@ cdef class VertexModel:
 
         '''
         cdef int vert_count = self._vertex_count
-        if isinstance(attribute_name, unicode):
-            attribute_bytes = bytes(attribute_name, 'utf-8')
-        else:
-            attribute_bytes = attribute_name
-        if not attribute_bytes in self._format_config._format_dict:
+        if not attribute_name in self._format_config._format_dict:
             raise AttributeError()
         cdef Vertex vertex = Vertex(self._format_config._format_dict)
         for i from 0 <= i < vert_count:
@@ -488,11 +451,7 @@ cdef class VertexModel:
 
         '''
         cdef int vert_count = self._vertex_count
-        if isinstance(attribute_name, unicode):
-            attribute_bytes = bytes(attribute_name, 'utf-8')
-        else:
-            attribute_bytes = attribute_name
-        if not attribute_bytes in self._format_config._format_dict:
+        if not attribute_name in self._format_config._format_dict:
             raise AttributeError()
         cdef Vertex vertex = Vertex(self._format_config._format_dict)
         for i from 0 <= i < vert_count:

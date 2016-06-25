@@ -13,8 +13,7 @@ cdef class ParticleEmitter:
     cdef float[2] _pos
     cdef float[2] _pos_offset
     cdef float _life_span
-    cdef bint _paused
-    cdef list active_particles
+    cdef bint _paused 
     cdef int _emitter_type
     cdef int _number_of_particles
     cdef int _current_particles

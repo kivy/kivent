@@ -12,9 +12,9 @@ import sys
 
 platform = sys.platform
 if platform == 'win32':
-    cstdarg = '-std=gnu99'
+	cstdarg = '-std=gnu99'
 else:
-    cstdarg = '-std=c99'
+	cstdarg = '-std=c99'
 
 do_clear_existing = True
 

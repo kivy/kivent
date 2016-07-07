@@ -8,10 +8,18 @@ ctypedef struct TileStruct:
     unsigned int texkey
     void* animation
 
-cdef class Tile:
+cdef class LayerTile:
     cdef TileStruct* tile_pointer
     cdef ModelManager model_manager
     cdef AnimationManager animation_manager
+    cdef unsigned int layer
+
+cdef class Tile:
+    cdef TileStruct* _layers
+    cdef list occupied
+    cdef ModelManager model_manager
+    cdef AnimationManager animation_manager
+    cdef unsigned int layer_count
 
 cdef class TileMap:
     cdef MemoryBlock tiles_block
@@ -21,3 +29,4 @@ cdef class TileMap:
     cdef unsigned int size_x
     cdef unsigned int size_y
     cdef unsigned int tile_size
+    cdef unsigned int layers

@@ -1,29 +1,52 @@
 import tmx
 from os.path import basename, dirname
 
+from kivent_core.systems.renderers import Renderer
+
+
+def load_map_systems(layers, gameworld, **kwargs):
+    systems = ['map_layer%d' % i for i in range(layers)]
+    system_count = gameworld.system_count
+
+    for i in range(layers):
+        kwargs['system_id'] = 'map_layer%d' % i
+        r = Renderer()
+        r.gameworld = gameworld
+        for k in kwargs:
+            setattr(r,k,kwargs[k])
+        gameworld.add_widget(r, system_count)
+        system_count += 1
+
+    gameworld.system_count = system_count
+
+    return systems
+
+
 def init_entities_from_map(tile_map, init_entity):
     w, h = tile_map.size_on_screen
     tile_size = tile_map.tile_size
     for j in range(tile_map.size[0]):
         for i in range(tile_map.size[1]):
-            tile = tile_map.get_tile(j,i)
-            comp_data = {
-                'position': (i * tile_size + tile_size/2, h - j * tile_size - tile_size/2),
-                'tile_map': {'name': tile_map.name, 'pos': (i,j)},
-                'renderer': {
-                    'model': tile.model,
-                    'texture': tile.texture
-                    }
-                }
-            systems = ['position', 'tile_map', 'renderer']
-            if tile.animation:
-                comp_data['animation'] = {
-                    'name': tile.animation,
-                    'loop': True,
+            tile_layers = tile_map.get_tile(j,i)
+            for tile in tile_layers.layers:
+                renderer_name = 'map_layer%d' % tile.layer
+                comp_data = {
+                    'position': (i * tile_size + tile_size/2, h - j * tile_size - tile_size/2),
+                    'tile_map': {'name': tile_map.name, 'pos': (i,j)},
+                    renderer_name: {
+                        'model': tile.model,
+                        'texture': tile.texture
                         }
-                systems.append('animation')
+                    }
+                systems = ['position', 'tile_map', renderer_name]
+                if tile.animation:
+                    comp_data['animation'] = {
+                        'name': tile.animation,
+                        'loop': True,
+                            }
+                    systems.append('animation')
 
-            init_entity(comp_data, systems)
+                init_entity(comp_data, systems)
 
 
 def parse_tmx(filename, gameworld):
@@ -34,7 +57,7 @@ def parse_tmx(filename, gameworld):
 
     tilemap = tmx.TileMap.load(filename)
 
-    tiles, tile_ids = _load_tile_map(tilemap.layers[0], tilemap.width,
+    tiles, tile_ids = _load_tile_map(tilemap.layers, tilemap.width,
                                      _load_tile_properties(tilemap.tilesets))
     _load_tilesets(tilemap.tilesets, dirname(filename), tile_ids,
                    texture_manager.load_atlas,
@@ -43,7 +66,7 @@ def parse_tmx(filename, gameworld):
 
     name ='.'.join(basename(filename).split('.')[:-1])
     map_manager.load_map(name, (tilemap.width, tilemap.height),
-                         tilemap.tilewidth, tiles)
+                         tilemap.tilewidth, tiles, len(tilemap.layers))
 
     return name
 
@@ -94,22 +117,23 @@ def _load_tilesets(tilesets, dirname, tile_ids,
         load_animation(animation, len(frames), frames)
 
 
-def _load_tile_map(layer, width, tile_properties):
-    tiles = []
-    tile_row = []
+def _load_tile_map(layers, width, tile_properties):
+    height = int(len(layers[0].tiles)/width)
+    tiles = [[[] for j in range(width)] for i in range(height)]
     tile_ids = set()
-    for tile in layer.tiles:
-        tile_ids.add(tile.gid)
-        if tile.gid in tile_properties:
-            tile = tile_properties[tile.gid]
-        else:
-            tile = {'texture': 'tile_%d' % tile.gid,
-                    'model': 'tile_%d' % tile.gid}
-        tile_row.append(tile)
 
-        if len(tile_row) == width:
-            tiles.append(tile_row)
-            tile_row = []
+    for i, layer in enumerate(layers):
+        for n, tile in enumerate(layer.tiles):
+            if tile.gid > 0:
+                tile_ids.add(tile.gid)
+                if tile.gid in tile_properties:
+                    tile = tile_properties[tile.gid]
+                else:
+                    tile = {'texture': 'tile_%d' % tile.gid,
+                            'model': 'tile_%d' % tile.gid}
+                tile['layer'] = i
+
+                tiles[int(n/width)][n%width].append(tile)
 
     return tiles, tile_ids
 

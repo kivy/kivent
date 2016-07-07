@@ -24,10 +24,14 @@ cdef class MapManager(GameManager):
 
         return self.allocation_size
 
-    def load_map(self, name, map_size, tile_size, tiles=None):
+    def load_map(self, name, map_size, tile_size, tiles=None, layers=1):
         if PY2:
             name = name.decode('utf-8')
-        cdef TileMap tile_map = TileMap(map_size, tile_size, self.maps_block, self.model_manager, self.animation_manager, name)
+        cdef TileMap tile_map = TileMap(map_size, tile_size, layers, 
+                                        self.maps_block, 
+                                        self.model_manager, 
+                                        self.animation_manager, 
+                                        name)
 
         if tiles:
             tile_map.tiles = tiles

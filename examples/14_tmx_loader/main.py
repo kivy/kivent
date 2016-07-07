@@ -15,14 +15,26 @@ def get_asset_path(asset, asset_loc):
 class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
+
+
+        self.map_layers = ['map_layer%d' % i for i in range(4)]
         self.gameworld.init_gameworld(
-            ['renderer', 'position', 'animation', 'camera1', 'tile_map'],
+            ['position', 'animation', 'camera1', 'tile_map'] + self.map_layers,
             callback=self.init_game)
+
+        map_system_args = {
+            'zones': ['general'],
+            'frame_count': 2,
+            'gameview': 'camera1',
+            'shader_source': get_asset_path('positionshader.glsl', 'assets/glsl')
+        }
+        map_utils.load_map_systems(4, self.gameworld, **map_system_args)
 
     def init_game(self):
         self.setup_states()
         self.setup_tile_map()
         self.set_state()
+        print(self.gameworld.children)
 
     def setup_tile_map(self):
         filename = get_asset_path('map.tmx','assets')
@@ -33,8 +45,9 @@ class TestGame(Widget):
                                        self.gameworld.init_entity)
 
     def setup_states(self):
-        self.gameworld.add_state(state_name='main', systems_added=['renderer', 'animation'],
-                systems_unpaused=['renderer','animation'])
+        self.gameworld.add_state(state_name='main',
+                systems_added=self.map_layers,
+                systems_unpaused=['animation'] + self.map_layers)
 
     def set_state(self):
         self.gameworld.state = 'main'

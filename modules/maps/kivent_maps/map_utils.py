@@ -10,6 +10,7 @@ def load_map_systems(layers, gameworld, **kwargs):
 
     for i in range(layers):
         kwargs['system_id'] = 'map_layer%d' % i
+        kwargs['system_names'] = ['map_layer%d' % i, 'position']
         r = Renderer()
         r.gameworld = gameworld
         for k in kwargs:

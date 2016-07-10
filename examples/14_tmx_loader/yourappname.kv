@@ -1,5 +1,6 @@
 #:kivy 1.9.0
 #:import get_asset_path __main__.get_asset_path
+#:set map_layers ['map_layer%d' % i for i in range(4)]
 
 TestGame:
 
@@ -15,17 +16,20 @@ TestGame:
             system_id: 'position'
             gameworld: gameworld
             zones: ['general']
+            system_names: ['position'] + map_layers
         AnimationSystem:
             id: animation
             gameworld: gameworld
             system_id: 'animation'
             zones: ['general']
             gameview: 'camera1'
+            system_names: ['animation'] + map_layers
         MapSystem:
             system_id: 'tile_map'
             id: tile_map
             gameworld: gameworld
             zones: ['general']
+            system_names: ['tile_map'] + map_layers
         GameView:
             system_id: 'camera1'
             gameworld: gameworld

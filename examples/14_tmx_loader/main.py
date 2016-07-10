@@ -16,12 +16,7 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
 
-
         self.map_layers = ['map_layer%d' % i for i in range(4)]
-        self.gameworld.init_gameworld(
-            ['position', 'animation', 'camera1', 'tile_map'] + self.map_layers,
-            callback=self.init_game)
-
         map_system_args = {
             'zones': ['general'],
             'frame_count': 2,
@@ -30,13 +25,19 @@ class TestGame(Widget):
         }
         map_utils.load_map_systems(4, self.gameworld, **map_system_args)
 
+        self.gameworld.init_gameworld(
+            ['position', 'animation', 'camera1', 'tile_map'] + self.map_layers,
+            callback=self.init_game)
+
+
     def init_game(self):
+        print("init game")
         self.setup_states()
         self.setup_tile_map()
         self.set_state()
-        print(self.gameworld.children)
 
     def setup_tile_map(self):
+        print("Setting up tilemap")
         filename = get_asset_path('map.tmx','assets')
         map_manager = self.gameworld.managers['map_manager']
 

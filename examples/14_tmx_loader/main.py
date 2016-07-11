@@ -7,7 +7,7 @@ from os.path import dirname, join, abspath
 from kivent_maps import map_utils
 from kivent_maps.map_system import MapSystem
 
-Window.size = (300, 300)
+Window.size = (640, 640)
 
 def get_asset_path(asset, asset_loc):
     return join(dirname(dirname(abspath(__file__))), asset_loc, asset)
@@ -16,17 +16,24 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
 
-        self.map_layers = ['map_layer%d' % i for i in range(4)]
-        map_system_args = {
+        map_render_args = {
             'zones': ['general'],
             'frame_count': 2,
             'gameview': 'camera1',
             'shader_source': get_asset_path('positionshader.glsl', 'assets/glsl')
         }
-        map_utils.load_map_systems(4, self.gameworld, **map_system_args)
+        map_anim_args = {
+            'zones': ['general'],
+        }
+        self.map_layers, self.map_layer_animators = map_utils.load_map_systems(
+                3, self.gameworld, map_render_args, map_anim_args)
+
+        self.camera1.render_system_order = reversed(self.map_layers)
 
         self.gameworld.init_gameworld(
-            ['position', 'animation', 'camera1', 'tile_map'] + self.map_layers,
+            ['position', 'camera1', 'tile_map']
+            + self.map_layers
+            + self.map_layer_animators,
             callback=self.init_game)
 
 
@@ -48,7 +55,7 @@ class TestGame(Widget):
     def setup_states(self):
         self.gameworld.add_state(state_name='main',
                 systems_added=self.map_layers,
-                systems_unpaused=['animation'] + self.map_layers)
+                systems_unpaused=self.map_layer_animators + self.map_layers)
 
     def set_state(self):
         self.gameworld.state = 'main'

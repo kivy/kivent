@@ -2,25 +2,38 @@ import tmx
 from os.path import basename, dirname
 
 from kivent_core.systems.renderers import Renderer
+from kivent_core.systems.animation import AnimationSystem
 
 
-def load_map_systems(layers, gameworld, **kwargs):
-    systems = ['map_layer%d' % i for i in range(layers)]
+def load_map_systems(layers, gameworld, renderargs, animargs):
+    rendersystems = ['map_layer%d' % i for i in range(layers)]
+    animsystems = ['map_layer%d_animator' % i for i in range(layers)]
     system_count = gameworld.system_count
 
     for i in range(layers):
-        kwargs['system_id'] = 'map_layer%d' % i
-        kwargs['system_names'] = ['map_layer%d' % i, 'position']
+        renderargs['system_id'] = rendersystems[i]
+        renderargs['system_names'] = [rendersystems[i], 'position']
+        animargs['system_id'] = animsystems[i]
+        animargs['system_names'] = [animsystems[i],rendersystems[i]]
         r = Renderer()
+        a = AnimationSystem()
         r.gameworld = gameworld
-        for k in kwargs:
-            setattr(r,k,kwargs[k])
+        a.gameworld = gameworld
+        for k in renderargs:
+            setattr(r,k,renderargs[k])
+        for k in animargs:
+            setattr(a,k,animargs[k])
         gameworld.add_widget(r, system_count)
-        system_count += 1
+        gameworld.add_widget(a, system_count)
+        system_count += 2
+
+    for c in gameworld.children:
+        if c:
+            print(c.system_id)
 
     gameworld.system_count = system_count
 
-    return systems
+    return rendersystems, animsystems
 
 
 def init_entities_from_map(tile_map, init_entity):
@@ -31,6 +44,7 @@ def init_entities_from_map(tile_map, init_entity):
             tile_layers = tile_map.get_tile(j,i)
             for tile in tile_layers.layers:
                 renderer_name = 'map_layer%d' % tile.layer
+                animator_name = 'map_layer%d_animator' % tile.layer
                 comp_data = {
                     'position': (i * tile_size + tile_size/2, h - j * tile_size - tile_size/2),
                     'tile_map': {'name': tile_map.name, 'pos': (i,j)},
@@ -41,11 +55,11 @@ def init_entities_from_map(tile_map, init_entity):
                     }
                 systems = ['position', 'tile_map', renderer_name]
                 if tile.animation:
-                    comp_data['animation'] = {
+                    comp_data[animator_name] = {
                         'name': tile.animation,
                         'loop': True,
                             }
-                    systems.append('animation')
+                    systems.append(animator_name)
 
                 init_entity(comp_data, systems)
 

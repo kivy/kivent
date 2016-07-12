@@ -90,8 +90,11 @@ cdef class TileMap:
     TileMap stores tiles for all positions
     '''
 
-    def  __cinit__(self, map_size, tile_size, layer_count,
-                   tile_buffer, model_manager, animation_manager, name):
+    def  __cinit__(self, tuple map_size, unsigned int tile_size,
+                   unsigned int layer_count, MemoryBlock tile_buffer,
+                   ModelManager model_manager,
+                   AnimationManager animation_manager,
+                   str name):
         self.size_x = map_size[0]
         self.size_y = map_size[1]
         self.tile_size = tile_size

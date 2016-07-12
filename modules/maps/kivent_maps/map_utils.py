@@ -99,8 +99,8 @@ def _load_tilesets(tilesets, dirname, tile_ids,
         tw, th = int(tileset.tilewidth), int(tileset.tileheight)
         m, s = int(tileset.margin), int(tileset.spacing)
 
-        rows = (w + s)/(tw + 2*m + s)
-        cols = (h + s)/(th + 2*m + s)
+        rows = (w + s)//(tw + 2*m + s)
+        cols = (h + s)//(th + 2*m + s)
 
         for tile in tileset.tiles:
             if tile.animation:
@@ -116,7 +116,7 @@ def _load_tilesets(tilesets, dirname, tile_ids,
                 animation_data[animation_name] = animation
 
         atlas_data[name] = {}
-        for tile in range(tileset.tilecount):
+        for tile in range(rows*cols):
             if (tile + fgid) in tile_ids:
                 x, y = tile % rows, cols - 1 - int(tile / rows)
                 px, py = x * (tw + 2*m + s) + m, y * (th + 2*m + s) + m

@@ -18,7 +18,7 @@ cdef class MapManager(GameManager):
         self._maps = {}
 
     def allocate(self, master_buffer, gameworld):
-        cdef MemoryBlock maps_block = MemoryBlock(self.allocation_size*0.9, 1, 1)
+        cdef MemoryBlock maps_block = MemoryBlock(self.allocation_size, 1, 1)
         maps_block.allocate_memory_with_buffer(master_buffer)
         self.maps_block = maps_block
 

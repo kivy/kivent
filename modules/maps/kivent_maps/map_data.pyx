@@ -90,21 +90,20 @@ cdef class TileMap:
     TileMap stores tiles for all positions
     '''
 
-    def  __cinit__(self, tuple map_size, unsigned int tile_size,
+    def  __cinit__(self, unsigned int size_x, unsigned int size_y,
                    unsigned int layer_count, MemoryBlock tile_buffer,
                    ModelManager model_manager,
                    AnimationManager animation_manager,
                    str name):
-        self.size_x = map_size[0]
-        self.size_y = map_size[1]
-        self.tile_size = tile_size
+        self.size_x = size_x
+        self.size_y = size_y
         self.layer_count = layer_count
         self.name = name
         self.model_manager = model_manager
         self.animation_manager = animation_manager
 
         cdef MemoryBlock tiles_block = MemoryBlock(
-            map_size[0] * map_size[1] * layer_count * sizeof(TileStruct), 
+            size_x * size_y * layer_count * sizeof(TileStruct), 
             layer_count * sizeof(TileStruct), 1)
         tiles_block.allocate_memory_with_buffer(tile_buffer)
         self.tiles_block = tiles_block
@@ -175,12 +174,59 @@ cdef class TileMap:
 
     property size_on_screen:
         def __get__(self):
-            return (self.size_x * self.tile_size, self.size_y * self.tile_size)
+            sx, sy = self.size_x, self.size_y
+            tw, th = self.tile_size_x, self.tile_size_y
+            o = self.orientation
+            sa = self.stagger_axis
+
+            if o == 'orthogonal':
+                return (sx * tw,
+                        sy * th)
+            elif o in ('staggered', 'hexagonal'):
+                ts = (self.hex_side_length if o == 'hexagonal' else 0)
+                if sa:
+                    return ((sx - 1) * (tw + ts)/2 + tw,
+                            sy * th + th/2)
+                else:
+                    return (sx * tw + tw/2,
+                            (sy - 1) * (th + ts)/2 + th)
+            elif o == 'isometric':
+                s = max(sx, sy)
+                return (s * tw, s * th) 
 
     property tile_size:
         def __get__(self):
-            return self.tile_size
+            return (self.tile_size_x, self.tile_size_y)
+        def __set__(self, tuple value):
+            self.tile_size_x = value[0]
+            self.tile_size_y = value[1]
 
     property name:
         def __get__(self):
             return self.name
+
+    property orientation:
+        def __get__(self):
+            return self.orientation
+        def __set__(self, str value):
+            self.orientation = value
+
+    property hex_side_length:
+        def __get__(self):
+            return self.hex_side_length
+        def __set__(self, unsigned int value):
+            self.hex_side_length = value
+
+    property stagger_index:
+        def __get__(self):
+            return 'even' if self.stagger_index else 'odd'
+        def __set__(self, str value):
+            self.stagger_index = value == 'even'
+
+    property stagger_axis:
+        def __get__(self):
+            return 'x' if self.stagger_axis else 'y'
+        def __set__(self, str value):
+            self.stagger_axis = value == 'x'
+
+    

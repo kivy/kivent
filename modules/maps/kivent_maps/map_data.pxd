@@ -27,5 +27,10 @@ cdef class TileMap:
     cdef str name
     cdef unsigned int size_x
     cdef unsigned int size_y
-    cdef unsigned int tile_size
+    cdef unsigned int tile_size_x
+    cdef unsigned int tile_size_y
     cdef unsigned int layer_count
+    cdef str orientation
+    cdef bint stagger_index # True for Even, False for Odd
+    cdef bint stagger_axis # True for X, False for Y
+    cdef unsigned int hex_side_length

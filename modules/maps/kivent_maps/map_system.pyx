@@ -33,13 +33,15 @@ cdef class MapSystem(StaticMemGameSystem):
     component_type = ObjectProperty(MapComponent)
     system_names = ListProperty(['tile_map','renderer'])
     gameworld = ObjectProperty(None)
+    memory_required = NumericProperty(500*1024)
 
     def on_gameworld(self, instance, value):
         print "Yay"
 
         model_manager = self.gameworld.managers["model_manager"]
         animation_manager = self.gameworld.managers["animation_manager"]
-        map_manager = MapManager(model_manager, animation_manager)
+        map_manager = MapManager(model_manager, animation_manager,
+                                 self.memory_required)
         self.gameworld.register_manager("map_manager", map_manager)
 
     def init_component(self, unsigned int component_index,

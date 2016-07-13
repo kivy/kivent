@@ -1,0 +1,36 @@
+#:kivy 1.9.0
+#:import get_asset_path __main__.get_asset_path
+#:set map_layers ['map_layer%d' % i for i in range(4)]
+
+TestGame:
+
+<TestGame>:
+    gameworld: gameworld
+    camera1: camera1
+    GameWorld:
+        id: gameworld
+        gamescreenmanager: gamescreenmanager
+        size_of_gameworld: 200*1024
+        system_count: 4
+        zones: {'general': 100000}
+        PositionSystem2D:
+            system_id: 'position'
+            gameworld: gameworld
+            zones: ['general']
+        MapSystem:
+            system_id: 'tile_map'
+            id: tile_map
+            gameworld: gameworld
+            zones: ['general']
+            system_names: map_layers + ['tile_map'] 
+        GameView:
+            system_id: 'camera1'
+            gameworld: gameworld
+            size: root.size
+            window_size: root.size
+            pos: root.pos
+            do_scroll_lock: False
+            id: camera1
+            updateable: True
+    GameScreenManager:
+        id: gamescreenmanager

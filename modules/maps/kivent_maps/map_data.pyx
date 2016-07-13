@@ -5,14 +5,18 @@ from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_maps.map_manager cimport MapManager
 
 
-cdef class Tile:
+cdef class LayerTile:
     '''
-    Tile represents data for a tile on the map - position and texture
+    LayerTile represents data for one layer of a Tile - position and texture
     '''
 
-    def __cinit__(self, ModelManager model_manager, AnimationManager animation_manager):
+    def __cinit__(self, 
+                  ModelManager model_manager, 
+                  AnimationManager animation_manager, 
+                  unsigned int layer):
         self.model_manager = model_manager
         self.animation_manager = animation_manager
+        self.layer = layer
 
     property model:
         def __get__(self):
@@ -44,22 +48,64 @@ cdef class Tile:
             else:
                 self.tile_pointer.animation = NULL
 
+    property layer:
+        def __get__(self):
+            return self.layer
+
+
+cdef class Tile:
+    '''
+    Tile represents the layer data for a tile on the map
+    '''
+
+    def __cinit__(self, ModelManager model_manager,
+                  AnimationManager animation_manager,
+                  unsigned int layer_count):
+        self.model_manager = model_manager
+        self.animation_manager = animation_manager
+        self.layer_count = layer_count
+
+    def get_layer_tile(self, unsigned int layer):
+        tile = LayerTile(self.model_manager, self.animation_manager, layer)
+        tile.tile_pointer = &(self._layers[layer])
+
+        return tile
+
+    property layers:
+        def __get__(self):
+            l = []
+            cdef LayerTile tile
+
+            for i in range(self.layer_count):
+                tile = LayerTile(self.model_manager, self.animation_manager, i)
+                tile.tile_pointer = &(self._layers[i])                    
+                if (tile.tile_pointer.model != NULL 
+                    or tile.tile_pointer.animation != NULL):
+                    l.append(tile)
+            return l
+
 
 cdef class TileMap:
     '''
     TileMap stores tiles for all positions
     '''
 
-    def  __cinit__(self, map_size, tile_size, tile_buffer, model_manager, animation_manager, name):
+    def  __cinit__(self, tuple map_size, unsigned int tile_size,
+                   unsigned int layer_count, MemoryBlock tile_buffer,
+                   ModelManager model_manager,
+                   AnimationManager animation_manager,
+                   str name):
         self.size_x = map_size[0]
         self.size_y = map_size[1]
         self.tile_size = tile_size
+        self.layer_count = layer_count
         self.name = name
         self.model_manager = model_manager
         self.animation_manager = animation_manager
 
         cdef MemoryBlock tiles_block = MemoryBlock(
-            map_size[0]*map_size[1]*sizeof(TileStruct), sizeof(TileStruct), 1)
+            map_size[0] * map_size[1] * layer_count * sizeof(TileStruct), 
+            layer_count * sizeof(TileStruct), 1)
         tiles_block.allocate_memory_with_buffer(tile_buffer)
         self.tiles_block = tiles_block
 
@@ -68,12 +114,21 @@ cdef class TileMap:
             self.tiles_block.remove_from_buffer()
             self.tiles_block = None
 
-    def get_tile(self, unsigned int x, unsigned int y):
+    def get_tile(self, unsigned int x, unsigned int y, bint empty=False):
         if x >= self.size_x and y >= self.size_y:
             raise IndexError()
 
-        cdef Tile tile = Tile(self.model_manager, self.animation_manager)
-        tile.tile_pointer = <TileStruct*>self.tiles_block.get_pointer(x*self.size_x + y)
+        cdef Tile tile = Tile(self.model_manager, self.animation_manager, self.layer_count)
+        tile._layers = <TileStruct*>self.tiles_block.get_pointer(x*self.size_x + y)
+
+        cdef TileStruct tile_data
+        if empty:
+            for i in range(self.layer_count):
+                tile_data = tile._layers[i]
+                tile_data.model = NULL
+                tile_data.texkey = 0
+                tile_data.animation = NULL
+
         return tile
 
     def free_memory(self):
@@ -99,16 +154,19 @@ cdef class TileMap:
                 raise Exception("Provided tiles list does not match internal size")
             for i in range(size_x):
                 for j in range(size_y):
-                    tile = self.get_tile(i,j)
-                    data = tiles[i][j]
-                    if 'animation' in data:
-                        frames = self.animation_manager.animations[data['animation']]
-                        tile.animation = data['animation']
-                        tile.texture = frames[0].texture
-                        tile.model = frames[0].model
-                    else:
-                        tile.texture = data['texture']
-                        tile.model = data['model']
+                    tile_layers = self.get_tile(i,j, True)
+                    layer_data = tiles[i][j]
+
+                    for data in layer_data:
+                        tile = tile_layers.get_layer_tile(data['layer'])
+                        if 'animation' in data:
+                            frames = self.animation_manager.animations[data['animation']]
+                            tile.animation = data['animation']
+                            tile.texture = frames[0].texture
+                            tile.model = frames[0].model
+                        else:
+                            tile.texture = data['texture']
+                            tile.model = data['model']
 
 
     property size:

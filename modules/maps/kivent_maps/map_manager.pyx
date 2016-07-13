@@ -18,16 +18,20 @@ cdef class MapManager(GameManager):
         self._maps = {}
 
     def allocate(self, master_buffer, gameworld):
-        cdef MemoryBlock maps_block = MemoryBlock(self.allocation_size*0.9, 1, 1)
+        cdef MemoryBlock maps_block = MemoryBlock(self.allocation_size, 1, 1)
         maps_block.allocate_memory_with_buffer(master_buffer)
         self.maps_block = maps_block
 
         return self.allocation_size
 
-    def load_map(self, name, map_size, tile_size, tiles=None):
+    def load_map(self, name, map_size, tile_size, tiles=None, layers=1):
         if PY2:
             name = name.decode('utf-8')
-        cdef TileMap tile_map = TileMap(map_size, tile_size, self.maps_block, self.model_manager, self.animation_manager, name)
+        cdef TileMap tile_map = TileMap(map_size, tile_size, layers, 
+                                        self.maps_block, 
+                                        self.model_manager, 
+                                        self.animation_manager, 
+                                        name)
 
         if tiles:
             tile_map.tiles = tiles

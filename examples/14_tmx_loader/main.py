@@ -45,7 +45,7 @@ class TestGame(Widget):
 
     def setup_tile_map(self):
         print("Setting up tilemap")
-        filename = get_asset_path('map.tmx','assets')
+        filename = get_asset_path('orthogonal.tmx','assets/maps')
         map_manager = self.gameworld.managers['map_manager']
 
         map_name = map_utils.parse_tmx(filename, self.gameworld)

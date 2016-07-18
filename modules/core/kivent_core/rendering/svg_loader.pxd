@@ -29,8 +29,8 @@ cdef class SVGModelInfo:
     cdef int index_count
     cdef str title
     cdef str description
-    cdef str label
     cdef str element_id
+    cdef dict custom_data
 
 cdef class Matrix:
     cdef matrix_t mat
@@ -46,6 +46,7 @@ cdef class SVG:
     cdef object fill
     cdef object tree
     cdef public object current_color
+    cdef dict custom_data
     cdef object stroke
     cdef float opacity
     cdef float x
@@ -54,6 +55,7 @@ cdef class SVG:
     cdef str title
     cdef str description
     cdef str label
+    cdef list custom_fields
     cdef bint fill_was_none
     cdef object el_id
     cdef int close_index

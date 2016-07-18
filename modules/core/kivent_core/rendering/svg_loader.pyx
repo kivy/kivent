@@ -316,16 +316,18 @@ class NotEnoughRoomForVertices(Exception):
 cdef class SVGModelInfo:
 
     def __init__(self, list indices, dict vertices,
-        str title=None, str label=None, str element_id=None,
-        str description=None):
+        str title=None, str element_id=None,
+        str description=None, dict custom_data=None):
+        if custom_data is None:
+            custom_data = {}
         self.indices = indices
         self.vertices = vertices
         self.index_count = len(indices)
         self.vertex_count = len(vertices)
         self.description = description
         self.title = title
-        self.label = label
         self.element_id = element_id
+        self.custom_data = custom_data
 
     def combine_model_info(self, SVGModelInfo new_info):
         '''
@@ -348,6 +350,7 @@ cdef class SVGModelInfo:
         cdef int vertex_offset = self.vertex_count
         cdef dict vertices
         cdef list indices
+        cdef dict _custom_data
         if self.vertex_count + new_info.vertex_count >= 65535:
             raise NotEnoughRoomForVertices()
         else:
@@ -356,11 +359,12 @@ cdef class SVGModelInfo:
             for i in range(new_info.vertex_count):
                 vertices[i+vertex_offset] = new_info.vertices[i]
             indices.extend([x + vertex_offset for x in new_info.indices])
-
+            _custom_data = self.custom_data.copy()
+            _custom_data.update(new_info.custom_data)
             return SVGModelInfo(
                                 indices, 
                                 vertices,
-                                label=self.label,
+                                custom_data=_custom_data,
                                 description=self.description,
                                 element_id=self.element_id,
                                 title=self.title,
@@ -370,10 +374,6 @@ cdef class SVGModelInfo:
     property title:
         def __get__(self):
             return self.title
-
-    property label:
-        def __get__(self):
-            return self.label
 
     property element_id:
         def __get__(self):
@@ -399,6 +399,10 @@ cdef class SVGModelInfo:
         def __get__(self):
             return self.vertex_count
 
+    property custom_data:
+        def __get__(self):
+            return self.custom_data
+
 
 
 cdef class SVG:
@@ -407,7 +411,7 @@ cdef class SVG:
 
     def __init__(self, filename, anchor_x=0, anchor_y=0,
                  bezier_points=BEZIER_POINTS, circle_points=CIRCLE_POINTS,
-                 color=None):
+                 color=None, custom_fields=None):
         '''
         Creates an SVG object from a .svg or .svgz file.
 
@@ -425,15 +429,15 @@ cdef class SVG:
         :param color the default color to use for Svg elements that specify "currentColor"
         '''
 
-        super(SVG, self).__init__(fs=SVG_FS, vs=SVG_VS,
-                use_parent_projection=True,
-                use_parent_modelview=True)
+        super(SVG, self).__init__()
 
         self.last_mesh = None
         self.paths = []
         self.width = 0
         self.height = 0
         self.line_width = 0.25
+        self.custom_fields = custom_fields
+        self.custom_data = None
 
         if color is None:
             self.current_color = None
@@ -569,7 +573,10 @@ cdef class SVG:
         self.element_id = e.get('id', None)
         self.title = e.get('title', None)
         self.description = e.get('description', None)
-        self.label = e.get('label', None)
+        self.custom_data = custom_data = {}
+        if self.custom_fields is not None:
+            for key in self.custom_fields:
+                custom_data[key] = e.get(key, None)
         for t in self.parse_transform(e.get('transform')):
             self.transform *= Matrix(t)
 
@@ -600,7 +607,7 @@ cdef class SVG:
             self.stroke = [0, 0, 0, 255]
             stroke_width = stroke_width *2.
         elif self.is_none_or_undef(stroke):
-            self.stroke = [0, 0, 0, 0]
+            self.stroke = [0, 0, 0, 255]
         if isinstance(self.stroke, list):
             self.stroke[3] = int(self.opacity * stroke_opacity * self.stroke[3])
         if isinstance(self.fill, list):
@@ -1034,7 +1041,7 @@ cdef class SVG:
                     self.fill_was_none,
                     self.title,
                     self.description,
-                    self.label,
+                    self.custom_data,
                     ))
         self.path = []
 
@@ -1228,7 +1235,7 @@ cdef class SVG:
         
         for (path, stroke, tris, fill, transform, 
              line_width, element_id, fill_was_none,
-             title, description, label) in self.paths:
+             title, description, custom_data) in self.paths:
             element = None
             subelements = []
             if fill_was_none and line_width <= 1.:
@@ -1316,10 +1323,10 @@ cdef class SVG:
             elements.append(SVGModelInfo(
                                         final_indices, 
                                         final_vertices,
-                                        label=label,
                                         description=description,
                                         element_id=element_id,
                                         title=title,
+                                        custom_data=custom_data
                                         ))
 
         return elements

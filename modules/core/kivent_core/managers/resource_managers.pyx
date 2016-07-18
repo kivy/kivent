@@ -342,7 +342,8 @@ cdef class ModelManager(GameManager):
         return {'center': (center_x, center_y),
                 'bbox': (left, bot, right, top)}
 
-    def get_model_info_for_svg(self, str source, str svg_name=None):
+    def get_model_info_for_svg(self, str source, str svg_name=None,
+        custom_fields=None):
         '''
         Returns the SVGModelInfo objects representing the elements in an 
         svg file. You can then parse this data depending on your needs 
@@ -354,7 +355,7 @@ cdef class ModelManager(GameManager):
         if svg_name in self._svg_index:
             raise KeyError()
         self._svg_index[svg_name] = {}
-        cdef SVG svg = SVG(source)
+        cdef SVG svg = SVG(source, custom_fields=custom_fields)
         cdef list svg_data = svg.get_model_data()
         return {'model_info': svg_data, 'svg_name': svg_name}
 

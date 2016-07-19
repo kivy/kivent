@@ -438,7 +438,6 @@ cdef class SVG:
         self.line_width = 0.25
         self.custom_fields = custom_fields
         self.custom_data = None
-
         if color is None:
             self.current_color = None
         else:
@@ -607,7 +606,7 @@ cdef class SVG:
             self.stroke = [0, 0, 0, 255]
             stroke_width = stroke_width *2.
         elif self.is_none_or_undef(stroke):
-            self.stroke = [0, 0, 0, 255]
+            self.stroke = [0, 0, 0, 0]
         if isinstance(self.stroke, list):
             self.stroke[3] = int(self.opacity * stroke_opacity * self.stroke[3])
         if isinstance(self.fill, list):
@@ -616,7 +615,7 @@ cdef class SVG:
             if stroke_width < 1.0:
                 for i in range(3):
                     self.stroke[i] = (self.fill[i] + self.stroke[i])/2.
-                self.stroke[3] = stroke_width * 225 + 30
+                self.stroke[3] = stroke_width * 255
             self.set_line_width(stroke_width)
             self.parse_path(e.get('d', ''))
 
@@ -1023,7 +1022,7 @@ cdef class SVG:
             self.fill_was_none,
             self.title,
             self.description,
-            self.label,
+            self.custom_data,
             ))
 
 

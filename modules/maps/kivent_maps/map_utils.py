@@ -117,11 +117,11 @@ def parse_tmx(filename, gameworld):
     loaded_map = map_manager.maps[name]
     loaded_map.tile_size = (tilemap.tilewidth, tilemap.tileheight)
     loaded_map.orientation = tilemap.orientation
-    if hasattr(tilemap, 'staggerindex'):
+    if tilemap.staggerindex:
         loaded_map.stagger_index = tilemap.staggerindex
-    if hasattr(tilemap, 'staggeraxis'):
+    if tilemap.staggeraxis:
         loaded_map.stagger_axis = tilemap.staggeraxis
-    if hasattr(tilemap, 'hexsidelength'):
+    if tilemap.hexsidelength:
         loaded_map.hex_side_length = tilemap.hexsidelength
 
     return name

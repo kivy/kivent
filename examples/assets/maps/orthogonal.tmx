@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="40" height="40" tilewidth="16" tileheight="16" nextobjectid="1">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="40" height="40" tilewidth="16" tileheight="16" nextobjectid="7">
  <tileset firstgid="1" name="rouge" tilewidth="16" tileheight="16" spacing="1" tilecount="1767">
   <image source="spritesheet.png" width="968" height="526"/>
   <terraintypes>
@@ -4886,4 +4886,13 @@
    <tile gid="0"/>
   </data>
  </layer>
+ <objectgroup color="#101fa4" name="Object Layer 1">
+  <object id="1" x="0" y="0" width="100" height="200"/>
+  <object id="3" x="92" y="326" width="141" height="95">
+   <ellipse/>
+  </object>
+  <object id="6" x="417" y="437">
+   <polygon points="0,0 61,-115 129,0"/>
+  </object>
+ </objectgroup>
 </map>

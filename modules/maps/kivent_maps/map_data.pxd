@@ -8,10 +8,21 @@ ctypedef struct TileStruct:
     unsigned int texkey
     void* animation
 
+ctypedef struct ObjStruct:
+    void* model
+    unsigned int texkey
+    unsigned int x
+    unsigned int y
+
 cdef class LayerTile:
     cdef TileStruct* tile_pointer
     cdef ModelManager model_manager
     cdef AnimationManager animation_manager
+    cdef unsigned int layer
+
+cdef class LayerObject:
+    cdef ObjStruct* obj_pointer
+    cdef ModelManager model_manager
     cdef unsigned int layer
 
 cdef class Tile:
@@ -22,6 +33,7 @@ cdef class Tile:
 
 cdef class TileMap:
     cdef MemoryBlock tiles_block
+    cdef MemoryBlock objects_block
     cdef ModelManager model_manager
     cdef AnimationManager animation_manager
     cdef str name
@@ -29,7 +41,11 @@ cdef class TileMap:
     cdef unsigned int size_y
     cdef unsigned int tile_size_x
     cdef unsigned int tile_size_y
-    cdef unsigned int layer_count
+    cdef unsigned int tile_layer_count
+    cdef unsigned int obj_layer_count
+    cdef unsigned int object_count
+    cdef list _z_index_map
+    cdef list _obj_layers_index
     cdef str orientation
     cdef bint stagger_index # True for Even, False for Odd
     cdef bint stagger_axis # True for X, False for Y

@@ -1,4 +1,5 @@
 from kivent_core.rendering.model cimport VertexModel
+from kivent_core.rendering.vertex_formats cimport VertexFormat2F4UB
 from kivent_core.rendering.animation cimport FrameList
 from kivent_core.managers.resource_managers import texture_manager
 from kivent_core.memory_handlers.block cimport MemoryBlock
@@ -85,44 +86,102 @@ cdef class Tile:
             return l
 
 
+cdef class LayerObject:
+    '''
+    LayerObject represents data for one of ObjectGroup - position and texture
+    '''
+
+    def __cinit__(self, ModelManager model_manager):
+        self.model_manager = model_manager
+
+    property model:
+        def __get__(self):
+            cdef VertexModel model = <VertexModel>self.obj_pointer.model
+            return model.name
+
+        def __set__(self, value):
+            self.obj_pointer.model = <void*>self.model_manager.models[value]
+
+    property texture:
+        def __get__(self):
+            if self.obj_pointer.texkey > 0:
+                return texture_manager.get_texname_from_texkey(
+                                            self.obj_pointer.texkey)
+            else:
+                return None
+
+        def __set__(self, value):
+            self.obj_pointer.texkey = texture_manager.get_texkey_from_name(value)
+
+    property position:
+        def __get__(self):
+            return (self.obj_pointer.x, self.obj_pointer.y)
+        def __set__(self, value):
+            self.obj_pointer.x = value[0]
+            self.obj_pointer.y = value[1]
+
+    property layer:
+        def __get__(self):
+            return self.layer
+
+    property color:
+        def __get__(self):
+            cdef VertexModel model = <VertexModel>self.obj_pointer.model
+            cdef VertexFormat2F4UB* vertex = \
+                    <VertexFormat2F4UB*>model.vertices_block.data
+            return (vertex.v_color[0], vertex.v_color[1], vertex.v_color[2], vertex.v_color[3])
+
+
 cdef class TileMap:
     '''
     TileMap stores tiles for all positions
     '''
 
     def  __cinit__(self, unsigned int size_x, unsigned int size_y,
-                   unsigned int layer_count, MemoryBlock tile_buffer,
+                   unsigned int tile_layer_count, unsigned int object_count,
+                   MemoryBlock tile_buffer,
                    ModelManager model_manager,
                    AnimationManager animation_manager,
                    str name):
         self.size_x = size_x
         self.size_y = size_y
-        self.layer_count = layer_count
+        self.tile_layer_count = tile_layer_count
+        self.object_count = object_count
         self.name = name
         self.model_manager = model_manager
         self.animation_manager = animation_manager
 
         cdef MemoryBlock tiles_block = MemoryBlock(
-            size_x * size_y * layer_count * sizeof(TileStruct), 
-            layer_count * sizeof(TileStruct), 1)
+            size_x * size_y * tile_layer_count * sizeof(TileStruct), 
+            tile_layer_count * sizeof(TileStruct), 1)
         tiles_block.allocate_memory_with_buffer(tile_buffer)
         self.tiles_block = tiles_block
+
+        cdef MemoryBlock objects_block = MemoryBlock(
+            object_count * sizeof(ObjStruct), 
+            sizeof(ObjStruct), 1)
+        objects_block.allocate_memory_with_buffer(tile_buffer)
+        self.objects_block = objects_block
 
     def __dealloc__(self):
         if self.tiles_block is not None:
             self.tiles_block.remove_from_buffer()
             self.tiles_block = None
+        if self.objects_block is not None:
+            self.objects_block.remove_from_buffer()
+            self.objects_block = None
 
     def get_tile(self, unsigned int x, unsigned int y, bint empty=False):
         if x >= self.size_x and y >= self.size_y:
             raise IndexError()
 
-        cdef Tile tile = Tile(self.model_manager, self.animation_manager, self.layer_count)
+        cdef Tile tile = Tile(self.model_manager, self.animation_manager,
+                                self.tile_layer_count)
         tile._layers = <TileStruct*>self.tiles_block.get_pointer(x*self.size_x + y)
 
         cdef TileStruct tile_data
         if empty:
-            for i in range(self.layer_count):
+            for i in range(self.tile_layer_count):
                 tile_data = tile._layers[i]
                 tile_data.model = NULL
                 tile_data.texkey = 0
@@ -130,10 +189,27 @@ cdef class TileMap:
 
         return tile
 
+    def get_object(self, unsigned int n, bint empty=False):
+        if n >= self.object_count:
+            raise IndexError()
+
+        cdef LayerObject obj = LayerObject(self.model_manager)
+        obj_data = <ObjStruct*>self.objects_block.get_pointer(n)
+
+        if empty:
+            obj_data.model = NULL
+            obj_data.texkey = 0
+
+        obj.obj_pointer = obj_data
+        return obj
+
     def free_memory(self):
         if self.tiles_block is not None:
             self.tiles_block.remove_from_buffer()
             self.tiles_block = None
+        if self.objects_block is not None:
+            self.objects_block.remove_from_buffer()
+            self.objects_block = None
 
     property tiles:
         def __get__(self):
@@ -167,6 +243,53 @@ cdef class TileMap:
                             tile.texture = data['texture']
                             tile.model = data['model']
 
+    property objects:
+        def __set__(self, list objs):
+            cdef unsigned int layers = len(objs)
+            cdef unsigned int obj_count = 0
+            cdef LayerObject obj
+
+            self._obj_layers_index = []
+
+            for i in range(layers):
+                self._obj_layers_index.append(obj_count)
+
+                for obj_data in objs[i]:
+                    obj = self.get_object(obj_count, True)
+                    if 'texture' in obj_data:
+                        obj.texture = obj_data['texture']
+                    obj.model = obj_data['model']
+                    obj.position = obj_data['position']
+                    obj.layer = i + self.tile_layer_count
+
+                    obj_count += 1
+            self.obj_layer_count = layers
+            self._obj_layers_index.append(obj_count)
+        def __get__(self):
+            cdef unsigned int layer_size
+            cdef unsigned int pos
+            cdef LayerObject obj
+
+            objs = []
+            for i in range(self.obj_layer_count):
+                obj_layer = []
+                layer_size = (self._obj_layers_index[i+1] - 
+                                self._obj_layers_index[i])
+
+                for j in range(layer_size):
+                    pos = self._obj_layers_index[i] + j
+                    obj = self.get_object(pos)
+                    obj.layer = i + self.tile_layer_count
+                    obj_layer.append(obj)
+
+                objs.append(obj_layer)
+            return objs
+
+    property z_index_map:
+        def __get__(self):
+            return self._z_index_map
+        def __set__(self, list value):
+            self._z_index_map = value
 
     property size:
         def __get__(self):

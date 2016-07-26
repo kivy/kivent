@@ -26,11 +26,12 @@ cdef class MapManager(GameManager):
 
     def load_map(self, name,
                  map_size_x, map_size_y,
-                 tiles=None, layers=1):
+                 tiles=None, tile_layers=1,
+                 objects=None, object_count=0):
         if PY2:
             name = name.decode('utf-8')
         cdef TileMap tile_map = TileMap(map_size_x, map_size_y,
-                                        layers, 
+                                        tile_layers, object_count,
                                         self.maps_block, 
                                         self.model_manager, 
                                         self.animation_manager, 
@@ -38,6 +39,8 @@ cdef class MapManager(GameManager):
 
         if tiles:
             tile_map.tiles = tiles
+        if objects:
+            tile_map.objects = objects
         self._maps[name] = tile_map
 
     property maps:

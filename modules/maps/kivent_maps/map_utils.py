@@ -37,8 +37,6 @@ def load_map_systems(layers, gameworld, renderargs, animargs):
 
 
 def init_entities_from_map(tile_map, init_entity):
-    w, h = tile_map.size_on_screen
-    tile_size = tile_map.tile_size
     for j in range(tile_map.size[0]):
         for i in range(tile_map.size[1]):
             tile_layers = tile_map.get_tile(j,i)
@@ -46,7 +44,7 @@ def init_entities_from_map(tile_map, init_entity):
                 renderer_name = 'map_layer%d' % tile.layer
                 animator_name = 'map_layer%d_animator' % tile.layer
                 comp_data = {
-                    'position': (i * tile_size + tile_size/2, h - j * tile_size - tile_size/2),
+                    'position': _get_position(i, j, tile_map),
                     'tile_map': {'name': tile_map.name, 'pos': (i,j)},
                     renderer_name: {
                         'model': tile.model,
@@ -62,6 +60,39 @@ def init_entities_from_map(tile_map, init_entity):
                     systems.append(animator_name)
 
                 init_entity(comp_data, systems)
+
+
+def _get_position(i, j, tile_map):
+    w, h = tile_map.size_on_screen
+    tw, th = tile_map.tile_size
+
+    if tile_map.orientation == 'orthogonal':
+        x, y = (i * tw + tw/2, h - j * th - th/2)
+    elif tile_map.orientation in ('staggered', 'hexagonal'):
+        ts = 0
+        if tile_map.orientation == 'hexagonal':
+            ts = tile_map.hex_side_length
+
+        if tile_map.stagger_axis == 'x':
+            y = h - (j * th + th/2)
+            x = (i * (tw + ts))/2 + tw/2
+
+            if (tile_map.stagger_index == 'even') != ((i+1)%2 == 0):
+                y -= th/2
+        elif tile_map.stagger_axis == 'y':
+            y = h - ((j * (th + ts))/2 + th/2)
+            x = i * tw + tw/2
+
+            if (tile_map.stagger_index == 'even') != ((j+1)%2 == 0):
+                x += tw/2
+    elif tile_map.orientation == 'isometric':
+        x, y = ((i - j) * tw/2,
+                (i + j) * th/2)
+
+        x += w/2
+        y = h - th/2 - y
+
+    return (x,y)
 
 
 def parse_tmx(filename, gameworld):
@@ -80,8 +111,18 @@ def parse_tmx(filename, gameworld):
                    animation_manager.load_animation)
 
     name ='.'.join(basename(filename).split('.')[:-1])
-    map_manager.load_map(name, (tilemap.width, tilemap.height),
-                         tilemap.tilewidth, tiles, len(tilemap.layers))
+    map_manager.load_map(name, tilemap.width, tilemap.height,
+                         tiles, len(tilemap.layers))
+
+    loaded_map = map_manager.maps[name]
+    loaded_map.tile_size = (tilemap.tilewidth, tilemap.tileheight)
+    loaded_map.orientation = tilemap.orientation
+    if tilemap.staggerindex:
+        loaded_map.stagger_index = tilemap.staggerindex
+    if tilemap.staggeraxis:
+        loaded_map.stagger_axis = tilemap.staggeraxis
+    if tilemap.hexsidelength:
+        loaded_map.hex_side_length = tilemap.hexsidelength
 
     return name
 

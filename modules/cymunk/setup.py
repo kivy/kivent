@@ -73,7 +73,7 @@ elif platform == 'darwin':
 
 do_clear_existing = True
 
-import cymunk
+#import cymunk
 
 cymunk_modules = {
     'kivent_cymunk.physics': ['kivent_cymunk/physics.pyx',],
@@ -91,7 +91,10 @@ check_for_removal = [
 
     ]
 
-def build_ext(ext_name, files, include_dirs=cymunk.get_includes()):
+import pkgutil
+cymunk_dirname = pkgutil.get_loader("cymunk").filename
+
+def build_ext(ext_name, files, include_dirs=[cymunk_dirname]):
     return Extension(ext_name, files, global_include_dirs + include_dirs,
         extra_compile_args=[cstdarg, '-ffast-math',] + extra_compile_args,
         libraries=libraries, extra_link_args=extra_link_args,

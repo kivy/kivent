@@ -29,7 +29,7 @@ cdef class MapManager(GameManager):
                  tiles=None, tile_layers=1,
                  objects=None, object_count=0):
         if PY2:
-            name = name.decode('utf-8')
+            name = name.encode('utf-8')
         cdef TileMap tile_map = TileMap(map_size_x, map_size_y,
                                         tile_layers, object_count,
                                         self.maps_block, 

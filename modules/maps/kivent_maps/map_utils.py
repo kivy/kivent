@@ -270,12 +270,13 @@ def _load_tile_map(layers, width, tile_properties):
             for n, obj in enumerate(layer.objects):
                 if obj.gid:
                     tile_ids.add(obj.gid)
-                    obj = {'texture': 'tile_%d' % obj.gid,
+                    gid, width, height = obj.gid, obj.width, obj.height
+                    obj = {'texture': 'tile_%d' % gid,
                            'model': 'obj_%d_%d' % (obj_layer_count, n),
-                           'position': (obj.x + obj.width/2, obj.y + obj.height/2)}
-                    objmodel = {'texture': 'tile_%d' % obj.gid,
-                                'width': obj.width,
-                                'height': obj.height}
+                           'position': (obj.x + width/2, obj.y + height/2)}
+                    objmodel = {'texture': 'tile_%d' % gid,
+                                'width': width,
+                                'height': height}
                 elif obj.polygon:
                     x_coords = [v[0] for v in obj.polygon]
                     y_coords = [v[1] for v in obj.polygon]

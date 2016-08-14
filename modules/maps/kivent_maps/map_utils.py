@@ -10,6 +10,34 @@ from kivy.utils import get_color_from_hex
 from math import sin, cos, radians
 
 def load_map_systems(layer_count, gameworld, renderargs, animargs, polyargs):
+    '''
+    Create and initialise the systems required for displaying all layers of the
+    map. Each layer requires a Renderer for images, PolyRenderer for shapes
+    and AnimationSystem for animated tiles.
+
+    The name format of the Renderer is map_layer%d, PolyRenderer is
+    map_layer%d_polygons, AnimationSystem is map_layer%d_animator
+    where %d is the layer number.
+
+    Args:
+        layer_count (unsigned int): Number of layers to init
+
+        gameworld (Gameworld): Instance of the gameworld
+
+        renderargs (dict): Dict of arguments required to init the Renderer.
+        This is same as those used in a KV file for adding a system.
+
+        animargs (dict): Dict of arguments required to init the AnimationSystem
+
+        polyargs (dict): Dict of arguments required to init the PolyRenderer.
+
+    Return:
+        list of str, list of str: A tuple of two lists of system names with fisrt
+        containing names of Renderers and PolyRenderers and second containing
+        names of AnimationSystems. The names are in the order in which they are
+        added to the Gameworld. You can use these lists for init_gameworld
+        and setup_state.
+    '''
     rendersystems = []
     for i in range(layer_count):
         rendersystems.extend(['map_layer%d' % i, 'map_layer%d_polygons' % i])
@@ -23,7 +51,9 @@ def load_map_systems(layer_count, gameworld, renderargs, animargs, polyargs):
         animargs['system_id'] = animsystems[i]
         animargs['system_names'] = [animsystems[i],rendersystems[2 * i]]
         polyargs['system_id'] = rendersystems[2 * i + 1]
-        polyargs['system_names'] = [rendersystems[2 * i + 1],'position','color']
+        polyargs['system_names'] = [rendersystems[2 * i + 1],
+                                    'position',
+                                    'color']
 
         r = Renderer()
         a = AnimationSystem()
@@ -50,16 +80,30 @@ def load_map_systems(layer_count, gameworld, renderargs, animargs, polyargs):
 
 
 def init_entities_from_map(tile_map, init_entity):
+    '''
+    Initialise entities for every layer of every tile and add them to the
+    corresponding systems.
+
+    Args:
+        tile_map (TileMap): the tile map from which to load the tiles.
+
+        init_entity (function): the gameworld.init_entity function
+
+    '''
     z_map = tile_map.z_index_map
 
-    for j in range(tile_map.size[0]):
-        for i in range(tile_map.size[1]):
-            tile_layers = tile_map.get_tile(j,i)
+    # Load tile entities
+    for i in range(tile_map.size[0]):
+        for j in range(tile_map.size[1]):
+            # Get Tile object for position (i, j)
+            tile_layers = tile_map.get_tile(i,j)
+
+            # Loop through all LayerTiles
             for tile in tile_layers.layers:
                 renderer_name = 'map_layer%d' % z_map[tile.layer]
                 animator_name = 'map_layer%d_animator' % z_map[tile.layer]
                 comp_data = {
-                    'position': _get_position(i, j, tile_map),
+                    'position': tile_map.get_tile_position(i, j),
                     'tile_map': {'name': tile_map.name, 'pos': (i,j)},
                     renderer_name: {
                         'model': tile.model,
@@ -67,6 +111,8 @@ def init_entities_from_map(tile_map, init_entity):
                         }
                     }
                 systems = ['position', 'tile_map', renderer_name]
+
+                # If tile is animated add that component
                 if tile.animation:
                     comp_data[animator_name] = {
                         'name': tile.animation,
@@ -76,10 +122,12 @@ def init_entities_from_map(tile_map, init_entity):
 
                 init_entity(comp_data, systems)
 
+    # Load object entities
     for obj_layer in tile_map.objects:
         mh = tile_map.size_on_screen[1]
         for obj in obj_layer:
             if obj.texture:
+                # Object is an image
                 renderer_name = 'map_layer%d' % z_map[obj.layer]
                 comp_data = {
                     'position': (obj.position[0], mh - obj.position[1]),
@@ -90,79 +138,69 @@ def init_entities_from_map(tile_map, init_entity):
                     }
                 systems = ['position', renderer_name]
             else:
+                # Object is a shape
                 renderer_name = 'map_layer%d_polygons' % z_map[obj.layer]
                 comp_data = {
                     'position': (obj.position[0], mh - obj.position[1]),
                     renderer_name: {
                         'model_key': obj.model,
                         },
+                    # Color is taken from vertex, so white here
                     'color': (255, 255, 255, 255)
                     }
                 systems = ['position','color', renderer_name]
+
             init_entity(comp_data, systems)
 
-
-def _get_position(i, j, tile_map):
-    w, h = tile_map.size_on_screen
-    tw, th = tile_map.tile_size
-
-    if tile_map.orientation == 'orthogonal':
-        x, y = (i * tw + tw/2, h - j * th - th/2)
-    elif tile_map.orientation in ('staggered', 'hexagonal'):
-        ts = 0
-        if tile_map.orientation == 'hexagonal':
-            ts = tile_map.hex_side_length
-
-        if tile_map.stagger_axis == 'x':
-            y = h - (j * th + th/2)
-            x = (i * (tw + ts))/2 + tw/2
-
-            if (tile_map.stagger_index == 'even') != ((i+1)%2 == 0):
-                y -= th/2
-        elif tile_map.stagger_axis == 'y':
-            y = h - ((j * (th + ts))/2 + th/2)
-            x = i * tw + tw/2
-
-            if (tile_map.stagger_index == 'even') != ((j+1)%2 == 0):
-                x += tw/2
-    elif tile_map.orientation == 'isometric':
-        x, y = ((i - j) * tw/2,
-                (i + j) * th/2)
-
-        x += w/2
-        y = h - th/2 - y
-
-    return (x,y)
-
-
 def parse_tmx(filename, gameworld):
+    '''
+    Uses the tmx library to load the TMX into an object and then calls all the
+    util functions with the relevant data.
+
+    Args:
+        filename (str): Name of the tmx file.
+
+        gameworld (Gameworld): instance of the gameworld.
+
+    Return:
+        str: name of the loaded map which is the filename
+    '''
     texture_manager = gameworld.managers['texture_manager']
     model_manager = gameworld.managers['model_manager']
     map_manager = gameworld.managers['map_manager']
     animation_manager = gameworld.managers['animation_manager']
 
+    # Get tilemap object with all the data from tmx
     tilemap = tmx.TileMap.load(filename)
 
+    # Get the tiles as a 3D list and the z_map, objects as a 2D list and the
+    # z_map, the set of tile_ids which will be used in the map,
+    # set of models of the objects in the map.
     tiles, tiles_z, objects, objects_z, tile_ids, objmodels = \
             _load_tile_map(tilemap.layers, tilemap.width,
                            _load_tile_properties(tilemap.tilesets))
 
+    # Loads the models, textures and animations of the tileset into
+    # corresponding managers
     _load_tilesets(tilemap.tilesets, dirname(filename), tile_ids,
                    texture_manager.load_atlas,
                    model_manager.load_textured_rectangle,
                    animation_manager.load_animation)
 
+    # Load the object models with model_manager
     _load_obj_models(objmodels, model_manager.load_textured_rectangle,
                      model_manager.load_model)
 
+    # Load the map with map_manager
     name ='.'.join(basename(filename).split('.')[:-1])
     map_manager.load_map(name, tilemap.width, tilemap.height,
                          tiles, len(tiles_z),
-                         objects, sum([len(o) for o in objects]))
+                         objects, sum([len(o) for o in objects]),
+                         tilemap.orientation)
 
+    # Set the extra map properties for hexagonal/staggered maps
     loaded_map = map_manager.maps[name]
     loaded_map.tile_size = (tilemap.tilewidth, tilemap.tileheight)
-    loaded_map.orientation = tilemap.orientation
     loaded_map.z_index_map = tiles_z + objects_z
     if tilemap.staggerindex:
         loaded_map.stagger_index = tilemap.staggerindex
@@ -176,6 +214,32 @@ def parse_tmx(filename, gameworld):
 
 def _load_tilesets(tilesets, dirname, tile_ids,
                    load_atlas, load_model, load_animation):
+    '''
+    Tileset of the map contains an atlas of the images used by the tiles. We
+    need to load all those images as textures and models. If they are animated
+    tiles we also load an animation for them.
+
+    The texture, model names are in the format tile_%d where %d is the tile's
+    gid. For animation the format is animation_tile_%d.
+
+    Args:
+        tilesets (list): List of TileSet objects. We can create an atlas of
+        the tile images from TileSet data using the tile_ids.
+
+        dirname (str): Directory of the image source of the tilesets
+
+        tile_ids (list): List of tile ids which need to be loaded from the
+        tileset.
+
+        load_atlas (function): Takes an atlas dict and loads textures in the
+        texture_manager
+
+        load_model (function): Loads models for all loaded textures in the
+        model_manager.
+
+        load_animation (function): Takes frames of an animated tile and loads
+        an animation.
+    '''
     atlas_data = {}
     model_data = {}
     animation_data = {}
@@ -222,6 +286,17 @@ def _load_tilesets(tilesets, dirname, tile_ids,
 
 def _load_obj_models(objmodels,
                      load_img_model, load_poly_model):
+    '''
+    Object models are a list of vertices for a shape or a model for a texture.
+    They are read from the map and loaded into model_manager here.
+
+    Args:
+        objmodels (list): List of dicts containing model data.
+
+        load_img_model (function): Load model for an image texture.
+
+        load_poly_model (function): Load model from a set of vertices.
+    '''
     for objname in objmodels:
         obj = objmodels[objname]
         if 'texture' in obj:
@@ -237,6 +312,23 @@ def _load_obj_models(objmodels,
 
 
 def _load_tile_map(layers, width, tile_properties):
+    '''
+    Loads data for all the tiles and objects of the tilemap as dicts
+    which will directly be passed to map_manager. While looping through all
+    tiles and objects it creates the z_index map, stores a unique set of
+    tile_ids which will be used so we only load that data and also dicts for
+    object models.
+
+    The dicts for object models require generating the vertices of the polygons
+    and hence has different math for different types of shapes.
+
+    Args:
+        layers (unsigned int): Number of layers to load
+
+        width (unsigned int): Number of columns.
+
+        tile_properties (dict): A map for specific tile properties to be loaded.
+    '''
     height = int(len(layers[0].tiles)/width)
     tiles = [[[] for j in range(width)] for i in range(height)]
     objects = []
@@ -281,7 +373,8 @@ def _load_tile_map(layers, width, tile_properties):
                     x_coords = [v[0] for v in obj.polygon]
                     y_coords = [v[1] for v in obj.polygon]
 
-                    w, h = max(x_coords) - min(x_coords), max(y_coords) - min(y_coords)
+                    w, h = (max(x_coords) - min(x_coords),
+                            max(y_coords) - min(y_coords))
                     c = obj.x + w/2, obj.y + h/2
 
                     vertices = {}
@@ -310,7 +403,9 @@ def _load_tile_map(layers, width, tile_properties):
                         if t>0 and t<359:
                             indices.extend([0,t,t+1])
                     obj = {'model': 'obj_%d_%d' % (obj_layer_count, n),
-                           'position': (obj.x + obj.width/2, obj.y + obj.height/2)}
+                           'position': (obj.x + obj.width/2,
+                                        obj.y + obj.height/2),
+                          }
                     objmodel = {'vertices': vertices,
                                 'indices': indices,
                                 'vertex_count': len(vertices),
@@ -331,7 +426,8 @@ def _load_tile_map(layers, width, tile_properties):
                             'index_count': 6
                             }
                     obj = {'model': 'obj_%d_%d' % (obj_layer_count, n),
-                           'position': (obj.x + obj.width/2, obj.y + obj.height/2)}
+                           'position': (obj.x + obj.width/2,
+                                        obj.y + obj.height/2)}
 
                 name = 'obj_%d_%d' % (obj_layer_count, n)
                 objmodels[name] = objmodel

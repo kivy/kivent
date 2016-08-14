@@ -46,7 +46,14 @@ cdef class TileMap:
     cdef unsigned int object_count
     cdef list _z_index_map
     cdef list _obj_layers_index
-    cdef str orientation
-    cdef bint stagger_index # True for Even, False for Odd
-    cdef bint stagger_axis # True for X, False for Y
+
+cdef class StaggeredTileMap(TileMap):
+    cdef bint _stagger_index # True for Even, False for Odd
+    cdef bint _stagger_axis # True for X, False for Y
+
+cdef class HexagonalTileMap(StaggeredTileMap):
     cdef unsigned int hex_side_length
+
+cdef class IsometricTileMap(TileMap):
+    pass
+

@@ -10,11 +10,15 @@ TestGame:
     GameWorld:
         id: gameworld
         gamescreenmanager: gamescreenmanager
-        size_of_gameworld: 200*1024
+        size_of_gameworld: 250*1024
         system_count: 4
         zones: {'general': 100000}
         PositionSystem2D:
             system_id: 'position'
+            gameworld: gameworld
+            zones: ['general']
+        ColorSystem:
+            system_id: 'color'
             gameworld: gameworld
             zones: ['general']
         MapSystem:

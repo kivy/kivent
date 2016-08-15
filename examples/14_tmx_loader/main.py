@@ -25,8 +25,17 @@ class TestGame(Widget):
         map_anim_args = {
             'zones': ['general'],
         }
-        self.map_layers, self.map_layer_animators = map_utils.load_map_systems(
-                3, self.gameworld, map_render_args, map_anim_args)
+        map_poly_args = {
+            'zones': ['general'],
+            'frame_count': 2,
+            'gameview': 'camera1',
+            'shader_source': 'poscolorshader.glsl'
+        }
+        self.map_layers, self.map_layer_animators = \
+                map_utils.load_map_systems(4, self.gameworld,
+                        map_render_args, map_anim_args, map_poly_args)
+
+        print(self.map_layers)
 
         self.camera1.render_system_order = reversed(self.map_layers)
 

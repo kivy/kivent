@@ -26,7 +26,6 @@ TestGame:
             id: tile_map
             gameworld: gameworld
             zones: ['general']
-            system_names: map_layers + ['tile_map'] 
         GameView:
             system_id: 'camera1'
             gameworld: gameworld
@@ -38,3 +37,28 @@ TestGame:
             updateable: True
     GameScreenManager:
         id: gamescreenmanager
+        size: root.size
+        pos: root.pos
+        gameworld: gameworld
+
+<GameScreenManager>:
+    MainScreen:
+        id: main_screen
+
+<MainScreen@GameScreen>:
+    name: 'main'
+    FloatLayout:
+        DebugPanel:
+            size_hint: (.2, .1)
+            pos_hint: {'x': .225, 'y': .025}
+
+
+<DebugPanel>:
+    Label:
+        pos: root.pos
+        size: root.size
+        font_size: root.size[1]*.5
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1)
+        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'

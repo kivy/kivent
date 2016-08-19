@@ -103,7 +103,7 @@ cdef class GameView(GameSystem):
         reflect the settings for camera_size, camera_pos, and the pos and size
         of gameview.'''
         camera_pos = self.camera_pos
-        camera_size = self.size
+        camera_size = self.window_size
         x, y = self.pos
         camera_scale = self.camera_scale
         proj = self.matrix.view_clip(

@@ -36,8 +36,6 @@ cdef class MapSystem(StaticMemGameSystem):
     memory_required = NumericProperty(500*1024)
 
     def on_gameworld(self, instance, value):
-        print "Yay"
-
         model_manager = self.gameworld.managers["model_manager"]
         animation_manager = self.gameworld.managers["animation_manager"]
         map_manager = MapManager(model_manager, animation_manager,

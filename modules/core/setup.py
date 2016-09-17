@@ -4,7 +4,12 @@ from os.path import dirname, join, isfile, exists
 from distutils.core import setup
 from distutils.extension import Extension
 import kivy
-from commands import getoutput
+try:
+    from subprocess import check_output
+except ImportError:
+    from commands import getoutput
+    def check_output(args):
+        return getoutput(' '.join(args))
 try:
     from Cython.Build import cythonize
     from Cython.Distutils import build_ext
@@ -62,7 +67,7 @@ elif platform == 'darwin':
     v = os.uname()
     if v[2] >= '13.0.0':
         import platform as _platform
-        xcode_dev = getoutput('xcode-select -p').splitlines()[0]
+        xcode_dev = check_output(['xcode-select', '-p']).splitlines()[0]
         sdk_mac_ver = '.'.join(_platform.mac_ver()[0].split('.')[:2])
         sysroot = join(xcode_dev.decode('utf-8'),
                        'Platforms/MacOSX.platform/Developer/SDKs',

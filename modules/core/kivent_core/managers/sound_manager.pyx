@@ -143,7 +143,7 @@ cdef class SoundManager(GameManager):
         self.play_direct(self.sound_keys[sound_name], volume)
 
     def play_loop(self, sound_name, volume=1.):
-        self.play_direct_loop(self.soud_keys[sound_name], volume)
+        self.play_direct_loop(self.sound_keys[sound_name], volume)
 
     def stop(self, sound_name):
         self.stop_direct(self.sound_keys[sound_name])

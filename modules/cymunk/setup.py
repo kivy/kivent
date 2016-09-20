@@ -1,7 +1,8 @@
-from os import environ, remove
-from os.path import dirname, join, isfile, exists
+from os import environ, remove, uname
+from os.path import join, isfile, exists, dirname
 from distutils.core import setup
 from distutils.extension import Extension
+from subprocess import check_output
 try:
     from Cython.Build import cythonize
     from Cython.Distutils import build_ext
@@ -54,12 +55,12 @@ elif platform == 'darwin':
         osx_arch = 'x86_64'
     else:
         osx_arch = 'i386'
-    v = os.uname()
+    v = uname()
     if v[2] >= '13.0.0':
         import platform as _platform
-        xcode_dev = getoutput('xcode-select -p').spltilines()[0]
+        xcode_dev = check_output(['xcode-select', '-p']).decode().strip()
         sdk_mac_ver = '.'.join(_platform.mac_ver()[0].split('.')[:2])
-        sysroot = join(xcode_dev.decode('utf-8'),
+        sysroot = join(xcode_dev,
                        'Platforms/MacOSX.platform/Developer/SDKs',
                        'MacOSX{}.sdk'.format(sdk_mac_ver),
                        'System/Library/Frameworks')
@@ -92,7 +93,8 @@ check_for_removal = [
     ]
 
 import pkgutil
-cymunk_dirname = pkgutil.get_loader("cymunk").filename
+loader = pkgutil.get_loader("cymunk")
+cymunk_dirname = dirname(loader.path if hasattr(loader, 'path') else loader.filename)
 
 def build_ext(ext_name, files, include_dirs=[cymunk_dirname]):
     return Extension(ext_name, files, global_include_dirs + include_dirs,

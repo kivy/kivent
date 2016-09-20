@@ -2,7 +2,7 @@
 from kivy.graphics.context cimport Context, get_context
 from kivy.graphics.c_opengl cimport (GL_ARRAY_BUFFER, GL_STREAM_DRAW,
     GL_ELEMENT_ARRAY_BUFFER, glGenBuffers, glBindBuffer, glBufferData,
-    glBufferSubData, glDeleteBuffers, glIsBuffer)
+    glBufferSubData, glDeleteBuffers)
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from vertex_format cimport KEVertexFormat

@@ -166,8 +166,12 @@ cdef class FixedVBO:
         and clear the **memory_block**.'''
         self.flags = V_NEEDGEN
         self.size_last_frame = 0
-        glDeleteBuffers(1, &self.id)
-        gl_log_debug_message('FixedVBO.reload-glDeleteBuffers')
+        cdef Context context = get_context()
+        if self.have_id():
+            arr = context.lr_vbo
+            arr.append(self.id)
+            context.trigger_gl_dealloc()
+            self.flags |= ~V_HAVEID
         if self.target == GL_ELEMENT_ARRAY_BUFFER:
             self.data_size = 0
         self.memory_block.clear()

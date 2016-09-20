@@ -11,6 +11,32 @@ cdef class SoundManager(GameManager):
     SoundLoader classes, making it easier for you to integrate sounds into
     your game, and controlling the ability to play the same sound multiple
     times simultaneously.
+
+    **Attributes:**
+        **music_volume** (NumericProperty): The master volume from 0.0 to 1.0
+        for music tracks.
+
+        **sound_volume** (NumericProperty): The master volume from 0.0 to 1.0
+        for sounds. Will be multiplied by the specified volume.
+
+        **cutoff** (NumericProperty): If volume is below this level the sound
+        will not be played at all.
+
+        **current_track** (StringProperty): The name of the music track
+        currently playing.
+
+        **loop_music** (BooleanProperty): If True when one music track finishes
+        playing another will be randomly chosen from the loaded music tracks
+        and scheduled for playing between 0 and **max_wait_for_music** seconds
+        from now.
+
+        **max_wait_for_music** (NumericProperty): The maximum amount of time
+        to wait before automatically playing another music track when
+        **loop_music** is True.
+        
+        **music_dict** (dict): Dictionary containing all tracks loaded
+        by **load_music**. 
+
     '''
     music_volume = NumericProperty(.6)
     sound_volume = NumericProperty(.6)
@@ -31,6 +57,22 @@ cdef class SoundManager(GameManager):
             return self.music_dict
 
     def load_music(self, track_name, file_address):
+        '''
+        Loads a music track under the provided name from the provided address.
+        The entry into **music_dict** will be a dict containing both the track
+        object loaded by SoundLoader and the file_address, found under those 
+        keys.
+
+        Args:
+            track_name (string): Name to load music under.
+
+            file_address (string): Location of the file.
+
+        Return:
+            string: The name of the track that has been loaded, will be same
+            as provided arg.
+
+        '''
         track = SoundLoader.load(file_address)
         track.bind(on_stop=self.on_track_stop)
         self.music_dict[track_name] = {
@@ -40,6 +82,19 @@ cdef class SoundManager(GameManager):
         return track_name
 
     def on_track_stop(self, sound):
+        '''
+        Callback called when on_stop event is fired after a music track
+        quites playing. If **loop_music** is True another music track will
+        be chosen and begin playing in a randomized amount of time from
+        0.0 to **max_wait_for_music** seconds later.
+
+        Args:
+            sound (Sound): The track object that just finished playing.
+
+        Return:
+            None
+
+        '''
         if self.loop_music:
             Clock.schedule_once(
                 lambda dt: self.play_track(
@@ -48,10 +103,34 @@ cdef class SoundManager(GameManager):
                 )
             
     def on_music_volume(self, instance, value):
+        '''
+        Callback called when music_volume is changed, will change volume for
+        the **current_track** if it is not None.
+
+        Args:
+            instance (SoundManager): Should be same as self.
+
+            value (float): The new value for the volume.
+
+        Return:
+            None
+
+        '''
         if self.current_track is not None:
             self.music_dict[self.current_track]['track'].volume = value
 
     def play_track(self, track_name):
+        '''
+        Plays the track with the given name. If a previous track is playing,
+        **current_track** is not None, then that track will be stopped.
+
+        Args:
+            track_name (string): The name of the track to play
+
+        Return:
+            None
+
+        '''
         track = self.music_dict[track_name]['track']
         if self.current_track is not None:
             self.stop_current_track()
@@ -60,6 +139,13 @@ cdef class SoundManager(GameManager):
         self.current_track = track_name
 
     def stop_current_track(self):
+        '''
+        Stops the current music track from playing.
+
+        Return:
+            None
+
+        '''
         self.music_dict[self.current_track]['track'].stop()
         self.current_track = None
 
@@ -86,6 +172,7 @@ cdef class SoundManager(GameManager):
 
         Return:
             int: the integer identifier for the loaded sound.
+
         '''
         count = self.sound_count
         sound_list = []
@@ -102,6 +189,23 @@ cdef class SoundManager(GameManager):
         return count
 
     cpdef play_direct(self, int sound_index, float volume):
+        '''
+        Plays the sound specified by the integer key given at the volume
+        provided. If volume is below **cutoff**, the sound will not be played.
+        If a sound is played, the specific instance of the sound will be
+        returned, otherwise None.
+
+        Args:
+            sound_index (int): The integer key for the sound to be played.
+
+            volume (float): The volume to play the sound at, will be
+            multiplied by the **sound_volume**
+
+        Return:
+            Sound: The instance of the sound being played. Will be None if 
+            no sound was played.
+
+        '''
         if volume <= self.cutoff:
             return None
         cdef list sounds = self.sound_dict[sound_index]['sounds']
@@ -116,6 +220,23 @@ cdef class SoundManager(GameManager):
             return None
 
     cpdef play_direct_loop(self, int sound_index, float volume):
+        '''
+        Plays the sound specified by the integer key given at the volume
+        provided. If volume is below **cutoff**, the sound will not be played.
+        If a sound is played, the specific instance of the sound will be
+        returned, otherwise None. The sound's loop property will be set to True
+
+        Args:
+            sound_index (int): The integer key for the sound to be played.
+
+            volume (float): The volume to play the sound at, will be
+            multiplied by the **sound_volume**
+
+        Return:
+            Sound: The instance of the sound being played. Will be None if no
+            sound was played.
+
+        '''
         cdef list sounds = self.sound_dict[sound_index]['sounds']
         if volume <= self.cutoff:
             return None
@@ -131,19 +252,83 @@ cdef class SoundManager(GameManager):
             return None
 
     cpdef stop_direct(self, int sound_index):
+        '''
+        Stops all instances of the sound being played. Sets loop to False
+        Args:
+            sound_index (int): The integer key for the sound to be played.
+
+        Return:
+            None
+
+        '''
         cdef list sounds = self.sound_dict[sound_index]['sounds']
         for each in sounds:
             each.stop()
             each.loop = False
 
     def schedule_play(self, sound_name, volume, dt):
+        '''
+        Callback for playing a sound by string key for use with Clock.schedule.
+
+        Args:
+            sound_name (string): The string name of the sound.
+
+            volume (float): The volume of sound, between 0.0 and 1.0.
+
+            dt (float): The time passed since this function was clock 
+            scheduled.
+
+        Return:
+            None
+
+        '''
         self.play(sound_name, volume=volume)
 
     def play(self, sound_name, volume=1.):
-        self.play_direct(self.sound_keys[sound_name], volume)
+        '''
+        Wrapper over play_direct that uses the string key for a sound instead
+        of integer key. 
+
+        Args:
+            sound_name (string): The string key for the sound to be played.
+
+            volume (float): The volume of sound, between 0.0 and 1.0.
+
+        Return:
+            Sound: The instance of the sound being played. Will be None if no
+            sound was played.
+
+        '''
+        return self.play_direct(self.sound_keys[sound_name], volume)
 
     def play_loop(self, sound_name, volume=1.):
+        '''
+        Wrapper over play_direct_loop that uses the string key for a sound
+        instead of integer key. The sound will be set to looping.
+
+        Args:
+            sound_name (string): The string key for the sound to be played.
+
+            volume (float): The volume of sound, between 0.0 and 1.0.
+
+        Return:
+            Sound: The instance of the sound being played. Will be None if no
+            sound was played.
+            
+        '''
         self.play_direct_loop(self.sound_keys[sound_name], volume)
 
     def stop(self, sound_name):
+        '''
+        Wrapper over stop_direct that uses a string key for a sound instead of
+        integer key. Stops all instances of the sound being played.
+        Sets loop to False
+
+        Args:
+            sound_name (string): The string key for the sound to be played.
+
+        Return:
+            None
+            
+        '''
         self.stop_direct(self.sound_keys[sound_name])

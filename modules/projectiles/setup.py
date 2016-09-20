@@ -1,14 +1,18 @@
-from os import environ, remove
-from os.path import dirname, join, isfile, exists
 from distutils.core import setup
 from distutils.extension import Extension
+from os import environ, remove, uname
+from os.path import join, isfile, exists
+from subprocess import check_output
+
 try:
     from Cython.Build import cythonize
     from Cython.Distutils import build_ext
+
     have_cython = True
 except ImportError:
     have_cython = False
 import sys
+
 platform = sys.platform
 cstdarg = '-std=gnu99'
 libraries = ['GL']
@@ -41,7 +45,7 @@ elif exists('/usr/lib/arm-linux-gnueabihf/libMali.so'):
     libraries = ['GLESv2']
 elif platform == 'win32':
     cstdarg = '-std=gnu99'
-    libraries = ['opengl32', 'glu32','glew32']
+    libraries = ['opengl32', 'glu32', 'glew32']
 elif platform.startswith('freebsd'):
     localbase = environ.get('LOCALBASE', '/usr/local')
     global_include_dirs = [join(localbase, 'include')]
@@ -54,12 +58,13 @@ elif platform == 'darwin':
         osx_arch = 'x86_64'
     else:
         osx_arch = 'i386'
-    v = os.uname()
+    v = uname()
     if v[2] >= '13.0.0':
         import platform as _platform
-        xcode_dev = getoutput('xcode-select -p').spltilines()[0]
+
+        xcode_dev = check_output('xcode-select -p').decode().strip()
         sdk_mac_ver = '.'.join(_platform.mac_ver()[0].split('.')[:2])
-        sysroot = join(xcode_dev.decode('utf-8'),
+        sysroot = join(xcode_dev,
                        'Platforms/MacOSX.platform/Developer/SDKs',
                        'MacOSX{}.sdk'.format(sdk_mac_ver),
                        'System/Library/Frameworks')
@@ -75,8 +80,8 @@ do_clear_existing = True
 import cymunk
 
 projectiles_modules = {
-    'kivent_projectiles.projectiles': ['kivent_projectiles/projectiles.pyx'], 
-    'kivent_projectiles.weapons': ['kivent_projectiles/weapons.pyx'], 
+    'kivent_projectiles.projectiles': ['kivent_projectiles/projectiles.pyx'],
+    'kivent_projectiles.weapons': ['kivent_projectiles/weapons.pyx'],
     'kivent_projectiles.combatstats': ['kivent_projectiles/combatstats.pyx'],
     'kivent_projectiles.weapon_ai': ['kivent_projectiles/weapon_ai.pyx'],
 }
@@ -93,18 +98,20 @@ check_for_removal = [
     'kivent_projectiles/projectiles.c',
     'kivent_projectiles/combatstats.c',
     'kivent_projectiles/weapon_ai.c',
-    ]
+]
 
 
 def build_ext(ext_name, files, include_dirs=cymunk.get_includes()):
     return Extension(ext_name, files, global_include_dirs + include_dirs,
-        extra_compile_args=[cstdarg, '-ffast-math',] + extra_compile_args,
-        libraries=libraries, extra_link_args=extra_link_args,
-        library_dirs=library_dirs)
+                     extra_compile_args=[cstdarg, '-ffast-math', ] + extra_compile_args,
+                     libraries=libraries, extra_link_args=extra_link_args,
+                     library_dirs=library_dirs)
+
 
 extensions = []
 projectiles_extensions = []
 cmdclass = {}
+
 
 def build_extensions_for_modules_cython(ext_list, modules):
     ext_a = ext_list.append
@@ -115,6 +122,7 @@ def build_extensions_for_modules_cython(ext_list, modules):
         ext_a(ext)
     return cythonize(ext_list)
 
+
 def build_extensions_for_modules(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
@@ -123,6 +131,7 @@ def build_extensions_for_modules(ext_list, modules):
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)
     return ext_list
+
 
 if have_cython:
     if do_clear_existing:
@@ -145,6 +154,6 @@ setup(
     cmdclass=cmdclass,
     packages=[
         'kivent_projectiles',
-        ],
+    ],
     package_dir={'kivent_projectiles': 'kivent_projectiles'},
-    package_data={'kivent_projectiles': ['*.pxd',]})
+    package_data={'kivent_projectiles': ['*.pxd', ]})

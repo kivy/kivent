@@ -2,7 +2,7 @@
 from kivy.graphics.context cimport Context, get_context
 from kivy.graphics.c_opengl cimport (GL_ARRAY_BUFFER, GL_STREAM_DRAW,
     GL_ELEMENT_ARRAY_BUFFER, glGenBuffers, glBindBuffer, glBufferData,
-    glBufferSubData, glDeleteBuffers)
+    glBufferSubData, glDeleteBuffers, glIsBuffer)
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from vertex_format cimport KEVertexFormat
@@ -166,8 +166,12 @@ cdef class FixedVBO:
         and clear the **memory_block**.'''
         self.flags = V_NEEDGEN
         self.size_last_frame = 0
-        glDeleteBuffers(1, &self.id)
-        gl_log_debug_message('FixedVBO.reload-glDeleteBuffers')
+        cdef Context context = get_context()
+        if self.have_id():
+            arr = context.lr_vbo
+            arr.append(self.id)
+            context.trigger_gl_dealloc()
+            self.flags |= ~V_HAVEID
         if self.target == GL_ELEMENT_ARRAY_BUFFER:
             self.data_size = 0
         self.memory_block.clear()

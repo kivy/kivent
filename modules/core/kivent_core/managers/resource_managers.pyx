@@ -646,6 +646,7 @@ cdef class TextureManager(GameManager):
              atlas_data = json.load(data)
         keys = self._keys
         uvs = self._uvs
+        loaded_keys = {}
         for imgname in atlas_data:
             texture = CoreImage(
                 path.join(dirname,imgname), nocache=True).texture
@@ -661,6 +662,7 @@ cdef class TextureManager(GameManager):
                 key = str(key)
                 kx,ky,kw,kh = atlas_content[key]
                 key_index = self._key_count
+                loaded_keys[key] = key_index
                 self._keys[key] = key_index
                 self._key_index[key_index] = key
                 self._texkey_index[key_index] = atlas_key
@@ -670,5 +672,6 @@ cdef class TextureManager(GameManager):
                 self._uvs[key_index] = [x1/w, 1.-y1/h, x2/w, 1.-y2/h]
                 self._key_count += 1
                 group_list_a(key_index)
+        return loaded_keys
 
 texture_manager = TextureManager()

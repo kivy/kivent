@@ -148,6 +148,7 @@ class GameWorld(Widget):
         self.model_manager = ModelManager()
         self.register_manager("model_manager", self.model_manager)
         self.register_manager("texture_manager", texture_manager)
+        self.texture_manager = texture_manager
         self.animation_manager = AnimationManager()
         self.register_manager("animation_manager", self.animation_manager)
 

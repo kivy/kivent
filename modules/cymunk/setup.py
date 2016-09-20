@@ -1,15 +1,19 @@
-from os import environ, remove, uname
-from os.path import join, isfile, exists, dirname
+import pkgutil
 from distutils.core import setup
 from distutils.extension import Extension
+from os import environ, remove, uname
+from os.path import join, isfile, exists, dirname
 from subprocess import check_output
+
 try:
     from Cython.Build import cythonize
     from Cython.Distutils import build_ext
+
     have_cython = True
 except ImportError:
     have_cython = False
 import sys
+
 platform = sys.platform
 cstdarg = '-std=gnu99'
 libraries = ['GL']
@@ -42,7 +46,7 @@ elif exists('/usr/lib/arm-linux-gnueabihf/libMali.so'):
     libraries = ['GLESv2']
 elif platform == 'win32':
     cstdarg = '-std=gnu99'
-    libraries = ['opengl32', 'glu32','glew32']
+    libraries = ['opengl32', 'glu32', 'glew32']
 elif platform.startswith('freebsd'):
     localbase = environ.get('LOCALBASE', '/usr/local')
     global_include_dirs = [join(localbase, 'include')]
@@ -58,6 +62,7 @@ elif platform == 'darwin':
     v = uname()
     if v[2] >= '13.0.0':
         import platform as _platform
+
         xcode_dev = check_output(['xcode-select', '-p']).decode().strip()
         sdk_mac_ver = '.'.join(_platform.mac_ver()[0].split('.')[:2])
         sysroot = join(xcode_dev,
@@ -74,37 +79,39 @@ elif platform == 'darwin':
 
 do_clear_existing = True
 
-#import cymunk
+# import cymunk
 
 cymunk_modules = {
-    'kivent_cymunk.physics': ['kivent_cymunk/physics.pyx',],
-    'kivent_cymunk.interaction': ['kivent_cymunk/interaction.pyx',],
+    'kivent_cymunk.physics': ['kivent_cymunk/physics.pyx', ],
+    'kivent_cymunk.interaction': ['kivent_cymunk/interaction.pyx', ],
 }
 
 cymunk_modules_c = {
-    'kivent_cymunk.physics': ['kivent_cymunk/physics.c',],
-    'kivent_cymunk.interaction': ['kivent_cymunk/interaction.c',],
+    'kivent_cymunk.physics': ['kivent_cymunk/physics.c', ],
+    'kivent_cymunk.interaction': ['kivent_cymunk/interaction.c', ],
 }
 
 check_for_removal = [
     'kivent_cymunk/physics.c',
     'kivent_cymunk/interaction.c',
 
-    ]
+]
 
-import pkgutil
 loader = pkgutil.get_loader("cymunk")
 cymunk_dirname = dirname(loader.path if hasattr(loader, 'path') else loader.filename)
 
+
 def build_ext(ext_name, files, include_dirs=[cymunk_dirname]):
     return Extension(ext_name, files, global_include_dirs + include_dirs,
-        extra_compile_args=[cstdarg, '-ffast-math',] + extra_compile_args,
-        libraries=libraries, extra_link_args=extra_link_args,
-        library_dirs=library_dirs)
+                     extra_compile_args=[cstdarg, '-ffast-math', ] + extra_compile_args,
+                     libraries=libraries, extra_link_args=extra_link_args,
+                     library_dirs=library_dirs)
+
 
 extensions = []
 cymunk_extensions = []
 cmdclass = {}
+
 
 def build_extensions_for_modules_cython(ext_list, modules):
     ext_a = ext_list.append
@@ -115,6 +122,7 @@ def build_extensions_for_modules_cython(ext_list, modules):
         ext_a(ext)
     return cythonize(ext_list)
 
+
 def build_extensions_for_modules(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
@@ -124,6 +132,7 @@ def build_extensions_for_modules(ext_list, modules):
         ext_a(ext)
     return ext_list
 
+
 if have_cython:
     if do_clear_existing:
         for file_name in check_for_removal:
@@ -132,10 +141,8 @@ if have_cython:
     cymunk_extensions = build_extensions_for_modules_cython(
         cymunk_extensions, cymunk_modules)
 else:
-    cymunk_extensions = build_extensions_for_modules(cymunk_extensions, 
-        cymunk_modules_c)
-
-
+    cymunk_extensions = build_extensions_for_modules(cymunk_extensions,
+                                                     cymunk_modules_c)
 
 setup(
     name='KivEnt Cymunk',
@@ -147,7 +154,7 @@ setup(
     cmdclass=cmdclass,
     packages=[
         'kivent_cymunk',
-        ],
+    ],
     package_dir={'kivent_cymunk': 'kivent_cymunk'},
-    package_data={'kivent_cymunk': ['*.pxd',]}
-    )
+    package_data={'kivent_cymunk': ['*.pxd', ]}
+)

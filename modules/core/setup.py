@@ -1,18 +1,14 @@
-import os
-from os import environ, remove
-from os.path import dirname, join, isfile, exists
+from os import environ, remove, uname
+from os.path import join, isfile, exists
 from distutils.core import setup
 from distutils.extension import Extension
 import kivy
-try:
-    from subprocess import check_output
-except ImportError:
-    from commands import getoutput
-    def check_output(args):
-        return getoutput(' '.join(args))
+from subprocess import check_output
+
 try:
     from Cython.Build import cythonize
     from Cython.Distutils import build_ext
+
     have_cython = True
 except ImportError:
     have_cython = False
@@ -51,7 +47,7 @@ elif exists('/usr/lib/arm-linux-gnueabihf/libMali.so'):
     libraries = ['GLESv2']
 elif platform == 'win32':
     cstdarg = '-std=gnu99'
-    libraries = ['opengl32', 'glu32','glew32']
+    libraries = ['opengl32', 'glu32', 'glew32']
 elif platform.startswith('freebsd'):
     localbase = environ.get('LOCALBASE', '/usr/local')
     global_include_dirs = [join(localbase, 'include')]
@@ -64,12 +60,13 @@ elif platform == 'darwin':
         osx_arch = 'x86_64'
     else:
         osx_arch = 'i386'
-    v = os.uname()
+    v = uname()
     if v[2] >= '13.0.0':
         import platform as _platform
-        xcode_dev = check_output(['xcode-select', '-p']).splitlines()[0]
+
+        xcode_dev = check_output(['xcode-select', '-p']).decode().strip()
         sdk_mac_ver = '.'.join(_platform.mac_ver()[0].split('.')[:2])
-        sysroot = join(xcode_dev.decode('utf-8'),
+        sysroot = join(xcode_dev,
                        'Platforms/MacOSX.platform/Developer/SDKs',
                        'MacOSX{}.sdk'.format(sdk_mac_ver),
                        'System/Library/Frameworks')
@@ -106,23 +103,23 @@ modules = {
     'memory_handlers': [
         'block', 'membuffer', 'indexing', 'pool', 'utils',
         'zone', 'tests', 'zonedblock'
-        ],
+    ],
     'rendering': [
         'gl_debug', 'vertex_format', 'fixedvbo', 'cmesh', 'batching',
-        'vertex_format', 'frame_objects','vertex_formats', 'model',
+        'vertex_format', 'frame_objects', 'vertex_formats', 'model',
         'svg_loader', 'animation',
-        ],
+    ],
     'managers': [
         'resource_managers', 'system_manager', 'entity_manager',
         'sound_manager', 'game_manager', 'animation_manager',
-        ],
+    ],
     'uix': ['cwidget', 'gamescreens'],
     'systems': [
         'gamesystem', 'staticmemgamesystem', 'position_systems',
         'gameview', 'scale_systems', 'rotate_systems', 'color_systems',
         'gamemap', 'renderers', 'lifespan', 'animation',
-        ],
-   }
+    ],
+}
 
 core_modules = {}
 core_modules_c = {}
@@ -133,40 +130,44 @@ for name in modules:
     prefix = prefixes[name]
     module_files = modules[name]
     for module_name in module_files:
-        core_modules[prefix+module_name] = [file_prefix + module_name + '.pyx']
-        core_modules_c[prefix+module_name] = [file_prefix + module_name + '.c']
+        core_modules[prefix + module_name] = [file_prefix + module_name + '.pyx']
+        core_modules_c[prefix + module_name] = [file_prefix + module_name + '.c']
         check_for_removal.append(file_prefix + module_name + '.c')
 
 
 def build_ext(ext_name, files, include_dirs=[]):
     return Extension(ext_name, files, global_include_dirs + include_dirs,
-        extra_compile_args=[cstdarg, '-ffast-math',] + extra_compile_args,
-        libraries=libraries, extra_link_args=extra_link_args,
-        library_dirs=library_dirs)
+                     extra_compile_args=[cstdarg, '-ffast-math', ] + extra_compile_args,
+                     libraries=libraries, extra_link_args=extra_link_args,
+                     library_dirs=library_dirs)
+
 
 extensions = []
 cymunk_extensions = []
 cmdclass = {}
 
+
 def build_extensions_for_modules_cython(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
         ext = build_ext(module_name, modules[module_name],
-            include_dirs=kivy.get_includes())
+                        include_dirs=kivy.get_includes())
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)
     return cythonize(ext_list)
 
+
 def build_extensions_for_modules(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
         ext = build_ext(module_name, modules[module_name],
-            include_dirs=kivy.get_includes())
+                        include_dirs=kivy.get_includes())
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)
     return ext_list
+
 
 if have_cython:
     if do_clear_existing:
@@ -177,7 +178,6 @@ if have_cython:
         extensions, core_modules)
 else:
     core_extensions = build_extensions_for_modules(extensions, core_modules_c)
-
 
 setup(
     name='KivEnt Core',
@@ -194,7 +194,7 @@ setup(
         'kivent_core.managers',
         'kivent_core.systems',
         'kivent_core.uix'
-        ],
+    ],
     package_dir={'kivent_core': 'kivent_core'},
     package_data={'kivent_core': [
         '*.pxd',
@@ -203,5 +203,6 @@ setup(
         'managers/*.pxd',
         'systems/*.pxd',
         'uix/*.pxd'
-        ]
-        },)
+    ]
+    }
+)

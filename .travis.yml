@@ -1,0 +1,17 @@
+language: python
+python:
+  - 2.7
+  - 3.4
+  - 3.5
+sudo: required
+dist: trusty
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install build-essential ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
+  - pip install -U pip
+  - pip install -r ./requirements.txt
+install:
+  - (cd modules/core && python setup.py build_ext --inplace)
+  - (cd modules/cymunk && python setup.py build_ext --inplace)
+  - (cd modules/particles && python setup.py build_ext --inplace)
+  - (cd modules/projectiles && python setup.py build_ext --inplace)

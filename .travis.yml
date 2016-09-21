@@ -13,7 +13,7 @@ before_install:
   - pip install Cython
   - pip install -r ./requirements.txt
 install:
-  - (cd modules/core && python setup.py build_ext --inplace)
-  - (cd modules/cymunk && python setup.py build_ext --inplace)
-  - (cd modules/particles && python setup.py build_ext --inplace)
-  - (cd modules/projectiles && python setup.py build_ext --inplace)
+  - (cd modules/core && python setup.py build_ext --inplace && python setup.py install)
+  - (cd modules/cymunk && python setup.py build_ext --inplace && python setup.py install)
+  - (cd modules/particles && python setup.py build_ext --inplace && python setup.py install)
+  - (cd modules/projectiles && python setup.py build_ext --inplace && python setup.py install)

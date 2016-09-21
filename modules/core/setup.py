@@ -1,4 +1,5 @@
-from os import environ, remove, uname
+from os import environ, remove
+from platform import uname
 from os.path import join, isfile, exists
 from distutils.core import setup
 from distutils.extension import Extension

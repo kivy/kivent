@@ -6,8 +6,8 @@ python:
 sudo: required
 dist: trusty
 before_install:
-  - sudo apt-get update
   - yes | sudo add-apt-repository ppa:mc3man/trusty-media
+  - sudo apt-get update
   - sudo apt-get install build-essential ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
   - pip install -U pip
   - pip install -r ./requirements.txt

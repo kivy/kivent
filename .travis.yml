@@ -1,0 +1,18 @@
+language: python
+python:
+  - 2.7
+  - 3.4
+  - 3.5
+sudo: required
+dist: trusty
+before_install:
+  - yes | sudo add-apt-repository ppa:mc3man/trusty-media
+  - sudo apt-get update
+  - sudo apt-get install build-essential ffmpeg libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev zlib1g-dev
+  - pip install -U pip
+  - pip install Cython
+  - pip install -r ./requirements.txt
+install:
+  - scripts/install_all.sh
+script:
+  - scripts/test_all.sh

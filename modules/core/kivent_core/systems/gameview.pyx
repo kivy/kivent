@@ -116,10 +116,16 @@ cdef class GameView(GameSystem):
                          camera_size[1] * camera_scale * 0.5 - camera_pos[1])
         screen_center_rotated = self._rotate_point(screen_center, -camera_rotate)
 
-        m = Matrix()
-        m.translate(screen_center[0], screen_center[1], 0)
-        m.rotate(camera_rotate, 0, 0, 1)
-        m.translate(-screen_center_rotated[0], -screen_center_rotated[1], 0)
+        # Translate to screen center
+        tr_sc = Matrix().translate(screen_center[0], screen_center[1], 0)
+        # Rotate around screen center
+        rot_sc = Matrix().rotate(camera_rotate, 0, 0, 1)
+        # Translate back to origi Translate back to origin
+        tr_or = Matrix().translate(-screen_center_rotated[0],
+                                   -screen_center_rotated[1],
+                                   0)
+
+        m = tr_or.multiply(rot_sc.multiply(tr_sc))
 
         if invert:
             m = m.inverse()
@@ -138,19 +144,22 @@ cdef class GameView(GameSystem):
         Used internally by gameview to update the projection matrix to properly
         reflect the settings for camera_size, camera_pos, and the pos and size
         of gameview.'''
-        camera_pos = self.convert_to_rotated_space((-self.camera_pos[0], -self.camera_pos[0]))
-        camera_size = self.size
-        x, y = self.pos
+
+        # Camera left-bottom pos
+        px, py = self.camera_pos
+
         camera_scale = self.camera_scale
-        proj = Matrix()
-        proj.translate(camera_pos[0], camera_pos[1], 0)
-        proj.rotate(self.camera_rotate, 0, 0, 1)
-        proj = Matrix().view_clip(
-                0,
-                camera_size[0]*camera_scale,
-                0,
-                camera_size[1]*camera_scale,
-                0., 100, 0).multiply(proj)
+        # Camera size
+        sx, sy = self.size[0] * camera_scale/2, self.size[1] * camera_scale/2
+
+        # Camera center
+        cx = -px + sx
+        cy = -py + sy
+
+        tm = Matrix().translate(-cx, -cy, 0) # Bring frame to origin
+        rm = Matrix().rotate(self.camera_rotate, 0, 0, 1) # Rotate around z
+        proj = rm.multiply(tm)
+        proj = Matrix().view_clip(-sx, sx, -sy, sy, 0., 100, 0).multiply(proj)
 
         self.canvas['projection_mat'] = proj
 
@@ -211,7 +220,6 @@ cdef class GameView(GameSystem):
             if self.do_scroll_lock:
                dist_x, dist_y = self.lock_scroll(dist_x, dist_y)
 
-            print position_data.x, position_data.y, camera_pos, screen_center
             # dist_x, dist_y = self.convert_to_rotated_space((dist_x, dist_y))
             self.camera_pos[0] += dist_x*camera_speed_multiplier*dt
             self.camera_pos[1] += dist_y*camera_speed_multiplier*dt
@@ -288,7 +296,6 @@ cdef class GameView(GameSystem):
 
         camera_scale = self.camera_scale
         camera_x, camera_y = wx * camera_scale, wy * camera_scale
-        print camera_x, camera_y
 
         return camera_x, camera_y
 

@@ -94,7 +94,7 @@ check_for_removal = [
 
 import pkgutil
 loader = pkgutil.get_loader("cymunk")
-cymunk_dirname = dirname(loader.path if hasattr(loader, 'path') else loader.filename)
+cymunk_dirname = loader.path if hasattr(loader, 'path') else loader.filename
 
 def build_ext(ext_name, files, include_dirs=[cymunk_dirname]):
     return Extension(ext_name, files, global_include_dirs + include_dirs,

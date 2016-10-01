@@ -334,11 +334,6 @@ cdef class GameView(GameSystem):
             elif cx + mw + distance_x <= x + sw - marg_x:
                 distance_x = x + sw - marg_x - cx - mw
         if mh < sh:
-            if cy + distance_y < y:
-                distance_y = y - cy
-            elif cy + distance_y + mh > y + sh:
-                distance_y = y + sh - cy - mh
-        else:
             if cy + distance_y > y + marg_y:
                 distance_y = y - cy + marg_y 
             elif cy + mh + distance_y <= y + sh - marg_y:

@@ -311,18 +311,18 @@ cdef class GameView(GameSystem):
         cdef float xy = window_size[1] / camera_size[1]
         cdef float x= pos[0] * scale
         cdef float y = pos[1] * scale
-        cdef float w = camera_size[0] * scale
-        cdef float h = camera_size[1] * scale
         cdef float mw = map_size[0]
         cdef float mh = map_size[1]
         cdef float marg_x = margins[0]
         cdef float marg_y = margins[1]
         cdef float cx = camera_pos[0]
         cdef float cy = camera_pos[1]
-        cdef float camera_right = cx + w
-        cdef float camera_top = cy + h
-        cdef float sw = w * xr
-        cdef float sh = h * xy
+        cdef float cw = camera_size[0] * scale
+        cdef float ch = camera_size[1] * scale
+        cdef float camera_right = cx + cw
+        cdef float camera_top = cy + ch
+        cdef float sw = cw * xr
+        cdef float sh = ch * xy
         if mw < sw:
             if cx + distance_x < x:
                 distance_x = x - cx
@@ -333,11 +333,16 @@ cdef class GameView(GameSystem):
                 distance_x = x - cx + marg_x
             elif cx + mw + distance_x <= x + sw - marg_x:
                 distance_x = x + sw - marg_x - cx - mw
+
+        #desired y position is
         if mh < sh:
-            if cy + distance_y > y + marg_y:
-                distance_y = y - cy + marg_y 
-            elif cy + mh + distance_y <= y + sh - marg_y:
-                distance_y = y + sh - cy - mh  - marg_y
+            distance_y = ch/2 - (cy + mh/2)
+        else:
+             if cy + distance_y > y + marg_y:
+                 distance_y = y - cy + marg_y 
+             elif cy + mh + distance_y <= y + sh - marg_y:
+                 distance_y = y + sh - cy - mh  - marg_y
+
         return distance_x, distance_y
 
 

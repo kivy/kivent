@@ -153,7 +153,8 @@ cdef class GameView(GameSystem):
         cdef object entity
         cdef float camera_speed_multiplier
         gameworld = self.gameworld
-        if self.focus_entity:
+        if self.focus_entity \
+            and not (self.do_touch_zoom and self._touch_count > 1): #'pause' focus on entity while scaling with touch
             entity_to_focus = self.entity_to_focus
             entity = gameworld.entities[entity_to_focus]
             position_data = entity.position
@@ -262,8 +263,7 @@ cdef class GameView(GameSystem):
         touch.y = old_y
         if touch.grab_current is self:
             move_speed_multiplier = self.move_speed_multiplier
-            if not self.focus_entity and self.do_touch_zoom:
-                if self._touch_count > 1:
+            if self.do_touch_zoom and self._touch_count > 1:
                     points = [Vector(t.x, t.y) for t in self._touches]
                     anchor = max(
                         points[:], key=lambda p: p.distance(touch.pos))

@@ -1236,7 +1236,7 @@ cdef class ScaledPolyRenderer(Renderer):
             GLubyte[4] v_color
 
     '''
-    system_names = ListProperty(['scaled_poly_renderer', 'position', 'scale'])
+    system_names = ListProperty(['scaled_poly_renderer', 'position', 'scale', 'color'])
     system_id = StringProperty('scaled_poly_renderer')
     model_format = StringProperty('vertex_format_2f4ub')
     vertex_format_size = NumericProperty(sizeof(VertexFormat2F4UB))
@@ -1260,6 +1260,7 @@ cdef class ScaledPolyRenderer(Renderer):
         cdef RenderStruct* render_comp
         cdef PositionStruct2D* pos_comp
         cdef ScaleStruct2D* scale_comp
+        cdef ColorStruct* color_comp
         cdef VertexFormat2F4UB* frame_data
         cdef GLushort* frame_indices
         cdef VertexFormat2F4UB* vertex
@@ -1298,6 +1299,8 @@ cdef class ScaledPolyRenderer(Renderer):
                         if render_comp.render:
                             pos_comp = <PositionStruct2D*>component_data[ri+1]
                             scale_comp = <ScaleStruct2D*>component_data[ri+2]
+                            color_comp = <ColorStruct*>component_data[
+                                ri+3]
                             model_vertices = <VertexFormat2F4UB*>(
                                 model.vertices_block.data)
                             model_indices = <GLushort*>model.indices_block.data
@@ -1313,10 +1316,18 @@ cdef class ScaledPolyRenderer(Renderer):
                                 vertex.pos[1] = pos_comp.y + (
                                                 model_vertex.pos[1] * 
                                                 scale_comp.sy)
-                                vertex.v_color[0] = model_vertex.v_color[0]
-                                vertex.v_color[1] = model_vertex.v_color[1]
-                                vertex.v_color[2] = model_vertex.v_color[2]
-                                vertex.v_color[3] = model_vertex.v_color[3]
+                                vertex.v_color[0] = blend_integer_colors(
+                                    model_vertex.v_color[0],
+                                    color_comp.color[0]) 
+                                vertex.v_color[1] = blend_integer_colors(
+                                    model_vertex.v_color[1],
+                                    color_comp.color[1]) 
+                                vertex.v_color[2] = blend_integer_colors(
+                                    model_vertex.v_color[2],
+                                    color_comp.color[2]) 
+                                vertex.v_color[3] = blend_integer_colors(
+                                    model_vertex.v_color[3],
+                                    color_comp.color[3]) 
                             index_offset += model._index_count
                     batch.set_index_count_for_frame(index_offset)
                 mesh_instruction = batch.mesh_instruction
@@ -1330,3 +1341,4 @@ Factory.register('RotateColorRenderer', cls=RotateColorRenderer)
 Factory.register('ColorRenderer', cls=ColorRenderer)
 Factory.register('PolyRenderer', cls=PolyRenderer)
 Factory.register('ColorPolyRenderer', cls=ColorPolyRenderer)
+Factory.register('ScaledPolyRenderer', cls=ScaledPolyRenderer)

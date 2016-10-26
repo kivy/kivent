@@ -268,7 +268,7 @@ cdef class ModelManager(GameManager):
             info.index_count, svg_name + '_' + info.element_id,
             indices=info.indices, vertices=info.vertices,
             )
-        self._svg_index[svg_name][info.element_id] = model_key
+        self._svg_index[svg_name]['models'][info.element_id] = model_key
         return model_key
 
     def combine_model_infos(self, list infos):
@@ -342,6 +342,12 @@ cdef class ModelManager(GameManager):
         return {'center': (center_x, center_y),
                 'bbox': (left, bot, right, top)}
 
+    def unload_models_for_svg(self, str svg_name):
+        models = self._svg_index[svg_name]['models']
+        for key in models:
+            self.unload_model(models[key])
+        self._svg_index[svg_name]['models'] = {}
+
     def get_model_info_for_svg(self, str source, str svg_name=None,
         custom_fields=None):
         '''
@@ -353,11 +359,13 @@ cdef class ModelManager(GameManager):
         if svg_name is None:
             svg_name = str(path.splitext(path.basename(source))[0])
         if svg_name in self._svg_index:
-            raise KeyError()
-        self._svg_index[svg_name] = {}
+            return self._svg_index[svg_name]
         cdef SVG svg = SVG(source, custom_fields=custom_fields)
         cdef list svg_data = svg.get_model_data()
-        return {'model_info': svg_data, 'svg_name': svg_name}
+        self._svg_index[svg_name] = svg_info = {'model_info': svg_data,
+                                                'svg_name': svg_name,
+                                                'models': {}}
+        return svg_info
 
     def load_model(self, str format_name, unsigned int vertex_count,
         unsigned int index_count, str name, do_copy=False, indices=None,

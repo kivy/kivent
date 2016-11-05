@@ -1,33 +1,25 @@
 #:kivy 1.9.0
 #:import get_asset_path __main__.get_asset_path
+#:set map_layers ['map_layer%d' % i for i in range(4)]
 
 TestGame:
 
 <TestGame>:
     gameworld: gameworld
+    camera1: camera1
     GameWorld:
         id: gameworld
         gamescreenmanager: gamescreenmanager
-        size_of_gameworld: 100*1024
+        size_of_gameworld: 250*1024
         system_count: 4
         zones: {'general': 100000}
         PositionSystem2D:
             system_id: 'position'
             gameworld: gameworld
             zones: ['general']
-        Renderer:
-            id: renderer
+        ColorSystem:
+            system_id: 'color'
             gameworld: gameworld
-            system_id: 'renderer'
-            zones: ['general']
-            frame_count: 2
-            gameview: 'camera1'
-            shader_source: get_asset_path('positionshader.glsl', 'assets/glsl')
-        AnimationSystem:
-            id: animation
-            gameworld: gameworld
-            system_id: 'animation'
-            updateable: True
             zones: ['general']
         MapSystem:
             system_id: 'tile_map'
@@ -45,3 +37,28 @@ TestGame:
             updateable: True
     GameScreenManager:
         id: gamescreenmanager
+        size: root.size
+        pos: root.pos
+        gameworld: gameworld
+
+<GameScreenManager>:
+    MainScreen:
+        id: main_screen
+
+<MainScreen@GameScreen>:
+    name: 'main'
+    FloatLayout:
+        DebugPanel:
+            size_hint: (.2, .1)
+            pos_hint: {'x': .225, 'y': .025}
+
+
+<DebugPanel>:
+    Label:
+        pos: root.pos
+        size: root.size
+        font_size: root.size[1]*.5
+        halign: 'center'
+        valign: 'middle'
+        color: (1,1,1,1)
+        text: 'FPS: ' + root.fps if root.fps != None else 'FPS:'

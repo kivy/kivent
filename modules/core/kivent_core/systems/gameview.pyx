@@ -149,8 +149,9 @@ cdef class GameView(GameSystem):
         px, py = self.camera_pos
 
         camera_scale = self.camera_scale
+        size = self.window_size
         # Camera size
-        sx, sy = self.size[0] * camera_scale/2, self.size[1] * camera_scale/2
+        sx, sy = size[0] * camera_scale/2, size[1] * camera_scale/2
 
         # Camera center
         cx = -px + sx

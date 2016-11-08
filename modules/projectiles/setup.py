@@ -147,7 +147,8 @@ else:
 
 setup(
     name='KivEnt projectiles',
-    description='''A game engine for the Kivy Framework. 
+    version='1.0.0',
+    description='''A game engine for the Kivy Framework.
         https://github.com/Kovak/KivEnt for more info.''',
     author='Jacob Kovac',
     author_email='kovac1066@gmail.com',

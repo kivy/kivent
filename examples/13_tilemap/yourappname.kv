@@ -9,24 +9,26 @@ TestGame:
         id: gameworld
         gamescreenmanager: gamescreenmanager
         size_of_gameworld: 100*1024
-        system_count: 4
+        system_count: 5
         zones: {'general': 100000}
         PositionSystem2D:
             system_id: 'position'
             gameworld: gameworld
             zones: ['general']
         Renderer:
-            id: renderer
+            id: map_layer0
             gameworld: gameworld
-            system_id: 'renderer'
+            system_id: 'map_layer0'
+            system_names: ['map_layer0','position']
             zones: ['general']
             frame_count: 2
             gameview: 'camera1'
             shader_source: get_asset_path('positionshader.glsl', 'assets/glsl')
         AnimationSystem:
-            id: animation
+            id: map_layer0_animator
             gameworld: gameworld
-            system_id: 'animation'
+            system_id: 'map_layer0_animator'
+            system_names: ['map_layer0_animator','map_layer0']
             updateable: True
             zones: ['general']
         MapSystem:

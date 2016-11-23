@@ -1,11 +1,8 @@
 from kivy.app import App
 from kivy.uix.widget import Widget
-from kivy.clock import Clock
 from random import choice, randint
-import kivent_core
 from kivent_core.gameworld import GameWorld
 from kivent_core.managers.resource_managers import texture_manager
-from kivy.properties import StringProperty, NumericProperty, ListProperty
 from os.path import dirname, join, abspath
 from kivent_core.systems.gamesystem import GameSystem
 from kivent_maps import map_utils
@@ -18,7 +15,7 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         self.gameworld.init_gameworld(
-            ['renderer', 'position', 'camera1', 'animation', 'tile_map'],
+            ['map_layer0', 'position', 'camera1', 'map_layer0_animator', 'tile_map'],
             callback=self.init_game)
 
     def init_game(self):
@@ -75,21 +72,26 @@ class TestGame(Widget):
             tiles_i = []
             for j in range(100):
                 if randint(0,100) < 10:
-                    tiles_i_j = {'animation':'tile_animation'}
+                    tiles_i_j = [{'animation':'tile_animation', 'layer':0}]
                 else:
                     tile_name = choice(['orange-tile', 'purple-tile', 'green-tile', 'blue-tile'])
-                    tiles_i_j = {'texture':tile_name,
-                                 'model':tile_name}
+                    tiles_i_j = [{'texture':tile_name,
+                                 'model':tile_name,
+                                 'layer':0}]
                 tiles_i.append(tiles_i_j)
             tiles.append(tiles_i)
 
-        map_manager.load_map('my_map', (100, 100), 64, tiles)
+        map_manager.load_map('my_map', 100, 100, tiles)
+        my_map = map_manager.maps['my_map']
+        my_map.z_index_map = [0]
+        my_map.tile_size = (64, 64)
 
         map_utils.init_entities_from_map(map_manager.maps['my_map'], self.gameworld.init_entity)
 
     def setup_states(self):
-        self.gameworld.add_state(state_name='main', systems_added=['renderer'],
-                                 systems_unpaused=['renderer','animation'])
+        self.gameworld.add_state(state_name='main',
+                                 systems_added=['map_layer0'],
+                                 systems_unpaused=['map_layer0','map_layer0_animator'])
 
     def set_state(self):
         self.gameworld.state = 'main'

@@ -28,10 +28,10 @@ The entire framework is made available to you with an MIT license so that you ha
    gamesystems
    managers
    physics
-   coloredpolygons
    particles
    rendering
    memory_handlers
+   tiled
 
    
 

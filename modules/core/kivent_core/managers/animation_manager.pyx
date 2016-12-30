@@ -16,6 +16,13 @@ cdef class AnimationManager(GameManager):
     which stores texture and model for that frame and the duration for which
     the frame should be displayed in milliseconds
 
+    Animation data takes the form:
+    {
+        'texture': texture name for animation,
+        'model' : model name for animation,
+        'duration' : time 
+    }
+
     Attributes:
         animations: Dictionary of loaded animations, keyed by name
     '''

@@ -30,6 +30,7 @@ cdef class LayerTile:
 
         **animation_manager** (AnimationManager): Instance of the gameworld's
         AnimationManager to get animation data pointer from animation name.
+
     '''
 
     def __cinit__(self, 
@@ -98,6 +99,7 @@ cdef class Tile:
         **layers** (list): List of LayerTiles contained in this tile. The list
         only contains a LayerTile for the non-empty layers so the list size may
         be less than layer_count.
+
     '''
 
     def __cinit__(self, ModelManager model_manager,
@@ -113,6 +115,7 @@ cdef class Tile:
 
         Args:
             layer (unsigned int): The layer for which to return the LayerTile.
+
         '''
 
         tile = LayerTile(self.model_manager, self.animation_manager, layer)
@@ -158,6 +161,7 @@ cdef class LayerObject:
 
         **color** (tuple): Color of the Object if it is a shape. This color
         data is taken from the first vertex of its VertexModel.
+
     '''
 
     def __cinit__(self, ModelManager model_manager):
@@ -262,6 +266,7 @@ cdef class TileMap:
         **tile_size** (tuple): Size in pixels of one tile image
 
         **name** (str): Name of this TileMap
+
     '''
 
     def  __cinit__(self, unsigned int size_x, unsigned int size_y,
@@ -312,6 +317,7 @@ cdef class TileMap:
 
         Return:
             Tile: contains data of TileStruct array
+
         '''
         if x >= self.size_x and y >= self.size_y:
             raise IndexError()
@@ -345,6 +351,7 @@ cdef class TileMap:
 
         Return:
             LayerObject: containing data of the ObjStruct
+
         '''
         if n >= self.object_count:
             raise IndexError()
@@ -380,6 +387,7 @@ cdef class TileMap:
         Return:
             (unsigned int, unsigned int): Pixel position of center as x,y
             where x is distance from left edge and y is from top edge.
+
         '''
         w, h = self.size_on_screen
         tw, th = self.tile_size
@@ -502,6 +510,8 @@ cdef class StaggeredTileMap(TileMap):
 
     Staggered tiles are arranged like this:
 
+    .. code-block:: python
+
         ---------
          ---------
         ---------
@@ -516,12 +526,14 @@ cdef class StaggeredTileMap(TileMap):
         |||||||
          | | |
 
+
     **Attributes:**
         **stagger_index** (str): indicates whether to shift even or odd
         tiles while staggering. Can take value 'even' or 'odd.
 
         **stagger_axis** (boolean): Whether to stagger along x or y axis.
         Can take values 'x' and 'y'.
+
     '''
     def get_tile_position(self, i, j):
         w, h = self.size_on_screen

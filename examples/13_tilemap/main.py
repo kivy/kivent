@@ -15,7 +15,8 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
         self.gameworld.init_gameworld(
-            ['map_layer0', 'position', 'camera1', 'map_layer0_animator', 'tile_map'],
+            ['map_layer0', 'position', 'camera1', 'map_layer0_animator',
+             'tile_map'],
             callback=self.init_game)
 
     def init_game(self):

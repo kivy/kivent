@@ -9,6 +9,17 @@ from kivent_maps.map_manager cimport MapManager
 
 
 cdef class MapComponent(MemComponent):
+    '''
+    The component associated with MapSystem.
+
+    **Attributes:**
+        **entity_id** (unsigned int): The entity_id this component is currently
+        associated with. Will be <unsigned int>-1 if the component is
+        unattached.
+
+        **pos** (tuple): The coordinate position for this tile on the map.
+
+    '''
     property entity_id:
         def __get__(self):
             cdef MapStruct* data = <MapStruct*>self.pointer
@@ -19,12 +30,19 @@ cdef class MapComponent(MemComponent):
             cdef MapStruct* data = <MapStruct*>self.pointer
             return (data.pos_x, data.pos_y)
 
-        def __set__(self, list value):
+        def __set__(self, value):
             cdef MapStruct* data = <MapStruct*>self.pointer
             data.pos_x = value[0]
             data.pos_y = value[1]
 
 cdef class MapSystem(StaticMemGameSystem):
+    '''
+    The MapSystem manages a dynamic set of renderers used to display the
+    various labels of the provided tilemap. It will register a new MapManager
+    with **Gameworld.reigster_manager** that will be used to manage the various
+    data loaded from .tmx files. Each component represents a coordinate
+    for a tile.
+    '''
 
     system_id = StringProperty('tile_map')
     processor = BooleanProperty(True)

@@ -35,6 +35,23 @@ cdef class ProjectileTemplate:
         self.destruction_callback = destruction_callback
 
 cdef class ProjectileComponent(MemComponent):
+    '''The component associated with ProjectileSystem.
+
+    **Attributes:**
+        **entity_id** (unsigned int): The entity_id this component is currently
+        associated with. Will be <unsigned int>-1 if the component is
+        unattached.
+
+       **damage** (float): The amount of damage this projectile will do.
+
+       **armor_pierce** (float): The amount of armor this projectile will
+       pierce.
+
+       **projectile_type** (int): The type of the projectile. 
+       See projectile_types.pxi.
+
+       **origin_entity** (unsigned int): The entity that fired this projectile.
+    '''
 
     property entity_id:
         def __get__(self):

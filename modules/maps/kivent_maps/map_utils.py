@@ -37,6 +37,7 @@ def load_map_systems(layer_count, gameworld, renderargs, animargs, polyargs):
         names of AnimationSystems. The names are in the order in which they are
         added to the Gameworld. You can use these lists for init_gameworld
         and setup_state.
+
     '''
     rendersystems = []
     for i in range(layer_count):
@@ -164,6 +165,7 @@ def parse_tmx(filename, gameworld):
 
     Return:
         str: name of the loaded map which is the filename
+
     '''
     texture_manager = gameworld.managers['texture_manager']
     model_manager = gameworld.managers['model_manager']
@@ -239,6 +241,7 @@ def _load_tilesets(tilesets, dirname, tile_ids,
 
         load_animation (function): Takes frames of an animated tile and loads
         an animation.
+
     '''
     atlas_data = {}
     model_data = {}
@@ -328,6 +331,7 @@ def _load_tile_map(layers, width, tile_properties):
         width (unsigned int): Number of columns.
 
         tile_properties (dict): A map for specific tile properties to be loaded.
+        
     '''
     height = int(len(layers[0].tiles)/width)
     tiles = [[[] for j in range(width)] for i in range(height)]

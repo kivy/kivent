@@ -1,0 +1,3 @@
+Cython==0.24.1
+Kivy==1.9.1
+git+git://github.com/tito/cymunk

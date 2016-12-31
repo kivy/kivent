@@ -22,6 +22,10 @@ cdef class ColorComponent(MemComponent):
         **b** (unsigned char): The blue channel, 0 to 255.
 
         **a** (unsigned char): The alpha channel, 0 to 255.
+
+        **rgba** (tuple): 4-tuple of unsigned ints (r,g,b,a)
+
+        **rgb** (tuple): 3-tuple of unsigned ints (r,g,b)
     '''
 
     property entity_id:
@@ -60,6 +64,26 @@ cdef class ColorComponent(MemComponent):
         def __set__(self, unsigned char value):
             cdef ColorStruct* data = <ColorStruct*>self.pointer
             data.color[3] = value
+
+    property rgba:
+        def __get__(self):
+            cdef ColorStruct* data = <ColorStruct*>self.pointer
+            return (data.color[0], data.color[1], data.color[2], data.color[3])
+        def __set__(self, tuple value):
+            cdef ColorStruct* data = <ColorStruct*>self.pointer
+            cdef int i
+            for i in range(4):
+                data.color[i] = value[i]
+
+    property rgb:
+        def __get__(self):
+            cdef ColorStruct* data = <ColorStruct*>self.pointer
+            return (data.color[0], data.color[1], data.color[2])
+        def __set__(self, tuple value):
+            cdef ColorStruct* data = <ColorStruct*>self.pointer
+            cdef int i
+            for i in range(3):
+                data.color[i] = value[i]
 
 
 cdef class ColorSystem(StaticMemGameSystem):

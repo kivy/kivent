@@ -1,11 +1,16 @@
-from os import environ, remove
-from os.path import dirname, join, isfile
 from distutils.core import setup
 from distutils.extension import Extension
+from os import environ, remove
+from platform import uname
+from os.path import join, isfile, exists
+from subprocess import check_output
+
 import kivy
+
 try:
     from Cython.Build import cythonize
     from Cython.Distutils import build_ext
+
     have_cython = True
 except ImportError:
     have_cython = False
@@ -14,28 +19,59 @@ import sys
 platform = sys.platform
 if platform == 'win32':
     cstdarg = '-std=gnu99'
-    libraries = ['opengl32', 'glu32','glew32']
-else:
-    cstdarg = '-std=c99'
-    libraries = []
+    libraries = ['opengl32', 'glu32', 'glew32']
+elif platform.startswith('freebsd'):
+    localbase = environ.get('LOCALBASE', '/usr/local')
+    global_include_dirs = [join(localbase, 'include')]
+    extra_link_args = ['-L', join(localbase, 'lib')]
+elif platform.startswith('openbsd'):
+    global_include_dirs = ['/usr/X11R6/include']
+    extra_link_args = ['-L', '/usr/X11R6/lib']
+elif platform == 'darwin':
+    if sys.maxsize > 2 ** 32:
+        osx_arch = 'x86_64'
+    else:
+        osx_arch = 'i386'
+    v = uname()
+    if v[2] >= '13.0.0':
+        import platform as _platform
 
+        xcode_dev = check_output(['xcode-select', '-p']).decode().strip()
+        sdk_mac_ver = '.'.join(_platform.mac_ver()[0].split('.')[:2])
+        sysroot = join(xcode_dev,
+                       'Platforms/MacOSX.platform/Developer/SDKs',
+                       'MacOSX{}.sdk'.format(sdk_mac_ver),
+                       'System/Library/Frameworks')
+    else:
+        sysroot = ('/System/Library/Frameworks/'
+                   'ApplicationServices.framework/Frameworks')
+    extra_compile_args = ['-F' + sysroot, '-arch', osx_arch]
+    extra_link_args = ['-F' + sysroot, '-arch', osx_arch,
+                       '-framework', 'OpenGL']
+    libraries = []
 
 do_clear_existing = True
 
-
-
 particles_modules = {
     'kivent_particles.particle': ['kivent_particles/particle.pyx'],
-    'kivent_particles.emitter': ['kivent_particles/emitter.pyx',],
-    'kivent_particles.particle_formats': ['kivent_particles/particle_formats.pyx',],
-    'kivent_particles.particle_renderers': ['kivent_particles/particle_renderers.pyx',],
+    'kivent_particles.emitter': ['kivent_particles/emitter.pyx', ],
+    'kivent_particles.particle_formats': [
+        'kivent_particles/particle_formats.pyx',
+    ],
+    'kivent_particles.particle_renderers': [
+        'kivent_particles/particle_renderers.pyx',
+    ],
 }
 
 particles_modules_c = {
-    'kivent_particles.particle': ['kivent_particles/particle.c',],
-    'kivent_particles.emitter': ['kivent_particles/emitter.c',],
-    'kivent_particles.particle_formats': ['kivent_particles/particle_formats.c',],
-    'kivent_particles.particle_renderers': ['kivent_particles/particle_renderers.c',],
+    'kivent_particles.particle': ['kivent_particles/particle.c', ],
+    'kivent_particles.emitter': ['kivent_particles/emitter.c', ],
+    'kivent_particles.particle_formats': [
+        'kivent_particles/particle_formats.c',
+    ],
+    'kivent_particles.particle_renderers': [
+        'kivent_particles/particle_renderers.c',
+    ],
 }
 
 check_for_removal = [
@@ -43,37 +79,41 @@ check_for_removal = [
     'kivent_particles.emitter.c',
     'kivent_particles/particle_formats.c',
     'kivent_particles/particle_renderers.c',
+]
 
-    ]
 
 def build_ext(ext_name, files, include_dirs=[]):
-    return Extension(ext_name, files, include_dirs,
-        extra_compile_args=[cstdarg, '-ffast-math',],
-        libraries=libraries,)
+    return Extension(ext_name, files, global_include_dirs + include_dirs,
+                     extra_compile_args=[cstdarg, '-ffast-math', ] + extra_compile_args,
+                     libraries=libraries, extra_link_args=extra_link_args,
+                     library_dirs=library_dirs)
 
 extensions = []
 particles_extensions = []
 cmdclass = {}
 
+
 def build_extensions_for_modules_cython(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
         ext = build_ext(module_name, modules[module_name],
-            include_dirs=kivy.get_includes())
+                        include_dirs=kivy.get_includes())
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)
     return cythonize(ext_list)
 
+
 def build_extensions_for_modules(ext_list, modules):
     ext_a = ext_list.append
     for module_name in modules:
         ext = build_ext(module_name, modules[module_name],
-            include_dirs=kivy.get_includes())
+                        include_dirs=kivy.get_includes())
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)
     return ext_list
+
 
 if have_cython:
     if do_clear_existing:
@@ -83,14 +123,13 @@ if have_cython:
     particles_extensions = build_extensions_for_modules_cython(
         particles_extensions, particles_modules)
 else:
-    particles_extensions = build_extensions_for_modules(particles_extensions, 
-        particles_modules_c)
-
-
+    particles_extensions = build_extensions_for_modules(particles_extensions,
+                                                        particles_modules_c)
 
 setup(
     name='KivEnt particles',
-    description='''A game engine for the Kivy Framework. 
+    version='1.0.0',
+    description='''A game engine for the Kivy Framework.
         https://github.com/Kovak/KivEnt for more info.''',
     author='Jacob Kovac',
     author_email='kovac1066@gmail.com',
@@ -98,5 +137,7 @@ setup(
     cmdclass=cmdclass,
     packages=[
         'kivent_particles',
-        ],
-    package_dir={'kivent_particles': 'kivent_particles'})
+    ],
+    package_dir={'kivent_particles': 'kivent_particles'},
+    package_data={'kivent_particles': ['*.pxd', ]}
+)

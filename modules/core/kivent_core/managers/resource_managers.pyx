@@ -229,6 +229,127 @@ cdef class ModelManager:
                 ind_count=str(index_size//sizeof(unsigned short)),))
         return total_count
 
+    def load_model_from_model_info(self, SVGModelInfo info, str svg_name):
+        '''
+        Turns the data in a SVGModelInfo to an actual Model for use in 
+        your game. 
+
+        Args:
+
+            info (SVGModelInfo): The data for the model you want to load.
+
+            svg_name (str): The name of the svg file, previously returned by 
+            **get_model_info_for_svg**.
+
+        Return:
+            str: The key this model is registered under. Will be svg_name + '_'
+            + element_id for the SVGModelInfo.
+
+        '''
+        model_key = self.load_model(
+            'vertex_format_2f4ub', info.vertex_count, 
+            info.index_count, svg_name + '_' + info.element_id,
+            indices=info.indices, vertices=info.vertices,
+            )
+        self._svg_index[svg_name]['models'][info.element_id] = model_key
+        return model_key
+
+    def combine_model_infos(self, list infos):
+        '''
+        Takes a list of SVGModelInfo objects and combines them into the 
+        minimum number of models that will fit that data. Each model will 
+        be no more than 65535 vertices, as this is the limit to number of 
+        vertices in a single model in ES2.0. 
+
+        Args:
+            infos (list): List of SVGModelInfo to combine.
+
+        Return:
+            list: New list of SVGModelInfo combined into the minimum number
+            necessary to display the data.
+
+        '''
+        current_info = None
+        final_infos = []
+        while len(infos) > 0:
+            new_info = infos.pop(0)
+            if current_info is None:
+                current_info = new_info
+            elif current_info.vertex_count + new_info.vertex_count < 65535:
+                current_info = current_info.combine_model_info(new_info)
+            else:
+                final_infos.append(current_info)
+                current_info = new_info
+        else:
+            final_infos.append(current_info)
+        return final_infos
+
+    def get_center_and_bbox_from_infos(self, list infos):
+        '''
+        Gets the bounding box and center info for the provided list of 
+        SVGModelInfo.
+
+        Args:
+            infos (list): List of SVGModelInfo to find the bounding box
+            and center for.
+
+        Return:
+            dict: with keys 'center' and 'bbox'. center is a 2-tuple of 
+            center_x, center_y coordinates. bbox is a 4-tuple of leftmost x,
+            bottom y, rightmost x, top y.
+            
+        '''
+        cdef float top, left, right, bot, x, y
+        initial_pos = infos[0].vertices[0]['pos']
+        top = bot = initial_pos[1]
+        left = right = initial_pos[0]
+        cdef SVGModelInfo info
+        for info in infos:
+            for i in range(info.vertex_count):
+                vertex = info.vertices[i]
+                x, y = vertex['pos']
+                if x < left:
+                    left = x
+                elif x > right:
+                    right = x
+                if y < bot:
+                    bot = y
+                elif y > top:
+                    top = y
+        bot_left = (bot, left)
+        top_left = (top, left)
+        bot_right = (bot, right)
+        top_right = (top, right)
+        center_y = bot + (top - bot) / 2.
+        center_x = left + (right - left) / 2.
+        return {'center': (center_x, center_y),
+                'bbox': (left, bot, right, top)}
+
+    def unload_models_for_svg(self, str svg_name):
+        models = self._svg_index[svg_name]['models']
+        for key in models:
+            self.unload_model(models[key])
+        self._svg_index[svg_name]['models'] = {}
+
+    def get_model_info_for_svg(self, str source, str svg_name=None,
+        custom_fields=None):
+        '''
+        Returns the SVGModelInfo objects representing the elements in an 
+        svg file. You can then parse this data depending on your needs 
+        before loading the final assets. Use **load_model_from_model_info**
+        to load your assets.
+        '''
+        if svg_name is None:
+            svg_name = str(path.splitext(path.basename(source))[0])
+        if svg_name in self._svg_index:
+            return self._svg_index[svg_name]
+        cdef SVG svg = SVG(source, custom_fields=custom_fields)
+        cdef list svg_data = svg.get_model_data()
+        self._svg_index[svg_name] = svg_info = {'model_info': svg_data,
+                                                'svg_name': svg_name,
+                                                'models': {}}
+        return svg_info
+
     def load_model(self, str format_name, unsigned int vertex_count,
         unsigned int index_count, str name, do_copy=False, indices=None,
         vertices=None):
@@ -509,12 +630,16 @@ cdef class TextureManager:
     def get_texkey_in_group(self, tex_key, group_key):
         return tex_key in self._groups[group_key]
 
-    def load_atlas(self, source):
-        dirname = path.dirname(source)
-        with open(source, 'r') as data:
-             atlas_data = json.load(data)
+    def load_atlas(self, source, datatype='json', dirname=None):
+        if datatype == 'json':
+            dirname = path.dirname(source)
+            with open(source, 'r') as data:
+                 atlas_data = json.load(data)
+        elif datatype == 'dict':
+            atlas_data = source
         keys = self._keys
         uvs = self._uvs
+        loaded_keys = {}
         for imgname in atlas_data:
             texture = CoreImage(
                 path.join(dirname,imgname), nocache=True).texture
@@ -530,6 +655,7 @@ cdef class TextureManager:
                 key = str(key)
                 kx,ky,kw,kh = atlas_content[key]
                 key_index = self._key_count
+                loaded_keys[key] = key_index
                 self._keys[key] = key_index
                 self._key_index[key_index] = key
                 self._texkey_index[key_index] = atlas_key
@@ -539,5 +665,6 @@ cdef class TextureManager:
                 self._uvs[key_index] = [x1/w, 1.-y1/h, x2/w, 1.-y2/h]
                 self._key_count += 1
                 group_list_a(key_index)
+        return loaded_keys
 
 texture_manager = TextureManager()

@@ -1,0 +1,49 @@
+#:kivy 1.9.0
+#:import get_asset_path __main__.get_asset_path
+
+TestGame:
+
+<TestGame>:
+    gameworld: gameworld
+    GameWorld:
+        id: gameworld
+        gamescreenmanager: gamescreenmanager
+        size_of_gameworld: 100*1024
+        system_count: 5
+        zones: {'general': 100000}
+        PositionSystem2D:
+            system_id: 'position'
+            gameworld: gameworld
+            zones: ['general']
+        Renderer:
+            id: map_layer0
+            gameworld: gameworld
+            system_id: 'map_layer0'
+            system_names: ['map_layer0','position']
+            zones: ['general']
+            frame_count: 2
+            gameview: 'camera1'
+            shader_source: get_asset_path('positionshader.glsl', 'assets/glsl')
+        AnimationSystem:
+            id: map_layer0_animator
+            gameworld: gameworld
+            system_id: 'map_layer0_animator'
+            system_names: ['map_layer0_animator','map_layer0']
+            updateable: True
+            zones: ['general']
+        MapSystem:
+            system_id: 'tile_map'
+            id: tile_map
+            gameworld: gameworld
+            zones: ['general']
+        GameView:
+            system_id: 'camera1'
+            gameworld: gameworld
+            size: root.size
+            window_size: root.size
+            pos: root.pos
+            do_scroll_lock: False
+            id: camera1
+            updateable: True
+    GameScreenManager:
+        id: gamescreenmanager

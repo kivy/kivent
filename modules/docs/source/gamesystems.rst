@@ -94,6 +94,18 @@ Rendering Systems
 .. autoclass:: kivent_core.systems.renderers.ColorRenderer
     :members:
 
+.. autoclass:: kivent_core.systems.renderers.RotateColorRenderer
+    :members:
+
+.. autoclass:: kivent_core.systems.renderers.PolyRenderer
+    :members:
+
+.. autoclass:: kivent_core.systems.renderers.ColorPolyRenderer
+    :members:
+
+.. autoclass:: kivent_core.systems.renderers.ScaledPolyRenderer
+    :members:
+
 Controlling the Viewing Area
 ============================
 

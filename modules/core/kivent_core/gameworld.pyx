@@ -126,6 +126,44 @@ class GameWorld(Widget):
         self.system_manager = SystemManager()
         self.master_buffer = None
         self.model_manager = ModelManager()
+        self.register_manager("model_manager", self.model_manager)
+        self.register_manager("texture_manager", texture_manager)
+        self.texture_manager = texture_manager
+        self.animation_manager = AnimationManager()
+        self.register_manager("animation_manager", self.animation_manager)
+
+
+
+    def register_manager(self, str manager_name, object manager_object):
+        '''
+        Registers a new GameManager. If manager_name is already registered
+        a GameManagerAlreadyRegistered exception will be raised.
+
+        Args:
+            manager_name (str): The name of the manager to register.
+
+            manager_object (GameManager): The GameManager object to register.
+        '''
+        if manager_name in self.managers:
+            raise GameManagerAlreadyRegistered(
+                "{} is already registered".format(manager_name))
+        self.manager_order.append(manager_name)
+        self.managers[manager_name] = manager_object
+
+    def unregister_manager(self, str manager_name):
+        '''
+        Unregisters a previously registered GameManager. If no manager was
+        registered under this name a GameManagerNotRegistered will be
+        raised.
+
+        Args:
+            manager_name (str): The name the GameManager was registered under.
+        '''
+        if manager_name not in self.managers:
+            raise GameManagerNotRegistered(
+                "{} is not a registered GameManager".format(manager_name))
+        self.manager_order.remove(manager_name)
+        del self.managers[manager_name]
 
     def ensure_startup(self, list_of_systems):
         '''Run during **init_gameworld** to determine whether or not it is safe

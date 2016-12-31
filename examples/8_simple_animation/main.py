@@ -19,7 +19,7 @@ texture_manager.load_image(join(dirname(dirname(abspath(__file__))), 'assets',
     'star2.png'))
 
 
-class AnimationSystem(GameSystem):
+class MyAnimationSystem(GameSystem):
 
     def update(self, dt):
         entities = self.gameworld.entities
@@ -33,7 +33,7 @@ class AnimationSystem(GameSystem):
                 else:
                     render_comp.texture_key = 'star1'
 
-Factory.register('AnimationSystem', cls=AnimationSystem)
+Factory.register('MyAnimationSystem', cls=MyAnimationSystem)
 
 class TestGame(Widget):
     def __init__(self, **kwargs):

@@ -16,7 +16,7 @@ TestGame:
         system_count: 4
         size: root.size
         pos: root.pos
-        zones: {'general': 10000}
+        zones: {'general': 10000,}
         PositionSystem2D:
             system_id: 'position'
             gameworld: gameworld
@@ -26,7 +26,7 @@ TestGame:
             system_id: 'color'
             gameworld: gameworld
             zones: ['general']
-        AnimationSystem:
+        MyAnimationSystem:
             system_id: 'animation'
             gameworld: gameworld
             update_time: 1.0

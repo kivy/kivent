@@ -17,7 +17,6 @@ from os.path import dirname, join, abspath
 texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets', 
     'stars.atlas'))
 
-
 def lerp(v0, v1, t):
     return (1.-t)*v0 + t * v1
 

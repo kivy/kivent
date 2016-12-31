@@ -10,7 +10,7 @@ varying vec2 tex_coord0;
 /* vertex attributes */
 attribute vec2     pos;
 attribute vec2     uvs;
-attribute vec4     vColor;
+attribute vec4     v_color;
 
 /* uniform variables */
 uniform mat4       modelview_mat;
@@ -19,7 +19,7 @@ uniform vec4       color;
 uniform float      opacity;
 
 void main (void) {
-  frag_color = vColor * color * vec4(1.0, 1., 1.0, opacity);
+  frag_color = v_color * color * vec4(1.0, 1., 1.0, opacity);
   tex_coord0 = uvs;
   vec4 new_pos = vec4(pos.xy, 0.0, 1.0);
   gl_Position = projection_mat * modelview_mat * new_pos;

@@ -1,8 +1,7 @@
 # cython: embedsignature=True
 from kivy.graphics.context cimport Context, get_context
-from kivy.graphics.c_opengl cimport (GL_ARRAY_BUFFER, GL_STREAM_DRAW,
-    GL_ELEMENT_ARRAY_BUFFER, glGenBuffers, glBindBuffer, glBufferData,
-    glBufferSubData, glDeleteBuffers)
+from kivy.graphics.cgl cimport (GL_ARRAY_BUFFER, GL_STREAM_DRAW,
+    GL_ELEMENT_ARRAY_BUFFER, cgl)
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from vertex_format cimport KEVertexFormat
@@ -111,11 +110,11 @@ cdef class FixedVBO:
         the buffer will initially be made the entire size of **memory_block**
         and pointed at a NULL data.'''
         #commentout for sphinx
-        glGenBuffers(1, &self.id)
+        cgl.glGenBuffers(1, &self.id)
         gl_log_debug_message('FixedVBO.generate_buffer-glGenBuffer')
-        glBindBuffer(self.target, self.id)
+        cgl.glBindBuffer(self.target, self.id)
         gl_log_debug_message('FixedVBO.generate_buffer-glBindBuffer')
-        glBufferData(self.target, self.memory_block.real_size,
+        cgl.glBufferData(self.target, self.memory_block.real_size,
             NULL, self.usage)
         gl_log_debug_message('FixedVBO.generate_buffer-glBufferData')
 
@@ -132,14 +131,14 @@ cdef class FixedVBO:
             self.generate_buffer()
             self.flags &= ~V_NEEDGEN
             self.flags |= V_HAVEID
-        glBindBuffer(self.target, self.id)
+        cgl.glBindBuffer(self.target, self.id)
         gl_log_debug_message('FixedVBO.update_buffer-glBindBuffer')
         if data_size != self.size_last_frame:
-            glBufferData(
+            cgl.glBufferData(
                 self.target, data_size, self.memory_block.data, self.usage)
             gl_log_debug_message('FixedVBO.update_buffer-glBufferData')
         else:
-            glBufferSubData(self.target, 0, data_size, self.memory_block.data)
+            cgl.glBufferSubData(self.target, 0, data_size, self.memory_block.data)
             gl_log_debug_message('FixedVBO.update_buffer-glBufferSubData')
         self.size_last_frame = data_size
 
@@ -154,7 +153,7 @@ cdef class FixedVBO:
     cdef void unbind(self):
         '''Unbinds the buffer after rendering'''
         #commentout for sphinx
-        glBindBuffer(self.target, 0)
+        cgl.glBindBuffer(self.target, 0)
         gl_log_debug_message('FixedVBO.unbind-glBindBuffer')
 
     cdef void return_memory(self):

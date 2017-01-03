@@ -3,7 +3,7 @@ cdef extern from "string.h":
     void *memcpy(void *dest, void *src, size_t n)
 from vertex_formats cimport VertexFormat4F, FormatConfig
 from vertex_formats import vertex_format_4f, vertex_format_7f
-from kivy.graphics.c_opengl cimport (GLfloat, GLbyte, GLubyte, GLint, GLuint,
+from kivy.graphics.cgl cimport (GLfloat, GLbyte, GLubyte, GLint, GLuint,
     GLshort, GLushort)
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.block cimport MemoryBlock

@@ -1,4 +1,4 @@
-from kivy.graphics.c_opengl cimport GLfloat, GLubyte
+from kivy.graphics.cgl cimport GLfloat, GLubyte
 
 
 ctypedef struct VertexFormat9F4UB:

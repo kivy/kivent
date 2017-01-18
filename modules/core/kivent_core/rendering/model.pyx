@@ -177,9 +177,11 @@ cdef class VertexModel:
     The quad is constructed out of 2 triangle faces, the triangle reprsented by
     vertices 0, 1, 2, and the triangle represented by 2, 3, 0, this looks like:
 
-    1__2
-    | /|
-    0/_3
+    .. code-block::
+
+        1__2
+        | /|
+        0/_3
 
     A Vertex can hold arbitrary data, but it will typically hold its x, y
     position on the screen at the very least, and very often the u,v position

@@ -402,6 +402,7 @@ cdef class TileMap:
                 for j in range(self.size_y):
                     tile_row.append(self.get_tile(i,j))
                 tile_list.append(tile_row)
+            return tile_list
 
         def __set__(self, list tiles):
             cdef unsigned int size_x = len(tiles)

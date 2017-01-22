@@ -94,8 +94,8 @@ def init_entities_from_map(tile_map, init_entity):
     z_map = tile_map.z_index_map
 
     # Load tile entities
-    for i in range(tile_map.size[0]):
-        for j in range(tile_map.size[1]):
+    for j in range(tile_map.size[1]):
+        for i in range(tile_map.size[0]):
             # Get Tile object for position (i, j)
             tile_layers = tile_map.get_tile(i,j)
 
@@ -331,10 +331,11 @@ def _load_tile_map(layers, width, tile_properties):
         width (unsigned int): Number of columns.
 
         tile_properties (dict): A map for specific tile properties to be loaded.
-        
+
     '''
     height = int(len(layers[0].tiles)/width)
-    tiles = [[[] for j in range(width)] for i in range(height)]
+    tiles = [[[] for j in range(height)] for i in range(width)]
+    print(len(tiles),len(tiles[0]))
     objects = []
     objmodels = {}
     tile_ids = set()
@@ -357,7 +358,7 @@ def _load_tile_map(layers, width, tile_properties):
                                 'model': 'tile_%d' % tile.gid}
                     tile['layer'] = tile_layer_count
 
-                    tiles[int(n/width)][n%width].append(tile)
+                    tiles[n%width][int(n/width)].append(tile)
             tile_layer_count += 1
             tile_zindex.append(i)
         elif type(layer) == ObjectGroup:

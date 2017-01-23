@@ -220,9 +220,12 @@ cdef class TileMap:
     interfaced using LayerTile.
 
     **Attributes:**
-        **tiles** (list): 2D array of Tile objects representing every grid
-        grid location on the map. To set the tile data provide it a 2D array of
-        a list of dicts in the format
+        **tiles** (list): 2D list of Tile objects representing every grid
+        grid location on the map. The outer list is a list of columns, and
+        every column is a list of layer dicts as shown below.
+
+        To set the tile data provide it a 2D list of dicts in the below format,
+        where 'i' is the column and 'j' is the row.
 
         .. code-block:: python
 
@@ -303,14 +306,14 @@ cdef class TileMap:
             self.objects_block.remove_from_buffer()
             self.objects_block = None
 
-    def get_tile(self, unsigned int x, unsigned int y, bint empty=False):
+    def get_tile(self, unsigned int i, unsigned int j, bint empty=False):
         '''
         Get a Tile at (i,j) grid position of the tile map from TileStruct array
 
         Args:
-            x (unsigned int): row of the tile
+            i (unsigned int): col of the tile
 
-            y (unsigned int): col of the tile
+            j (unsigned int): row of the tile
 
             empty (boolean): Will set NULL to the pointers in all the
             TileStructs if True. Default False.
@@ -319,12 +322,13 @@ cdef class TileMap:
             Tile: contains data of TileStruct array
 
         '''
-        if x >= self.size_x and y >= self.size_y:
+        if i >= self.size_x and j >= self.size_y:
             raise IndexError()
 
         cdef Tile tile = Tile(self.model_manager, self.animation_manager,
                                 self.tile_layer_count)
-        tile._layers = <TileStruct*>self.tiles_block.get_pointer(x*self.size_x + y)
+        tile._layers = <TileStruct*>self.tiles_block\
+                                            .get_pointer(i*self.size_y + j)
 
         cdef TileStruct tile_data
         if empty:
@@ -380,9 +384,9 @@ cdef class TileMap:
         at (i, j) grid position.
 
         Args:
-            i (unsigned int): row of the tile
+            i (unsigned int): col of the tile
 
-            j (unsigned int): col of the tile
+            j (unsigned int): row of the tile
 
         Return:
             (unsigned int, unsigned int): Pixel position of center as x,y
@@ -392,16 +396,16 @@ cdef class TileMap:
         w, h = self.size_on_screen
         tw, th = self.tile_size
 
-        return (j * tw + tw/2, h - i * th - th/2)
+        return (i * tw + tw/2, h - j * th - th/2)
 
     property tiles:
         def __get__(self):
             tile_list = []
             for i in range(self.size_x):
-                tile_row = []
+                tile_col = []
                 for j in range(self.size_y):
-                    tile_row.append(self.get_tile(i,j))
-                tile_list.append(tile_row)
+                    tile_col.append(self.get_tile(i,j))
+                tile_list.append(tile_col)
             return tile_list
 
         def __set__(self, list tiles):
@@ -411,7 +415,9 @@ cdef class TileMap:
 
             if size_x != self.size_x or size_y != self.size_y:
                 raise Exception(
-                        "Provided tiles list does not match internal size")
+                        "Provided tiles list does not match internal size." +
+                        "Expected %dx%d, got %dx%d" % \
+                                (self.size_x, self.size_y, size_x, size_y))
             for i in range(size_x):
                 for j in range(size_y):
                     tile_layers = self.get_tile(i,j, True)
@@ -545,22 +551,22 @@ cdef class StaggeredTileMap(TileMap):
         if sa:
             # Staggered along x axis
 
-            y = h - (i * th + th/2)
-            x = (j * tw)/2 + tw/2
+            y = h - (j * th + th/2)
+            x = (i * tw)/2 + tw/2
 
             # If tile's x index matches the stagger index
             # it needs to be shifted down on the y axis
-            if si != ((j+1)%2 == 0):
+            if si != ((i+1)%2 == 0):
                 y -= th/2
         else:
             # Staggered along y axis
 
-            y = h - ((i * th)/2 + th/2)
-            x = j * tw + tw/2
+            y = h - ((j * th)/2 + th/2)
+            x = i * tw + tw/2
 
             # If tile's y index matches the stagger index
             # it needs to be shifted right on the x axis
-            if si != ((i+1)%2 == 0):
+            if si != ((j+1)%2 == 0):
                 x += tw/2
 
         return (x, y)
@@ -612,16 +618,16 @@ cdef class HexagonalTileMap(StaggeredTileMap):
         ts = self.hex_side_length
 
         if sa:
-            y = h - (i * th + th/2)
-            x = (j * (tw + ts))/2 + tw/2
-
-            if si != ((j+1)%2 == 0):
-                y -= th/2
-        else:
-            y = h - ((i * (th + ts))/2 + th/2)
-            x = j * tw + tw/2
+            y = h - (j * th + th/2)
+            x = (i * (tw + ts))/2 + tw/2
 
             if si != ((i+1)%2 == 0):
+                y -= th/2
+        else:
+            y = h - ((j * (th + ts))/2 + th/2)
+            x = i * tw + tw/2
+
+            if si != ((j+1)%2 == 0):
                 x += tw/2
 
         return (x, y)
@@ -657,8 +663,8 @@ cdef class IsometricTileMap(TileMap):
         w, h = self.size_on_screen
         tw, th = self.tile_size
 
-        x, y = ((j - i) * tw/2,
-                (j + i) * th/2)
+        x, y = ((i - j) * tw/2,
+                (i + j) * th/2)
 
         x += w/2
         y = h - th/2 - y

@@ -42,26 +42,27 @@ class TestGame(Widget):
         self.set_state()
         self.draw_some_stuff()
         self.save_animations()
+        Clock.schedule_interval(self.shuffle_animations,1)
 
     def load_models(self):
         model_manager = self.gameworld.model_manager
-        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+        model_manager.load_textured_rectangle('vertex_format_4f', 2., 2.,
             'star1', 'star1-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+        model_manager.load_textured_rectangle('vertex_format_4f', 2., 2.,
             'star2', 'star2-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+        model_manager.load_textured_rectangle('vertex_format_4f', 2., 2.,
             'star3', 'star3-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+        model_manager.load_textured_rectangle('vertex_format_4f', 2., 2.,
             'star1-blue', 'star1-blue-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+        model_manager.load_textured_rectangle('vertex_format_4f', 2., 2.,
             'star2-blue', 'star2-blue-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+        model_manager.load_textured_rectangle('vertex_format_4f', 2., 2.,
             'star3-blue', 'star3-blue-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+        model_manager.load_textured_rectangle('vertex_format_4f', 2., 2.,
             'star1-red', 'star1-red-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+        model_manager.load_textured_rectangle('vertex_format_4f', 2., 2.,
             'star2-red', 'star2-red-4')
-        model_manager.load_textured_rectangle('vertex_format_4f', 8., 8.,
+        model_manager.load_textured_rectangle('vertex_format_4f', 2., 2.,
             'star3-red', 'star3-red-4')
 
     def load_animations(self):
@@ -90,6 +91,15 @@ class TestGame(Widget):
                                        'anim.json')
         animation_manager.save_to_json(['star-animation-3'],
                                        'anim.json')
+
+    def shuffle_animations(self,dt):
+        for i in range(3000):
+            ent = self.gameworld.entities[i]
+            try:
+                anim_component = ent.animation
+                anim_component.animation = 'star-animation-%d' % randint(0,51)
+            except IndexError:
+                pass
 
     def draw_some_stuff(self):
         init_entity = self.gameworld.init_entity

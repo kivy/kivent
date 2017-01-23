@@ -220,9 +220,12 @@ cdef class TileMap:
     interfaced using LayerTile.
 
     **Attributes:**
-        **tiles** (list): 2D array of Tile objects representing every grid
-        grid location on the map. To set the tile data provide it a 2D array of
-        a list of dicts in the format
+        **tiles** (list): 2D list of Tile objects representing every grid
+        grid location on the map. The outer list is a list of columns, and
+        every column is a list of layer dicts as shown below.
+
+        To set the tile data provide it a 2D list of dicts in the below format,
+        where 'i' is the column and 'j' is the row.
 
         .. code-block:: python
 

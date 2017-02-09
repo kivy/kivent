@@ -570,7 +570,7 @@ cdef class StaggeredTileMap(TileMap):
         if sa:
             # Staggered along x axis
 
-            y = h - (j * th + th/2)
+            y = h - (j * th + th)
             x = (i * tw)/2 + tw/2
 
             # If tile's x index matches the stagger index
@@ -580,7 +580,7 @@ cdef class StaggeredTileMap(TileMap):
         else:
             # Staggered along y axis
 
-            y = h - ((j * th)/2 + th/2)
+            y = h - ((j * th)/2 + th)
             x = i * tw + tw/2
 
             # If tile's y index matches the stagger index
@@ -806,7 +806,7 @@ cdef class IsometricTileMap(TileMap):
                 (i + j) * th/2)
 
         x += w/2
-        y = h - th/2 - y
+        y = h - th - y
 
         return (x, y)
 

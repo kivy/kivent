@@ -3,6 +3,7 @@
 #:set map_layers ['map_layer%d' % i for i in range(4)]
 
 TestGame:
+    on_touch_down: self.screen_touched(args[1])
 
 <TestGame>:
     gameworld: gameworld
@@ -47,6 +48,7 @@ TestGame:
 
 <MainScreen@GameScreen>:
     name: 'main'
+
     FloatLayout:
         DebugPanel:
             size_hint: (.2, .1)

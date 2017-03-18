@@ -9,6 +9,8 @@ import kivent_core
 import kivent_cymunk
 from kivent_core.gameworld import GameWorld
 from kivent_core.managers.resource_managers import texture_manager
+
+from kivent_core.rendering.svg_loader import SVGModelInfo
 from kivent_core.systems.renderers import RotateRenderer
 from kivent_core.systems.position_systems import PositionSystem2D
 from kivent_core.systems.rotate_systems import RotateSystem2D
@@ -42,16 +44,53 @@ class TestGame(Widget):
 
         self.load_svg('objects.svg', self.gameworld)
 
+    def normalize_info(self, info):
+        def _median(li):
+            li = sorted(li)
+            lenli = len(li)
+            if lenli % 2: 
+                return li[lenli//2]
+            else:
+                return (li[lenli//2 - 1] + li[lenli//2])/2.0
+
+        #first - calculate (very roughly middle of the object), median
+        xmid = _median([ x['pos'][0] for x in info.vertices.values()])
+        ymid = _median([ x['pos'][1] for x in info.vertices.values()])
+
+        ret = SVGModelInfo(info.indices,
+                       info.vertices.copy(),
+                       custom_data=info.custom_data,
+                       description=info.description,
+                       element_id=info.element_id,
+                       title=info.title,
+                       path_vertices=info.path_vertices[:]
+                       )
+
+        #now substract it from vertices
+        for k in ret.vertices:
+            v = ret.vertices[k].copy()
+            x, y = v['pos']
+            v['pos'] = (x - xmid, y - ymid)
+            ret.vertices[k] = v
+
+        #and path vertices
+        for i, (x, y) in enumerate(ret.path_vertices):
+            ret.path_vertices[i] = (x - xmid, y - ymid)
+        
+        return ret, (xmid, ymid)
+
 
     def load_svg(self, fname, gameworld):
         mm = gameworld.model_manager
         data = mm.get_model_info_for_svg(fname)
 
         for info in data['model_info']:
-            Logger.debug("adding object with title/element_id=%s/%s", info.title, info.element_id)
-            model_name = mm.load_model_from_model_info(info, data['svg_name'])
+            
+            pos = (randint(0, 200), randint(0, 200))
+            #info, pos = self.normalize_info(info)
 
-            pverts = info.path_vertices
+            Logger.debug("adding object with title/element_id=%s/%s and pos=%s", info.title, info.element_id, pos)
+            model_name = mm.load_model_from_model_info(info, data['svg_name'])
 
             poly_shape = {
                 'shape_type': 'poly',
@@ -61,13 +100,12 @@ class TestGame(Widget):
                 'shape_info': {
                     'mass': 50,
                     'offset': (0, 0),
-                    'vertices': pverts
+                    'vertices': info.path_vertices
                 }
 
             }
-            
-            pos = (float(randint(100, 600)), float(randint(100, 400)))
-            #pos = (100, 100)
+           
+
 
             physics = {
                     'main_shape': 'poly',

@@ -25,14 +25,14 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1920"
-     inkscape:window-height="1065"
+     inkscape:window-width="1324"
+     inkscape:window-height="753"
      id="namedview8"
      showgrid="false"
      inkscape:zoom="1.9666668"
-     inkscape:cx="225.4136"
-     inkscape:cy="267.3515"
-     inkscape:window-x="1362"
+     inkscape:cx="-17.637231"
+     inkscape:cy="365.48709"
+     inkscape:window-x="38"
      inkscape:window-y="-3"
      inkscape:window-maximized="1"
      inkscape:current-layer="svg5084" />
@@ -67,24 +67,16 @@
     </rdf:RDF>
   </metadata>
   <rect
-     style="fill:#00ff00;fill-opacity:1"
-     id="rect2990"
-     width="48.305084"
-     height="55.423725"
-     x="130.67796"
-     y="68.135612" />
-  <rect
-     style="fill:#800080;fill-opacity:1"
-     id="rect2996"
-     width="15.762712"
-     height="180.50847"
-     x="240.50847"
-     y="117.96612" />
-  <rect
-     style="fill:#ff00ff;fill-opacity:1"
-     id="rect2998"
-     width="226.77965"
-     height="12.203389"
-     x="301.52542"
-     y="73.22036" />
+     style="fill:#008b00;fill-opacity:1;stroke:none"
+     id="reg"
+     width="50"
+     height="50"
+     x="0"
+     y="0"
+     inkscape:label="reg" />
+  <path
+     style="fill:#d40000;stroke:#ba7676;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 77.796605,68.135621 117.45762,12.711896 154.57626,88.474603 z"
+     id="path2986"
+     inkscape:connector-curvature="0" />
 </svg>

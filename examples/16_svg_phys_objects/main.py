@@ -51,6 +51,8 @@ class TestGame(Widget):
             Logger.debug("adding object with title/element_id=%s/%s", info.title, info.element_id)
             model_name = mm.load_model_from_model_info(info, data['svg_name'])
 
+            pverts = info.path_vertices
+
             poly_shape = {
                 'shape_type': 'poly',
                 'elasticity': 0.6,
@@ -59,23 +61,13 @@ class TestGame(Widget):
                 'shape_info': {
                     'mass': 50,
                     'offset': (0, 0),
-                    'vertices': info.path_vertices + [info.path_vertices[0]]
+                    'vertices': pverts
                 }
 
             }
             
-            col_shape = {'shape_type': 'circle', 
-                         'elasticity': .5, 
-                         'collision_type': 1, 
-                         'shape_info': {
-                                        'inner_radius': 0, 
-                                        'outer_radius': 60, 
-                                        'mass': 50, 
-                                        'offset': (0, 0)
-                                       }, 
-                         'friction': 1.0}
-
             pos = (float(randint(100, 600)), float(randint(100, 400)))
+            #pos = (100, 100)
 
             physics = {
                     'main_shape': 'poly',

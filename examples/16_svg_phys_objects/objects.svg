@@ -29,9 +29,9 @@
      inkscape:window-height="1065"
      id="namedview8"
      showgrid="false"
-     inkscape:zoom="1.3906434"
-     inkscape:cx="372.27955"
-     inkscape:cy="199.52396"
+     inkscape:zoom="1.9666668"
+     inkscape:cx="225.4136"
+     inkscape:cy="267.3515"
      inkscape:window-x="1362"
      inkscape:window-y="-3"
      inkscape:window-maximized="1"
@@ -66,24 +66,25 @@
       </cc:Work>
     </rdf:RDF>
   </metadata>
-  <g
-     id="layer1"
-     transform="matrix(3.6254514,0,0,1.655674,-505.92611,-158.625)">
-    <path
-       d="m 223.78868,231.64486 -26.90555,37.94819 0.0665,-37.74464 z"
-       id="bubu"
-       style="fill:#a60000;fill-opacity:1;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       inkscape:connector-curvature="0"
-       sodipodi:nodetypes="cccc" />
-  </g>
-  <path
-     sodipodi:type="arc"
-     style="fill:#808000;fill-opacity:1"
-     id="path2984"
-     sodipodi:cx="464.53317"
-     sodipodi:cy="251.68842"
-     sodipodi:rx="44.583679"
-     sodipodi:ry="39.909584"
-     d="m 509.11685,251.68842 a 44.583679,39.909584 0 1 1 -89.16736,0 44.583679,39.909584 0 1 1 89.16736,0 z"
-     transform="matrix(-0.37096778,0,0,1,575.73723,0)" />
+  <rect
+     style="fill:#00ff00;fill-opacity:1"
+     id="rect2990"
+     width="48.305084"
+     height="55.423725"
+     x="130.67796"
+     y="68.135612" />
+  <rect
+     style="fill:#800080;fill-opacity:1"
+     id="rect2996"
+     width="15.762712"
+     height="180.50847"
+     x="240.50847"
+     y="117.96612" />
+  <rect
+     style="fill:#ff00ff;fill-opacity:1"
+     id="rect2998"
+     width="226.77965"
+     height="12.203389"
+     x="301.52542"
+     y="73.22036" />
 </svg>

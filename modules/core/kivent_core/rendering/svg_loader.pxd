@@ -23,6 +23,7 @@ cdef dict parse_style(string)
 cdef parse_color(c, current_color=?)
 
 cdef class SVGModelInfo:
+    cdef public list path_vertices
     cdef list indices
     cdef dict vertices
     cdef int vertex_count

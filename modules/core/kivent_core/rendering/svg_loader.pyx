@@ -317,7 +317,8 @@ cdef class SVGModelInfo:
 
     def __init__(self, list indices, dict vertices,
         str title=None, str element_id=None,
-        str description=None, dict custom_data=None):
+        str description=None, dict custom_data=None, 
+        list path_vertices=None):
         if custom_data is None:
             custom_data = {}
         self.indices = indices
@@ -328,10 +329,11 @@ cdef class SVGModelInfo:
         self.title = title
         self.element_id = element_id
         self.custom_data = custom_data
+        self.path_vertices = path_vertices
 
     def combine_model_info(self, SVGModelInfo new_info):
         '''
-        Returns a new SVGModelInfo object that contains the combined vertex
+        ..Returns a new SVGModelInfo object that contains the combined vertex
         and index data for this object and the SVGModelInfo object provided 
         by the new_info argument. 
 
@@ -368,6 +370,7 @@ cdef class SVGModelInfo:
                                 description=self.description,
                                 element_id=self.element_id,
                                 title=self.title,
+                                path_vertices=self.path_vertices
                                 )
 
 
@@ -1313,6 +1316,10 @@ cdef class SVG:
             final_indices = []
             final_ind_ext = final_indices.extend
             vert_offset = 0
+            
+            path_vertices = zip(path[::2], path[1::2])
+            Logger.debug("path_vertices is %r", path_vertices)
+
             for element in subelements:
                 vertices = element.vertices
                 final_ind_ext([x + vert_offset for x in element.indices])
@@ -1325,7 +1332,8 @@ cdef class SVG:
                                         description=description,
                                         element_id=element_id,
                                         title=title,
-                                        custom_data=custom_data
+                                        custom_data=custom_data,
+                                        path_vertices=path_vertices
                                         ))
 
         return elements

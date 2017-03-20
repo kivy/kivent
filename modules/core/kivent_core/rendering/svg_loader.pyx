@@ -697,6 +697,13 @@ cdef class SVG:
         elif e.tag.endswith('radialGradient'):
             self.gradients[e.get('id')] = RadialGradient(e, self)
 
+        elif e.tag.endswith("metadata"):
+            x = e.find("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}RDF"\
+                       "/{http://creativecommons.org/ns#}Work"\
+                       "/{http://purl.org/dc/elements/1.1/}description")
+
+            self.description = x.text if x else ""
+
         for c in e.getchildren():
             self.parse_element(c)
 

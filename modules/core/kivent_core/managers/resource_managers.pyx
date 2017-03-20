@@ -364,6 +364,7 @@ cdef class ModelManager(GameManager):
         cdef list svg_data = svg.get_model_data()
         self._svg_index[svg_name] = svg_info = {'model_info': svg_data,
                                                 'svg_name': svg_name,
+                                                'svg_object': svg,
                                                 'models': {}}
         return svg_info
 

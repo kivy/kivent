@@ -89,7 +89,7 @@ class TestGame(Widget):
             pos = (randint(0, 200), randint(0, 200))
             #info, pos = self.normalize_info(info)
 
-            Logger.debug("adding object with title/element_id=%s/%s and pos=%s", info.title, info.element_id, pos)
+            Logger.debug("adding object with title/element_id=%s/%s and desc=%s", info.title, info.element_id, info.description)
             model_name = mm.load_model_from_model_info(info, data['svg_name'])
 
             poly_shape = {

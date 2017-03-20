@@ -575,7 +575,13 @@ cdef class SVG:
         oldtransform = self.transform
         self.element_id = e.get('id', None)
         self.title = e.get('title', None)
+        
         self.description = e.get('description', None)
+        #sodipodi description
+        desc = e.find("{http://www.w3.org/2000/svg}desc")
+        if desc is not None:
+            self.description = desc.text
+
         self.custom_data = custom_data = {}
         if self.custom_fields is not None:
             for key in self.custom_fields:
@@ -703,7 +709,6 @@ cdef class SVG:
                        "/{http://creativecommons.org/ns#}Work"\
                        "/{http://purl.org/dc/elements/1.1/}description")
 
-            Logger.debug("metadata x=%s", x)
             self.metadata_description = ""
             if x is not None:
                 self.metadata_description = x.text 

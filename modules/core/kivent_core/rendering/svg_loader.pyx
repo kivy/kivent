@@ -454,6 +454,7 @@ cdef class SVG:
         self.element_id = None
         self.title = None
         self.description = None
+        self.metadata_description = None
         self.fill_was_none = False
         self.anchor_y = anchor_y
         self.line_texture = Texture.create(
@@ -702,7 +703,10 @@ cdef class SVG:
                        "/{http://creativecommons.org/ns#}Work"\
                        "/{http://purl.org/dc/elements/1.1/}description")
 
-            self.description = x.text if x else ""
+            Logger.debug("metadata x=%s", x)
+            self.metadata_description = ""
+            if x is not None:
+                self.metadata_description = x.text 
 
         for c in e.getchildren():
             self.parse_element(c)

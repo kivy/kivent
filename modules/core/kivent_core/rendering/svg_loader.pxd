@@ -55,6 +55,7 @@ cdef class SVG:
     cdef str element_id
     cdef str title
     cdef str description
+    cdef public str metadata_description
     cdef str label
     cdef list custom_fields
     cdef bint fill_was_none

@@ -2,7 +2,7 @@
 from kivent_core.systems.renderers cimport Renderer, RenderStruct
 from kivent_particles.particle_formats cimport VertexFormat9F4UB
 from kivent_particles.particle_formats import vertex_format_9f4ub
-from kivy.graphics.c_opengl cimport GLushort
+from kivy.graphics.cgl cimport GLushort
 from kivent_core.rendering.batching cimport BatchManager, IndexedBatch
 from kivent_core.rendering.vertex_format cimport KEVertexFormat
 from kivent_core.systems.position_systems cimport PositionStruct2D

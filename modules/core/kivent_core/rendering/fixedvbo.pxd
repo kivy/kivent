@@ -1,6 +1,6 @@
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from vertex_format cimport KEVertexFormat
-from kivy.graphics.c_opengl cimport GLuint
+from kivy.graphics.cgl cimport GLuint
 
 cdef class FixedVBO:
     cdef MemoryBlock memory_block

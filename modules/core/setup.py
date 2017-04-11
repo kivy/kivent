@@ -137,6 +137,7 @@ for name in modules:
 
 
 def build_ext(ext_name, files, include_dirs=[]):
+    print(global_include_dirs + include_dirs)
     return Extension(ext_name, files, global_include_dirs + include_dirs,
                      extra_compile_args=[cstdarg, '-ffast-math', ] + extra_compile_args,
                      libraries=libraries, extra_link_args=extra_link_args,
@@ -146,7 +147,7 @@ def build_ext(ext_name, files, include_dirs=[]):
 extensions = []
 cymunk_extensions = []
 cmdclass = {}
-
+print(kivy.get_includes())
 
 def build_extensions_for_modules_cython(ext_list, modules):
     ext_a = ext_list.append

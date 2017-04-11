@@ -1,4 +1,4 @@
-from kivy.graphics.c_opengl cimport GLuint
+from kivy.graphics.cgl cimport GLuint
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer

@@ -11,9 +11,9 @@ from cmesh cimport CMesh
 from kivent_core.managers.resource_managers import texture_manager
 from kivent_core.systems.staticmemgamesystem cimport ComponentPointerAggregator
 from kivy.logger import Logger
-from kivy.graphics.c_opengl cimport (GLushort, GL_UNSIGNED_SHORT, GL_TRIANGLES,
+from kivy.graphics.cgl cimport (GLushort, GL_UNSIGNED_SHORT, GL_TRIANGLES,
     GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_LINE_LOOP, GL_TRIANGLE_STRIP,
-    GL_TRIANGLE_FAN, glDrawElements, GLuint)
+    GL_TRIANGLE_FAN, cgl, GLuint)
 from kivent_core.gameworld import debug
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 
@@ -212,7 +212,7 @@ cdef class IndexedBatch:
         gl_log_debug_message('IndexedBatch.draw_frame-indices bind')
         indices.bind()
         #commentout for sphinx
-        glDrawElements(self.mode, indices.data_size // sizeof(GLushort),
+        cgl.glDrawElements(self.mode, indices.data_size // sizeof(GLushort),
             GL_UNSIGNED_SHORT, NULL)
         gl_log_debug_message('IndexedBatch.draw_frame-glDrawElements')
         vertices.unbind()

@@ -186,6 +186,7 @@ build_script:
         Check-Error
         cd ..
         pip install "${env:WHEEL_DIR}\KivEnt_Core-${WHEEL_VERSION}-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
+        pip install "${env:WHEEL_DIR}\KivEnt_Cymunk-1.0.0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
         dir "$env:WHEEL_DIR"
       }
 

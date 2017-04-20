@@ -102,13 +102,7 @@ build_script:
 
     Check-Error
 
-    python -c "import kivy"
-
-    Check-Error
-
-    $WHEEL_VERSION = python -c "import kivy;print(kivy.__version__)" --config "kivy:log_level:error"
-
-    Check-Error
+    $WHEEL_VERSION = "2.2.dev0" # get somehow from something RT one
 
     echo "Kivy version is: $WHEEL_VERSION"
 
@@ -173,12 +167,15 @@ build_script:
     }
 
     if ($DO_WHEEL -eq "True") {
-      python setup.py bdist_wheel -d "$env:WHEEL_DIR"
-      Check-Error
+      cd modules
 
-      if ($env:BITTNESS -eq "64" -and $env:PYVER -eq "27") {
-        python setup.py bdist_wheel -d "$env:WHEEL_DIR" --build_examples --universal
+      $modules = python -c "import os;print(str(os.listdir('.'))[1:-1])"
+
+      foreach ($mod in $modules) {
+        cd $mod
+        if (test-path "setup.py") {python setup.py bdist_wheel -d "$env:WHEEL_DIR"}
         Check-Error
+        cd ..
       }
 
       # Default file bdist_wheel creates:
@@ -196,11 +193,10 @@ build_script:
         Check-Error
       }
 
-      C:\Python27\python.exe C:\projects\kivy-sdk-packager\win\gdrive.py upload "$env:GDRIVE_KIVY_UPLOAD_ID" "$env:WHEEL_DIR\*"
-      Check-Error
+      dir "%cd%"
 
-      C:\Python27\python.exe C:\projects\kivy-sdk-packager\win\gdrive.py delete_older "$env:GDRIVE_KIVY_UPLOAD_ID" "15"
-      Check-Error
+      dir "$env:WHEEL_DIR"
+
     }
 test_script:
 - ps: >-

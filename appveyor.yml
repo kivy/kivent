@@ -10,17 +10,8 @@ environment:
   GDRIVE_CLIENT_SECRET:
     secure: 7J8TZnhr3MsF5rveMVVkbrr9tzTwGG6rHWZMorW0WN4=
   GDRIVE_KIVY_UPLOAD_ID: 0B1_HB9J8mZepOV81UHpDbmg5SWM
-  USE_SDL2: 1
-  USE_GSTREAMER: 1
   KIVENT_USE_SETUPTOOLS: 1
-  KIVY_SPLIT_EXAMPLES: 1
   matrix:
-  - PYVER: 27
-    BITTNESS: 86
-    COMPILER: mingw
-  - PYVER: 27
-    BITTNESS: 64
-    COMPILER: mingw
   - PYVER: 34
     BITTNESS: 86
     COMPILER: mingw
@@ -29,18 +20,6 @@ environment:
     COMPILER: mingw
   - PYVER: 35
     BITTNESS: 86
-    COMPILER: mingw
-  - PYVER: 35
-    BITTNESS: 64
-    COMPILER: mingw
-  - PYVER: 36
-    BITTNESS: 86
-    COMPILER: mingw
-  - PYVER: 36
-    BITTNESS: 64
-    COMPILER: mingw
-  - PYVER: 35
-    BITTNESS: 86
     COMPILER: msvc
   - PYVER: 35
     BITTNESS: 64
@@ -51,6 +30,12 @@ environment:
   - PYVER: 36
     BITTNESS: 64
     COMPILER: msvc
+  - PYVER: 27
+    BITTNESS: 86
+    COMPILER: mingw
+  - PYVER: 27
+    BITTNESS: 64
+    COMPILER: mingw
 install:
 - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-desktop.ps1'))
 build_script:
@@ -177,7 +162,27 @@ build_script:
 
     Check-Error
 
-    pip install https://github.com/tito/cymunk/zipball/master
+    python -m pip install https://github.com/tito/cymunk/zipball/master
+
+    Check-Error
+
+    python --version
+
+    Check-Error
+
+    pip list
+
+    Check-Error
+
+    dir C:\Python34
+
+    Check-Error
+
+    dir C:\Python34\lib\site-packages\cymunk
+
+    Check-Error
+
+    dir C:\Python34\lib\site-packages\cymunk\chipmunk
 
     Check-Error
 
@@ -265,11 +270,4 @@ test_script:
       if ($SuccessVal -ne $LastExitCode) {
         throw "Failed with exit code $LastExitCode"
       }
-    }
-
-
-    if ($env:DO_TEST -eq "True"){
-      $env:KIVY_GL_BACKEND = "angle_sdl2"
-      python -m nose.core kivy/tests
-      Check-Error
     }

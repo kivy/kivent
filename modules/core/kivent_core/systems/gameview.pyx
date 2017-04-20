@@ -174,6 +174,7 @@ cdef class GameView(GameSystem):
         cdef str system_id
         cdef SystemManager system_manager = gameworld.system_manager
         if isinstance(widget, GameSystem):
+            widget.on_add_system()
             render_system_order = self.render_system_order
             system_id = widget.system_id
             if system_id in render_system_order:
@@ -282,6 +283,7 @@ cdef class GameView(GameSystem):
             return True
         else:
             return False
+
 
     def get_camera_center(self):
         '''Returns the current center point of the cameras view'''

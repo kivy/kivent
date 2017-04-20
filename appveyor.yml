@@ -157,14 +157,13 @@ build_script:
 
     pip install kivy.deps.angle
 
-    Copy-Item "$PYTHON_ROOT\Lib\site-packages\kivy\deps\*" -destination "$env:APPVEYOR_BUILD_FOLDER\kivy\deps" -recurse
+    $kivy_url = "https://kivy.org/downloads/appveyor/kivy"
 
-    Remove-Item "$PYTHON_ROOT\Lib\site-packages\kivy" -Force -Recurse
+    # get kivy version later magically
 
-    if ($env:DO_TEST -eq "True" -or $DO_WHEEL -eq "True") {
-      python setup.py build_ext --inplace
-      Check-Error
-    }
+    pip install "$kivy_url/Kivy-1.9.2.dev0-cp${env:PYVER}-cp${env:PYVER}m-${WHELL_BITNESS}.whl"
+
+    Check-Error
 
     if ($DO_WHEEL -eq "True") {
       cd modules

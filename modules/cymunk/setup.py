@@ -106,6 +106,9 @@ check_for_removal = [
 
 loader = pkgutil.get_loader("cymunk")
 cymunk_dirname = loader.path if hasattr(loader, 'path') else loader.filename
+print('cy_dir', cymunk_dirname)
+if '__init__.py' in cymunk_dirname:
+    cymunk_dirname = dirname(cymunk_dirname)
 
 
 def build_ext(ext_name, files, include_dirs=[cymunk_dirname]):

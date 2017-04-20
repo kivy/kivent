@@ -1,10 +1,16 @@
 import pkgutil
-from distutils.core import setup
-from distutils.extension import Extension
 from os import environ, remove
 from platform import uname
 from os.path import join, isfile, exists, dirname
 from subprocess import check_output
+
+if environ.get('KIVENT_USE_SETUPTOOLS'):
+    from setuptools import setup, Extension
+    print('Using setuptools')
+else:
+    from distutils.core import setup
+    from distutils.extension import Extension
+    print('Using distutils')
 
 try:
     from Cython.Build import cythonize

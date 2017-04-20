@@ -25,7 +25,7 @@ from kivy.graphics.opengl import (
     GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA, GL_DST_COLOR, GL_ONE_MINUS_DST_COLOR,
     )
 cimport cython
-from kivy.graphics.c_opengl cimport GLfloat, GLushort
+from kivy.graphics.cgl cimport GLfloat, GLushort
 from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 from kivent_core.systems.position_systems cimport PositionStruct2D
 from kivent_core.systems.rotate_systems cimport RotateStruct2D

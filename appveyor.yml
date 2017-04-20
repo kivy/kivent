@@ -1,39 +1,27 @@
 version: 1.0.{build}
 os: Visual Studio 2015
 environment:
-  WHEEL_DIR: C:\kivy_wheels
-  KIVY_BUILD_DIR: C:\kivy_build
+  WHEEL_DIR: C:\kivent_wheels
+  KIVENT_BUILD_DIR: C:\kivent_build
   AIRPLANE_CHARGE:
     secure: HgQr7XMKpB6lWn33SKv0GyYZbh1RfpgvaIKEE0B54R5XHJujQg5dhOEB3Vc2CfAqCprX+CGxXAjQwFnuv6pJeA3++9Z8/1SfFuEqCF59J7PqsDs2thA8lNHLRsThvRVJrBt2jcb1wrG3Nf3sz3vi7e+rBzYjprkcYiTP0XJ5FdQekyFTTjuXYaRBGWrwGX81dEVVUkGFuEZFYWJq2Yf/PkFGOX+IN0CjgpFB0pGfZSJcIG7mvscurfG/KvckLhNUINprUKt0pJ8iCN0iufsbmrOnuG+WC8AHktvlSxzHSfCm8zmhSZTkDNkJfpYHapFagQQThmiYq8PqsVIC0XOz+j4KLljc6bxyhE0oPtOPg4DohBdqLI28V1XB/Kqh7CCZR50wAw567voWVOtKsyets5oeywZH1q/gtK6stC5t7v+a2s0w1I2IEW6p2aPy7plreZj15QCgIR8h6JgIuMuwqiaVCUuhej/GauCZG/9jIBJpTf1NkBa9k4vIxHPq5R5/ltYX8za49vz5ImdLe1qlTFwy9fegMpb+D5m3y3ilm+t5xkDmqXQau1oVWIVd8jf0DawWqkNsKLp6hbYr51gclS+Gc7NVKwvFtcmoAfbvNCGBDH4vF6cR2wNhy6RDjjqDgIStnpUs3fKS9bKOyrv9+394esQqEuAXgLtC2vUMk+z3Hf8V18AFYKZfZmWxiGGrjI6YQCBOBOdh5VO5cASqtoTU22OvAPhXT7gX2JG96Rc9yf/K8DEvzuWo3lArDAclh2zLm++1SOh54dDiAiMZvLkNXu5tAsg60c+rJCx4FQ9ra0/GcFY1LKJntdKvpQyBkp4wKAvq3YyV7Rnx8u6PULXXG2rS6i7m+asLrY+FSCO5oRmLrMv5pEv0cF/BOAh0RGR6medX8ASmM40sHqz+WC9WJfaSUZplSzQwHxXCr/AzK40mOTtKgkg8e8tqwNzjI8mdjx0kwcu8zuOeUK6U6l83voGKbli1gzinkLvzhjvF1TXZwpT1y/HvAs5dGwXVfdigeOqcfmIOxXStPmaZ4CZRKVK3CgweYzpETyT6Pm5H3jANcAuyYuphJr7YrfHfWKAg6N3Q0r3AfzliOuIBm3DVfm2RuI8USGJxRsjaDX8LB8sdhrCPLUYBh1RNhYol5bVEM1IX+BcpXzIyqv00eSMTvN3G7KdsM+/8LGlnEM+apIgnBlVfcWOQI8rzBkXuJvExSwDhKzncGWbi12UapEVsE/QnVpDiwbiPdZtQQzQ=
   GDRIVE_CLIENT_ID:
     secure: iGAZpJPOTLhRmK7X60xzRZm1S0PbmoMwoVJdd8WiKBH34Tqsd6UEFhPjLLok7J0+xWStS8E3fwEQh4Wzn1BCXhry5Qv8FLD41oskVpiSwdc=
   GDRIVE_CLIENT_SECRET:
     secure: 7J8TZnhr3MsF5rveMVVkbrr9tzTwGG6rHWZMorW0WN4=
-  GDRIVE_KIVY_UPLOAD_ID: 0B1_HB9J8mZepOV81UHpDbmg5SWM
+  GDRIVE_KIVENT_UPLOAD_ID: 0B2_WZb3FJkzhMnNLTlZtUjJENHM
   KIVENT_USE_SETUPTOOLS: 1
   matrix:
-  - PYVER: 34
-    BITTNESS: 86
-    COMPILER: mingw
-  - PYVER: 34
-    BITTNESS: 64
-    COMPILER: mingw
-  - PYVER: 35
-    BITTNESS: 86
-    COMPILER: msvc
-  - PYVER: 35
-    BITTNESS: 64
-    COMPILER: msvc
-  - PYVER: 36
-    BITTNESS: 86
-    COMPILER: msvc
-  - PYVER: 36
-    BITTNESS: 64
-    COMPILER: msvc
   - PYVER: 27
     BITTNESS: 86
     COMPILER: mingw
   - PYVER: 27
+    BITTNESS: 64
+    COMPILER: mingw
+  - PYVER: 34
+    BITTNESS: 86
+    COMPILER: mingw
+  - PYVER: 34
     BITTNESS: 64
     COMPILER: mingw
 install:
@@ -49,9 +37,7 @@ build_script:
       }
     }
 
-
     echo "Bitness=$env:BITTNESS, scheduled=$env:APPVEYOR_SCHEDULED_BUILD, forced=$env:APPVEYOR_FORCED_BUILD, rebuild=$env:APPVEYOR_RE_BUILD, tagged=$env:APPVEYOR_REPO_TAG"
-
 
     cd $env:APPVEYOR_BUILD_FOLDER
 
@@ -59,12 +45,11 @@ build_script:
 
     Check-Error
 
-
     $PYTHONPATH = "$env:APPVEYOR_BUILD_FOLDER;$PYTHONPATH"
 
     echo "Build folder: $env:APPVEYOR_BUILD_FOLDER. Wheel folder: $env:WHEEL_DIR."
 
-    mkdir "$env:KIVY_BUILD_DIR"
+    mkdir "$env:KIVENT_BUILD_DIR"
 
     Check-Error
 
@@ -72,12 +57,12 @@ build_script:
 
     Check-Error
 
-
     C:\Python27\Scripts\pip.exe install pydrive
 
     Check-Error
 
 
+    # Get ARCH for wheels
 
     if ($env:BITTNESS -eq "64") {
       $PYTHON_ROOT = "C:\Python$env:PYVER-x64"
@@ -87,27 +72,32 @@ build_script:
       $WHEEL_BITNESS = "win32"
     }
 
-    $env:PATH = "$PYTHON_ROOT;$PYTHON_ROOT\Scripts;$env:PATH;C:\Program Files\7-Zip"
-
-    $env:PATH = $PYTHON_ROOT+"\share\glew\bin;"+$PYTHON_ROOT+"\share\sdl2\bin;"+$PYTHON_ROOT+"\share\gstreamer\bin;"+$env:PATH
-
     $WHEEL_DATE = python -c "from datetime import datetime;print(datetime.utcnow().strftime('%Y%m%d'))"
-
-    $WD = ${env:WHEEL_DIR}
-
-    $CP = "cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
-
-    Check-Error
 
     $GIT_TAG = git rev-parse --short HEAD
 
     Check-Error
 
-    python -c "import sys;print('Python version is {}'.format(sys.version))"
+    $env:PATH = "$PYTHON_ROOT;$PYTHON_ROOT\Scripts;$env:PATH;C:\Program Files\7-Zip"
+
+    $env:PATH = $PYTHON_ROOT+"\share\glew\bin;"+$PYTHON_ROOT+"\share\sdl2\bin;"+$PYTHON_ROOT+"\share\gstreamer\bin;"+$env:PATH
 
     Check-Error
 
-    $env:DO_TEST = "False" # True later
+
+    # Set up shortcuts
+
+    $WD = ${env:WHEEL_DIR}
+
+    $CP = "cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
+
+    $R = "import re;import os;f=open(os.path.join('"
+
+    $X = "','setup.py'));print(re.findall('version=\'(.*?)\',?',f.read())[-1]);f.close()"
+
+    Check-Error
+
+    $env:DO_TEST = "False" # switch to True when tests are available
 
     if ($env:APPVEYOR_SCHEDULED_BUILD -eq "True"){
       $env:DO_TEST = "False"
@@ -117,9 +107,9 @@ build_script:
     $DO_WHEEL = "True"
 
     # Set new wheel name, keep default if release (tag)
-    # release: Kivy-X.Y.Z-cpAB-cpABm-ARCH.whl (Kivy_examples-X.Y.Z-py2.py3-none-any.whl)
-    # nightly: Kivy-X.Y.Z.dev0-cpAB-cpABm-ARCH.whl (Kivy_examples-X.Y.Z.dev0-py2.py3-none-any.whl)
-    # archive: Kivy-X.Y.Z.dev0.YYYYMMDD.githash-cpAB-cpABm-ARCH.whl (Kivy_examples-X.Y.Z.dev0.YYYYMMDD.githash-py2.py3-none-any.whl)
+    # release: KivEnt-X.Y.Z-cpAB-cpABm-ARCH.whl
+    # nightly: KivEnt-X.Y.Z.dev0-cpAB-cpABm-ARCH.whl
+    # archive: KivEnt-X.Y.Z.dev0.YYYYMMDD.githash-cpAB-cpABm-ARCH.whl
 
     if ($env:APPVEYOR_REPO_TAG -eq "true"){
       $WHEEL_NAME = "dev0-"
@@ -146,9 +136,7 @@ build_script:
       Check-Error
     }
 
-    pip install mock cython pygments docutils nose kivy.deps.glew_dev kivy.deps.glew kivy.deps.gstreamer_dev kivy.deps.sdl2_dev kivy.deps.sdl2
-
-    pip --no-cache-dir install kivy.deps.gstreamer
+    pip install mock cython pygments docutils nose kivy.deps.glew_dev kivy.deps.glew kivy.deps.sdl2_dev kivy.deps.sdl2
 
     Check-Error
 
@@ -156,53 +144,33 @@ build_script:
 
     $kivy_url = "https://kivy.org/downloads/appveyor/kivy"
 
-    # get kivy version later magically
+    # get kivy version at runtime later, magically
 
     pip install "$kivy_url/Kivy-1.9.2.dev0-${CP}"
 
     Check-Error
 
-    python -m pip install https://github.com/tito/cymunk/zipball/master
+    pip install https://github.com/tito/cymunk/zipball/master
 
     Check-Error
 
-    python --version
 
-    Check-Error
 
-    pip list
+    $DO_WHEEL = "True"  # Remove later
 
-    Check-Error
-
-    dir C:\Python34
-
-    Check-Error
-
-    dir C:\Python34\lib\site-packages\cymunk
-
-    Check-Error
-
-    dir C:\Python34\lib\site-packages\cymunk\chipmunk
-
-    Check-Error
-
-    $DO_WHEEL = "True"
+    # cd to kivent/modules, list modules
 
     if ($DO_WHEEL -eq "True") {
       cd modules
 
       $modules = Get-ChildItem "$pwd" -Name
 
-      echo "[$modules]"
+      echo "Found KivEnt modules: [$modules]"
 
       Check-Error
 
 
       # Get versions from modules' setup.py
-
-      $R = "import re;import os;f=open(os.path.join('"
-
-      $X = "','setup.py'));print(re.findall('version=\'(.*?)\',?',f.read())[-1]);f.close()"
 
       foreach ($mod in $modules) {
         if ($mod -eq "core") {
@@ -244,7 +212,7 @@ build_script:
 
 
       # Default file bdist_wheel creates:
-      # Kivy-X.Y.Z[.dev0]-cpAB-cpABm-ARCH.whl (Kivy_examples-X.Y.Z[.dev0]-py2.py3-none-any.whl)
+      # KivEnt-X.Y.Z[.dev0]-cpAB-cpABm-ARCH.whl
 
       $files = Get-ChildItem "$env:WHEEL_DIR" *.whl -Name
       foreach ($WHEEL_DEFAULT in $files){
@@ -260,14 +228,4 @@ build_script:
 
       dir "$env:WHEEL_DIR"
 
-    }
-test_script:
-- ps: >-
-    function Check-Error
-
-    {
-      param([int]$SuccessVal = 0)
-      if ($SuccessVal -ne $LastExitCode) {
-        throw "Failed with exit code $LastExitCode"
-      }
     }

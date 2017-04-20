@@ -84,10 +84,10 @@ build_script:
 
     if ($env:BITTNESS -eq "64") {
       $PYTHON_ROOT = "C:\Python$env:PYVER-x64"
-      $WHELL_BITNESS = "win_amd64"
+      $WHEEL_BITNESS = "win_amd64"
     } else {
       $PYTHON_ROOT = "C:\Python$env:PYVER"
-      $WHELL_BITNESS = "win32"
+      $WHEEL_BITNESS = "win32"
     }
 
     $env:PATH = "$PYTHON_ROOT;$PYTHON_ROOT\Scripts;$env:PATH;C:\Program Files\7-Zip"
@@ -161,7 +161,7 @@ build_script:
 
     # get kivy version later magically
 
-    pip install "$kivy_url/Kivy-1.9.2.dev0-cp${env:PYVER}-cp${env:PYVER}m-${WHELL_BITNESS}.whl"
+    pip install "$kivy_url/Kivy-1.9.2.dev0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
 
     Check-Error
 
@@ -185,6 +185,7 @@ build_script:
         if (test-path "setup.py") {python setup.py bdist_wheel -d "$env:WHEEL_DIR"}
         Check-Error
         cd ..
+        pip install "${env:WHEEL_DIR}\KivEnt_Core-${WHEEL_VERSION}-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
         dir "$env:WHEEL_DIR"
       }
 

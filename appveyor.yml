@@ -29,6 +29,18 @@ environment:
     COMPILER: mingw
   - PYVER: 35
     BITTNESS: 86
+    COMPILER: mingw
+  - PYVER: 35
+    BITTNESS: 64
+    COMPILER: mingw
+  - PYVER: 36
+    BITTNESS: 86
+    COMPILER: mingw
+  - PYVER: 36
+    BITTNESS: 64
+    COMPILER: mingw
+  - PYVER: 35
+    BITTNESS: 86
     COMPILER: msvc
   - PYVER: 35
     BITTNESS: 64
@@ -187,6 +199,9 @@ build_script:
         cd ..
         pip install "${env:WHEEL_DIR}\KivEnt_Core-${WHEEL_VERSION}-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
         pip install "${env:WHEEL_DIR}\KivEnt_Cymunk-1.0.0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
+        pip install "${env:WHEEL_DIR}\KivEnt_maps-1.0.0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
+        pip install "${env:WHEEL_DIR}\KivEnt_particles-1.0.0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
+        pip install "${env:WHEEL_DIR}\KivEnt_projectiles-1.0.0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
         dir "$env:WHEEL_DIR"
       }
 

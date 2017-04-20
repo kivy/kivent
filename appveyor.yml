@@ -108,15 +108,15 @@ build_script:
 
     $WHEEL_DATE = python -c "from datetime import datetime;print(datetime.utcnow().strftime('%Y%m%d'))"
 
+    $WD = ${env:WHEEL_DIR}
+
+    $CP = "cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
+
     Check-Error
 
     $GIT_TAG = git rev-parse --short HEAD
 
     Check-Error
-
-    $WHEEL_VERSION = "2.2.0.dev0" # get somehow from something RT one
-
-    echo "Kivy version is: $WHEEL_VERSION"
 
     python -c "import sys;print('Python version is {}'.format(sys.version))"
 
@@ -173,7 +173,7 @@ build_script:
 
     # get kivy version later magically
 
-    pip install "$kivy_url/Kivy-1.9.2.dev0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
+    pip install "$kivy_url/Kivy-1.9.2.dev0-${CP}"
 
     Check-Error
 
@@ -192,18 +192,51 @@ build_script:
 
       Check-Error
 
+
+      # Get versions from modules' setup.py
+
+      $R = "import re;import os;f=open(os.path.join('"
+
+      $X = "','setup.py'));print(re.findall('version=\'(.*?)\',?',f.read())[-1]);f.close()"
+
+      foreach ($mod in $modules) {
+        if ($mod -eq "core") {
+          $CORE_V = python -c "${R}${mod}${X}"
+        } elseif ($mod -eq "cymunk") {
+          $CYM_V = python -c "${R}${mod}${X}"
+        } elseif ($mod -eq "maps") {
+          $MAPS_V = python -c "${R}${mod}${X}"
+        } elseif ($mod -eq "particles") {
+          $PART_V = python -c "${R}${mod}${X}"
+        } elseif ($mod -eq "projectiles") {
+          $PROJ_V = python -c "${R}${mod}${X}"
+        }
+      }
+
+      Check-Error
+
+
+      # Make wheels & pip install after
+
       foreach ($mod in $modules) {
         cd "$mod"
-        if (test-path "setup.py") {python setup.py bdist_wheel -d "$env:WHEEL_DIR"}
+        if (test-path "setup.py") {python setup.py bdist_wheel -d "${WD}"}
         Check-Error
         cd ..
-        pip install "${env:WHEEL_DIR}\KivEnt_Core-${WHEEL_VERSION}-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
-        pip install "${env:WHEEL_DIR}\KivEnt_Cymunk-1.0.0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
-        pip install "${env:WHEEL_DIR}\KivEnt_maps-1.0.0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
-        pip install "${env:WHEEL_DIR}\KivEnt_particles-1.0.0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
-        pip install "${env:WHEEL_DIR}\KivEnt_projectiles-1.0.0-cp${env:PYVER}-cp${env:PYVER}m-${WHEEL_BITNESS}.whl"
-        dir "$env:WHEEL_DIR"
+        if ($mod -eq "core") {
+          pip install "${WD}\KivEnt_Core-${CORE_V}-${CP}"
+        } elseif ($mod -eq "cymunk") {
+          pip install "${WD}\KivEnt_Cymunk-${CYM_V}-${CP}"
+        } elseif ($mod -eq "maps") {
+          pip install "${WD}\KivEnt_maps-${MAPS_V}-${CP}"
+        } elseif ($mod -eq "particles") {
+          pip install "${WD}\KivEnt_particles-${PART_V}-${CP}"
+        } elseif ($mod -eq "projectiles") {
+          pip install "${WD}\KivEnt_projectiles-${PROJ_V}-${CP}"
+        }
+        dir "${WD}"
       }
+
 
       # Default file bdist_wheel creates:
       # Kivy-X.Y.Z[.dev0]-cpAB-cpABm-ARCH.whl (Kivy_examples-X.Y.Z[.dev0]-py2.py3-none-any.whl)

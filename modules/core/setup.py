@@ -189,7 +189,7 @@ else:
 
 setup(
     name='KivEnt Core',
-    version='2.2.0dev',
+    version='2.2.0.dev0',
     description='''A game engine for the Kivy Framework.
         https://github.com/Kovak/KivEnt for more info.''',
     author='Jacob Kovac',

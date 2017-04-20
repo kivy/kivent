@@ -165,6 +165,8 @@ build_script:
 
     Check-Error
 
+    $DO_WHEEL = "True"
+
     if ($DO_WHEEL -eq "True") {
       cd modules
 

@@ -150,10 +150,34 @@ build_script:
 
     Check-Error
 
-    pip install https://github.com/tito/cymunk/zipball/master
+
+    # Create cymunk wheel (kivent_cymunk dependency)
+
+    git clone -q --branch=master https://github.com/tito/cymunk.git C:\projects\tito_cymunk
 
     Check-Error
 
+    $cys = "C:\projects\tito_cymunk\setup.py"
+
+    $dist = "from distutils.core import setup\nfrom distutils.extension import Extension"
+
+    $sett = "from setuptools import setup, Extension"
+
+    python -c "f=open(r'${cys}');r=f.read();f.close();f=open(r'${cys}','w');f.write(r.replace('${dist}','${sett}'));f.close()"
+
+    Check-Error
+
+    cd C:\projects\tito_cymunk
+
+    python setup.py bdist_wheel -d "${WD}"
+
+    Check-Error
+
+    pip install "${WD}\cymunk-0.0.0-${CP}"
+
+    Check-Error
+
+    cd $env:APPVEYOR_BUILD_FOLDER
 
 
     $DO_WHEEL = "True"  # Remove later

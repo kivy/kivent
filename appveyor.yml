@@ -226,6 +226,11 @@ build_script:
         Check-Error
       }
 
-      dir "$env:WHEEL_DIR"
+      dir "${WD}"
 
+      C:\Python27\python.exe C:\projects\kivy-sdk-packager\win\gdrive.py upload "$env:GDRIVE_KIVY_UPLOAD_ID" "$env:WHEEL_DIR\*"
+      Check-Error
+
+      C:\Python27\python.exe C:\projects\kivy-sdk-packager\win\gdrive.py delete_older "$env:GDRIVE_KIVY_UPLOAD_ID" "15"
+      Check-Error
     }

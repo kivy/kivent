@@ -80,7 +80,7 @@ build_script:
 
     $env:PATH = "$PYTHON_ROOT;$PYTHON_ROOT\Scripts;$env:PATH;C:\Program Files\7-Zip"
 
-    $env:PATH = $PYTHON_ROOT+"\share\glew\bin;"+$PYTHON_ROOT+"\share\sdl2\bin;"+$PYTHON_ROOT+"\share\gstreamer\bin;"+$env:PATH
+    $env:PATH = $PYTHON_ROOT+"\share\glew\bin;"+$PYTHON_ROOT+"\share\sdl2\bin;"+$env:PATH
 
     Check-Error
 

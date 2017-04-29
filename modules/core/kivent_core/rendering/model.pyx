@@ -391,6 +391,50 @@ cdef class VertexModel:
         return (center_x, center_y)
 
 
+    def flip_textured_rectangle_horizontally(self):
+        '''
+        Flip the texture of the quad horizontally
+        Will assume your using a textured quad model.
+        Will assume your vertex format have a 'pos' and 'uvs' array of size 2.
+
+        Do not use if your model is not a textured quad.
+        '''
+        vertex1 = self[0]
+        vertex2 = self[1]
+        vertex3 = self[2]
+        vertex4 = self[3]
+        u1, v1 = vertex1.uvs
+        u2, v2 = vertex2.uvs
+        u3, v3 = vertex3.uvs
+        u4, v4 = vertex4.uvs
+        vertex1.uvs = (u4, v1)
+        vertex2.uvs = (u3, v2)
+        vertex3.uvs = (u2, v3)
+        vertex4.uvs = (u1, v4)
+
+
+    def flip_textured_rectangle_vertically(self):
+        '''
+        Flip the texture of the quad horizontally
+        Will assume your using a textured quad model.
+        Will assume your vertex format have a 'pos' and 'uvs' array of size 2.
+
+        Do not use if your model is not a textured quad.
+        '''
+        vertex1 = self[0]
+        vertex2 = self[1]
+        vertex3 = self[2]
+        vertex4 = self[3]
+        u1, v1 = vertex1.uvs
+        u2, v2 = vertex2.uvs
+        u3, v3 = vertex3.uvs
+        u4, v4 = vertex4.uvs
+        vertex1.uvs = (u1, v2)
+        vertex2.uvs = (u2, v1)
+        vertex3.uvs = (u3, v4)
+        vertex4.uvs = (u4, v3)
+
+
     def copy_vertex_model(self, VertexModel to_copy):
         '''Copies all the data from the provided VertexModel to this one. Will
         possibly change **vertex_count** and **index_count** so make sure to

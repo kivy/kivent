@@ -354,7 +354,6 @@ class GameWorld(Widget):
             self._last_state = 'initial'
             print('State does not exist, resetting to initial')
             return
-
         gamescreenmanager = self.gamescreenmanager
         gamescreenmanager.state = value
         children = self.children
@@ -569,13 +568,14 @@ class GameWorld(Widget):
         '''
         cdef SystemManager system_manager = self.system_manager
         system_index = system_manager.system_index
+        widget.on_add_system()
         if widget.system_id in system_index:
             return
         if system_manager.initialized:
             system_manager.add_system(widget.system_id, widget)
         else:
             self.systems_to_add.append(widget)
-        widget.on_add_system()
+
 
     def add_widget(self, widget, index=0, canvas=None):
         '''Overrides the default add_widget from Kivy to ensure that

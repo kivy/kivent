@@ -106,7 +106,10 @@ cdef class GameView(GameSystem):
                 -sin_r * point[0] + cos_r * point[1])
 
     def convert_to_rotated_space(self, point, invert=False):
-        '''Convert a point from normal to rotated space and back using the invert parameter'''
+        '''
+        Convert a point from normal to rotated space and back using
+        the invert parameter
+        '''
         camera_pos = self.camera_pos
         camera_size = self.size
         camera_scale = self.camera_scale
@@ -133,6 +136,8 @@ cdef class GameView(GameSystem):
         p = (point[0] * m[0] + point[1] * m[4] + m[12],
              point[0] * m[1] + point[1] * m[5] + m[13])
         return p
+
+
 
     def get_camera_centered(self, map_size, camera_size, camera_scale):
         x = max((camera_size[0]*camera_scale - map_size[0])/2., 0.)
@@ -169,6 +174,7 @@ cdef class GameView(GameSystem):
         cdef str system_id
         cdef SystemManager system_manager = gameworld.system_manager
         if isinstance(widget, GameSystem):
+            widget.on_add_system()
             render_system_order = self.render_system_order
             system_id = widget.system_id
             if system_id in render_system_order:
@@ -262,7 +268,6 @@ cdef class GameView(GameSystem):
         else:
             return False
 
-
     def on_touch_up(self, touch):
         converted_pos = self.convert_from_screen_to_world(touch.pos)
         old_x, old_y = touch.x, touch.y
@@ -288,19 +293,19 @@ cdef class GameView(GameSystem):
 
     def convert_from_screen_to_world(self, pos):
         '''Converts the coordinates of pos from screen space to camera space'''
-        #pos of touch
-        x,y = self.convert_to_rotated_space(pos, invert=True)
-        #pos of widget
-        rx, ry = self.pos
-        cx, cy = self.camera_pos
-        #rotated touch pos converted to widget space
-        wx, wy = x - rx - cx, y - ry - cy
+        px, py = self.camera_pos
+        proj = self.canvas['projection_mat']
+        model = self.canvas['modelview_mat']
+        #get the inverse of the current camera
+        m = Matrix().multiply(proj).multiply(model)
+        inverse = m.inverse()
+        size = self.window_size
+        # normalize pos in window
+        nX = (pos[0])/(size[0])*2.0 - 1.0
+        nY = (pos[1])/(size[1])*2.0 - 1.0
 
-        camera_scale = self.camera_scale
-        camera_x, camera_y = wx * camera_scale, wy * camera_scale
-
-        return camera_x, camera_y
-
+        p = inverse.transform_point(nX, nY, 0)
+        return p[0], p[1]
 
     def look_at(self, pos):
         '''Set the camera to be focused at pos.'''

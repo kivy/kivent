@@ -268,7 +268,6 @@ cdef class GameView(GameSystem):
         else:
             return False
 
-
     def on_touch_up(self, touch):
         converted_pos = self.convert_from_screen_to_world(touch.pos)
         old_x, old_y = touch.x, touch.y
@@ -283,7 +282,6 @@ cdef class GameView(GameSystem):
             return True
         else:
             return False
-
 
     def get_camera_center(self):
         '''Returns the current center point of the cameras view'''

@@ -317,7 +317,8 @@ cdef class SVGModelInfo:
 
     def __init__(self, list indices, dict vertices,
         str title=None, str element_id=None,
-        str description=None, dict custom_data=None):
+        str description=None, dict custom_data=None, 
+        list path_vertices=None):
         if custom_data is None:
             custom_data = {}
         self.indices = indices
@@ -328,10 +329,11 @@ cdef class SVGModelInfo:
         self.title = title
         self.element_id = element_id
         self.custom_data = custom_data
+        self.path_vertices = path_vertices
 
     def combine_model_info(self, SVGModelInfo new_info):
         '''
-        Returns a new SVGModelInfo object that contains the combined vertex
+        ..Returns a new SVGModelInfo object that contains the combined vertex
         and index data for this object and the SVGModelInfo object provided 
         by the new_info argument. 
 
@@ -368,6 +370,7 @@ cdef class SVGModelInfo:
                                 description=self.description,
                                 element_id=self.element_id,
                                 title=self.title,
+                                path_vertices=self.path_vertices
                                 )
 
 
@@ -451,6 +454,7 @@ cdef class SVG:
         self.element_id = None
         self.title = None
         self.description = None
+        self.metadata_description = None
         self.fill_was_none = False
         self.anchor_y = anchor_y
         self.line_texture = Texture.create(
@@ -571,7 +575,13 @@ cdef class SVG:
         oldtransform = self.transform
         self.element_id = e.get('id', None)
         self.title = e.get('title', None)
+        
         self.description = e.get('description', None)
+        #sodipodi description
+        desc = e.find("{http://www.w3.org/2000/svg}desc")
+        if desc is not None:
+            self.description = desc.text
+
         self.custom_data = custom_data = {}
         if self.custom_fields is not None:
             for key in self.custom_fields:
@@ -693,6 +703,15 @@ cdef class SVG:
 
         elif e.tag.endswith('radialGradient'):
             self.gradients[e.get('id')] = RadialGradient(e, self)
+
+        elif e.tag.endswith("metadata"):
+            x = e.find("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}RDF"\
+                       "/{http://creativecommons.org/ns#}Work"\
+                       "/{http://purl.org/dc/elements/1.1/}description")
+
+            self.metadata_description = ""
+            if x is not None:
+                self.metadata_description = x.text 
 
         for c in e.getchildren():
             self.parse_element(c)
@@ -1313,6 +1332,11 @@ cdef class SVG:
             final_indices = []
             final_ind_ext = final_indices.extend
             vert_offset = 0
+            
+            path_vertices = zip(path[::2], path[1::2])
+            path_vertices = [ (x, self.height - y) for x,y in path_vertices ]
+            Logger.debug("path_vertices is %r", path_vertices)
+
             for element in subelements:
                 vertices = element.vertices
                 final_ind_ext([x + vert_offset for x in element.indices])
@@ -1325,7 +1349,8 @@ cdef class SVG:
                                         description=description,
                                         element_id=element_id,
                                         title=title,
-                                        custom_data=custom_data
+                                        custom_data=custom_data,
+                                        path_vertices=path_vertices
                                         ))
 
         return elements

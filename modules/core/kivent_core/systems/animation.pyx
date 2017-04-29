@@ -6,6 +6,7 @@ from kivent_core.systems.renderers cimport RenderStruct, Renderer
 from kivent_core.rendering.animation cimport FrameList, Frame, FrameStruct
 from kivent_core.rendering.model cimport VertexModel
 from kivent_core.managers.resource_managers import texture_manager
+from kivent_core.managers.animation_manager cimport AnimationManager
 from kivy.properties import (StringProperty, ObjectProperty, NumericProperty,
         BooleanProperty, ListProperty)
 from kivy.factory import Factory
@@ -35,6 +36,10 @@ cdef class AnimationComponent(MemComponent):
         **dirty:** (bint): Flag denoting whether this animation
         needs to be re-rendered i.e. the texture and model
         need to be set to the RenderComponent.
+
+        **animation:** (str): Name of the animation which this component
+        is playing. You can set this to change the animation of an entity.
+        Can only be set, and not read.
     '''
 
 
@@ -79,6 +84,16 @@ cdef class AnimationComponent(MemComponent):
             cdef AnimationStruct* data = <AnimationStruct*>self.pointer
             data.dirty = value
 
+    property animation:
+        def __set__(self, str value):
+            cdef AnimationStruct* data = <AnimationStruct*>self.pointer
+            cdef AnimationManager manager = <AnimationManager>data.manager
+            cdef FrameList frames = manager._animations[value]
+            data.frames = <void*>frames
+            data.current_frame_index = 0
+            data.current_duration = 0
+            data.dirty = True
+
 
 cdef class AnimationSystem(StaticMemGameSystem):
     '''
@@ -115,6 +130,7 @@ cdef class AnimationSystem(StaticMemGameSystem):
         cdef FrameList frame_list = animation_manager.animations[args['name']]
         component.entity_id = entity_id
         component.frames = <void*>frame_list
+        component.manager = <void*>animation_manager
         component.current_frame_index = 0
         component.current_duration = 0
         component.loop = args['loop']

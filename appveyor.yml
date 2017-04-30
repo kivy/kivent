@@ -180,8 +180,6 @@ build_script:
     cd $env:APPVEYOR_BUILD_FOLDER
 
 
-    $DO_WHEEL = "True"  # Remove later
-
     # cd to kivent/modules, list modules
 
     if ($DO_WHEEL -eq "True") {

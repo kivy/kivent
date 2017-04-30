@@ -72,6 +72,37 @@ Other modules may have other dependecies, listed here:
 ## Installation
 First, install all dependencies then:
 
+### Windows
+On Windows you can use the Python wheels generated for all KivEnt modules and
+for Cymunk:
+
++ [Cymunk, Python 2.7, 32bit](https://kivy.org/downloads/appveyor/kivent/cymunk-0.0.0-cp27-cp27m-win32.whl)
++ [Cymunk, Python 2.7, 64bit](https://kivy.org/downloads/appveyor/kivent/cymunk-0.0.0-cp27-cp27m-win_amd64.whl)
++ [Cymunk, Python 3.4, 32bit](https://kivy.org/downloads/appveyor/kivent/cymunk-0.0.0-cp34-cp34m-win32.whl)
++ [Cymunk, Python 3.4, 64bit](https://kivy.org/downloads/appveyor/kivent/cymunk-0.0.0-cp34-cp34m-win_amd64.whl)
+- [KivEnt Core, Python 2.7, 32bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_Core-2.2.0.dev0-cp27-cp27m-win32.whl)
+- [KivEnt Core, Python 2.7, 64bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_Core-2.2.0.dev0-cp27-cp27m-win_amd64.whl)
+- [KivEnt Core, Python 3.4, 32bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_Core-2.2.0.dev0-cp34-cp34m-win32.whl)
+- [KivEnt Core, Python 3.4, 64bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_Core-2.2.0.dev0-cp34-cp34m-win_amd64.whl)
++ [KivEnt Cymunk, Python 2.7, 32bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_Cymunk-1.0.0-cp27-cp27m-win32.whl)
++ [KivEnt Cymunk, Python 2.7, 64bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_Cymunk-1.0.0-cp27-cp27m-win_amd64.whl)
++ [KivEnt Cymunk, Python 3.4, 32bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_Cymunk-1.0.0-cp34-cp34m-win32.whl)
++ [KivEnt Cymunk, Python 3.4, 64bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_Cymunk-1.0.0-cp34-cp34m-win_amd64.whl)
+- [KivEnt Maps, Python 2.7, 32bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_maps-1.0.0-cp27-cp27m-win32.whl)
+- [KivEnt Maps, Python 2.7, 64bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_maps-1.0.0-cp27-cp27m-win_amd64.whl)
+- [KivEnt Maps, Python 3.4, 32bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_maps-1.0.0-cp34-cp34m-win32.whl)
+- [KivEnt Maps, Python 3.4, 64bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_maps-1.0.0-cp34-cp34m-win_amd64.whl)
++ [KivEnt Particles, Python 2.7, 32bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_particles-1.0.0-cp27-cp27m-win32.whl)
++ [KivEnt Particles, Python 2.7, 64bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_particles-1.0.0-cp27-cp27m-win_amd64.whl)
++ [KivEnt Particles, Python 3.4, 32bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_particles-1.0.0-cp34-cp34m-win32.whl)
++ [KivEnt Particles, Python 3.4, 64bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_particles-1.0.0-cp34-cp34m-win_amd64.whl)
+- [KivEnt Projectiles, Python 2.7, 32bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_projectiles-1.0.0-cp27-cp27m-win32.whl)
+- [KivEnt Projectiles, Python 2.7, 64bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_projectiles-1.0.0-cp27-cp27m-win_amd64.whl)
+- [KivEnt Projectiles, Python 3.4, 32bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_projectiles-1.0.0-cp34-cp34m-win32.whl)
+- [KivEnt Projectiles, Python 3.4, 64bit](https://kivy.org/downloads/appveyor/kivent/KivEnt_projectiles-1.0.0-cp34-cp34m-win_amd64.whl)
+
+### OSX / Linux
+
     cd .../KivEnt/modules/core
     python setup.py build_ext install
 

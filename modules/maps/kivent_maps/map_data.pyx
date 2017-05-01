@@ -4,6 +4,7 @@ from kivent_core.rendering.animation cimport FrameList
 from kivent_core.managers.resource_managers import texture_manager
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_maps.map_manager cimport MapManager
+import math
 
 
 cdef class LayerTile:
@@ -220,9 +221,12 @@ cdef class TileMap:
     interfaced using LayerTile.
 
     **Attributes:**
-        **tiles** (list): 2D array of Tile objects representing every grid
-        grid location on the map. To set the tile data provide it a 2D array of
-        a list of dicts in the format
+        **tiles** (list): 2D list of Tile objects representing every grid
+        grid location on the map. The outer list is a list of columns, and
+        every column is a list of layer dicts as shown below.
+
+        To set the tile data provide it a 2D list of dicts in the below format,
+        where 'i' is the column and 'j' is the row.
 
         .. code-block:: python
 
@@ -303,14 +307,14 @@ cdef class TileMap:
             self.objects_block.remove_from_buffer()
             self.objects_block = None
 
-    def get_tile(self, unsigned int x, unsigned int y, bint empty=False):
+    def get_tile(self, unsigned int i, unsigned int j, bint empty=False):
         '''
         Get a Tile at (i,j) grid position of the tile map from TileStruct array
 
         Args:
-            x (unsigned int): row of the tile
+            i (unsigned int): col of the tile
 
-            y (unsigned int): col of the tile
+            j (unsigned int): row of the tile
 
             empty (boolean): Will set NULL to the pointers in all the
             TileStructs if True. Default False.
@@ -319,12 +323,13 @@ cdef class TileMap:
             Tile: contains data of TileStruct array
 
         '''
-        if x >= self.size_x and y >= self.size_y:
+        if i >= self.size_x and j >= self.size_y:
             raise IndexError()
 
         cdef Tile tile = Tile(self.model_manager, self.animation_manager,
                                 self.tile_layer_count)
-        tile._layers = <TileStruct*>self.tiles_block.get_pointer(x*self.size_x + y)
+        tile._layers = <TileStruct*>self.tiles_block\
+                                            .get_pointer(i*self.size_y + j)
 
         cdef TileStruct tile_data
         if empty:
@@ -380,9 +385,9 @@ cdef class TileMap:
         at (i, j) grid position.
 
         Args:
-            i (unsigned int): row of the tile
+            i (unsigned int): col of the tile
 
-            j (unsigned int): col of the tile
+            j (unsigned int): row of the tile
 
         Return:
             (unsigned int, unsigned int): Pixel position of center as x,y
@@ -392,16 +397,35 @@ cdef class TileMap:
         w, h = self.size_on_screen
         tw, th = self.tile_size
 
-        return (j * tw + tw/2, h - i * th - th/2)
+        return (i * tw + tw/2, h - j * th - th/2)
+
+    def get_tile_index(self, pixel_x, pixel_y):
+        '''
+        Calculates the grid position(index) of the tile at a given pixel 
+        position
+
+        Args:
+            pixel_x: horizontal pixel position of tile from left edge
+
+            pixel_y: vertical pixel position of tile from its bottom edge
+
+        Return:
+            (unsigned i, unsigned j): col and row of the tile.
+        '''
+        w, h = self.size_on_screen
+        tw, th = self.tile_size
+
+        return (int(pixel_x/tw), int((h - pixel_y)/th))
 
     property tiles:
         def __get__(self):
             tile_list = []
             for i in range(self.size_x):
-                tile_row = []
+                tile_col = []
                 for j in range(self.size_y):
-                    tile_row.append(self.get_tile(i,j))
-                tile_list.append(tile_row)
+                    tile_col.append(self.get_tile(i,j))
+                tile_list.append(tile_col)
+            return tile_list
 
         def __set__(self, list tiles):
             cdef unsigned int size_x = len(tiles)
@@ -410,7 +434,9 @@ cdef class TileMap:
 
             if size_x != self.size_x or size_y != self.size_y:
                 raise Exception(
-                        "Provided tiles list does not match internal size")
+                        "Provided tiles list does not match internal size." +
+                        "Expected %dx%d, got %dx%d" % \
+                                (self.size_x, self.size_y, size_x, size_y))
             for i in range(size_x):
                 for j in range(size_y):
                     tile_layers = self.get_tile(i,j, True)
@@ -544,25 +570,74 @@ cdef class StaggeredTileMap(TileMap):
         if sa:
             # Staggered along x axis
 
-            y = h - (i * th + th/2)
-            x = (j * tw)/2 + tw/2
+            y = h - (j * th + th)
+            x = (i * tw)/2 + tw/2
 
             # If tile's x index matches the stagger index
             # it needs to be shifted down on the y axis
-            if si != ((j+1)%2 == 0):
+            if si != ((i+1)%2 == 0):
                 y -= th/2
         else:
             # Staggered along y axis
 
-            y = h - ((i * th)/2 + th/2)
-            x = j * tw + tw/2
+            y = h - ((j * th)/2 + th)
+            x = i * tw + tw/2
 
             # If tile's y index matches the stagger index
             # it needs to be shifted right on the x axis
-            if si != ((i+1)%2 == 0):
+            if si != ((j+1)%2 == 0):
                 x += tw/2
 
         return (x, y)
+
+    def get_tile_index(self, pixel_x, pixel_y):
+        w, h = self.size_on_screen
+        tw, th = self.tile_size
+        sa = self._stagger_axis
+        si = self._stagger_index
+
+        m = float(th)/tw         # positive slope of the tile sides
+        col_shifted = int((pixel_x - tw/2)/tw)
+        col_non_shifted = int(pixel_x/tw)
+        row_shifted = int((h - pixel_y - th/2)/th)
+        row_non_shifted = int((h - pixel_y)/th)
+
+        # Here g and r in the name signifies green and red
+        # as the two kinds of boxes for separation.
+        rel_x_g = abs(pixel_x - col_non_shifted*tw)
+        rel_x_r = abs(pixel_x - col_shifted*tw - tw/2)
+
+        if si:
+            rel_y_g = abs(h - pixel_y - row_shifted*th - 1.5*th)
+            rel_y_r = abs(h - pixel_y - row_non_shifted*th - th)
+        else:
+            rel_y_r = abs(h - pixel_y - row_shifted*th - 1.5*th)
+            rel_y_g = abs(h - pixel_y - row_non_shifted*th - th)
+
+        # checking whether the point (pixel_x, pixel_y) lies inside the
+        # tile by using the line equations of the four bounding lines.
+        if (rel_y_g > m*rel_x_g - th/2 and rel_y_g < (-1)*m*rel_x_g + 3*(th/2)
+                and rel_y_g < m*rel_x_g + th/2
+                and rel_y_g > (-1)*m*rel_x_g + th/2):
+            if sa:
+                row = row_shifted if si else row_non_shifted
+                col = col_non_shifted*2
+            else:
+                col = col_non_shifted
+                row = row_shifted*2+1 if si else row_non_shifted*2
+
+        elif (rel_y_r > m*rel_x_r - th/2
+                and rel_y_r < (-1)*m*rel_x_r + 3*(th/2)
+                and rel_y_r < m*rel_x_r + th/2
+                and rel_y_r > (-1)*m*rel_x_r + th/2):
+            if sa:
+                row = row_non_shifted if si else row_shifted
+                col = col_shifted*2+1
+            else:
+                col = col_shifted
+                row = row_non_shifted*2 if si else row_shifted*2+1
+
+        return (col,row)
 
     property size_on_screen:
         def __get__(self):
@@ -611,20 +686,91 @@ cdef class HexagonalTileMap(StaggeredTileMap):
         ts = self.hex_side_length
 
         if sa:
-            y = h - (i * th + th/2)
-            x = (j * (tw + ts))/2 + tw/2
-
-            if si != ((j+1)%2 == 0):
-                y -= th/2
-        else:
-            y = h - ((i * (th + ts))/2 + th/2)
-            x = j * tw + tw/2
+            y = h - (j * th + th/2)
+            x = (i * (tw + ts))/2 + tw/2
 
             if si != ((i+1)%2 == 0):
+                y -= th/2
+        else:
+            y = h - ((j * (th + ts))/2 + th/2)
+            x = i * tw + tw/2
+
+            if si != ((j+1)%2 == 0):
                 x += tw/2
 
         return (x, y)
 
+    def get_tile_index(self, pixel_x, pixel_y):
+        w, h = self.size_on_screen
+        tw, th = self.tile_size
+        sa = self._stagger_axis
+        si = self._stagger_index
+        ts = self.hex_side_length
+
+        if sa:
+            c = (tw - ts)/2
+            m = float(th/2)/c
+            col_shifted = int((pixel_x - ts - c)/(tw + ts))
+            col_non_shifted = int(pixel_x/(tw + ts))
+
+            row_shifted = int((h - pixel_y - th/2)/th)
+            row_non_shifted = int((h - pixel_y)/th)
+
+            rel_x_g = abs(pixel_x - col_non_shifted*(tw+ts))
+            rel_x_r = abs(pixel_x - col_shifted*(tw + ts) - (ts + c))
+
+            if si:
+                rel_y_g = abs(h - pixel_y - row_shifted*th - 1.5*th)
+                rel_y_r = abs(h - pixel_y - row_non_shifted*th - th)
+            else:
+                rel_y_r = abs(h - pixel_y - row_shifted*th - 1.5*th)
+                rel_y_g = abs(h - pixel_y - row_non_shifted*th - th)
+
+            # check if the pixel (pixel_x, pixel_y) lies inside the tile by
+            # using the line equations of all bounding sides.
+            if (rel_y_g >= m*rel_x_g - m*(ts+c)
+                    and rel_y_g <= (-1)*m*rel_x_g + th + m*(ts+c)
+                    and rel_y_g <= th and rel_y_g >= 0
+                    and rel_y_g <= m*rel_x_g + th/2
+                    and rel_y_g >= (-1)*m*rel_x_g + th/2):
+                col = col_non_shifted*2
+                row = row_shifted if si else row_non_shifted
+
+            else:
+                col = col_shifted*2 + 1
+                row = row_non_shifted if si else row_shifted
+
+        else:
+            c = (th - ts)/2
+            m = float(c)/(tw/2)
+            col_shifted = int((pixel_x - tw/2)/tw)
+            col_non_shifted = int(pixel_x/tw)
+            row_non_shifted = int((h - pixel_y)/(th + ts))
+            row_shifted = int((h - pixel_y - (ts+c))/(th + ts))
+
+            rel_y_g = abs(h - pixel_y - row_non_shifted*(th + ts) - (th + ts))
+            rel_y_r = abs(h - pixel_y - (row_shifted + 1)*(th + ts) - (ts + c))
+
+            if si:
+                rel_x_g = abs(pixel_x - tw/2 - col_shifted*tw)
+                rel_x_r = abs(pixel_x - col_non_shifted*tw)
+            else:
+                rel_x_g = abs(pixel_x - col_non_shifted*tw)
+                rel_x_r = abs(pixel_x - tw/2 - col_shifted*tw)
+
+            if (rel_y_g >= -1*m*rel_x_g + (ts + c)
+                    and rel_y_g >= m*rel_x_g + (ts - c)
+                    and rel_y_g <= m*rel_x_g + (2*ts + c)
+                    and rel_y_g <= -1*m*rel_x_g + (2*ts + 3*c)):
+                col = col_shifted if si else col_non_shifted
+                row = row_non_shifted*2
+
+            else:
+                col = col_non_shifted if si else col_shifted
+                row = row_shifted*2+1
+
+        return (col, row)
+        
     property size_on_screen:
         def __get__(self):
             sx, sy = self.size_x, self.size_y
@@ -656,13 +802,35 @@ cdef class IsometricTileMap(TileMap):
         w, h = self.size_on_screen
         tw, th = self.tile_size
 
-        x, y = ((j - i) * tw/2,
-                (j + i) * th/2)
+        x, y = ((i - j) * tw/2,
+                (i + j) * th/2)
 
         x += w/2
-        y = h - th/2 - y
+        y = h - th - y
 
         return (x, y)
+
+    def get_tile_index(self, pixel_x, pixel_y):
+        w, h = self.size_on_screen
+        tw, th = self.tile_size
+
+        m = float(th)/tw
+        cos = 1/math.sqrt(1 + m*m)
+        sin = math.sqrt(1 - cos*cos)
+        side = th/(2*sin)
+
+        pixel_y = h - pixel_y
+        pixel_x -= w/2
+
+        # changed the co-ordinates from x-y to co-ordinates parallel to the
+        # sides of isometric tile with new_u and new_v as new co-ordinates.
+        new_u = (pixel_x/(2*cos) + pixel_y/(2*sin))
+        new_v = (pixel_y/(2*sin) - pixel_x/(2*cos))
+
+        col = int(new_u/side)
+        row = int(new_v/side)
+
+        return (col, row)
 
     property size_on_screen:
         def __get__(self):

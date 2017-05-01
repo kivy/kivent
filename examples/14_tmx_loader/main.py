@@ -72,6 +72,8 @@ class TestGame(Widget):
         map_utils.init_entities_from_map(map_manager.maps[map_name],
                                        self.gameworld.init_entity)
 
+        self.tilemap = map_manager.maps[map_name]
+
     def setup_states(self):
         # We want renderers to be added and unpaused
         # and animators to be unpaused
@@ -81,6 +83,14 @@ class TestGame(Widget):
 
     def set_state(self):
         self.gameworld.state = 'main'
+
+    def screen_touched(self,event):
+        x,y = event.pos
+        cx,cy = self.camera1.camera_pos
+        x -= self.pos[0] + cx
+        y -= self.pos[1] + cy
+
+        print('Tile %d,%d clicked' % self.tilemap.get_tile_index(x,y))
 
 class DebugPanel(Widget):
     fps = StringProperty(None)

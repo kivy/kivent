@@ -18,6 +18,7 @@ from cpython cimport bool
 from kivent_core.memory_handlers.utils import memrange
 
 
+
 cdef class MemComponent:
     '''The base for a cdef extension that will work with the MemoryBlock
     memory management system. The data do not live inside the MemComponent,

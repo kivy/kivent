@@ -1335,7 +1335,7 @@ cdef class SVG:
             
             path_vertices = zip(path[::2], path[1::2])
             path_vertices = [ (x, self.height - y) for x,y in path_vertices ]
-            Logger.debug("path_vertices is %r", path_vertices)
+            # Logger.debug("path_vertices is %r", path_vertices)
 
             for element in subelements:
                 vertices = element.vertices

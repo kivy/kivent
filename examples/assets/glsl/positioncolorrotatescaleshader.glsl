@@ -8,12 +8,12 @@ varying vec4 frag_color;
 varying vec2 tex_coord0;
 
 /* vertex attributes */
-attribute vec2     vPosition;
-attribute vec2     vTexCoords0;
-attribute vec2     vCenter;
-attribute float    vRotation;
-attribute vec4     vColor;
-attribute float    vScale;
+attribute vec2     pos;
+attribute vec2     uvs;
+attribute vec2     center;
+attribute float    rot;
+attribute vec4     v_color;
+attribute float    scale;
 
 /* uniform variables */
 uniform mat4       modelview_mat;
@@ -22,19 +22,19 @@ uniform vec4       color;
 uniform float      opacity;
 
 void main (void) {
-  frag_color = vColor * color * vec4(1.0, 1.0, 1.0, opacity);
-  tex_coord0 = vTexCoords0;
-  float a_sin = sin(vRotation);
-  float a_cos = cos(vRotation);
+  frag_color = v_color * color * vec4(1.0, 1.0, 1.0, opacity);
+  tex_coord0 = uvs;
+  float a_sin = sin(rot);
+  float a_cos = cos(rot);
   mat4 rot_mat = mat4(a_cos, -a_sin, 0.0, 0.0,
                     a_sin, a_cos, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0,
                     0.0, 0.0, 0.0, 1.0 );
-  mat4 trans_mat = mat4(1.0, 0.0, 0.0, vCenter.x,
-              0.0, 1.0, 0.0, vCenter.y,
+  mat4 trans_mat = mat4(1.0, 0.0, 0.0, center.x,
+              0.0, 1.0, 0.0, center.y,
               0.0, 0.0, 1.0, 0.0,
               0.0, 0.0, 0.0, 1.0);
-  vec4 new_pos = vec4(vPosition.xy*vScale, 0.0, 1.0);
+  vec4 new_pos = vec4(pos.xy*scale, 0.0, 1.0);
   vec4 trans_pos = new_pos * rot_mat * trans_mat;
   gl_Position = projection_mat * modelview_mat * trans_pos;
 

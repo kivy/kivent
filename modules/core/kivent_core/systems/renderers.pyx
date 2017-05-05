@@ -8,11 +8,11 @@ from kivy.graphics import Callback
 from kivy.graphics.instructions cimport RenderContext
 from kivent_core.rendering.vertex_formats cimport (
     VertexFormat4F, VertexFormat2F4UB, VertexFormat7F, VertexFormat4F4UB,
-    VertexFormat7F4UB
+    VertexFormat5F4UB, VertexFormat7F4UB
     )
 from kivent_core.rendering.vertex_formats import (
     vertex_format_4f, vertex_format_7f, vertex_format_4f4ub, 
-    vertex_format_2f4ub, vertex_format_7f4ub
+    vertex_format_2f4ub, vertex_format_5f4ub, vertex_format_7f4ub
     )
 from kivent_core.rendering.vertex_format cimport KEVertexFormat
 from kivent_core.rendering.cmesh cimport CMesh
@@ -1118,6 +1118,205 @@ cdef class PolyRenderer(Renderer):
                 mesh_instruction.flag_update()
 
 
+cdef class RotatePolyRenderer(Renderer):
+    '''
+    Processing Depends On: PositionSystem2D, RotateSystem2D, RotatePolyRenderer
+
+    The renderer draws with the VertexFormat5F:
+
+    .. code-block:: cython
+
+        ctypedef struct VertexFormat5F4UB:
+            GLfloat[2] pos
+            GLfloat rot
+            GLfloat[2] center
+            GLubyte[4] v_color
+
+    '''
+    system_names = ListProperty(['rotate_poly_renderer', 'position', 'rotate'])
+    system_id = StringProperty('rotate_poly_renderer')
+    model_format = StringProperty('vertex_format_2f4ub')
+    vertex_format_size = NumericProperty(sizeof(VertexFormat5F4UB))
+
+    cdef void* setup_batch_manager(self, Buffer master_buffer) except NULL:
+        cdef KEVertexFormat batch_vertex_format = KEVertexFormat(
+            sizeof(VertexFormat5F4UB), *vertex_format_5f4ub)
+        self.batch_manager = BatchManager(
+            self.size_of_batches, self.max_batches, self.frame_count,
+            batch_vertex_format, master_buffer, 'triangles', self.canvas,
+            [x for x in self.system_names],
+            self.smallest_vertex_count, self.gameworld)
+        return <void*>self.batch_manager
+
+
+    def update(self, force_update, dt):
+        cdef IndexedBatch batch
+        cdef list batches
+        cdef unsigned int batch_key
+        cdef unsigned int index_offset, vert_offset
+        cdef RenderStruct* render_comp
+        cdef PositionStruct2D* pos_comp
+        cdef RotateStruct2D* rot_comp
+        cdef VertexFormat5F4UB* frame_data
+        cdef GLushort* frame_indices
+        cdef VertexFormat5F4UB* vertex
+        cdef VertexModel model
+        cdef GLushort* model_indices
+        cdef VertexFormat2F4UB* model_vertices
+        cdef VertexFormat2F4UB model_vertex
+        cdef unsigned int used, i, ri, component_count, n
+        cdef ComponentPointerAggregator entity_components
+        cdef BatchManager batch_manager = self.batch_manager
+        cdef dict batch_groups = batch_manager.batch_groups
+        cdef CMesh mesh_instruction
+        cdef MemoryBlock components_block
+        cdef void** component_data
+        cdef bint static_rendering = self.static_rendering
+        
+        for batch_key in batch_groups:
+            batches = batch_groups[batch_key]
+            for batch in batches:
+                if not static_rendering or force_update:
+                    entity_components = batch.entity_components
+                    components_block = entity_components.memory_block
+                    used = components_block.used_count
+                    component_count = entity_components.count
+                    component_data = <void**>components_block.data
+                    frame_data = <VertexFormat5F4UB*>batch.get_vbo_frame_to_draw()
+                    frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
+                    index_offset = 0
+                    for i in range(used):
+                        ri = i * component_count
+                        if component_data[ri] == NULL:
+                            continue
+                        render_comp = <RenderStruct*>component_data[ri+0]
+                        vert_offset = render_comp.vert_index
+                        model = <VertexModel>render_comp.model
+                        if render_comp.render:
+                            pos_comp = <PositionStruct2D*>component_data[
+                                ri+1]
+                            rot_comp = <RotateStruct2D*>component_data[
+                                ri+2]
+                            model_vertices = <VertexFormat2F4UB*>(
+                                model.vertices_block.data)
+                            model_indices = <GLushort*>model.indices_block.data
+                            for i in range(model._index_count):
+                                frame_indices[i+index_offset] = (
+                                    model_indices[i] + vert_offset)
+                            for n in range(model._vertex_count):
+                                vertex = &frame_data[n + vert_offset]
+                                model_vertex = model_vertices[n]
+                                vertex.pos[0] = model_vertex.pos[0]
+                                vertex.pos[1] = model_vertex.pos[1]
+                                vertex.rot = rot_comp.r
+                                vertex.center[0] = pos_comp.x
+                                vertex.center[1] = pos_comp.y
+                                vertex.v_color[0] = model_vertex.v_color[0]
+                                vertex.v_color[1] = model_vertex.v_color[1]
+                                vertex.v_color[2] = model_vertex.v_color[2]
+                                vertex.v_color[3] = model_vertex.v_color[3]
+                            index_offset += model._index_count
+                    batch.set_index_count_for_frame(index_offset)
+                mesh_instruction = batch.mesh_instruction
+                mesh_instruction.flag_update()
+
+
+cdef class RotateColorScalePolyRenderer(RotatePolyRenderer):
+    '''
+    Processing Depends On: PositionSystem2D, RotateSystem2D, ColorSystem,
+    ScaleSystem2D, RotateColorScalePolyRenderer
+
+    The renderer draws with the VertexFormat5F:
+
+    .. code-block:: cython
+
+        ctypedef struct VertexFormat5F4UB:
+            GLfloat[2] pos
+            GLfloat rot
+            GLfloat[2] center
+            GLubyte[4] v_color
+
+    '''
+    system_names = ListProperty(['rotate_color_scale_poly_renderer', 'position', 'rotate', 'color', 'scale'])
+    system_id = StringProperty('rotate_color_scale_poly_renderer')
+    model_format = StringProperty('vertex_format_2f4ub')
+    vertex_format_size = NumericProperty(sizeof(VertexFormat5F4UB))
+
+    def update(self, force_update, dt):
+        cdef IndexedBatch batch
+        cdef list batches
+        cdef unsigned int batch_key
+        cdef unsigned int index_offset, vert_offset
+        cdef RenderStruct* render_comp
+        cdef PositionStruct2D* pos_comp
+        cdef RotateStruct2D* rot_comp
+        cdef ScaleStruct2D* scale_comp
+        cdef ColorStruct* color_comp
+        cdef VertexFormat5F4UB* frame_data
+        cdef GLushort* frame_indices
+        cdef VertexFormat5F4UB* vertex
+        cdef VertexModel model
+        cdef GLushort* model_indices
+        cdef VertexFormat2F4UB* model_vertices
+        cdef VertexFormat2F4UB model_vertex
+        cdef unsigned int used, i, ri, component_count, n
+        cdef ComponentPointerAggregator entity_components
+        cdef BatchManager batch_manager = self.batch_manager
+        cdef dict batch_groups = batch_manager.batch_groups
+        cdef CMesh mesh_instruction
+        cdef MemoryBlock components_block
+        cdef void** component_data
+        cdef bint static_rendering = self.static_rendering
+        cdef int ii
+        
+        for batch_key in batch_groups:
+            batches = batch_groups[batch_key]
+            for batch in batches:
+                if not static_rendering or force_update:
+                    entity_components = batch.entity_components
+                    components_block = entity_components.memory_block
+                    used = components_block.used_count
+                    component_count = entity_components.count
+                    component_data = <void**>components_block.data
+                    frame_data = <VertexFormat5F4UB*>batch.get_vbo_frame_to_draw()
+                    frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
+                    index_offset = 0
+                    for i in range(used):
+                        ri = i * component_count
+                        if component_data[ri] == NULL:
+                            continue
+                        render_comp = <RenderStruct*>component_data[ri+0]
+                        vert_offset = render_comp.vert_index
+                        model = <VertexModel>render_comp.model
+                        if render_comp.render:
+                            pos_comp = <PositionStruct2D*>component_data[ri+1]
+                            rot_comp = <RotateStruct2D*>component_data[ri+2]
+                            color_comp = <ColorStruct*>component_data[ri+3]
+                            scale_comp = <ScaleStruct2D*>component_data[ri+4]
+                            model_vertices = <VertexFormat2F4UB*>(
+                                model.vertices_block.data)
+                            model_indices = <GLushort*>model.indices_block.data
+                            for i in range(model._index_count):
+                                frame_indices[i+index_offset] = (
+                                    model_indices[i] + vert_offset)
+                            for n in range(model._vertex_count):
+                                vertex = &frame_data[n + vert_offset]
+                                model_vertex = model_vertices[n]
+                                vertex.pos[0] = model_vertex.pos[0] * scale_comp.sx
+                                vertex.pos[1] = model_vertex.pos[1] * scale_comp.sy
+                                vertex.rot = rot_comp.r
+                                vertex.center[0] = pos_comp.x
+                                vertex.center[1] = pos_comp.y
+                                for ii in range(4):
+                                    vertex.v_color[ii] = blend_integer_colors(
+                                        model_vertex.v_color[ii],
+                                        color_comp.color[ii]) 
+                            index_offset += model._index_count
+                    batch.set_index_count_for_frame(index_offset)
+                mesh_instruction = batch.mesh_instruction
+                mesh_instruction.flag_update()
+
+
 cdef class ColorPolyRenderer(Renderer):
     '''
     Processing Depends On: PositionSystem2D, ColorSystem, ColorPolyRenderer
@@ -1340,5 +1539,7 @@ Factory.register('RotateRenderer', cls=RotateRenderer)
 Factory.register('RotateColorRenderer', cls=RotateColorRenderer)
 Factory.register('ColorRenderer', cls=ColorRenderer)
 Factory.register('PolyRenderer', cls=PolyRenderer)
+Factory.register('RotatePolyRenderer', cls=RotatePolyRenderer)
 Factory.register('ColorPolyRenderer', cls=ColorPolyRenderer)
 Factory.register('ScaledPolyRenderer', cls=ScaledPolyRenderer)
+Factory.register('RotateColorScalePolyRenderer', cls=RotateColorScalePolyRenderer)

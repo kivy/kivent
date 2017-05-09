@@ -198,7 +198,7 @@ cdef class ParticleEmitter:
         self._rotate_per_second = 0.0
         self._texture = None
         self._rotate_per_second_variance = 0.0
-        self.active_particles = []
+        self.active_particles = set()
         cdef int x
         for x in range(2):
             self._gravity[x] = 0.           
@@ -877,7 +877,7 @@ cdef class EmitterSystem(StaticMemGameSystem):
         cdef float angle_offset, time_between_particles
         cdef float[2] resulting_offset
         cdef int number_of_updates
-        cdef list active_particles
+        cdef set active_particles
         cdef ParticleSystem particle_system = self.particle_system
         cdef unsigned int particle_id
         for i in range(count):
@@ -914,7 +914,7 @@ cdef class EmitterSystem(StaticMemGameSystem):
                     active_particles = emitter.active_particles
                     for c in range(number_of_updates):
                         particle_id = particle_system.create_particle(emitter)
-                        active_particles.append(particle_id)
+                        active_particles.add(particle_id)
 
 
     def flatten_effect_to_dict(self, ParticleEmitter emitter):

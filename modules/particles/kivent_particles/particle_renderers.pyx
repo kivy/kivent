@@ -127,7 +127,7 @@ cdef class ParticleRenderer(Renderer):
                                 vertex.rotate = rot_comp.r
                                 for i in range(4):
                                     vertex.v_color[i] = color_comp.color[i]
-                        index_offset += model._index_count
+                            index_offset += model._index_count
                     batch.set_index_count_for_frame(index_offset)
                 mesh_instruction = batch.mesh_instruction
                 mesh_instruction.flag_update()

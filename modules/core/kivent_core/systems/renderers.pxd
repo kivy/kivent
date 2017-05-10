@@ -55,6 +55,12 @@ cdef class ColorRenderer(Renderer):
 cdef class PolyRenderer(Renderer):
     pass
 
+cdef class RotatePolyRenderer(Renderer):
+    pass
+
+cdef class RotateColorScalePolyRenderer(RotatePolyRenderer):
+    pass
+
 cdef class ColorPolyRenderer(Renderer):
     pass
 

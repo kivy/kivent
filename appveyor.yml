@@ -3,14 +3,12 @@ os: Visual Studio 2015
 environment:
   WHEEL_DIR: C:\kivent_wheels
   KIVENT_BUILD_DIR: C:\kivent_build
-  AIRPLANE_CHARGE:
-    secure: HgQr7XMKpB6lWn33SKv0GyYZbh1RfpgvaIKEE0B54R5XHJujQg5dhOEB3Vc2CfAqCprX+CGxXAjQwFnuv6pJeA3++9Z8/1SfFuEqCF59J7PqsDs2thA8lNHLRsThvRVJrBt2jcb1wrG3Nf3sz3vi7e+rBzYjprkcYiTP0XJ5FdQekyFTTjuXYaRBGWrwGX81dEVVUkGFuEZFYWJq2Yf/PkFGOX+IN0CjgpFB0pGfZSJcIG7mvscurfG/KvckLhNUINprUKt0pJ8iCN0iufsbmrOnuG+WC8AHktvlSxzHSfCm8zmhSZTkDNkJfpYHapFagQQThmiYq8PqsVIC0XOz+j4KLljc6bxyhE0oPtOPg4DohBdqLI28V1XB/Kqh7CCZR50wAw567voWVOtKsyets5oeywZH1q/gtK6stC5t7v+a2s0w1I2IEW6p2aPy7plreZj15QCgIR8h6JgIuMuwqiaVCUuhej/GauCZG/9jIBJpTf1NkBa9k4vIxHPq5R5/ltYX8za49vz5ImdLe1qlTFwy9fegMpb+D5m3y3ilm+t5xkDmqXQau1oVWIVd8jf0DawWqkNsKLp6hbYr51gclS+Gc7NVKwvFtcmoAfbvNCGBDH4vF6cR2wNhy6RDjjqDgIStnpUs3fKS9bKOyrv9+394esQqEuAXgLtC2vUMk+z3Hf8V18AFYKZfZmWxiGGrjI6YQCBOBOdh5VO5cASqtoTU22OvAPhXT7gX2JG96Rc9yf/K8DEvzuWo3lArDAclh2zLm++1SOh54dDiAiMZvLkNXu5tAsg60c+rJCx4FQ9ra0/GcFY1LKJntdKvpQyBkp4wKAvq3YyV7Rnx8u6PULXXG2rS6i7m+asLrY+FSCO5oRmLrMv5pEv0cF/BOAh0RGR6medX8ASmM40sHqz+WC9WJfaSUZplSzQwHxXCr/AzK40mOTtKgkg8e8tqwNzjI8mdjx0kwcu8zuOeUK6U6l83voGKbli1gzinkLvzhjvF1TXZwpT1y/HvAs5dGwXVfdigeOqcfmIOxXStPmaZ4CZRKVK3CgweYzpETyT6Pm5H3jANcAuyYuphJr7YrfHfWKAg6N3Q0r3AfzliOuIBm3DVfm2RuI8USGJxRsjaDX8LB8sdhrCPLUYBh1RNhYol5bVEM1IX+BcpXzIyqv00eSMTvN3G7KdsM+/8LGlnEM+apIgnBlVfcWOQI8rzBkXuJvExSwDhKzncGWbi12UapEVsE/QnVpDiwbiPdZtQQzQ=
-  GDRIVE_CLIENT_ID:
-    secure: iGAZpJPOTLhRmK7X60xzRZm1S0PbmoMwoVJdd8WiKBH34Tqsd6UEFhPjLLok7J0+xWStS8E3fwEQh4Wzn1BCXhry5Qv8FLD41oskVpiSwdc=
-  GDRIVE_CLIENT_SECRET:
-    secure: 7J8TZnhr3MsF5rveMVVkbrr9tzTwGG6rHWZMorW0WN4=
-  GDRIVE_KIVENT_UPLOAD_ID: 0B2_WZb3FJkzhMnNLTlZtUjJENHM
   KIVENT_USE_SETUPTOOLS: 1
+  CYMUNK_USE_SETUPTOOLS: 1
+  KEY_WITH_NO_TEETH:
+    secure: 7cS7xjpCL/VH5jIIGSf13camkiu1enMh5hO0UsBgmRlBXyKk3t/7HB79ofyJKgDb
+  MSYSTEM: MINGW64
+  CHERE_INVOKING: 1
   matrix:
   - PYVER: 27
     BITTNESS: 86
@@ -27,6 +25,7 @@ environment:
 install:
 - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-desktop.ps1'))
 build_script:
+- nuget install secure-file -ExcludeVersion
 - ps: >-
     function Check-Error
 
@@ -54,10 +53,6 @@ build_script:
     Check-Error
 
     mkdir "$env:WHEEL_DIR"
-
-    Check-Error
-
-    C:\Python27\Scripts\pip.exe install pydrive
 
     Check-Error
 
@@ -153,21 +148,11 @@ build_script:
 
     # Create cymunk wheel (kivent_cymunk dependency)
 
-    git clone -q --branch=master https://github.com/tito/cymunk.git C:\projects\tito_cymunk
+    git clone -q --branch=master https://github.com/kivy/cymunk.git C:\projects\cymunk
 
     Check-Error
 
-    $cys = "C:\projects\tito_cymunk\setup.py"
-
-    $dist = "from distutils.core import setup\nfrom distutils.extension import Extension"
-
-    $sett = "from setuptools import setup, Extension"
-
-    python -c "f=open(r'${cys}');r=f.read();f.close();f=open(r'${cys}','w');f.write(r.replace('${dist}','${sett}'));f.close()"
-
-    Check-Error
-
-    cd C:\projects\tito_cymunk
+    cd C:\projects\cymunk
 
     python setup.py bdist_wheel -d "${WD}"
 
@@ -250,9 +235,10 @@ build_script:
 
       dir "${WD}"
 
-      C:\Python27\python.exe C:\projects\kivy-sdk-packager\win\gdrive.py upload "$env:GDRIVE_KIVENT_UPLOAD_ID" "$env:WHEEL_DIR\*"
+      secure-file\tools\secure-file -decrypt C:\projects\kivent\tools\appveyor\id_rsa.enc -secret "$env:KEY_WITH_NO_TEETH"
       Check-Error
 
-      C:\Python27\python.exe C:\projects\kivy-sdk-packager\win\gdrive.py delete_older "$env:GDRIVE_KIVENT_UPLOAD_ID" "15"
+      C:\msys64\usr\bin\bash --login C:\projects\kivent\tools\appveyor\kivy-upload.sh
       Check-Error
+
     }

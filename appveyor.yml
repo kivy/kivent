@@ -141,7 +141,7 @@ build_script:
 
     # get kivy version at runtime later, magically
 
-    pip install "$kivy_url/Kivy-1.9.2.dev0-${CP}"
+    pip install "$kivy_url/Kivy-1.10.1.dev0-${CP}"
 
     Check-Error
 

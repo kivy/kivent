@@ -158,7 +158,9 @@ build_script:
 
     Check-Error
 
-    pip install "${WD}\cymunk-0.0.0-${CP}"
+    # find a way how to check version dynamically (same as kivy)
+
+    pip install "${WD}\cymunk-0.0.0.dev0-${CP}"
 
     Check-Error
 

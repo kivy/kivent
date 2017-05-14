@@ -237,10 +237,14 @@ build_script:
 
       dir "${WD}"
 
+      # nuget secure-file is here
+
+      cd C:\projects\kivent
+
       secure-file\tools\secure-file -decrypt C:\projects\kivent\tools\appveyor\id_rsa.enc -secret "$env:KEY_WITH_NO_TEETH"
       Check-Error
 
-      C:\msys64\usr\bin\bash --login C:\projects\kivent\tools\appveyor\kivy-upload.sh
+      C:\msys64\usr\bin\bash --login C:\projects\kivent\tools\appveyor\kivent-upload.sh
       Check-Error
 
     }

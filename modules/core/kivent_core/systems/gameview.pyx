@@ -255,7 +255,7 @@ cdef class GameView(GameSystem):
         touch.x = old_x 
         touch.y = old_y
         touch.pos = (old_x, old_y)
-        if self.collide_point(*touch.pos) and not self.touch_pass_through:
+        if self.collide_point(*touch.pos) and not self.touch_pass_through and not super_result:
             touch.grab(self)
             self._touch_count += 1
             self._touches.append(touch)
@@ -273,7 +273,7 @@ cdef class GameView(GameSystem):
         old_x, old_y = touch.x, touch.y
         touch.x = converted_pos[0]
         touch.y = converted_pos[1]
-        super(GameView, self).on_touch_up(touch)
+        super_result = super(GameView, self).on_touch_up(touch)
         touch.x = old_x
         touch.y = old_y
         if touch.grab_current is self:
@@ -320,7 +320,7 @@ cdef class GameView(GameSystem):
         old_x, old_y = touch.x, touch.y
         touch.x = converted_pos[0]
         touch.y = converted_pos[1]
-        super(GameView, self).on_touch_move(touch)
+        super_result = super(GameView, self).on_touch_move(touch)
         touch.x = old_x
         touch.y = old_y
         if touch.grab_current is self:

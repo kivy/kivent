@@ -1,6 +1,6 @@
 from libc.math cimport fmax, fmin, sqrt
 from libc.stdlib cimport rand, RAND_MAX
-from libc.math cimport sin, cos
+from libc.math cimport sin, cos, pow
 
 DEF PI = 3.14159265358979323846
 

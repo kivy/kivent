@@ -59,11 +59,11 @@ cdef class BlockZone:
         cdef unsigned int data_in_free = self.data_in_free
         cdef unsigned int tail_count = self.get_blocks_on_tail()
         if data_in_free >= block_count:
-            largest_free_block = self.get_largest_free_block()
-        if block_count <= largest_free_block:
             index = self.get_first_free_block_that_fits(block_count)
-            self.data_in_free -= block_count
-        elif block_count <= tail_count:
+            if index != <unsigned int>-1:
+                self.data_in_free -= block_count
+                return index + self.start
+        if block_count <= tail_count:
             index = self.used_count
             self.used_count += block_count
         else:
@@ -132,6 +132,7 @@ cdef class BlockZone:
                 new_block_count = free_block_size - block_count
                 free_blocks.append((index+block_count, new_block_count))
                 return index
+        return <unsigned int>-1
 
     cdef unsigned int get_blocks_on_tail(self):
         '''Gets the number of unused blocks on the tail.

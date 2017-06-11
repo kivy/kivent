@@ -62,6 +62,6 @@ cdef inline void color_copy(float* from_color, unsigned char* destination):
 
 cdef inline float calc_distance(float point_1_x, float point_1_y, 
     float point_2_x, float point_2_y):
-    cdef float x_dist2 = pow(point_2_x - point_1_x, 2)
-    cdef float y_dist2 = pow(point_2_y - point_1_y, 2)
-    return sqrt(x_dist2 + y_dist2)
+    cdef double x_dist2 = pow(<double>(point_2_x - point_1_x), 2)
+    cdef double y_dist2 = pow(<double>(point_2_y - point_1_y), 2)
+    return <float>sqrt(x_dist2 + y_dist2)

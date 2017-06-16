@@ -281,7 +281,11 @@ cdef class GameSystem(CWidget):
         Args:
             component_index (unsigned int): the component_id to be removed.
         '''
+        entity = self.py_components[component_index]
+        cdef unsigned int entity_id = entity.entity_id
         self.clear_component(component_index)
+        cdef EntityManager entity_manager = self.gameworld.entity_manager
+        entity_manager.set_component(entity_id, -1, self.system_index)
         self.py_components[component_index] = None
         self.free_indices.append(component_index)
 

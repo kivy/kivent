@@ -11,6 +11,7 @@ try:
     import cPickle as pickle
 except:
     import pickle
+import uuid
 from kivent_core.rendering.svg_loader cimport SVG, SVGModelInfo
 from kivent_core.managers.game_manager cimport GameManager
 
@@ -266,7 +267,7 @@ cdef class ModelManager(GameManager):
         if info.element_id is not None:
             name = svg_name + '_' + info.element_id
         else:
-            name = svg_name + '_None'
+            name = '{}_{}'.format(svg_name, uuid.uuid4())
         model_key = self.load_model(
             'vertex_format_2f4ub', info.vertex_count, 
             info.index_count, name,

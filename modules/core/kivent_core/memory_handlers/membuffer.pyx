@@ -242,8 +242,19 @@ cdef class Buffer:
             bool: True if either enough space on tail or large enough block in
             the free list else False
         '''
-        return (block_count <= self.get_blocks_on_tail() or (
-            block_count <= self.get_largest_free_block()))
+        cdef list free_blocks
+        cdef unsigned int free_block_count
+        cdef unsigned int i
+        if self.size - self.used_count >= block_count:
+            return True # Space on tail
+        if self.data_in_free < block_count:
+            return False
+        free_blocks = self.free_blocks
+        free_block_count = self.free_block_count
+        for i in range(free_block_count):
+            if free_blocks[i][1] >= block_count:
+                return True
+        return False
 
     cdef void clear(self):
         '''Clear the whole buffer and mark all blocks as available.

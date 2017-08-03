@@ -12,3 +12,5 @@ cdef class EntityManager(GameManager):
     cdef void remove_entity(self, unsigned int entity_id)
     cdef void set_entity_active(self, unsigned int entity_id)
     cdef unsigned int get_size(self)
+    cpdef unsigned int get_active_entity_count(self)
+    cpdef unsigned int get_active_entity_count_in_zone(self, str zone) except <unsigned int>-1

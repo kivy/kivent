@@ -168,3 +168,27 @@ cdef class EntityManager(GameManager):
         self.clear_entity(entity_id)
         cdef MemoryZone memory_zone = self.memory_index.memory_zone
         memory_zone.free_slot(entity_id)
+
+    cpdef unsigned int get_active_entity_count(self):
+        ''' Returns the number of all currently active entities.
+
+        **Return**:
+            unsigned int: active entity count.
+        '''
+        cdef MemoryZone memory_zone = self.memory_index.memory_zone
+        return memory_zone.get_active_slot_count()
+
+    cpdef unsigned int get_active_entity_count_in_zone(self, str zone) except <unsigned int>-1:
+        '''Returns the number of currently active entities for the given zone.
+
+        **Args**:
+            zone (str): The zone name.
+
+        **Return**:
+            unsigned int: active entity count in the given zone.
+
+        Will raise a **ValueError** exception if the given zone does not exists.
+        '''
+        cdef MemoryZone memory_zone = self.memory_index.memory_zone
+        cdef unsigned int pool_index = memory_zone.get_pool_index_from_name(zone) 
+        return memory_zone.get_active_slot_count_in_pool(pool_index)

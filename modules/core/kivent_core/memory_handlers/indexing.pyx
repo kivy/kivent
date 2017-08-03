@@ -296,6 +296,41 @@ cdef class IndexedMemoryZone:
         else:
             return self.zone_index.get_component_from_index(value)
 
+    def get_active_count_in_zone(self, str zone):
+        '''Returns the count of all active components of this
+        **MemoryZone** for the given zone.
+
+        **Args**:
+            zone (str): The zone name.
+
+        **Return**:
+            int: active block count.
+
+        Will raise a **ValueError** exception if this **Memoryzone**
+        does not use the given zone.
+
+        .. note:: For Cython access use the \
+        :func:`kivent_core.memory_handlers.zone.MemoryZone.get_active_slot_count_in_pool` \
+            method in the :class:`kivent_core.memory_handlers.zone.MemoryZone` directly.
+        '''
+        cdef MemoryZone memory_zone = self.memory_zone
+        cdef unsigned int pool_index = memory_zone.get_pool_index_from_name(zone) 
+        return self.memory_zone.get_active_slot_count_in_pool(pool_index)
+      
+    def get_active_count(self):
+        ''' Returns the count of all active components
+        in all used zones.
+
+        **Return**:
+            int: The count of all active components.
+
+        .. note:: For Cython access use the \
+        :func:`kivent_core.memory_handlers.zone.MemoryZone.get_active_slot_count` \
+            method in the :class:`kivent_core.memory_handlers.zone.MemoryZone` directly.
+        '''
+        cdef MemoryZone memory_zone = self.memory_zone 
+        return self.memory_zone.get_active_slot_count()  
+
     cdef void* get_pointer(self, unsigned int index) except NULL:
         '''Returns a pointer to the data for the slot at index.
         Args:

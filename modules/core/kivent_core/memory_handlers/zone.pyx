@@ -73,7 +73,7 @@ cdef class MemoryZone:
             range_a((index, index+pool_count-1))
             self.count += pool_count
 
-    cdef unsigned int get_pool_index_from_name(self, str zone_name):
+    cdef unsigned int get_pool_index_from_name(self, str zone_name) except <unsigned int>-1:
         '''Gets the index of the pool from the zone_name
         Arg:
             zone_name (str): Name of the zone as passed into the desired_counts
@@ -309,3 +309,31 @@ cdef class MemoryZone:
             pool = pools[key]
             size += pool.get_size()
         return size
+
+    cdef unsigned int get_active_slot_count_in_pool(self, unsigned int pool_index) except <unsigned int>-1:
+        ''' Returns the amount of active (non freed) slots for the given pool.
+
+            Args:
+                pool_index (unsigned int): The pool index for a zone
+                aquired f.e. by `memory_zone.get_pool_index_from_name(zone)`.
+
+            Return:
+                unsigned int: the slot count. 
+        '''
+        cdef MemoryPool pool = self.memory_pools[pool_index]
+        return pool.used - pool.free_count
+
+    cdef unsigned int get_active_slot_count(self):
+        '''Returns the combined amount of all active
+        (non freed) slots from all the MemoryPools in this MemoryZone.
+
+        Return:
+            unsigned int: the slot count.
+        '''
+        cdef dict pools = self.memory_pools
+        cdef MemoryPool pool
+        cdef unsigned int count = 0
+        for key in pools:
+            pool = pools[key]
+            count += pool.used - pool.free_count
+        return count

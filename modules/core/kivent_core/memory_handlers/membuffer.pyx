@@ -111,9 +111,8 @@ cdef class Buffer:
 
     cdef unsigned int add_data(self, unsigned int block_count) except -1:
         '''Adds block_count worth of data to the Buffer. The basic process is:
-        1. Check if there is enough blocks in the free list. -> If so get the
-        largest chunk of free_blocks. -> If that is large enough lets take
-        one of those blocks.
+        1. Check if there is enough blocks in the free list. -> If so get one
+        chunk which is big enough if available. 
         2. If not 1: Check if we have enough unused blocks. -> Allocate from
         tail.
         3. If not 2: raise MemoryError()
@@ -137,12 +136,12 @@ cdef class Buffer:
         cdef unsigned int data_in_free = self.data_in_free
         cdef unsigned int tail_count = self.get_blocks_on_tail()
         if data_in_free >= block_count:
-            largest_free_block = self.get_largest_free_block()
-        if block_count <= largest_free_block:
             index = self.get_first_free_block_that_fits(block_count)
-            self.data_in_free -= block_count
-            self.free_block_count -= 1
-        elif block_count <= tail_count:
+            if index != <unsigned int>-1:
+                self.data_in_free -= block_count
+                self.free_block_count -= 1
+                return index
+        if block_count <= tail_count:
             index = self.used_count
             self.used_count += block_count
         else:
@@ -230,6 +229,7 @@ cdef class Buffer:
                 free_blocks.append((index+block_count, new_block_count))
                 self.free_block_count += 1
                 return index
+        return <unsigned int>-1
 
     cdef unsigned int get_blocks_on_tail(self):
         '''Return:
@@ -242,8 +242,19 @@ cdef class Buffer:
             bool: True if either enough space on tail or large enough block in
             the free list else False
         '''
-        return (block_count <= self.get_blocks_on_tail() or (
-            block_count <= self.get_largest_free_block()))
+        cdef list free_blocks
+        cdef unsigned int free_block_count
+        cdef unsigned int i
+        if self.size - self.used_count >= block_count:
+            return True # Space on tail
+        if self.data_in_free < block_count:
+            return False
+        free_blocks = self.free_blocks
+        free_block_count = self.free_block_count
+        for i in range(free_block_count):
+            if free_blocks[i][1] >= block_count:
+                return True
+        return False
 
     cdef void clear(self):
         '''Clear the whole buffer and mark all blocks as available.

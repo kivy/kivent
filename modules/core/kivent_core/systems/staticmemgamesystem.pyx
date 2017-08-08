@@ -16,7 +16,7 @@ from gamesystem cimport GameSystem
 from kivent_core.managers.system_manager cimport SystemManager
 from cpython cimport bool
 from kivent_core.memory_handlers.utils import memrange
-
+from kivent_core.managers.entity_manager cimport EntityManager
 
 
 cdef class MemComponent:
@@ -223,8 +223,13 @@ cdef class StaticMemGameSystem(GameSystem):
         Overrides the default behavior of GameSystem, passing data handling
         duties to the IndexedMemoryZone. **clear_component** will be called
         prior to calling **free_slot** on the MemoryZone.'''
-        self.clear_component(component_index)
         cdef MemoryZone memory_zone = self.imz_components.memory_zone
+        cdef EntityManager entity_manager = self.gameworld.entity_manager
+        cdef unsigned int *pointer = <unsigned int*>memory_zone.get_pointer(
+            component_index)
+        cdef unsigned int entity_id = pointer[0]
+        self.clear_component(component_index)
+        entity_manager.set_component(entity_id, -1, self.system_index)
         memory_zone.free_slot(component_index)
 
     def init_component(self, unsigned int component_index,

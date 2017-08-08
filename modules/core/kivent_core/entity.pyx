@@ -53,9 +53,9 @@ cdef class Entity(MemComponent):
         system = system_manager[name]
         cdef unsigned int* pointer = <unsigned int*>self.pointer
         cdef unsigned int component_index = pointer[system_index+1]
-        if component_index == -1:
+        if component_index == <unsigned int>-1:
             raise NoComponentActiveError(
-                'Entity {ent_id} have no component'
+                'Entity {ent_id} has no component '
                 'active for {system_name}'.format(ent_id=str(self._id),
                     system_name=name))
         return system.components[component_index]

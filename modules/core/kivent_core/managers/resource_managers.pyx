@@ -11,6 +11,7 @@ try:
     import cPickle as pickle
 except:
     import pickle
+import uuid
 from kivent_core.rendering.svg_loader cimport SVG, SVGModelInfo
 from kivent_core.managers.game_manager cimport GameManager
 
@@ -263,9 +264,13 @@ cdef class ModelManager(GameManager):
             + element_id for the SVGModelInfo.
 
         '''
+        if info.element_id is not None:
+            name = svg_name + '_' + info.element_id
+        else:
+            name = '{}_{}'.format(svg_name, uuid.uuid4())
         model_key = self.load_model(
             'vertex_format_2f4ub', info.vertex_count, 
-            info.index_count, svg_name + '_' + info.element_id,
+            info.index_count, name,
             indices=info.indices, vertices=info.vertices,
             )
         self._svg_index[svg_name]['models'][info.element_id] = model_key

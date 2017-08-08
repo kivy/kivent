@@ -6,11 +6,11 @@ from kivent_core.systems.renderers cimport RenderStruct, Renderer
 from kivent_core.rendering.animation cimport FrameList, Frame, FrameStruct
 from kivent_core.rendering.model cimport VertexModel
 from kivent_core.managers.resource_managers import texture_manager
+from kivent_core.managers.resource_managers cimport ModelManager
 from kivent_core.managers.animation_manager cimport AnimationManager
 from kivy.properties import (StringProperty, ObjectProperty, NumericProperty,
         BooleanProperty, ListProperty)
 from kivy.factory import Factory
-
 
 cdef class AnimationComponent(MemComponent):
     '''The component associated with AnimationSystem. Stores the current
@@ -168,6 +168,7 @@ cdef class AnimationSystem(StaticMemGameSystem):
         cdef unsigned int current_index
         cdef unsigned int groupkey
         cdef Renderer renderer
+        cdef ModelManager model_manager = self.gameworld.model_manager
 
 
         for i in range(count):
@@ -210,7 +211,13 @@ cdef class AnimationSystem(StaticMemGameSystem):
                 same_batch = texture_manager.get_texkey_in_group(
                                                 render_comp.texkey,
                                                 groupkey)
+                model_manager.unregister_entity_with_model(
+                    render_comp.entity_id,
+                    (<VertexModel>render_comp.model)._name)
                 render_comp.model = frame_data.model
+                model_manager.register_entity_with_model(
+                    render_comp.entity_id, self.system_id,
+                    (<VertexModel>render_comp.model)._name)
                 renderer = <Renderer>render_comp.renderer
                 if not same_batch:
                     renderer._unbatch_entity(render_comp.entity_id,

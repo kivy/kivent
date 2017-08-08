@@ -475,27 +475,30 @@ cdef class ParticleSystem(StaticMemGameSystem):
                 if particle_comp.emit_radius < emitter._min_radius:
                     particle_comp.current_time = particle_comp.total_time
             else:
-                start_x = particle_comp.start_pos[0]
-                start_y = particle_comp.start_pos[1]
-                current_x = pos_comp.x
-                current_y = pos_comp.y
-                distance_x = current_x - start_x
-                distance_y = current_y - start_y
-                distance_scalar = calc_distance(start_x, start_y, 
-                    current_x, current_y)
-                if distance_scalar < 0.01:
-                    distance_scalar = 0.01
-                radial_x = distance_x / distance_scalar
-                radial_y = distance_y / distance_scalar
-                tangential_x = radial_x
-                tangential_y = radial_y
-                rad_accel = particle_comp.radial_acceleration
-                radial_x *= rad_accel
-                radial_y *= rad_accel
-                new_y = tangential_x
-                tan_accel = particle_comp.tangential_acceleration
-                tangential_x = -tangential_y * tan_accel
-                tangential_y = new_y * tan_accel
+                if particle_comp.radial_acceleration or particle_comp.tangential_acceleration:
+                    start_x = particle_comp.start_pos[0]
+                    start_y = particle_comp.start_pos[1]
+                    current_x = pos_comp.x
+                    current_y = pos_comp.y
+                    distance_x = current_x - start_x
+                    distance_y = current_y - start_y
+                    distance_scalar = calc_distance(start_x, start_y, 
+                        current_x, current_y)
+                    if distance_scalar < 0.01:
+                        distance_scalar = 0.01
+                    radial_x = distance_x / distance_scalar
+                    radial_y = distance_y / distance_scalar
+                    tangential_x = radial_x
+                    tangential_y = radial_y
+                    rad_accel = particle_comp.radial_acceleration
+                    radial_x *= rad_accel
+                    radial_y *= rad_accel
+                    new_y = tangential_x
+                    tan_accel = particle_comp.tangential_acceleration
+                    tangential_x = -tangential_y * tan_accel
+                    tangential_y = new_y * tan_accel
+                else:
+                    radial_x = radial_y = tangential_x = tangential_y = 0
                 particle_comp.velocity[0] += passed_time * (
                     emitter._gravity[0] + radial_x + tangential_x)
                 particle_comp.velocity[1] += passed_time * (

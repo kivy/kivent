@@ -285,6 +285,22 @@ cdef class GameSystem(CWidget):
         self.py_components[component_index] = None
         self.free_indices.append(component_index)
 
+    cpdef unsigned int get_active_component_count(self) except <unsigned int>-1:
+        '''
+        Returns the number of active components in this system.
+        '''
+        return self.component_count - len(self.free_indices)
+
+    cpdef unsigned int get_active_component_count_in_zone(self, str zone) except <unsigned int>-1:
+        '''
+        Returns the number of active components of this system in the given zone.
+
+        Not implemented in the python GameSystem, but overwritten in
+        StaticMemGameSystems and other GameSystems supporting zones.
+        Calling this method on GameSystems which did not overwrite this function
+        will raise a **NotImplementedError**.
+        '''
+        raise NotImplementedError("The default python GameSystem does not support zones.")
 
     def on_remove_system(self):
         '''Function called when a system is removed during a gameworld state

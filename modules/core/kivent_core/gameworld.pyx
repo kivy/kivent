@@ -66,10 +66,6 @@ class GameWorld(Widget):
         control the current screen of the gamescreenmanager, as well as which
         systems are currently added or removed from canvas or paused.
 
-        **number_entities** (NumericProperty): This is the current number of
-        entities in the system. Do not modify directly, used to generate
-        entity_ids.
-
         **gamescreenmanager** (ObjectProperty): Reference to the
         GameScreenManager your game will use for UI screens.
 

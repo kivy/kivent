@@ -242,6 +242,33 @@ cdef class StaticMemGameSystem(GameSystem):
         recycling'''
         pass
 
+    cpdef unsigned int get_active_component_count(self) except <unsigned int>-1:
+        '''Returns the number of all active components in this system.
+
+        **Return:**
+            unsigned int: The number of active components.
+        '''
+        cdef IndexedMemoryZone indexed = self.imz_components
+        cdef MemoryZone memory_zone = indexed.memory_zone
+        return memory_zone.get_active_slot_count()
+    
+    cpdef unsigned int get_active_component_count_in_zone(self, str zone) except <unsigned int>-1:
+        '''Returns the number of active components of this system in the given zone.
+
+        **Args:**
+            zone (str): The name of the zone to get the count from.
+
+        **Return:**
+            unsigned int: The number of active components in the given zone.
+
+        Will raise a **ValueError** exception if this **GameSystem**
+        does not use the given zone.
+        '''
+        cdef IndexedMemoryZone indexed = self.imz_components
+        cdef MemoryZone memory_zone = indexed.memory_zone
+        cdef unsigned int pool_index = memory_zone.get_pool_index_from_name(zone) 
+        return memory_zone.get_active_slot_count_in_pool(pool_index)
+
 
 cdef class ZonedAggregator:
     '''

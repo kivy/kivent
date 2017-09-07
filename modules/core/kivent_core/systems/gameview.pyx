@@ -273,7 +273,7 @@ cdef class GameView(GameSystem):
         old_x, old_y = touch.x, touch.y
         touch.x = converted_pos[0]
         touch.y = converted_pos[1]
-        super(GameView, self).on_touch_up(touch)
+        super_result = super(GameView, self).on_touch_up(touch)
         touch.x = old_x
         touch.y = old_y
         if touch.grab_current is self:

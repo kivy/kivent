@@ -416,7 +416,7 @@ class GameWorld(Widget):
         '''
         cdef unsigned int entity_id = self.get_entity(zone)
         cdef Entity entity = self.entities[entity_id]
-        entity.load_order = component_order
+        entity.load_order = list(component_order)
         cdef SystemManager system_manager = self.system_manager
         entity.system_manager = system_manager
         cdef object component_args

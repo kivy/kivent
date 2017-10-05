@@ -17,3 +17,4 @@ cdef class ModelManager(GameManager):
     cdef dict _key_counts
     cdef dict _model_register
     cdef dict _svg_index
+    cdef dict _models_by_format

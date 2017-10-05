@@ -68,6 +68,7 @@ cdef class ModelManager(GameManager):
         self._key_counts = {}
         self._model_register = {}
         self._svg_index = {}
+        self._models_by_format = {}
 
     property svg_index:
         def __get__(self):
@@ -449,11 +450,26 @@ cdef class ModelManager(GameManager):
         cdef VertexModel model = VertexModel(vertex_count, index_count,
             format_config, index_block, vertex_block, name)
         self._models[name] = model
+        if format_name not in self._models_by_format:
+            self._models_by_format[format_name] = {}
+        self._models_by_format[format_name][name] = model
         if vertices is not None:
             model.vertices = vertices
         if indices is not None:
             model.indices = indices
         return name
+
+    def clear_format_memory(self, format_name):
+        previous_models = self._models_by_format.get(format_name, {})
+        for key in previous_models:
+            self.unload_model(key)
+        self._models_by_format[format_name] = {}
+        cdef MemoryBlock vertex_block = self.memory_blocks[format_name][
+            'vertices_block']
+        cdef MemoryBlock index_block = self.memory_blocks[format_name][
+            'indices_block']
+        vertex_block.clear()
+        index_block.clear()
 
     def copy_model(self, str model_to_copy, str model_name=None):
         '''

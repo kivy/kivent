@@ -3,65 +3,19 @@ from kivy.graphics.context cimport Context, get_context
 from kivy.graphics.cgl cimport (GL_ARRAY_BUFFER, GL_STREAM_DRAW,
     GL_ELEMENT_ARRAY_BUFFER, cgl)
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
-from kivent_core.memory_handlers.block cimport MemoryBlock
+from kivent_core.memory_handlers.membuffer cimport NoFreeBuffer
 from vertex_format cimport KEVertexFormat
 from vbo_definitions cimport (V_NEEDGEN, V_HAVEID, V_NEEDUPLOAD,
                               VBOTargetException, VBOUsageException)
 
 
-cdef class FixedVBO:
+cdef class SimpleVBO:
     '''
-    This is a VBO that has a fixed size for the amount of vertex data. While
-    the MemoryBlock will hold a fixed amount of data, it is possible we will
-    upload a different amount of data per-frame to GL. This allows us to render
-    up to the maximum amount that will fill MemoryBlock without having to
-    reallocate memory on the cpu side of things.
-
-    **Attributes: (Cython Access Only)**
-        **memory_block** (MemoryBlock): MemoryBlock holding the data for this
-        VBO.
-
-        **usage** (int): The usage hint for this VBO, currently only
-        GL_STREAM_DRAW is supported. Pass in 'stream' when initializing.
-        Any other argument will raise VBOUsageException.
-
-        **target** (int): The target of the buffer when binding. Can be either
-        GL_ARRAY_BUFFER or GL_ELEMENT_ARRAY_BUFFER at the moment. When
-        initializing pass in either 'array' or 'elements' respectively. Any
-        other argument with raise a VBOTargetException
-
-        **flags** (short): State used by Kivy during rendering.
-
-        **id** (GLuint): The id assigned by GL for this buffer. Returned from
-        glGenBuffers.
-
-        **size_last_frame** (unsigned int): The number of elements rendered
-        during the last frame. Used to determine whether we should
-        glBufferData or glBufferSubData when updating the vbo.
-
-        **data_size** (unsigned int): The amount of data to be rendered next
-        frame.
-
-        **vertex_format** (KEVertexFormat): The object containing data about
-        the vertex format for this VBO.
     '''
 
-    def __cinit__(self, KEVertexFormat vertex_format, MemoryBlock memory_block,
-        str usage, str target):
-        '''During initialization we must pass in the KEVertexFormat for this
-        VBO, the MemoryBlock to hold the data, and the usage, and target
-        information for binding the glBuffer.
-        Args:
-            vertex_format (KEVertexFormat): Vertex format this vbo will use.
-
-            memory_block (MemoryBlock): MemoryBlock that will hold this VBO
-            data prior to upload to gpu.
-
-            usage (str): Usage hint for the buffer, can be 'stream', other
-            usages will be implemented in the future.
-
-            target (str): Target type for the buffer, can be either 'array'
-            or 'elements'.
+    def __cinit__(self, KEVertexFormat vertex_format,
+                  NoFreeBuffer memory_buffer, str usage, str target):
+        '''
         '''
         if target == 'array':
             self.target = GL_ARRAY_BUFFER
@@ -75,12 +29,11 @@ cdef class FixedVBO:
         else:
             raise VBOUsageException('Unknown type for VBO usage:', usage,
                 "Only accepts: 'stream',")
-
         self.vertex_format = vertex_format
         self.flags = V_NEEDGEN
-        self.memory_block = memory_block
+        self.memory_buffer = memory_buffer
         self.size_last_frame = 0
-        self.data_size = memory_block.real_size
+        self.data_size = memory_buffer.real_size
 
     def __dealloc__(self):
         cdef Context context = get_context()
@@ -102,12 +55,12 @@ cdef class FixedVBO:
         and pointed at a NULL data.'''
         #commentout for sphinx
         cgl.glGenBuffers(1, &self.id)
-        gl_log_debug_message('FixedVBO.generate_buffer-glGenBuffer')
+        gl_log_debug_message('SimpleVBO.generate_buffer-glGenBuffer')
         cgl.glBindBuffer(self.target, self.id)
-        gl_log_debug_message('FixedVBO.generate_buffer-glBindBuffer')
-        cgl.glBufferData(self.target, self.memory_block.real_size,
+        gl_log_debug_message('SimpleVBO.generate_buffer-glBindBuffer')
+        cgl.glBufferData(self.target, self.memory_buffer.real_size,
             NULL, self.usage)
-        gl_log_debug_message('FixedVBO.generate_buffer-glBufferData')
+        gl_log_debug_message('SimpleVBO.generate_buffer-glBufferData')
 
     cdef void update_buffer(self):
         '''Updates the buffer, uploading the latest data from **memory_block**
@@ -123,14 +76,15 @@ cdef class FixedVBO:
             self.flags &= ~V_NEEDGEN
             self.flags |= V_HAVEID
         cgl.glBindBuffer(self.target, self.id)
-        gl_log_debug_message('FixedVBO.update_buffer-glBindBuffer')
+        gl_log_debug_message('SimpleVBO.update_buffer-glBindBuffer')
         if data_size != self.size_last_frame:
             cgl.glBufferData(
-                self.target, data_size, self.memory_block.data, self.usage)
-            gl_log_debug_message('FixedVBO.update_buffer-glBufferData')
+                self.target, data_size, self.memory_buffer.data, self.usage)
+            gl_log_debug_message('SimpleVBO.update_buffer-glBufferData')
         else:
-            cgl.glBufferSubData(self.target, 0, data_size, self.memory_block.data)
-            gl_log_debug_message('FixedVBO.update_buffer-glBufferSubData')
+            cgl.glBufferSubData(self.target, 0, data_size,
+                                self.memory_buffer.data)
+            gl_log_debug_message('SimpleVBO.update_buffer-glBufferSubData')
         self.size_last_frame = data_size
 
     cdef void bind(self):
@@ -145,11 +99,11 @@ cdef class FixedVBO:
         '''Unbinds the buffer after rendering'''
         #commentout for sphinx
         cgl.glBindBuffer(self.target, 0)
-        gl_log_debug_message('FixedVBO.unbind-glBindBuffer')
+        gl_log_debug_message('SimpleVBO.unbind-glBindBuffer')
 
     cdef void return_memory(self):
         '''Will return the memory claimed by this VBO's **memory_block**.'''
-        self.memory_block.remove_from_buffer()
+        self.memory_buffer.deallocate_memory()
 
     cdef void reload(self):
         '''Will flag this VBO as V_NEEDGEN, set the **size_last_frame** to 0,
@@ -163,8 +117,8 @@ cdef class FixedVBO:
         self.flags = V_NEEDGEN
         if self.target == GL_ELEMENT_ARRAY_BUFFER:
             self.data_size = 0
-        self.memory_block.clear()
+        self.memory_buffer.clear()
 
     def __repr__(self):
-        return '<FixedVBO at %x id=%r>' % (
+        return '<SimpleVBO at %x id=%r>' % (
                 id(self), self.id if self.flags & V_HAVEID else None)

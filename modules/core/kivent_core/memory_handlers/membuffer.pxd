@@ -25,3 +25,23 @@ cdef class Buffer:
     cdef void* allocate_memory(self) except NULL
     cdef bool check_empty(self)
     cdef unsigned int get_offset(self, unsigned int block_index)
+
+cdef class NoFreeBuffer:
+    cdef size_t size
+    cdef void* data
+    cdef size_t used_count
+    cdef size_t type_size
+    cdef size_t size_in_blocks
+    cdef size_t real_size
+
+    cdef size_t add_data(self, size_t block_count) except -1
+    cdef size_t get_blocks_on_tail(self)
+    cdef bool can_fit_data(self, size_t block_count)
+    cdef void deallocate_memory(self)
+    cdef void* allocate_memory(self) except NULL
+    cdef void* get_pointer(self, size_t block_index) except NULL
+    cdef bool check_empty(self)
+    cdef size_t get_offset(self, size_t block_index)
+    cdef void clear(self)
+
+

@@ -252,6 +252,7 @@ cdef class Buffer:
         free_blocks = self.free_blocks
         free_block_count = self.free_block_count
         for i in range(free_block_count):
+            print('checking to see if can fit in', i, free_blocks[i], block_count)
             if free_blocks[i][1] >= block_count:
                 return True
         return False
@@ -263,3 +264,74 @@ cdef class Buffer:
         self.free_blocks = []
         self.free_block_count = 0
         self.data_in_free = 0
+
+
+cdef class NoFreeBuffer:
+
+    def __cinit__(self, size_t size_in_blocks, size_t type_size,
+                  size_t master_block_size):
+        '''
+        '''
+        cdef size_t size_in_bytes = size_in_blocks * master_block_size
+        self.used_count = 0
+        self.data = NULL
+        self.size = size_in_bytes // type_size
+        self.real_size = size_in_bytes
+        self.type_size = type_size
+        self.size_in_blocks = size_in_blocks
+
+    def __dealloc__(self):
+        self.deallocate_memory()
+        self.size = 0
+        self.used_count = 0
+        self.real_size = 0
+        self.size_in_blocks = 0
+        self.type_size = 0
+
+    cdef void deallocate_memory(self):
+        '''
+        Frees the existing memory located at **data**, typically called
+        in the __dealloc__ method.
+        '''
+        if self.data != NULL:
+            free(self.data)
+
+    cdef void* allocate_memory(self) except NULL:
+        '''
+        Actually allocates the memory, using a regular C malloc. Will raise
+        MemoryError if allocation fails (returns NULL).
+        Return:
+            void*: Pointer to the newly malloced data.
+        '''
+        self.data = malloc(self.real_size)
+        if self.data == NULL:
+            raise MemoryError()
+        return self.data
+
+    cdef size_t add_data(self, size_t block_count) except -1:
+        cdef size_t tail_count = self.get_blocks_on_tail()
+        cdef size_t index = self.used_count
+        if self.can_fit_data(block_count):
+            self.used_count += block_count
+            return index
+        else:
+            raise MemoryError()
+
+    cdef size_t get_blocks_on_tail(self):
+        return self.size - self.used_count
+
+    cdef bool can_fit_data(self, size_t block_count):
+        return block_count <= self.get_blocks_on_tail()
+
+    cdef void* get_pointer(self, size_t block_index) except NULL:
+        cdef char* data = <char*>self.data
+        return &data[self.get_offset(block_index)]
+
+    cdef bool check_empty(self):
+        return self.used_count == 0
+
+    cdef size_t get_offset(self, size_t block_index):
+        return block_index*self.type_size
+
+    cdef void clear(self):
+        self.used_count = 0

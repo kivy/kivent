@@ -534,12 +534,14 @@ cdef class BatchManager:
         cdef dict batch_groups = self.batch_groups
         cdef IndexedBatch batch
         if tex_key not in batch_groups:
+            print('creating batch because of tex key', tex_key)
             return self.batches[self.create_batch(tex_key)]
         else:
             for batch in batch_groups[tex_key]:
                 if batch.can_fit_data(num_verts, num_indices):
                     return batch
             else:
+                print('no room in batches, creating new')
                 return self.batches[self.create_batch(tex_key)]
 
     cdef tuple batch_entity(self, unsigned int entity_id,

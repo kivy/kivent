@@ -114,7 +114,7 @@ modules = {
     'rendering': [
         'gl_debug', 'vertex_format', 'fixedvbo', 'cmesh', 'batching',
         'vertex_format', 'frame_objects', 'vertex_formats', 'model',
-        'svg_loader', 'animation',
+        'svg_loader', 'animation', 'simplevbo',
     ],
     'managers': [
         'resource_managers', 'system_manager', 'entity_manager',

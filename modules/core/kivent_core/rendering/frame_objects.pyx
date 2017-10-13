@@ -1,6 +1,41 @@
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from vertex_format cimport KEVertexFormat
 from fixedvbo cimport FixedVBO
+from simplevbo cimport SimpleVBO
+from kivent_core.memory_handlers.membuffer cimport NoFreeBuffer
+from kivy.graphics.cgl cimport GLushort
+
+MAX_GL_VERTICES = 65535
+
+cdef class SimpleFrameData:
+
+    def __cinit__(self, KEVertexFormat vertex_format):
+        cdef NoFreeBuffer vertex_buffer = NoFreeBuffer(
+            MAX_GL_VERTICES*vertex_format.vbytesize, vertex_format.vbytesize, 1)
+        vertex_buffer.allocate_memory()
+        cdef NoFreeBuffer index_buffer = NoFreeBuffer(
+            MAX_GL_VERTICES*vertex_format.vbytesize, sizeof(GLushort), 1)
+        index_buffer.allocate_memory()
+        self.index_vbo = SimpleVBO(vertex_format, index_buffer, 'stream',
+                                   'elements')
+        self.vertex_vbo = SimpleVBO(vertex_format, vertex_buffer, 'stream',
+                                    'array')
+
+    def __dealloc__(self):
+        self.index_vbo.return_memory()
+        self.vertex_vbo.return_memory()
+
+    cdef void return_memory(self):
+        self.index_vbo.return_memory()
+        self.vertex_vbo.return_memory()
+
+    cdef void clear(self):
+        self.index_vbo.clear()
+        self.vertex_vbo.clear()
+
+    cdef void reload(self):
+        self.index_vbo.reload()
+        self.vertex_vbo.reload()
 
 cdef class FixedFrameData:
     '''The FixedFrameData manages 2 FixedVBO, suitable for rendering using the

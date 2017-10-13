@@ -33,7 +33,6 @@ cdef class SimpleVBO:
         self.flags = V_NEEDGEN
         self.memory_buffer = memory_buffer
         self.size_last_frame = 0
-        self.data_size = memory_buffer.real_size
 
     def __dealloc__(self):
         cdef Context context = get_context()
@@ -70,22 +69,27 @@ cdef class SimpleVBO:
         will be called.
         '''
         #commontout for sphinx
-        cdef unsigned int data_size = self.data_size
         if self.flags & V_NEEDGEN:
             self.generate_buffer()
             self.flags &= ~V_NEEDGEN
             self.flags |= V_HAVEID
         cgl.glBindBuffer(self.target, self.id)
         gl_log_debug_message('SimpleVBO.update_buffer-glBindBuffer')
-        if data_size != self.size_last_frame:
+        if self.memory_buffer.used_count != self.size_last_frame:
             cgl.glBufferData(
-                self.target, data_size, self.memory_buffer.data, self.usage)
+                self.target,
+                self.memory_buffer.get_actual_size(),
+                self.memory_buffer.data,
+                self.usage)
             gl_log_debug_message('SimpleVBO.update_buffer-glBufferData')
         else:
-            cgl.glBufferSubData(self.target, 0, data_size,
-                                self.memory_buffer.data)
+            cgl.glBufferSubData(
+                self.target,
+                0,
+                self.memory_buffer.get_actual_size(),
+                self.memory_buffer.data)
             gl_log_debug_message('SimpleVBO.update_buffer-glBufferSubData')
-        self.size_last_frame = data_size
+        self.size_last_frame = self.memory_buffer.used_count
 
     cdef void bind(self):
         '''Binds this buffer for rendering, calling **update_buffer** in the
@@ -115,8 +119,9 @@ cdef class SimpleVBO:
             arr.append(self.id)
             context.trigger_gl_dealloc()
         self.flags = V_NEEDGEN
-        if self.target == GL_ELEMENT_ARRAY_BUFFER:
-            self.data_size = 0
+        self.memory_buffer.clear()
+
+    cdef void clear(self):
         self.memory_buffer.clear()
 
     def __repr__(self):

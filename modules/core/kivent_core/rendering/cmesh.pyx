@@ -1,7 +1,7 @@
 # cython: profile=True
 # cython: embedsignature=True
 from kivy.graphics.instructions cimport VertexInstruction
-from kivent_core.rendering.batching cimport IndexedBatch
+from kivent_core.rendering.batching cimport IndexedBatch, SimpleBatch
 include "opcodes.pxi"
 include "common.pxi"
 
@@ -13,7 +13,6 @@ cdef class CMesh(VertexInstruction):
         cdef IndexedBatch batch = kwargs.get('batch')
         self._batch = batch
 
-
     def __dealloc__(self):
         self._batch.clear_frames()
 
@@ -22,3 +21,19 @@ cdef class CMesh(VertexInstruction):
             self._batch.current_frame += 1
             self.flag_update_done()
         self._batch.draw_frame()
+
+
+cdef class SimpleMesh(VertexInstruction):
+
+    def __init__(self, **kwargs):
+        VertexInstruction.__init__(self, **kwargs)
+        cdef SimpleBatch batch = kwargs.get('batch')
+        self._batch = batch
+
+    def __dealloc__(self):
+        self._batch.reload_frames()
+
+    cdef int apply(self) except -1:
+        if self.flags & GI_NEEDS_UPDATE:
+            self.flag_update_done()
+        self._batch.commit_frame()

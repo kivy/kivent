@@ -2,9 +2,10 @@
 # cython: embedsignature=True
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
-from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivent_core.memory_handlers.membuffer cimport Buffer, NoFreeBuffer
 from fixedvbo cimport FixedVBO
-from frame_objects cimport FixedFrameData
+from simplevbo cimport SimpleVBO
+from frame_objects cimport FixedFrameData, SimpleFrameData
 from vertex_format cimport KEVertexFormat
 from cpython cimport bool
 from cmesh cimport CMesh
@@ -15,7 +16,125 @@ from kivy.graphics.cgl cimport (GLushort, GL_UNSIGNED_SHORT, GL_TRIANGLES,
     GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_LINE_LOOP, GL_TRIANGLE_STRIP,
     GL_TRIANGLE_FAN, cgl, GLuint)
 from kivent_core.gameworld import debug
+from frame_objects cimport SimpleFrameData
+from vertex_format cimport KEVertexFormat
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
+
+cdef class SimpleBatch:
+    def __cinit__(self, unsigned int tex_key, unsigned int frame_count,
+                  GLuint mode, KEVertexFormat format):
+        self.frame_data = []
+        self.tex_key = tex_key
+        self.current_frame = 0
+        self.frame_count = frame_count
+        self.batch_id = -1
+        self.mode = mode
+        self.mesh_instruction = None
+        self.vertex_format = format
+        for i in range(frame_count):
+            self.frame_data.append(SimpleFrameData(format))
+
+    cdef bool can_fit_data(self, unsigned int num_verts,
+                           unsigned int num_indices):
+        '''
+        Checks whether the batch can fit the data for an entity we hope to add.
+        
+        Args:
+            num_verts (unsigned int): The number of vertices we want to add.
+
+            num_indices (unsigned int): The number of indices we want to add.
+
+        Return:
+            bool: True if there is room in this batch, else False.
+        '''
+        cdef SimpleFrameData current_frame = self.get_current_vbo()
+        cdef SimpleVBO indices = current_frame.index_vbo
+        cdef SimpleVBO vertices = current_frame.vertex_vbo
+        cdef NoFreeBuffer indices_block = indices.memory_buffer
+        cdef NoFreeBuffer vertex_block = vertices.memory_buffer
+        return (vertex_block.can_fit_data(num_verts) and
+                indices_block.can_fit_data(num_indices))
+
+    cdef void prepare_frame(self):
+        cdef SimpleFrameData current_frame = self.get_current_vbo()
+        current_frame.clear()
+
+    cdef void commit_frame(self):
+        self.draw_frame()
+        self.current_frame += 1
+
+    cdef void* get_current_vertex_location(self):
+        '''Returns a pointer to the vertex data for the next frame for writing
+        data to.
+
+        Return:
+            void*: Pointer to the data in the vertex FixedVBO's MemoryBlock.
+        '''
+        cdef SimpleFrameData frame_data = self.get_current_vbo()
+        cdef SimpleVBO vertices = frame_data.vertex_vbo
+        cdef NoFreeBuffer vertex_block = vertices.memory_buffer
+        return vertex_block.get_pointer(vertex_block.used_count)
+
+    cdef void* get_current_index_location(self):
+        '''Returns a pointer to the vertex data for the next frame for writing
+        data to.
+
+        Return:
+            void*: Pointer to the data in the vertex FixedVBO's MemoryBlock.
+        '''
+        cdef SimpleFrameData frame_data = self.get_current_vbo()
+        cdef SimpleVBO indices = frame_data.index_vbo
+        cdef NoFreeBuffer index_block = indices.memory_buffer
+        return index_block.get_pointer(index_block.used_count)
+
+    cdef void commit_data(self, unsigned int num_verts,
+                          unsigned int num_indices):
+        cdef SimpleFrameData frame_data = self.get_current_vbo()
+        cdef SimpleVBO indices = frame_data.index_vbo
+        cdef NoFreeBuffer index_block = indices.memory_buffer
+        cdef SimpleVBO vertices = frame_data.vertex_vbo
+        cdef NoFreeBuffer vertex_block = vertices.memory_buffer
+        index_block.add_data(num_indices)
+        vertex_block.add_data(num_verts)
+
+    cdef SimpleFrameData get_current_vbo(self):
+        '''Returns the next VBO pairing of indices and vertices VBO to use.
+
+        Return:
+            SimpleFrameData: VBO at position **current_frame** % **frame_count**
+        '''
+        return self.frame_data[self.current_frame % self.frame_count]
+
+    cdef SimpleFrameData get_next_vbo(self):
+        return self.frame_data[(self.current_frame + 1) % self.frame_count]
+
+    cdef void draw_frame(self):
+        '''
+        Actually triggers the drawing of a frame by calling glDrawElements.
+        The current SimpleFrameData as returned by **get_current_vbo** will be
+        drawn. **current_frame** will be incremented after drawing.
+        '''
+        cdef SimpleFrameData frame_data = self.get_current_vbo()
+        cdef SimpleVBO indices = frame_data.index_vbo
+        cdef SimpleVBO vertices = frame_data.vertex_vbo
+        gl_log_debug_message('SimpleBatch.draw_frame-vertices bind')
+        vertices.bind()
+        gl_log_debug_message('SimpleBatch.draw_frame-indices bind')
+        indices.bind()
+        #commentout for sphinx
+        cgl.glDrawElements(self.mode,
+                           indices.memory_buffer.used_count,
+                           GL_UNSIGNED_SHORT, NULL)
+        gl_log_debug_message('SimpleBatch.draw_frame-glDrawElements')
+        vertices.unbind()
+        indices.unbind()
+
+    cdef void reload_frames(self):
+        cdef SimpleFrameData frame
+        cdef list frame_data = self.frame_data
+        self.current_frame = 0
+        for frame in frame_data:
+            frame.reload()
 
 cdef class IndexedBatch:
     '''The IndexedBatch represents a collection of FixedFrameData vbos,

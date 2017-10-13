@@ -43,5 +43,6 @@ cdef class NoFreeBuffer:
     cdef bool check_empty(self)
     cdef size_t get_offset(self, size_t block_index)
     cdef void clear(self)
+    cdef size_t get_actual_size(self)
 
 

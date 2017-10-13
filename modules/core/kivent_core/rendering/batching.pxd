@@ -4,10 +4,33 @@ from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from vertex_format cimport KEVertexFormat
 from cpython cimport bool
-from frame_objects cimport FixedFrameData
+from frame_objects cimport FixedFrameData, SimpleFrameData
 from kivent_core.systems.staticmemgamesystem cimport ComponentPointerAggregator
 from kivent_core.managers.resource_managers import texture_manager
 
+cdef class SimpleBatch:
+    cdef list frame_data
+    cdef unsigned int current_frame
+    cdef unsigned int frame_count
+    cdef unsigned int tex_key
+    cdef unsigned int batch_id
+    cdef GLuint mode
+    cdef KEVertexFormat vertex_format
+    cdef object mesh_instruction
+
+    cdef void* get_current_vertex_location(self)
+    cdef void* get_current_index_location(self)
+    cdef void commit_data(self, unsigned int num_verts,
+                          unsigned int num_indices)
+
+    cdef bool can_fit_data(self, unsigned int num_verts,
+                           unsigned int num_indices)
+    cdef SimpleFrameData get_current_vbo(self)
+    cdef SimpleFrameData get_next_vbo(self)
+    cdef void draw_frame(self)
+    cdef void reload_frames(self)
+    cdef void commit_frame(self)
+    cdef void prepare_frame(self)
 
 cdef class IndexedBatch:
     cdef list frame_data
@@ -35,6 +58,28 @@ cdef class IndexedBatch:
         unsigned int index_count)
     cdef void draw_frame(self)
     cdef void clear_frames(self)
+
+cdef class SimpleBatchManager:
+    cdef list batches
+    cdef unsigned int max_batches
+    cdef unsigned int frame_count
+    cdef dict batch_groups
+    cdef list free_batches
+    cdef object gameworld
+    cdef str mode_str
+    cdef GLuint mode
+    cdef KEVertexFormat vertex_format
+    cdef object canvas
+
+    cdef void set_mode(self, str mode)
+    cdef str get_mode(self)
+    cdef unsigned int assign_batch_to_canvas(self,
+                                             unsigned int tex_key) except -1
+    cdef int remove_batch_from_canvas(self, unsigned int batch_id) except 0
+    cdef SimpleBatch get_batch_with_space(self, unsigned int tex_key,
+                                          unsigned int num_verts,
+                                          unsigned int num_indices)
+
 
 cdef class BatchManager:
     cdef MemoryBlock batch_block

@@ -333,5 +333,8 @@ cdef class NoFreeBuffer:
     cdef size_t get_offset(self, size_t block_index):
         return block_index*self.type_size
 
+    cdef size_t get_actual_size(self):
+        return self.used_count*self.type_size
+
     cdef void clear(self):
         self.used_count = 0

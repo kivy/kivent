@@ -9,7 +9,6 @@ cdef class SimpleVBO:
     cdef short flags
     cdef int target
     cdef unsigned int size_last_frame
-    cdef unsigned int data_size
     cdef KEVertexFormat vertex_format
 
     cdef int have_id(self)
@@ -19,3 +18,4 @@ cdef class SimpleVBO:
     cdef void unbind(self)
     cdef void return_memory(self)
     cdef void reload(self)
+    cdef void clear(self)

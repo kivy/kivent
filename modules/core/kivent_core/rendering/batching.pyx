@@ -8,7 +8,7 @@ from simplevbo cimport SimpleVBO
 from frame_objects cimport FixedFrameData, SimpleFrameData
 from vertex_format cimport KEVertexFormat
 from cpython cimport bool
-from cmesh cimport CMesh
+from cmesh cimport CMesh, SimpleMesh
 from kivent_core.managers.resource_managers import texture_manager
 from kivent_core.systems.staticmemgamesystem cimport ComponentPointerAggregator
 from kivy.logger import Logger
@@ -21,18 +21,25 @@ from vertex_format cimport KEVertexFormat
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 
 cdef class SimpleBatch:
-    def __cinit__(self, unsigned int tex_key, unsigned int frame_count,
-                  GLuint mode, KEVertexFormat format):
+    def __cinit__(self, unsigned int frame_count, GLuint mode,
+                  KEVertexFormat format):
         self.frame_data = []
-        self.tex_key = tex_key
         self.current_frame = 0
         self.frame_count = frame_count
         self.batch_id = -1
         self.mode = mode
+        self.tex_key = -1
         self.mesh_instruction = None
         self.vertex_format = format
         for i in range(frame_count):
             self.frame_data.append(SimpleFrameData(format))
+
+    cdef bool is_frame_empty(self):
+        cdef SimpleFrameData current_frame = self.get_current_vbo()
+        return current_frame.index_vbo.memory_buffer.used_count == 0
+
+    cdef bool is_attached_to_canvas(self):
+        return self.mesh_instruction is not None
 
     cdef bool can_fit_data(self, unsigned int num_verts,
                            unsigned int num_indices):
@@ -54,6 +61,12 @@ cdef class SimpleBatch:
         cdef NoFreeBuffer vertex_block = vertices.memory_buffer
         return (vertex_block.can_fit_data(num_verts) and
                 indices_block.can_fit_data(num_indices))
+
+    cdef size_t get_max_vertices(self):
+        return self.get_current_vbo().vertex_vbo.memory_buffer.size
+
+    cdef size_t get_max_indices(self):
+        return self.get_current_vbo().index_vbo.memory_buffer.size
 
     cdef void prepare_frame(self):
         cdef SimpleFrameData current_frame = self.get_current_vbo()
@@ -351,6 +364,156 @@ cdef class IndexedBatch:
 
 class MaxBatchException(Exception):
     pass
+
+class TooLargeForBatchException(Exception):
+    pass
+
+cdef class SimpleBatchManager:
+
+    def __cinit__(self, unsigned int batch_count,
+                  unsigned int frame_count, KEVertexFormat vertex_format,
+                  str mode_str, object canvas, object gameworld):
+
+        self.gameworld = gameworld
+
+
+        # Logger.info('KivEnt: Batches for canvas: {canvas} will have '
+        #     '{vert_slots_per_block} verts and {ind_slots} indices.VBO will be'
+        #     ' {vbo_size} in KiB'
+        #     ' per frame with {count} total vbos, an estimated {ent_per_batch}'
+        #     ' enities fit in each batch with {verts} verts per entity'.format(
+        #     canvas=str(canvas), vert_slots_per_block=vert_slots_per_block,
+        #     ind_slots=index_slots_per_block,
+        #     vbo_size=vbo_size_in_kb, count=block_count,
+        #     ent_per_batch=ent_per_batch, verts=smallest_vertex_count))
+        self.vertex_format = vertex_format
+        self.batch_groups = {}
+        self.set_mode(mode_str)
+        self.batches = [SimpleBatch(frame_count, self.mode, vertex_format)
+                        for x in batch_count]
+        cdef SimpleBatch batch
+        for idx, batch in enumerate(self.batches):
+            batch.batch_id = idx
+        self.free_batches = self.batches[:]
+        self.batch_count = 0
+        self.frame_count = frame_count
+        self.max_batches = batch_count
+
+        self.canvas = canvas
+
+    cdef void set_mode(self, str mode):
+        '''
+        Sets the mode of drawing.
+        
+        Args:
+            mode (str): Can be 'triangles', 'points', 'line_strip',
+            'line_loop', 'lines', 'triangle_strip', or 'triangle_fan'.
+
+        **warning: only 'triangles' is supported at the moment**
+        '''
+        self.mode_str = mode
+        if mode is 'triangles':
+            self.mode = GL_TRIANGLES
+        elif mode == 'points':
+            self.mode = GL_POINTS
+        elif mode == 'line_strip':
+            self.mode = GL_LINE_STRIP
+        elif mode == 'line_loop':
+            self.mode = GL_LINE_LOOP
+        elif mode == 'lines':
+            self.mode = GL_LINES
+        elif mode == 'triangle_strip':
+            self.mode = GL_TRIANGLE_STRIP
+        elif mode == 'triangle_fan':
+            self.mode = GL_TRIANGLE_FAN
+        else:
+            self.mode = GL_TRIANGLES
+
+    cdef str get_mode(self):
+        '''
+        Returns the human readable name of the drawing mode
+        
+        Return:
+            str: Name of the mode being used
+        '''
+        return self.mode_str
+
+    cdef SimpleBatch get_free_batch(self):
+        cdef SimpleBatch batch
+        if len(self.free_batches) > 0:
+            batch = self.free_batches.pop(0)
+            batch.prepare_frame()
+            return batch
+        else:
+            raise MaxBatchException("No free batches left. Try raising "
+                                    "batch count")
+
+    cdef SimpleBatch get_batch_with_space(self, unsigned int tex_key,
+                                          unsigned int num_verts,
+                                          unsigned int num_indices):
+
+        cdef dict batch_groups = self.batch_groups
+        cdef SimpleBatch batch
+        cdef list batch_group
+
+        if tex_key not in batch_groups:
+            batch = self.get_free_batch()
+            batch_groups[tex_key] = []
+            self.assign_batch_to_canvas(tex_key, batch)
+            if batch.can_fit_data(num_verts, num_indices):
+                return batch
+            else:
+                raise TooLargeForBatchException(
+                    "Empty Batch cannot fit: {} vertices or {} indices, has"
+                    "a max of {} vertices and {} indices".format(
+                        num_verts, num_indices,
+                        batch.get_max_vertices(),
+                        batch.get_max_indices()
+                    )
+                )
+        else:
+            batch_group = batch_groups[tex_key]
+            for batch in batch_group:
+                if batch.can_fit_data(num_verts, num_indices):
+                    return batch
+            else:
+                batch = self.get_free_batch()
+                self.assign_batch_to_canvas(tex_key, batch)
+                return batch
+
+    cdef void recycle_batch(self, SimpleBatch batch):
+        batch.reload_frames()
+        self.free_batches.append(batch)
+
+    cdef void prepare_frames(self):
+        cdef SimpleBatch batch
+        for batch in self.batches:
+            if batch.is_attached_to_canvas():
+                batch.prepare_frame()
+
+    cdef void cleanup_empty_frames(self):
+        cdef SimpleBatch batch
+        for batch in self.batches:
+            if batch.is_attached_to_canvas() and batch.is_frame_empty():
+                self.remove_batch_from_canvas(batch)
+                self.recycle_batch(batch)
+
+    cdef void remove_batch_from_canvas(self, SimpleBatch batch):
+        cdef SimpleMesh mesh = batch.mesh_instruction
+        mesh.texture = None
+        self.canvas.remove(mesh)
+        self.batch_groups[batch.tex_key].remove(batch)
+        batch.tex_key = -1
+        batch.mesh_instruction = None
+
+    cdef void assign_batch_to_canvas(self, unsigned int tex_key,
+                                     SimpleBatch batch):
+        cdef SimpleMesh mesh = SimpleMesh(batch=batch)
+        self.canvas.add(mesh)
+        self.batch_groups[tex_key].append(batch)
+        batch.tex_key = tex_key
+        batch.mesh_instruction = mesh
+        mesh.texture = texture_manager.get_texture(tex_key)
 
 
 cdef class BatchManager:

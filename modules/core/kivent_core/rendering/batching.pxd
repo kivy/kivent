@@ -12,8 +12,8 @@ cdef class SimpleBatch:
     cdef list frame_data
     cdef unsigned int current_frame
     cdef unsigned int frame_count
-    cdef unsigned int tex_key
     cdef unsigned int batch_id
+    cdef unsigned int tex_key
     cdef GLuint mode
     cdef KEVertexFormat vertex_format
     cdef object mesh_instruction
@@ -31,6 +31,10 @@ cdef class SimpleBatch:
     cdef void reload_frames(self)
     cdef void commit_frame(self)
     cdef void prepare_frame(self)
+    cdef size_t get_max_vertices(self)
+    cdef size_t get_max_indices(self)
+    cdef bool is_frame_empty(self)
+    cdef bool is_attached_to_canvas(self)
 
 cdef class IndexedBatch:
     cdef list frame_data
@@ -73,12 +77,16 @@ cdef class SimpleBatchManager:
 
     cdef void set_mode(self, str mode)
     cdef str get_mode(self)
-    cdef unsigned int assign_batch_to_canvas(self,
-                                             unsigned int tex_key) except -1
-    cdef int remove_batch_from_canvas(self, unsigned int batch_id) except 0
+    cdef void assign_batch_to_canvas(self, unsigned int tex_key,
+                                     SimpleBatch batch)
+    cdef void remove_batch_from_canvas(self, SimpleBatch batch)
     cdef SimpleBatch get_batch_with_space(self, unsigned int tex_key,
                                           unsigned int num_verts,
                                           unsigned int num_indices)
+    cdef void prepare_frames(self)
+    cdef void cleanup_empty_frames(self)
+    cdef void recycle_batch(self, SimpleBatch batch)
+    cdef SimpleBatch get_free_batch(self)
 
 
 cdef class BatchManager:

@@ -69,7 +69,6 @@ cdef class SimpleBatchManager:
     cdef unsigned int frame_count
     cdef dict batch_groups
     cdef list free_batches
-    cdef object gameworld
     cdef str mode_str
     cdef GLuint mode
     cdef KEVertexFormat vertex_format
@@ -87,6 +86,7 @@ cdef class SimpleBatchManager:
     cdef void cleanup_empty_frames(self)
     cdef void recycle_batch(self, SimpleBatch batch)
     cdef SimpleBatch get_free_batch(self)
+    cdef size_t get_size(self)
 
 
 cdef class BatchManager:

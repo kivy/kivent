@@ -16,7 +16,7 @@ from kivy.graphics.cgl cimport (GLushort, GL_UNSIGNED_SHORT, GL_TRIANGLES,
     GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_LINE_LOOP, GL_TRIANGLE_STRIP,
     GL_TRIANGLE_FAN, cgl, GLuint)
 from kivent_core.gameworld import debug
-from frame_objects cimport SimpleFrameData
+from frame_objects cimport SimpleFrameData, MAX_GL_VERTICES
 from vertex_format cimport KEVertexFormat
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 
@@ -372,20 +372,8 @@ cdef class SimpleBatchManager:
 
     def __cinit__(self, unsigned int batch_count,
                   unsigned int frame_count, KEVertexFormat vertex_format,
-                  str mode_str, object canvas, object gameworld):
+                  str mode_str, object canvas):
 
-        self.gameworld = gameworld
-
-
-        # Logger.info('KivEnt: Batches for canvas: {canvas} will have '
-        #     '{vert_slots_per_block} verts and {ind_slots} indices.VBO will be'
-        #     ' {vbo_size} in KiB'
-        #     ' per frame with {count} total vbos, an estimated {ent_per_batch}'
-        #     ' enities fit in each batch with {verts} verts per entity'.format(
-        #     canvas=str(canvas), vert_slots_per_block=vert_slots_per_block,
-        #     ind_slots=index_slots_per_block,
-        #     vbo_size=vbo_size_in_kb, count=block_count,
-        #     ent_per_batch=ent_per_batch, verts=smallest_vertex_count))
         self.vertex_format = vertex_format
         self.batch_groups = {}
         self.set_mode(mode_str)
@@ -395,10 +383,19 @@ cdef class SimpleBatchManager:
         for idx, batch in enumerate(self.batches):
             batch.batch_id = idx
         self.free_batches = self.batches[:]
-        self.batch_count = 0
         self.frame_count = frame_count
         self.max_batches = batch_count
-
+        Logger.info('KivEnt: Batches for canvas: {canvas} will have '
+            '{vert_slots_per_block} verts and {ind_slots} indices.VBO will be'
+            ' {vbo_size} in KiB'
+            ' per frame with {count} total vbos.'
+            .format(
+            canvas=str(canvas),
+            vert_slots_per_block=MAX_GL_VERTICES,
+            ind_slots=MAX_GL_VERTICES*self.vertex_format.vbytesize//
+                      sizeof(GLushort),
+            vbo_size=MAX_GL_VERTICES*self.vertex_format.vbytesize//1024,
+            count=self.frame_count*self.max_batches))
         self.canvas = canvas
 
     cdef void set_mode(self, str mode):
@@ -514,6 +511,17 @@ cdef class SimpleBatchManager:
         batch.tex_key = tex_key
         batch.mesh_instruction = mesh
         mesh.texture = texture_manager.get_texture(tex_key)
+
+    cdef size_t get_size(self):
+        '''Returns the combined size of all memory being used by the
+        BatchManager: the **indices_block**, the **batch_block** and all
+        ComponentPointerAggregator.
+        Return:
+            unsigned int: size in bytes of all the memory.
+        '''
+
+        return MAX_GL_VERTICES*self.vertex_format.vbytesize*2\
+               *self.frame_count*self.max_batches
 
 
 cdef class BatchManager:

@@ -5,9 +5,11 @@ from kivy.graphics.cgl cimport (GL_ARRAY_BUFFER, GL_STREAM_DRAW,
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 from kivent_core.memory_handlers.membuffer cimport NoFreeBuffer
 from vertex_format cimport KEVertexFormat
-from vbo_definitions cimport (V_NEEDGEN, V_HAVEID, V_NEEDUPLOAD,
-                              VBOTargetException, VBOUsageException)
+from vbo_definitions cimport VBOTargetException, VBOUsageException
 
+cdef short V_NEEDGEN = 1 << 0
+cdef short V_NEEDUPLOAD = 1 << 1
+cdef short V_HAVEID = 1 << 2
 
 cdef class SimpleVBO:
     '''
@@ -81,14 +83,14 @@ cdef class SimpleVBO:
                 self.memory_buffer.get_actual_size(),
                 self.memory_buffer.data,
                 self.usage)
-            gl_log_debug_message('SimpleVBO.update_buffer-glBufferData')
+            gl_log_debug_message('SimpleVBO.update_buffer-glBufferData for {}'.format(self.id))
         else:
             cgl.glBufferSubData(
                 self.target,
                 0,
                 self.memory_buffer.get_actual_size(),
                 self.memory_buffer.data)
-            gl_log_debug_message('SimpleVBO.update_buffer-glBufferSubData')
+            gl_log_debug_message('SimpleVBO.update_buffer-glBufferSubData for {}'.format(self.id))
         self.size_last_frame = self.memory_buffer.used_count
 
     cdef void bind(self):

@@ -309,7 +309,6 @@ cdef class NoFreeBuffer:
         return self.data
 
     cdef size_t add_data(self, size_t block_count) except -1:
-        cdef size_t tail_count = self.get_blocks_on_tail()
         cdef size_t index = self.used_count
         if self.can_fit_data(block_count):
             self.used_count += block_count

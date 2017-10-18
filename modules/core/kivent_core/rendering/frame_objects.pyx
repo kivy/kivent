@@ -22,8 +22,7 @@ cdef class SimpleFrameData:
                                     'array')
 
     def __dealloc__(self):
-        self.index_vbo.return_memory()
-        self.vertex_vbo.return_memory()
+        pass
 
     cdef void return_memory(self):
         self.index_vbo.return_memory()

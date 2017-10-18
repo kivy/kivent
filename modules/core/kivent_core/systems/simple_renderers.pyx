@@ -17,8 +17,7 @@ from kivent_core.rendering.vertex_formats import (
 from kivent_core.rendering.frame_objects cimport MAX_GL_VERTICES
 from kivent_core.rendering.vertex_format cimport KEVertexFormat
 from kivent_core.rendering.cmesh cimport CMesh
-from kivent_core.rendering.batching cimport (BatchManager, IndexedBatch,
-                                             SimpleBatchManager)
+from kivent_core.rendering.batching cimport SimpleBatchManager, SimpleBatch
 from kivent_core.managers.resource_managers import texture_manager
 from kivent_core.managers.resource_managers cimport ModelManager, TextureManager
 from kivy.graphics.opengl import (
@@ -48,6 +47,10 @@ from kivy.clock import Clock
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 from functools import partial
 
+cdef unsigned char blend_integer_colors(unsigned char color1,
+                                        unsigned char color2):
+    return <unsigned char>((<float>color1 / 255.) * (
+                           <float>color2 / 255.) * 255)
 
 cdef class SimpleRenderer(StaticMemGameSystem):
     '''
@@ -56,12 +59,11 @@ cdef class SimpleRenderer(StaticMemGameSystem):
     system_id = StringProperty('simple_renderer')
     updateable = BooleanProperty(True)
     renderable = BooleanProperty(True)
-    static_rendering = BooleanProperty(False)
-    force_update = BooleanProperty(False)
-    max_batches = NumericProperty(20)
+    processor = BooleanProperty(True)
+    max_batches = NumericProperty(10)
     frame_count = NumericProperty(2)
-    smallest_vertex_count = NumericProperty(4)
-    system_names = ListProperty(['renderer', 'position'])
+    system_names = ListProperty(['simple_renderer', 'position',
+                                 'scale', 'color'])
     shader_source = StringProperty('positionshader.glsl')
     model_format = StringProperty('vertex_format_4f')
     blend_factor_source = NumericProperty(GL_SRC_ALPHA)
@@ -162,10 +164,7 @@ cdef class SimpleRenderer(StaticMemGameSystem):
     def get_size_estimate(self, dict reserve_spec):
         cdef unsigned int total = super(SimpleRenderer, self).get_size_estimate(
             reserve_spec)
-        cdef unsigned int vtype_size = self.vertex_format_size
-        return total + \
-               self.max_batches * MAX_GL_VERTICES * self.frame_count * \
-               2 * vtype_size
+        return total
 
     cdef void* _init_component(self, unsigned int component_index,
         unsigned int entity_id, bool render, VertexModel model,
@@ -181,7 +180,6 @@ cdef class SimpleRenderer(StaticMemGameSystem):
             pointer.render = 1
         else:
             pointer.render = 0
-        self._batch_entity(entity_id, pointer)
         return pointer
 
     def init_component(self, unsigned int component_index,
@@ -243,6 +241,26 @@ cdef class SimpleRenderer(StaticMemGameSystem):
         model_manager.register_entity_with_model(entity_id, self.system_id,
             model_key)
         self._init_component(component_index, entity_id, render, model, texkey)
+        return self.entity_components.add_entity(entity_id, zone_name)
+
+    cdef void write_vertex_data(self, VertexFormat2F4UB* vertex,
+                                VertexFormat2F4UB* model_vertex,
+                                void** component_data):
+        cdef RenderStruct* render_comp = <RenderStruct*>component_data[0]
+        cdef PositionStruct2D* pos_comp = <PositionStruct2D*>component_data[1]
+        cdef ScaleStruct2D* scale_comp = <ScaleStruct2D*>component_data[2]
+        cdef ColorStruct* color_comp = <ColorStruct*>component_data[3]
+        vertex.pos[0] = pos_comp.x + (model_vertex.pos[0] * scale_comp.sx)
+        vertex.pos[1] = pos_comp.y + (model_vertex.pos[1] * scale_comp.sy)
+        vertex.v_color[0] = blend_integer_colors(model_vertex.v_color[0],
+                                                 color_comp.color[0])
+        vertex.v_color[1] = blend_integer_colors(model_vertex.v_color[1],
+                                                 color_comp.color[1])
+        vertex.v_color[2] = blend_integer_colors(model_vertex.v_color[2],
+                                                 color_comp.color[2])
+        vertex.v_color[3] = blend_integer_colors(model_vertex.v_color[3],
+                                                 color_comp.color[3])
+
 
     def update(self, force_update, dt):
         '''
@@ -258,162 +276,55 @@ cdef class SimpleRenderer(StaticMemGameSystem):
             dt (float): The time elapsed since last update, not usually
             used in rendering but passed in to maintain a consistent API.
         '''
-        cdef IndexedBatch batch
-        cdef list batches
-        cdef unsigned int batch_key
-        cdef unsigned int index_offset, vert_offset
+        cdef void** component_data = <void**>(
+            self.entity_components.memory_block.data)
+        cdef unsigned int component_count = self.entity_components.count
+        cdef unsigned int count = self.entity_components.memory_block.count
+        cdef unsigned int i, real_index, vert_offset, n, ind
+        remove_entity = self.gameworld.remove_entity
         cdef RenderStruct* render_comp
-        cdef PositionStruct2D* pos_comp
-        cdef VertexFormat4F* frame_data
-        cdef GLushort* frame_indices
-        cdef VertexFormat4F* vertex
         cdef VertexModel model
+        cdef SimpleBatch batch
+        cdef SimpleBatchManager batch_manager = self.batch_manager
+        cdef GLushort* frame_indices
         cdef GLushort* model_indices
-        cdef VertexFormat4F* model_vertices
-        cdef VertexFormat4F model_vertex
-        cdef unsigned int used, i, ri, component_count, n, t
-        cdef ComponentPointerAggregator entity_components
-        cdef BatchManager batch_manager = self.batch_manager
-        cdef dict batch_groups = batch_manager.batch_groups
-        cdef CMesh mesh_instruction
-        cdef MemoryBlock components_block
-        cdef void** component_data
-        cdef bint static_rendering = self.static_rendering
+        cdef VertexFormat2F4UB* model_vertices
+        cdef VertexFormat2F4UB* vertices
+        batch_manager.prepare_frames()
+        for i in range(count):
+            real_index = i*component_count
+            if component_data[real_index] == NULL:
+                continue
+            render_comp = <RenderStruct*>component_data[real_index]
+            if render_comp.render:
+                model = <VertexModel>render_comp.model
+                batch = batch_manager.get_batch_with_space(render_comp.texkey,
+                                                           model._vertex_count,
+                                                           model._index_count)
+                frame_indices = <GLushort*>batch.get_current_index_location()
+                model_indices = <GLushort*>model.indices_block.data
+                model_vertices = <VertexFormat2F4UB*>model.vertices_block.data
+                vert_offset = batch.get_current_vertex_offset()
+                vertices = <VertexFormat2F4UB*>batch.get_current_vertex_location()
+                for ind in range(model._index_count):
+                    frame_indices[ind] = model_indices[ind] + vert_offset
+                for n in range(model._vertex_count):
+                    self.write_vertex_data(&vertices[n], &model_vertices[n],
+                                           &component_data[real_index])
+                print('commiting data at ', vert_offset, batch.get_current_index_offset(), model._vertex_count, model._index_count)
+                batch.commit_data(model._vertex_count, model._index_count)
+        print('writing frame')
+        batch_manager.cleanup_empty_frames()
 
-        for batch_key in batch_groups:
-            batches = batch_groups[batch_key]
-            for batch in batches:
-                if not static_rendering or force_update:
-                    entity_components = batch.entity_components
-                    components_block = entity_components.memory_block
-                    used = components_block.used_count
-                    component_count = entity_components.count
-                    component_data = <void**>components_block.data
-                    frame_data = <VertexFormat4F*>batch.get_vbo_frame_to_draw()
-                    frame_indices = <GLushort*>batch.get_indices_frame_to_draw()
-                    index_offset = 0
-                    for t in range(used):
-                        ri = t * component_count
-                        if component_data[ri] == NULL:
-                            continue
-                        render_comp = <RenderStruct*>component_data[ri+0]
-                        vert_offset = render_comp.vert_index
-                        model = <VertexModel>render_comp.model
-                        if render_comp.render:
-                            pos_comp = <PositionStruct2D*>component_data[ri+1]
-                            model_vertices = <VertexFormat4F*>(
-                                model.vertices_block.data)
-                            model_indices = <GLushort*>model.indices_block.data
-                            for i in range(model._index_count):
-                                frame_indices[i+index_offset] = (
-                                    model_indices[i] + vert_offset)
-                            for n in range(model._vertex_count):
-                                vertex = &frame_data[n + vert_offset]
-                                model_vertex = model_vertices[n]
-                                vertex.pos[0] = pos_comp.x + model_vertex.pos[0]
-                                vertex.pos[1] = pos_comp.y + model_vertex.pos[1]
-                                vertex.uvs[0] = model_vertex.uvs[0]
-                                vertex.uvs[1] = model_vertex.uvs[1]
-                            index_offset += model._index_count
-                    batch.set_index_count_for_frame(index_offset)
-                mesh_instruction = batch.mesh_instruction
-                mesh_instruction.flag_update()
+
 
     def remove_component(self, unsigned int component_index):
         cdef IndexedMemoryZone components = self.imz_components
         cdef RenderStruct* pointer = <RenderStruct*>components.get_pointer(
             component_index)
-        self._unbatch_entity(pointer.entity_id, pointer)
+        self.entity_components.remove_entity(pointer.entity_id)
         self.gameworld.model_manager.unregister_entity_with_model(
             pointer.entity_id, (<VertexModel>pointer.model)._name)
         super(SimpleRenderer, self).remove_component(component_index)
 
-    def unbatch_entity(self, unsigned int entity_id):
-        '''
-        Python accessible function for unbatching the entity, the real work
-        is done in the cdefed _unbatch_entity.
-
-        Args:
-            entity_id (unsigned int): The id of the entity to unbatch.
-        '''
-        cdef IndexedMemoryZone components = self.imz_components
-        cdef IndexedMemoryZone entities = self.gameworld.entities
-        cdef Entity entity = entities[entity_id]
-        cdef unsigned int component_index = entity.get_component_index(
-            self.system_id)
-        self._unbatch_entity(entity_id, <RenderStruct*>components.get_pointer(
-            component_index))
-
-    cdef void* _unbatch_entity(self, unsigned int entity_id,
-        RenderStruct* component_data) except NULL:
-        '''
-        The actual unbatching function. Will call
-        **batch_manager**.unbatch_entity.
-
-        Args:
-            entity_id (unsigned int): The id of the entity to be unbatched.
-
-            component_data (RenderStruct*): Pointer to the actual component
-            data for the entity.
-
-        Return:
-            void*: Will return a pointer to the component_data passed in
-            if successful, will raise an exception if NULL is returned. This
-            return is required for exception propogation.
-        '''
-        cdef VertexModel model = <VertexModel>component_data.model
-        self.batch_manager.unbatch_entity(entity_id, component_data.batch_id,
-            model._vertex_count, model._index_count, component_data.vert_index,
-            component_data.ind_index)
-        component_data.batch_id = -1
-        component_data.vert_index = -1
-        component_data.ind_index = -1
-        if self.force_update:
-            self.update_trigger()
-        return component_data
-
-    def batch_entity(self, unsigned int entity_id):
-        '''
-        Python accessible function for batching the entity, the real work
-        is done in the cdefed _batch_entity.
-
-        Args:
-            entity_id (unsigned int): The id of the entity to unbatch.
-        '''
-        cdef IndexedMemoryZone components = self.imz_components
-        cdef IndexedMemoryZone entities = self.gameworld.entities
-        cdef Entity entity = entities[entity_id]
-        cdef unsigned int component_index = entity.get_component_index(
-            self.system_id)
-        self._batch_entity(entity_id,
-            <RenderStruct*>components.get_pointer(component_index))
-
-    cdef void* _batch_entity(self, unsigned int entity_id,
-        RenderStruct* component_data) except NULL:
-        '''
-        The actual batching function. Will call
-        **batch_manager**.batch_entity.
-
-        Args:
-            entity_id (unsigned int): The id of the entity to be unbatched.
-
-            component_data (RenderStruct*): Pointer to the actual component
-            data for the entity.
-
-        Return:
-            void*: Will return a pointer to the component_data passed in
-            if successful, will raise an exception if NULL is returned. This
-            return is required for exception propogation.
-        '''
-        cdef tuple batch_indices
-        cdef VertexModel model = <VertexModel>component_data.model
-        cdef unsigned int texkey = texture_manager.get_groupkey_from_texkey(
-            component_data.texkey)
-        batch_indices = self.batch_manager.batch_entity(entity_id,
-            texkey, model._vertex_count, model._index_count)
-        component_data.batch_id = batch_indices[0]
-        component_data.vert_index = batch_indices[1]
-        component_data.ind_index = batch_indices[2]
-        if self.force_update:
-            self.update_trigger()
-        return component_data
+Factory.register('SimpleRenderer', cls=SimpleRenderer)

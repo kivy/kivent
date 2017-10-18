@@ -35,6 +35,8 @@ cdef class SimpleBatch:
     cdef size_t get_max_indices(self)
     cdef bool is_frame_empty(self)
     cdef bool is_attached_to_canvas(self)
+    cdef size_t get_current_vertex_offset(self)
+    cdef size_t get_current_index_offset(self)
 
 cdef class IndexedBatch:
     cdef list frame_data

@@ -16,9 +16,11 @@ from kivy.graphics.cgl cimport (GLushort, GL_UNSIGNED_SHORT, GL_TRIANGLES,
     GL_POINTS, GL_LINES, GL_LINE_STRIP, GL_LINE_LOOP, GL_TRIANGLE_STRIP,
     GL_TRIANGLE_FAN, cgl, GLuint)
 from kivent_core.gameworld import debug
-from frame_objects cimport SimpleFrameData, MAX_GL_VERTICES
+from frame_objects cimport SimpleFrameData
 from vertex_format cimport KEVertexFormat
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
+
+MAX_GL_VERTICES = 65535
 
 cdef class SimpleBatch:
     def __cinit__(self, unsigned int frame_count, GLuint mode,
@@ -88,6 +90,18 @@ cdef class SimpleBatch:
         cdef NoFreeBuffer vertex_block = vertices.memory_buffer
         return vertex_block.get_pointer(vertex_block.used_count)
 
+    cdef size_t get_current_index_offset(self):
+        cdef SimpleFrameData frame_data = self.get_current_vbo()
+        cdef SimpleVBO indices = frame_data.index_vbo
+        cdef NoFreeBuffer index_block = indices.memory_buffer
+        return index_block.used_count
+
+    cdef size_t get_current_vertex_offset(self):
+        cdef SimpleFrameData frame_data = self.get_current_vbo()
+        cdef SimpleVBO vertices = frame_data.vertex_vbo
+        cdef NoFreeBuffer vertex_block = vertices.memory_buffer
+        return vertex_block.used_count
+
     cdef void* get_current_index_location(self):
         '''Returns a pointer to the vertex data for the next frame for writing
         data to.
@@ -109,6 +123,8 @@ cdef class SimpleBatch:
         cdef NoFreeBuffer vertex_block = vertices.memory_buffer
         index_block.add_data(num_indices)
         vertex_block.add_data(num_verts)
+        if self.mesh_instruction is not None:
+            self.mesh_instruction.flag_update()
 
     cdef SimpleFrameData get_current_vbo(self):
         '''Returns the next VBO pairing of indices and vertices VBO to use.
@@ -378,7 +394,7 @@ cdef class SimpleBatchManager:
         self.batch_groups = {}
         self.set_mode(mode_str)
         self.batches = [SimpleBatch(frame_count, self.mode, vertex_format)
-                        for x in batch_count]
+                        for x in range(batch_count)]
         cdef SimpleBatch batch
         for idx, batch in enumerate(self.batches):
             batch.batch_id = idx

@@ -1,6 +1,7 @@
 from fixedvbo cimport FixedVBO
 from simplevbo cimport SimpleVBO
 
+MAX_GL_VERTICES = 65535
 
 cdef class SimpleFrameData:
     cdef SimpleVBO index_vbo

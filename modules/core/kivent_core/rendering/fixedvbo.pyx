@@ -5,9 +5,11 @@ from kivy.graphics.cgl cimport (GL_ARRAY_BUFFER, GL_STREAM_DRAW,
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from vertex_format cimport KEVertexFormat
-from vbo_definitions cimport (V_NEEDGEN, V_HAVEID, V_NEEDUPLOAD,
-                              VBOTargetException, VBOUsageException)
+from vbo_definitions cimport (VBOTargetException, VBOUsageException)
 
+cdef short V_NEEDGEN = 1 << 0
+cdef short V_NEEDUPLOAD = 1 << 1
+cdef short V_HAVEID = 1 << 2
 
 cdef class FixedVBO:
     '''

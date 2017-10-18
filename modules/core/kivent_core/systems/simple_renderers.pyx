@@ -311,9 +311,7 @@ cdef class SimpleRenderer(StaticMemGameSystem):
                 for n in range(model._vertex_count):
                     self.write_vertex_data(&vertices[n], &model_vertices[n],
                                            &component_data[real_index])
-                print('commiting data at ', vert_offset, batch.get_current_index_offset(), model._vertex_count, model._index_count)
                 batch.commit_data(model._vertex_count, model._index_count)
-        print('writing frame')
         batch_manager.cleanup_empty_frames()
 
 

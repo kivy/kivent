@@ -252,7 +252,6 @@ cdef class Buffer:
         free_blocks = self.free_blocks
         free_block_count = self.free_block_count
         for i in range(free_block_count):
-            print('checking to see if can fit in', i, free_blocks[i], block_count)
             if free_blocks[i][1] >= block_count:
                 return True
         return False

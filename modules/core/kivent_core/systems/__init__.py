@@ -8,4 +8,4 @@ from kivent_core.systems import position_systems
 from kivent_core.systems import gamemap
 from kivent_core.systems import renderers
 from kivent_core.systems import lifespan
-from kivent_core.systems import animation
+from kivent_core.systems import animation_sys

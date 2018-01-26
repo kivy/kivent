@@ -3,7 +3,7 @@ from tmx import Layer, ObjectGroup
 from os.path import basename, dirname
 
 from kivent_core.systems.renderers import Renderer, ColorPolyRenderer
-from kivent_core.systems.animation import AnimationSystem
+from kivent_core.systems.animation_sys import AnimationSystem
 
 from math import sin, cos, radians
 

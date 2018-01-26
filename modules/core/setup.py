@@ -124,7 +124,7 @@ modules = {
     'systems': [
         'gamesystem', 'staticmemgamesystem', 'position_systems',
         'gameview', 'scale_systems', 'rotate_systems', 'color_systems',
-        'gamemap', 'renderers', 'lifespan', 'animation',
+        'gamemap', 'renderers', 'lifespan', 'animation_sys',
     ],
 }
 

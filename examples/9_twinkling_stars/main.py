@@ -7,7 +7,7 @@ import kivent_core
 from kivent_core.gameworld import GameWorld
 from kivent_core.systems.position_systems import PositionSystem2D
 from kivent_core.systems.renderers import Renderer
-from kivent_core.systems.animation import AnimationSystem
+from kivent_core.systems.animation_sys import AnimationSystem
 from kivent_core.managers.resource_managers import texture_manager
 from kivy.properties import StringProperty
 from os.path import dirname, join, abspath

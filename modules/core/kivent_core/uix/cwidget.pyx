@@ -88,6 +88,18 @@ cdef class CWidget(EventDispatcher):
         def __set__(self, value):
             self._context = value
 
+    property _disabled_value:
+        def __get__(self):
+            return self._disabled_value
+        def __set__(self, value):
+            self._disabled_value = value
+
+    property _disabled_count:
+        def __get__(self):
+            return self._disabled_count
+        def __set__(self, value):
+            self._disabled_count = value
+
     def __init__(self, **kwargs):
         # Before doing anything, ensure the windows exist.
         EventLoop.ensure_window()
@@ -97,11 +109,14 @@ cdef class CWidget(EventDispatcher):
             self._context = get_current_context()
 
         no_builder = '__no_builder' in kwargs
+        self._disabled_value = False
         if no_builder:
             del kwargs['__no_builder']
         on_args = {k: v for k, v in kwargs.items() if k[:3] == 'on_'}
         for key in on_args:
             del kwargs[key]
+
+        self._disabled_count = 0
 
         super(CWidget, self).__init__(**kwargs)
 
@@ -1008,9 +1023,46 @@ cdef class CWidget(EventDispatcher):
         if canvas is not None:
             canvas.opacity = value
 
+    '''Canvas of the widget.
+    The canvas is a graphics object that contains all the drawing instructions
+    for the graphical representation of the widget.
+    There are no general properties for the Widget class, such as background
+    color, to keep the design simple and lean. Some derived classes, such as
+    Button, do add such convenience properties but generally the developer is
+    responsible for implementing the graphics representation for a custom
+    widget from the ground up. See the derived widget classes for patterns to
+    follow and extend.
+    See :class:`~kivy.graphics.Canvas` for more information about the usage.
+    '''
 
+    def get_disabled(self):
+        return self._disabled_count > 0
 
-    disabled = BooleanProperty(False)
+    def set_disabled(self, value):
+        if value != self._disabled_value:
+            self._disabled_value = value
+            if value:
+                self.inc_disabled()
+            else:
+                self.dec_disabled()
+            return True
+
+    def inc_disabled(self, count=1):
+        self._disabled_count += count
+        if self._disabled_count - count < 1 <= self._disabled_count:
+            self.property('disabled').dispatch(self)
+        for c in self.children:
+            c.inc_disabled(count)
+
+    def dec_disabled(self, count=1):
+        self._disabled_count -= count
+        if self._disabled_count <= 0 < self._disabled_count + count:
+            self.property('disabled').dispatch(self)
+        for c in self.children:
+            c.dec_disabled(count)
+
+    disabled = AliasProperty(get_disabled, set_disabled)
+
     '''Indicates whether this widget can interact with input or not.
 
     .. note::

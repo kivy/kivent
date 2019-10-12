@@ -8,6 +8,7 @@ from kivent_core.managers.resource_managers import texture_manager
 from os.path import dirname, join, abspath
 from kivent_maps import map_utils
 from kivent_maps.map_system import MapSystem
+from kivy.logger import Logger
 
 Window.size = (640, 640)
 
@@ -15,8 +16,13 @@ def get_asset_path(asset, asset_loc):
     return join(dirname(dirname(abspath(__file__))), asset_loc, asset)
 
 class TestGame(Widget):
+
     def __init__(self, **kwargs):
-        super(TestGame, self).__init__(**kwargs)
+        super().__init__(**kwargs)
+        # Prove we got this far
+        Logger.info('###'*10 + '  Logging')
+
+    def on_kv_post(self, *args):
 
         # Args required for Renderer init
         map_render_args = {
@@ -73,6 +79,7 @@ class TestGame(Widget):
                                        self.gameworld.init_entity)
 
         self.tilemap = map_manager.maps[map_name]
+        print('timemap set')
 
     def setup_states(self):
         # We want renderers to be added and unpaused

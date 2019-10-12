@@ -9,8 +9,7 @@ texture_manager.load_atlas('assets/stars.atlas')
 
 
 class TestGame(Widget):
-    def __init__(self, **kwargs):
-        super(TestGame, self).__init__(**kwargs)
+    def on_kv_post(self, *args):
         self.gameworld.init_gameworld(['position', 'scale', 'rotate',
             'color', 'particles', 'emitters', 'particle_renderer', 'renderer'],
             callback=self.init_game)

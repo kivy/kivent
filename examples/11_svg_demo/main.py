@@ -9,8 +9,7 @@ from kivy.properties import NumericProperty
 class TestGame(Widget):
     entity_id = NumericProperty(None)
 
-    def __init__(self, **kwargs):
-        super(TestGame, self).__init__(**kwargs)
+    def on_kv_post(self, *args):
         self.uuids = {}
         self.gameworld.init_gameworld(
             ['position', 'poly_renderer'],

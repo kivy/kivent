@@ -116,8 +116,7 @@ class TestGame(Widget):
     shape_to_draw = StringProperty(None, allownone=True)
 
 
-    def __init__(self, **kwargs):
-        super(TestGame, self).__init__(**kwargs)
+    def on_kv_post(self, *args):
         self.shapes = {}
         self.gameworld.init_gameworld(
             ['position', 'poly_renderer'],

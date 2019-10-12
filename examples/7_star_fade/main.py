@@ -50,8 +50,7 @@ Factory.register('FadingSystem', cls=FadingSystem)
 
 
 class TestGame(Widget):
-    def __init__(self, **kwargs):
-        super(TestGame, self).__init__(**kwargs)
+    def on_kv_post(self, *args):
         self.gameworld.init_gameworld(
             ['color', 'position', 'renderer', 'fade'],
             callback=self.init_game)

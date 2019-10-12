@@ -31,8 +31,7 @@ texture_manager.load_image(get_asset_path('blue-tile.png', 'assets'))
 
 
 class TestGame(Widget):
-    def __init__(self, **kwargs):
-        super(TestGame, self).__init__(**kwargs)
+    def on_kv_post(self, *args):
         self.gameworld.init_gameworld(
             ['cymunk_physics', 'rotate_renderer', 'rotate', 'position',
             'cymunk_touch'],

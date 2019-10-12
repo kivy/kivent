@@ -12,8 +12,7 @@ def get_asset_path(asset, asset_loc):
     return join(dirname(dirname(abspath(__file__))), asset_loc, asset)
 
 class TestGame(Widget):
-    def __init__(self, **kwargs):
-        super(TestGame, self).__init__(**kwargs)
+    def on_kv_post(self, *args):
         self.gameworld.init_gameworld(
             ['map_layer0', 'position', 'camera1', 'map_layer0_animator',
              'tile_map'],

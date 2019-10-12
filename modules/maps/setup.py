@@ -93,7 +93,7 @@ else:
 
 setup(
     name='KivEnt maps',
-    version='1.0.0',
+    version='3.0.0',
     description='''Module to render maps in the KivEnt game engine
     along with Tiled maps support.''',
     author='Meet Udeshi',

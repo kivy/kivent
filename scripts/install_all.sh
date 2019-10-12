@@ -7,7 +7,7 @@ ROOT=$(pwd)
 function safe_cmd {
     "$@"
     if [ $? != 0 ]; then
-        exit $ERROR_CODE
+        exit $?
     fi
 }
 

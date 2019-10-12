@@ -22,7 +22,7 @@ from kivent_core.managers.sound_manager import SoundManager
 from kivent_core.managers.resource_managers import texture_manager
 from kivent_core.managers.animation_manager import AnimationManager
 from kivy.logger import Logger
-debug = False
+debug = True
 
 def test_gameworld():
 

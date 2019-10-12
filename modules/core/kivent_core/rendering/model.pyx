@@ -1,8 +1,8 @@
 # cython: embedsignature=True
 cdef extern from "string.h":
     void *memcpy(void *dest, void *src, size_t n)
-from vertex_formats cimport VertexFormat4F, FormatConfig
-from vertex_formats import vertex_format_4f, vertex_format_7f
+from kivent_core.rendering.vertex_formats cimport VertexFormat4F, FormatConfig
+from kivent_core.rendering.vertex_formats import vertex_format_4f, vertex_format_7f
 from kivy.graphics.cgl cimport (GLfloat, GLbyte, GLubyte, GLint, GLuint,
     GLshort, GLushort)
 from kivent_core.memory_handlers.membuffer cimport Buffer

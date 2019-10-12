@@ -1,6 +1,6 @@
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.block cimport MemoryBlock
-from vertex_formats cimport FormatConfig
+from kivent_core.rendering.vertex_formats cimport FormatConfig
 
 
 cdef class Vertex:

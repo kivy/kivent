@@ -1,4 +1,4 @@
-from zone cimport MemoryZone
+from kivent_core.memory_handlers.zone cimport MemoryZone
 
 
 cdef class BlockIndex:

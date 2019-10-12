@@ -1,5 +1,5 @@
 # cython: embedsignature=True
-from gamesystem cimport GameSystem
+from kivent_core.systems.gamesystem cimport GameSystem
 from kivy.properties import (StringProperty, ListProperty,
     NumericProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock

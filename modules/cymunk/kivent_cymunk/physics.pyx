@@ -439,7 +439,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
                 new_shape = Segment(body, shape_info['a'], shape_info['b'],
                     shape_info['radius'])
             else:
-                print 'shape not created'
+                print('shape not created')
             new_shape.friction = shape['friction']
             new_shape.elasticity = shape['elasticity']
             new_shape.collision_type = shape['collision_type']

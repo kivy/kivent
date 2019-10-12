@@ -1023,7 +1023,7 @@ cdef class SVG:
         if self.fill:
             tess = Tesselator()
             for loop in self.path:
-                tess.add_contour_data(loop.data.as_voidptr, len(loop) / 2)
+                tess.add_contour_data(loop.data.as_voidptr, <int>(len(loop) / 2))
             tess.tesselate()
             tris = tess.vertices
 
@@ -1071,7 +1071,7 @@ cdef class SVG:
         cdef float *f_tris
         cdef float x, y, r, g, b, a
 
-        cdef int count = len(path) / 2
+        cdef int count = <int>(len(path) / 2)
         vertices = <float *>malloc(sizeof(float) * count * 8)
         if vertices == NULL:
             return
@@ -1138,7 +1138,7 @@ cdef class SVG:
 
         if mode == 0:
             #polygon
-            for i in range(count / 2):
+            for i in range(<long>(count / 2)):
                 indices.extend((i, (count - i - 1)))
             else:
                 if count % 2 == 1:
@@ -1156,7 +1156,7 @@ cdef class SVG:
         # Caps and joint are missing
         cdef int index, vindex = 0, odd = 0, i
         cdef float ax, ay, bx, _by, r = 0, g = 0, b = 0, a = 0
-        cdef int count = len(path) / 2
+        cdef int count = <int>(len(path) / 2)
         cdef float *vertices = NULL
         cdef float width = line_width
         vindex = 0
@@ -1231,7 +1231,7 @@ cdef class SVG:
             vindex += 32
 
         cdef SVGModelInfo info = self.get_model_info(
-            vertices, vindex, (vindex / 32) * 4, mode=1)
+            vertices, vindex, <int>(vindex / 32) * 4, mode=1)
         free(vertices)
         return info
 

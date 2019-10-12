@@ -1,9 +1,9 @@
-from block cimport MemoryBlock
-from membuffer cimport Buffer
-from zone cimport MemoryZone
-from pool cimport MemoryPool
-from utils cimport memrange
-from indexing cimport IndexedMemoryZone, ZoneIndex, BlockIndex
+from kivent_core.memory_handlers.block cimport MemoryBlock
+from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivent_core.memory_handlers.zone cimport MemoryZone
+from kivent_core.memory_handlers.pool cimport MemoryPool
+from kivent_core.memory_handlers.utils cimport memrange
+from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone, ZoneIndex, BlockIndex
 
 ctypedef struct Test:
     float x
@@ -254,7 +254,7 @@ def test_indexed_memory_zone(size_in_kb, pool_block_size,
         print(entity._id, index, 'in creation 2')
 
     for entity in memrange(memory_index):
-        print entity._id
+        print(entity._id)
 
     for entity in memrange(memory_index, zone='test'):
-        print entity._id
+        print(entity._id)

@@ -1,5 +1,5 @@
-from membuffer cimport Buffer
-from block cimport MemoryBlock
+from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivent_core.memory_handlers.block cimport MemoryBlock
 
 cdef class MemoryPool:
     '''The MemoryPool is suitable for pooling C data of the same type.

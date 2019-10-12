@@ -73,10 +73,10 @@ This way when renderer is processing it can run through all of its components
 in a row, and when renderer2 is processing it can do the same, just a little
 offset into the position component array.
 '''
-from block cimport MemoryBlock
-from zone cimport MemoryZone
-from pool cimport MemoryPool
-from membuffer cimport Buffer
+from kivent_core.memory_handlers.block cimport MemoryBlock
+from kivent_core.memory_handlers.zone cimport MemoryZone
+from kivent_core.memory_handlers.pool cimport MemoryPool
+from kivent_core.memory_handlers.membuffer cimport Buffer
 
 
 cdef class BlockIndex:

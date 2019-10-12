@@ -1,5 +1,5 @@
 from kivent_core.memory_handlers.block cimport MemoryBlock
-from vertex_format cimport KEVertexFormat
+from kivent_core.rendering.vertex_format cimport KEVertexFormat
 from kivy.graphics.cgl cimport GLuint
 
 cdef class FixedVBO:

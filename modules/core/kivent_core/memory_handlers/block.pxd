@@ -1,4 +1,4 @@
-from membuffer cimport Buffer
+from kivent_core.memory_handlers.membuffer cimport Buffer
 
 cdef class MemoryBlock(Buffer):
     cdef Buffer master_buffer

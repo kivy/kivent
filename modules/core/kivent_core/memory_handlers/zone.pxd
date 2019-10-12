@@ -1,6 +1,6 @@
-from membuffer cimport Buffer
-from pool cimport MemoryPool
-from block cimport MemoryBlock
+from kivent_core.memory_handlers.membuffer cimport Buffer
+from kivent_core.memory_handlers.pool cimport MemoryPool
+from kivent_core.memory_handlers.block cimport MemoryBlock
 
 cdef class MemoryZone:
     cdef unsigned int block_size_in_kb

@@ -2,9 +2,9 @@ from kivy.graphics.cgl cimport GLuint
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 from kivent_core.memory_handlers.membuffer cimport Buffer
-from vertex_format cimport KEVertexFormat
+from kivent_core.rendering.vertex_format cimport KEVertexFormat
 from cpython cimport bool
-from frame_objects cimport FixedFrameData
+from kivent_core.rendering.frame_objects cimport FixedFrameData
 from kivent_core.systems.staticmemgamesystem cimport ComponentPointerAggregator
 from kivent_core.managers.resource_managers import texture_manager
 

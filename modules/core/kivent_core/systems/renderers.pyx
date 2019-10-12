@@ -26,7 +26,7 @@ from kivy.graphics.opengl import (
     )
 cimport cython
 from kivy.graphics.cgl cimport GLfloat, GLushort
-from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
+from kivent_core.systems.staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 from kivent_core.systems.position_systems cimport PositionStruct2D
 from kivent_core.systems.rotate_systems cimport RotateStruct2D
 from kivent_core.systems.scale_systems cimport ScaleStruct2D

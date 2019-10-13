@@ -2,6 +2,7 @@
 # cython: embedsignature=True
 from kivy.properties import (StringProperty, ListProperty, ObjectProperty,
 BooleanProperty, NumericProperty)
+from kivy.logger import Logger
 import cymunk
 from kivent_core.systems.position_systems cimport (PositionStruct2D,
     PositionSystem2D)
@@ -406,7 +407,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
                         shape_info['a'],
                         shape_info['b'])
                 else:
-                    print('error: shape ', a_shape['shape_type'], 
+                    Logger.warn('error: shape ' + a_shape['shape_type'] +
                           'not supported')
         if args['mass'] == 0:
             body = Body(None, None)
@@ -439,7 +440,7 @@ cdef class CymunkPhysics(StaticMemGameSystem):
                 new_shape = Segment(body, shape_info['a'], shape_info['b'],
                     shape_info['radius'])
             else:
-                print('shape not created')
+                Logger.warn('shape not created')
             new_shape.friction = shape['friction']
             new_shape.elasticity = shape['elasticity']
             new_shape.collision_type = shape['collision_type']

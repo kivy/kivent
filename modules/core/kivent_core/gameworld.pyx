@@ -4,6 +4,7 @@ from kivy.uix.widget import Widget, WidgetException
 from kivy.properties import (StringProperty, ListProperty, NumericProperty,
 DictProperty, BooleanProperty, ObjectProperty)
 from kivy.clock import Clock
+from kivy.logger import Logger
 from functools import partial
 from kivy.graphics import RenderContext
 from kivent_core.systems.gamesystem cimport GameSystem
@@ -22,7 +23,7 @@ from kivent_core.managers.sound_manager import SoundManager
 from kivent_core.managers.resource_managers import texture_manager
 from kivent_core.managers.animation_manager import AnimationManager
 from kivy.logger import Logger
-debug = True
+debug = False
 
 def test_gameworld():
 
@@ -38,11 +39,11 @@ def test_gameworld():
     for x in range(150):
         component_list = ['position']
         creation_dict = {'position': (10., 10.)}
-        print('making entity', x)
+        Logger.info('making entity', x)
         ent_id = init_entity(creation_dict, component_list)
-        print(ent_id)
+        Logger.info(ent_id)
     for entity in memrange(gameworld.entities):
-        print(entity.entity_id, entity.position.x, entity.position.y)
+        Logger.info(entity.entity_id, entity.position.x, entity.position.y)
 
 
 class GameWorldOutOfSpaceError(Exception):
@@ -348,7 +349,7 @@ class GameWorld(Widget):
         except KeyError:
             self.state = 'initial'
             self._last_state = 'initial'
-            print('State does not exist, resetting to initial')
+            Logger.info('State does not exist, resetting to initial')
             return
         gamescreenmanager = self.gamescreenmanager
         gamescreenmanager.state = value

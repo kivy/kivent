@@ -1,5 +1,6 @@
 import kivy
 from kivy.app import App
+from kivy.logger import Logger
 from kivy.uix.widget import Widget
 import kivent_core
 from kivent_core.rendering.svg_loader import SVG
@@ -45,7 +46,7 @@ class TestGame(Widget):
         for model_info in final_infos:
             model_name = load_model_from_model_info(model_info, svg_name)
             model = model_manager.models[model_name]
-            print(model.vertex_count)
+            Logger.info(model.vertex_count)
             model.add_all_vertex_attribute('pos', neg_center)
             create_dict = {
                 'position': (300, 300),

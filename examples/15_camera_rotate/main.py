@@ -29,7 +29,7 @@ texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets',
 
 
 class TestGame(Widget):
-    """Test Game."""
+    """Test Game to show off camera rotation functionality."""
     
     def on_kv_post(self, *args):
         self.gameworld.init_gameworld(
@@ -67,8 +67,8 @@ class TestGame(Widget):
         self.app.count += 100
 
     def create_asteroid(self, pos): 
-        x_vel = randint(-200, 200)
-        y_vel = randint(-200, 200)
+        x_vel = randint(-500, 500)
+        y_vel = randint(-500, 500)
         angle = radians(randint(-360, 360))
         angular_velocity = radians(randint(-150, -150))
         shape_dict = {'inner_radius': 0, 'outer_radius': 22,
@@ -108,10 +108,15 @@ class TestGame(Widget):
 
 
     def on_touch_down(self, arg):
+        """Implement scrollwheel camera rotation."""
         if arg.button == 'scrollup':
             self.gameview.camera_rotate -= radians(3)
         if arg.button == 'scrolldown':
             self.gameview.camera_rotate += radians(3)
+
+        # Afte checking for mouse wheel events, still
+        # support dragging asteroids around, as it
+        # is quite fun:
         super().on_touch_down(arg)
 
 

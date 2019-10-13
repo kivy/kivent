@@ -1,6 +1,3 @@
-from kivy.logger import Logger
-import logging
-Logger.setLevel(logging.DEBUG)
 import kivy
 
 from kivy.app import App
@@ -16,9 +13,9 @@ from kivent_core.managers.resource_managers import texture_manager
 from kivy.properties import StringProperty
 from os.path import dirname, join, abspath
 
-
 texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets',
     'background_objects.atlas'))
+
 
 class TestGame(Widget):
     def on_kv_post(self, *args):

@@ -16,11 +16,7 @@ def get_asset_path(asset, asset_loc):
     return join(dirname(dirname(abspath(__file__))), asset_loc, asset)
 
 class TestGame(Widget):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Prove we got this far
-        Logger.info('###'*10 + '  Logging')
+    """Testgame to show off kivent_maps functionality."""
 
     def on_kv_post(self, *args):
 
@@ -79,7 +75,7 @@ class TestGame(Widget):
                                        self.gameworld.init_entity)
 
         self.tilemap = map_manager.maps[map_name]
-        print('timemap set')
+        Logger.info('timemap set')
 
     def setup_states(self):
         # We want renderers to be added and unpaused
@@ -97,7 +93,7 @@ class TestGame(Widget):
         x -= self.pos[0] + cx
         y -= self.pos[1] + cy
 
-        print('Tile %d,%d clicked' % self.tilemap.get_tile_index(x,y))
+        Logger.info('Tile %d,%d clicked' % self.tilemap.get_tile_index(x,y))
 
 class DebugPanel(Widget):
     fps = StringProperty(None)

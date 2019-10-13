@@ -4,9 +4,7 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 
 class TestGame(Widget):
-    def __init__(self, **kwargs):
-    	super(TestGame, self).__init__(**kwargs)
-    	print(dir(self))
+    pass
 
 class YourAppNameApp(App):
     def build(self):

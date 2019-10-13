@@ -61,8 +61,8 @@ class TestGame(Widget):
             'velocity': (x_vel, y_vel), 
             'position': pos, 'angle': angle, 
             'angular_velocity': angular_velocity, 
-            'vel_limit': 900, 
-            'ang_vel_limit': radians(2000), 
+            'vel_limit': 250,
+            'ang_vel_limit': radians(200),
             'mass': 50, 'col_shapes': col_shapes}
         create_component_dict = {'cymunk_physics': physics_component, 
             'rotate_renderer': {'texture': 'asteroid1', 

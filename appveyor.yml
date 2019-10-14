@@ -12,22 +12,16 @@ environment:
   matrix:
   - PYVER: 35
     BITTNESS: 86
-    COMPILER: mingw
   - PYVER: 35
     BITTNESS: 64
-    COMPILER: mingw
   - PYVER: 36
     BITTNESS: 86
-    COMPILER: mingw
   - PYVER: 36
     BITTNESS: 64
-    COMPILER: mingw
   - PYVER: 37
     BITTNESS: 86
-    COMPILER: mingw
   - PYVER: 37
     BITTNESS: 64
-    COMPILER: mingw
 install:
 - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-desktop.ps1'))
 build_script:
@@ -129,13 +123,6 @@ build_script:
     python -m pip install pip wheel setuptools --upgrade
 
     Check-Error
-
-    if ($env:COMPILER -ne "msvc") {
-      python -c "with open(r'$PYTHON_ROOT\Lib\distutils\distutils.cfg', 'wb') as fh: fh.write(b'[build]\ncompiler = mingw32\n')"
-      Check-Error
-      pip install -i https://pypi.anaconda.org/carlkl/simple mingwpy
-      Check-Error
-    }
 
     pip install mock cython pygments docutils nose kivy.deps.glew_dev kivy.deps.glew kivy.deps.sdl2_dev kivy.deps.sdl2
 

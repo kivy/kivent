@@ -140,22 +140,27 @@ build_script:
 
 
     # Create cymunk wheel (kivent_cymunk dependency)
+    echo "requisite lib cymunk not installing on windows in python 3.5+, see https://github.com/kivy/cymunk/issues/52"
+    $cymunk_fixed = False
 
-    git clone -q --branch=master https://github.com/kivy/cymunk.git C:\projects\cymunk
+    if ($cymunk_fixed -eq "True") {
 
-    Check-Error
+      git clone -q --branch=master https://github.com/kivy/cymunk.git C:\projects\cymunk
 
-    cd C:\projects\cymunk
+      Check-Error
 
-    python setup.py bdist_wheel -d "${WD}"
+      cd C:\projects\cymunk
 
-    Check-Error
+      python setup.py bdist_wheel -d "${WD}"
 
-    # find a way how to check version dynamically (same as kivy)
+      Check-Error
 
-    pip install "${WD}\cymunk-0.0.0.dev0-${CP}"
+      # find a way how to check version dynamically (same as kivy)
 
-    Check-Error
+      pip install "${WD}\cymunk-0.0.0.dev0-${CP}"
+
+      Check-Error
+    }
 
     cd $env:APPVEYOR_BUILD_FOLDER
 
@@ -178,7 +183,9 @@ build_script:
         if ($mod -eq "core") {
           $CORE_V = python -c "${R}${mod}${X}"
         } elseif ($mod -eq "cymunk") {
-          $CYM_V = python -c "${R}${mod}${X}"
+          if ($cymunk_fixed -eq "True") {
+            $CYM_V = python -c "${R}${mod}${X}"
+          }
         } elseif ($mod -eq "maps") {
           $MAPS_V = python -c "${R}${mod}${X}"
         } elseif ($mod -eq "particles") {
@@ -201,7 +208,9 @@ build_script:
         if ($mod -eq "core") {
           pip install "${WD}\KivEnt_Core-${CORE_V}-${CP}"
         } elseif ($mod -eq "cymunk") {
-          pip install "${WD}\KivEnt_Cymunk-${CYM_V}-${CP}"
+          if ($cymunk_fixed -eq "True") {
+            pip install "${WD}\KivEnt_Cymunk-${CYM_V}-${CP}"
+          }
         } elseif ($mod -eq "maps") {
           pip install "${WD}\KivEnt_maps-${MAPS_V}-${CP}"
         } elseif ($mod -eq "particles") {

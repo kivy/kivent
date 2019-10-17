@@ -18,8 +18,7 @@ texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets',
     'background_objects.atlas'))
 
 class TestGame(Widget):
-    def __init__(self, **kwargs):
-        super(TestGame, self).__init__(**kwargs)
+    def on_kv_post(self, *args):
         self.gameworld.init_gameworld(
             ['renderer', 'position', 'velocity'],
             callback=self.init_game)

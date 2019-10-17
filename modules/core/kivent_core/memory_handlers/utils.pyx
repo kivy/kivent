@@ -1,5 +1,5 @@
 # cython: embedsignature=True
-from indexing cimport IndexedMemoryZone, ZoneIndex
+from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone, ZoneIndex
 from kivent_core.memory_handlers.zone cimport MemoryZone
 
 cdef class memrange:

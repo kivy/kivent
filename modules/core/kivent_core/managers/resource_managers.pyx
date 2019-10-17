@@ -581,8 +581,9 @@ cdef class TextureManager(GameManager):
         def __get__(self):
             return [key for key in self._keys]
 
-    def load_image(self, source):
+    def load_image(self, source, mag_filter='linear'):
         texture = CoreImage(source, nocache=True).texture
+        texture.mag_filter = mag_filter
         name = path.splitext(path.basename(source))[0]
         name = str(name)
         if name in self._keys:
@@ -670,7 +671,7 @@ cdef class TextureManager(GameManager):
     def get_texkey_in_group(self, tex_key, group_key):
         return tex_key in self._groups[group_key]
 
-    def load_atlas(self, source, datatype='json', dirname=None):
+    def load_atlas(self, source, datatype='json', dirname=None, mag_filter='linear'):
         if datatype == 'json':
             dirname = path.dirname(source)
             with open(source, 'r') as data:
@@ -683,6 +684,7 @@ cdef class TextureManager(GameManager):
         for imgname in atlas_data:
             texture = CoreImage(
                 path.join(dirname,imgname), nocache=True).texture
+            texture.mag_filter = mag_filter
             name = str(path.basename(imgname))
             size = texture.size
             w = <float>size[0]

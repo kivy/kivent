@@ -1,5 +1,5 @@
 # cython: embedsignature=True
-from gamesystem cimport GameSystem
+from kivent_core.systems.gamesystem cimport GameSystem
 from kivy.core.window import Window
 from kivy.properties import (StringProperty, ListProperty, BooleanProperty)
 from kivy.factory import Factory

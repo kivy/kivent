@@ -19,12 +19,21 @@ cdef class CWidget(EventDispatcher):
     '''Widget class. See module documentation for more information.
 
     :Events:
-        `on_touch_down`:
-            Fired when a new touch event occurs
-        `on_touch_move`:
-            Fired when an existing touch moves
-        `on_touch_up`:
-            Fired when an existing touch disappears
+        `on_touch_down`: `(touch, )`
+            Fired when a new touch event occurs. `touch` is the touch object.
+        `on_touch_move`: `(touch, )`
+            Fired when an existing touch moves. `touch` is the touch object.
+        `on_touch_up`: `(touch, )`
+            Fired when an existing touch disappears. `touch` is the touch
+            object.
+        `on_kv_post`: `(base_widget, )`
+            Fired after all the kv rules associated with the widget
+            and all other widgets that are in any of those rules have had
+            all their kv rules applied. `base_widget` is the base-most widget
+            whose instantiation triggered the kv rules (i.e. the widget
+            instantiated from Python, e.g. ``MyWidget()``).
+        
+            .. versionchanged:: 3.0
 
     .. warning::
         Adding a `__del__` method to a class derived from Widget with Python
@@ -59,7 +68,7 @@ cdef class CWidget(EventDispatcher):
     '''
 
     __metaclass__ = WidgetMetaclass
-    __events__ = ('on_touch_down', 'on_touch_move', 'on_touch_up')
+    __events__ = ('on_touch_down', 'on_touch_move', 'on_touch_up', 'on_kv_post')
 
     property canvas:
         def __get__(self):
@@ -79,6 +88,18 @@ cdef class CWidget(EventDispatcher):
         def __set__(self, value):
             self._context = value
 
+    property _disabled_value:
+        def __get__(self):
+            return self._disabled_value
+        def __set__(self, value):
+            self._disabled_value = value
+
+    property _disabled_count:
+        def __get__(self):
+            return self._disabled_count
+        def __set__(self, value):
+            self._disabled_count = value
+
     def __init__(self, **kwargs):
         # Before doing anything, ensure the windows exist.
         EventLoop.ensure_window()
@@ -88,11 +109,14 @@ cdef class CWidget(EventDispatcher):
             self._context = get_current_context()
 
         no_builder = '__no_builder' in kwargs
+        self._disabled_value = False
         if no_builder:
             del kwargs['__no_builder']
         on_args = {k: v for k, v in kwargs.items() if k[:3] == 'on_'}
         for key in on_args:
             del kwargs[key]
+
+        self._disabled_count = 0
 
         super(CWidget, self).__init__(**kwargs)
 
@@ -102,13 +126,14 @@ cdef class CWidget(EventDispatcher):
 
         # Apply all the styles.
         if not no_builder:
-            #current_root = Builder.idmap.get('root')
-            #Builder.idmap['root'] = self
-            Builder.apply(self)
-            #if current_root is not None:
-            #    Builder.idmap['root'] = current_root
-            #else:
-            #    Builder.idmap.pop('root')
+            rule_children = []
+            self.apply_class_lang_rules(
+                ignored_consts=self._kwargs_applied_init,
+                rule_children=rule_children)
+
+            for widget in rule_children:
+                widget.dispatch('on_kv_post', self)
+            self.dispatch('on_kv_post', self)
 
         # Bind all the events.
         if on_args:
@@ -147,6 +172,61 @@ cdef class CWidget(EventDispatcher):
     @property
     def __self__(self):
         return self
+
+    def apply_class_lang_rules(
+            self, root=None, ignored_consts=set(), rule_children=None):
+        '''
+        Method that is called by kivy to apply the kv rules of this widget's
+        class.
+        :Parameters:
+            `root`: :class:`Widget`
+                The root widget that instantiated this widget in kv, if the
+                widget was instantiated in kv, otherwise ``None``.
+            `ignored_consts`: set
+                (internal) See :meth:`~kivy.lang.builder.BuilderBase.apply`.
+            `rule_children`: list
+                (internal) See :meth:`~kivy.lang.builder.BuilderBase.apply`.
+        This is useful to be able to execute code before/after the class kv
+        rules are applied to the widget. E.g. if the kv code requires some
+        properties to be initialized before it is used in a binding rule.
+        If overwriting remember to call ``super``, otherwise the kv rules will
+        not be applied.
+        In the following example,
+        .. code-block:: python
+            class MyWidget(Widget):
+                pass
+            class OtherWidget(MyWidget):
+                pass
+        .. code-block:: kv
+        <MyWidget>:
+            my_prop: some_value
+        <OtherWidget>:
+            other_prop: some_value
+        When ``OtherWidget`` is instantiated with ``OtherWidget()``, the
+        widget's :meth:`apply_class_lang_rules` is called and it applies the
+        kv rules of this class - ``<MyWidget>`` and ``<OtherWidget>``.
+        Similarly, when the widget is instantiated from kv, e.g.
+        .. code-block:: kv
+            <MyBox@BoxLayout>:
+                height: 55
+                OtherWidget:
+                    width: 124
+        ``OtherWidget``'s :meth:`apply_class_lang_rules` is called and it
+        applies the kv rules of this class - ``<MyWidget>`` and
+        ``<OtherWidget>``.
+        .. note::
+            It applies only the class rules not the instance rules. I.e. in the
+            above kv example in the ``MyBox`` rule when ``OtherWidget`` is
+            instantiated, its :meth:`apply_class_lang_rules` applies the
+            ``<MyWidget>`` and ``<OtherWidget>`` rules to it - it does not
+            apply the ``width: 124`` rule. The ``width: 124`` rule is part of
+            the ``MyBox`` rule and is applied by the ``MyBox``'s instance's
+            :meth:`apply_class_lang_rules`.
+        .. versionchanged:: 1.11.0
+        '''
+        Builder.apply(
+            self, ignored_consts=ignored_consts,
+            rule_children=rule_children)
 
     #
     # Collision
@@ -244,6 +324,9 @@ cdef class CWidget(EventDispatcher):
         for child in self.children[:]:
             if child.dispatch('on_touch_up', touch):
                 return True
+
+    def on_kv_post(self, base_widget):
+        pass
 
     def on_disabled(self, instance, value):
         for child in self.children:
@@ -940,9 +1023,46 @@ cdef class CWidget(EventDispatcher):
         if canvas is not None:
             canvas.opacity = value
 
+    '''Canvas of the widget.
+    The canvas is a graphics object that contains all the drawing instructions
+    for the graphical representation of the widget.
+    There are no general properties for the Widget class, such as background
+    color, to keep the design simple and lean. Some derived classes, such as
+    Button, do add such convenience properties but generally the developer is
+    responsible for implementing the graphics representation for a custom
+    widget from the ground up. See the derived widget classes for patterns to
+    follow and extend.
+    See :class:`~kivy.graphics.Canvas` for more information about the usage.
+    '''
 
+    def get_disabled(self):
+        return self._disabled_count > 0
 
-    disabled = BooleanProperty(False)
+    def set_disabled(self, value):
+        if value != self._disabled_value:
+            self._disabled_value = value
+            if value:
+                self.inc_disabled()
+            else:
+                self.dec_disabled()
+            return True
+
+    def inc_disabled(self, count=1):
+        self._disabled_count += count
+        if self._disabled_count - count < 1 <= self._disabled_count:
+            self.property('disabled').dispatch(self)
+        for c in self.children:
+            c.inc_disabled(count)
+
+    def dec_disabled(self, count=1):
+        self._disabled_count -= count
+        if self._disabled_count <= 0 < self._disabled_count + count:
+            self.property('disabled').dispatch(self)
+        for c in self.children:
+            c.dec_disabled(count)
+
+    disabled = AliasProperty(get_disabled, set_disabled)
+
     '''Indicates whether this widget can interact with input or not.
 
     .. note::

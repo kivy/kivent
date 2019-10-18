@@ -12,7 +12,7 @@ from kivy.properties import (NumericProperty, ObjectProperty, ListProperty,
     BooleanProperty)
 from kivent_core.memory_handlers.membuffer cimport Buffer
 from kivent_core.memory_handlers.zonedblock cimport ZonedBlock
-from gamesystem cimport GameSystem
+from kivent_core.systems.gamesystem cimport GameSystem
 from kivent_core.managers.system_manager cimport SystemManager
 from cpython cimport bool
 from kivent_core.memory_handlers.utils import memrange

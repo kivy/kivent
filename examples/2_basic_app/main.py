@@ -1,4 +1,5 @@
 import kivy
+
 from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
@@ -15,9 +16,9 @@ from os.path import dirname, join, abspath
 texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets',
     'background_objects.atlas'))
 
+
 class TestGame(Widget):
-    def __init__(self, **kwargs):
-        super(TestGame, self).__init__(**kwargs)
+    def on_kv_post(self, *args):
         self.gameworld.init_gameworld(
             ['renderer', 'position'],
             callback=self.init_game)

@@ -1,4 +1,4 @@
-from staticmemgamesystem cimport StaticMemGameSystem, MemComponent
+from kivent_core.systems.staticmemgamesystem cimport StaticMemGameSystem, MemComponent
 
 
 ctypedef struct ScaleStruct2D:

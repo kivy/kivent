@@ -1,4 +1,4 @@
-KivEnt 2.2
+KivEnt 3.0
 ==========
 KivEnt is a framework for building performant, dynamic real-time scenes in [Kivy](http://kivy.org/#home) for Python2 and Python3. At the moment it is 2d oriented. The only dependency for the kivent_core module is Kivy itself. Additional modules may have other requirements, such as kivent_cymunk module being based on [Chipmunk2d](https://chipmunk-physics.net/) and its [cymunk wrapper](https://github.com/tito/cymunk).
 
@@ -38,7 +38,7 @@ Other modules may have other dependecies, listed here:
 ### kivent_maps
 * [kivy](https://github.com/kivy/kivy)
 * [kivent_core](https://github.com/kivy/KivEnt/tree/master/modules/core)
-* also Tiled based deps, udiboy1209 we need to add the deps here
+* [python-tmx](https://savannah.nongnu.org/projects/python-tmx/)
 
 ### kivent_projectiles
 * [kivy](https://github.com/kivy/kivy)

@@ -1,5 +1,5 @@
 from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
-from gamesystem cimport GameSystem
+from kivent_core.systems.gamesystem cimport GameSystem
 from kivent_core.memory_handlers.block cimport MemoryBlock
 from kivent_core.memory_handlers.zonedblock cimport ZonedBlock
 from cpython cimport bool

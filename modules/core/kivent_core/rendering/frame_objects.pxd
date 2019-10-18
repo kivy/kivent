@@ -1,4 +1,4 @@
-from fixedvbo cimport FixedVBO
+from kivent_core.rendering.fixedvbo cimport FixedVBO
 
 cdef class FixedFrameData:
     cdef FixedVBO index_vbo

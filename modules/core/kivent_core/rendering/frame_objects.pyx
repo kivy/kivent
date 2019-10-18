@@ -1,6 +1,6 @@
 from kivent_core.memory_handlers.block cimport MemoryBlock
-from vertex_format cimport KEVertexFormat
-from fixedvbo cimport FixedVBO
+from kivent_core.rendering.vertex_format cimport KEVertexFormat
+from kivent_core.rendering.fixedvbo cimport FixedVBO
 
 cdef class FixedFrameData:
     '''The FixedFrameData manages 2 FixedVBO, suitable for rendering using the

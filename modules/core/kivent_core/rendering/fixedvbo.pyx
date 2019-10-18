@@ -4,7 +4,7 @@ from kivy.graphics.cgl cimport (GL_ARRAY_BUFFER, GL_STREAM_DRAW,
     GL_ELEMENT_ARRAY_BUFFER, cgl)
 from kivent_core.rendering.gl_debug cimport gl_log_debug_message
 from kivent_core.memory_handlers.block cimport MemoryBlock
-from vertex_format cimport KEVertexFormat
+from kivent_core.rendering.vertex_format cimport KEVertexFormat
 
 cdef short V_NEEDGEN = 1 << 0
 cdef short V_NEEDUPLOAD = 1 << 1

@@ -161,7 +161,7 @@ def build_extensions_for_modules_cython(ext_list, modules):
         if environ.get('READTHEDOCS', None) == 'True':
             ext.pyrex_directives = {'embedsignature': True}
         ext_a(ext)
-    return cythonize(ext_list)
+    return cythonize(ext_list, compiler_directives={'language_level': '3'})
 
 
 def build_extensions_for_modules(ext_list, modules):
@@ -187,7 +187,7 @@ else:
 
 setup(
     name='KivEnt Core',
-    version='2.2.0.dev0',
+    version='3.0.0',
     description='''A game engine for the Kivy Framework.
         https://github.com/Kovak/KivEnt for more info.''',
     author='Jacob Kovac',

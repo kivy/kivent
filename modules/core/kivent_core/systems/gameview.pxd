@@ -1,4 +1,4 @@
-from gamesystem cimport GameSystem
+from kivent_core.systems.gamesystem cimport GameSystem
 from kivy.graphics.transformation cimport Matrix
 
 

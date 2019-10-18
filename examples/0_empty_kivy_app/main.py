@@ -1,4 +1,5 @@
 import kivy
+import kivent_core
 from kivy.app import App
 from kivy.uix.widget import Widget
 

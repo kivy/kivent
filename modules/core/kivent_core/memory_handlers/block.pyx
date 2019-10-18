@@ -1,6 +1,6 @@
 # cython: profile=True
 # cython: embedsignature=True
-from membuffer cimport Buffer
+from kivent_core.memory_handlers.membuffer cimport Buffer
 
 cdef class MemoryBlock(Buffer):
     '''The MemoryBlock is like the Buffer, except instead of allocating its

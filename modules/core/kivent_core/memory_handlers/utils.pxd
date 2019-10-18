@@ -1,4 +1,4 @@
-from indexing cimport IndexedMemoryZone
+from kivent_core.memory_handlers.indexing cimport IndexedMemoryZone
 
 cdef class memrange_iter:
     cdef IndexedMemoryZone memory_index

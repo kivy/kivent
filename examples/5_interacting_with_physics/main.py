@@ -22,8 +22,7 @@ texture_manager.load_atlas(join(dirname(dirname(abspath(__file__))), 'assets',
 
 
 class TestGame(Widget):
-    def __init__(self, **kwargs):
-        super(TestGame, self).__init__(**kwargs)
+    def on_kv_post(self, *args):
         self.gameworld.init_gameworld(
             ['cymunk_physics', 'rotate_renderer', 'rotate', 'position',
             'cymunk_touch'],
@@ -62,8 +61,8 @@ class TestGame(Widget):
             'velocity': (x_vel, y_vel), 
             'position': pos, 'angle': angle, 
             'angular_velocity': angular_velocity, 
-            'vel_limit': 250, 
-            'ang_vel_limit': radians(200), 
+            'vel_limit': 250,
+            'ang_vel_limit': radians(200),
             'mass': 50, 'col_shapes': col_shapes}
         create_component_dict = {'cymunk_physics': physics_component, 
             'rotate_renderer': {'texture': 'asteroid1', 

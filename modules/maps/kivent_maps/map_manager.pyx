@@ -70,8 +70,6 @@ cdef class MapManager(GameManager):
             orientation (str): Orientation of the map tiles. Can be one of
             'orthogonal', 'staggered', 'hexagonal', 'isometric'
         '''
-        if PY2:
-            name = name.encode('utf-8')
         cdef TileMap tile_map
         cdef list largs = [map_size_x, map_size_y,
                            tile_layers, object_count,

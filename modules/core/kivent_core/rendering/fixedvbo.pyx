@@ -96,7 +96,7 @@ cdef class FixedVBO:
         if self.have_id():
             arr = context.lr_vbo
             arr.append(self.id)
-            context.trigger_gl_dealloc()
+            (<object> context).trigger_gl_dealloc()
 
     cdef int have_id(self):
         '''Used during deallocation to determine whether or not this
@@ -168,7 +168,7 @@ cdef class FixedVBO:
         if self.have_id():
             arr = context.lr_vbo
             arr.append(self.id)
-            context.trigger_gl_dealloc()
+            (<object> context).trigger_gl_dealloc()
         self.flags = V_NEEDGEN
         if self.target == GL_ELEMENT_ARRAY_BUFFER:
             self.data_size = 0

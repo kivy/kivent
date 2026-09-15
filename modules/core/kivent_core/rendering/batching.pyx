@@ -226,8 +226,9 @@ cdef class IndexedBatch:
         cdef list frame_data = self.frame_data
         self.entity_components.clear()
         self.current_frame = 0
-        for frame in frame_data:
-            frame.clear()
+        if frame_data is not None:
+            for frame in frame_data:
+                frame.clear()
 
 
 class MaxBatchException(Exception):

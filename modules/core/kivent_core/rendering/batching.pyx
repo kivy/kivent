@@ -224,7 +224,8 @@ cdef class IndexedBatch:
         '''
         cdef FixedFrameData frame
         cdef list frame_data = self.frame_data
-        self.entity_components.clear()
+        if self.entity_components is not None:
+            self.entity_components.clear()
         self.current_frame = 0
         if frame_data is not None:
             for frame in frame_data:

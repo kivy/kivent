@@ -162,6 +162,8 @@ cdef class Buffer:
             block_count (unsigned int): The number of data blocks that were
             previously allocated, originally passed in to **add_data**
         '''
+        if self.free_blocks is None:
+            return
         self.free_blocks.append((block_index, block_count))
         self.data_in_free += block_count
         self.free_block_count += 1

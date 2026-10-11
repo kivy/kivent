@@ -42,7 +42,6 @@ def build_ext(ext_name, files):
 
 extensions = []
 particles_extensions = []
-cmdclass = {}
 
 
 def build_extensions_for_modules_cython(ext_list, modules):
@@ -74,7 +73,6 @@ setup(
     name="KivEnt maps",
     version="3.0.0",
     ext_modules=particles_extensions,
-    cmdclass=cmdclass,
     packages=["kivent_maps"],
     package_dir={"kivent_maps": "kivent_maps"},
     package_data={"kivent_maps": ["*.pxd"]},

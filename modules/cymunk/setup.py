@@ -80,7 +80,6 @@ def build_ext(ext_name, files):
 
 extensions = []
 cymunk_extensions = []
-cmdclass = {}
 
 
 def build_extensions_for_modules_cython(ext_list, modules):
@@ -112,7 +111,6 @@ setup(
     name="KivEnt Cymunk",
     version="2.0.0",
     ext_modules=cymunk_extensions,
-    cmdclass=cmdclass,
     packages=["kivent_cymunk"],
     package_dir={"kivent_cymunk": "kivent_cymunk"},
     package_data={"kivent_cymunk": ["*.pxd"]},

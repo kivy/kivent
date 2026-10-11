@@ -39,7 +39,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Topic :: Software Development :: User Interfaces",
 ]
-dependencies = ["kivent-core"]
+dependencies = ["kivent-core", "six>=1.17.0", "tmx>=1.10", ]
 
 [build-system]
 requires = [

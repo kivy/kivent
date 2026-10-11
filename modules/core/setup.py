@@ -124,7 +124,6 @@ modules = {
 }
 
 core_modules = {}
-check_for_removal = []
 
 for name in modules:
     file_prefix = file_prefixes[name]
@@ -132,7 +131,6 @@ for name in modules:
     module_files = modules[name]
     for module_name in module_files:
         core_modules[prefix + module_name] = [file_prefix + module_name + '.pyx']
-        check_for_removal.append(file_prefix + module_name + '.c')
 
 
 def build_ext(ext_name, files):

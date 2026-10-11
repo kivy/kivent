@@ -29,12 +29,6 @@ particles_modules = {
     ],
 }
 
-check_for_removal = [
-    "kivent_maps/map_data.c",
-    "kivent_maps/map_system.c",
-    "kivent_maps/map_manager.c",
-]
-
 
 def build_ext(ext_name, files):
     return Extension(

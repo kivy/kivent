@@ -65,11 +65,6 @@ cymunk_modules = {
     ],
 }
 
-check_for_removal = [
-    "kivent_cymunk/physics.c",
-    "kivent_cymunk/interaction.c",
-]
-
 
 def build_ext(ext_name, files):
     return Extension(

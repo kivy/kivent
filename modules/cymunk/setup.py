@@ -65,15 +65,6 @@ cymunk_modules = {
     ],
 }
 
-cymunk_modules_c = {
-    "kivent_cymunk.physics": [
-        "kivent_cymunk/physics.c",
-    ],
-    "kivent_cymunk.interaction": [
-        "kivent_cymunk/interaction.c",
-    ],
-}
-
 check_for_removal = [
     "kivent_cymunk/physics.c",
     "kivent_cymunk/interaction.c",

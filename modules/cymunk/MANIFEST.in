@@ -1,0 +1,2 @@
+recursive-include kivent_cymunk *.pxd *.pxi *.pyx
+global-exclude *.c

@@ -1,26 +1,10 @@
-from os import environ, remove
-from os.path import exists, isfile, join
+import sys
+from os import environ
+from os.path import exists, join
 
 import kivy
-
-if environ.get('KIVENT_USE_SETUPTOOLS'):
-    from setuptools import Extension, setup
-
-    print('Using setuptools')
-else:
-    from distutils.core import setup
-    from distutils.extension import Extension
-
-    print('Using distutils')
-
-try:
-    from Cython.Build import cythonize
-    from Cython.Distutils import build_ext
-
-    have_cython = True
-except ImportError:
-    have_cython = False
-import sys
+from Cython.Build import cythonize
+from setuptools import Extension, setup
 
 platform = sys.platform
 
@@ -140,8 +124,6 @@ modules = {
 }
 
 core_modules = {}
-core_modules_c = {}
-check_for_removal = []
 
 for name in modules:
     file_prefix = file_prefixes[name]
@@ -149,8 +131,6 @@ for name in modules:
     module_files = modules[name]
     for module_name in module_files:
         core_modules[prefix + module_name] = [file_prefix + module_name + '.pyx']
-        core_modules_c[prefix + module_name] = [file_prefix + module_name + '.c']
-        check_for_removal.append(file_prefix + module_name + '.c')
 
 
 def build_ext(ext_name, files):
@@ -190,22 +170,11 @@ def build_extensions_for_modules(ext_list, modules):
     return ext_list
 
 
-if have_cython:
-    if do_clear_existing:
-        for file_name in check_for_removal:
-            if isfile(file_name):
-                remove(file_name)
-    core_extensions = build_extensions_for_modules_cython(extensions, core_modules)
-else:
-    core_extensions = build_extensions_for_modules(extensions, core_modules_c)
+core_extensions = build_extensions_for_modules_cython(extensions, core_modules)
 
 setup(
     name='KivEnt Core',
     version='3.0.0',
-    description="""A game engine for the Kivy Framework.
-        https://github.com/Kovak/KivEnt for more info.""",
-    author='Jacob Kovac',
-    author_email='kovac1066@gmail.com',
     ext_modules=core_extensions,
     cmdclass=cmdclass,
     packages=[

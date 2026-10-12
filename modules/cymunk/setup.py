@@ -1,24 +1,9 @@
-from os import environ, remove
-from os.path import exists, isfile, join
-
-if environ.get('KIVENT_USE_SETUPTOOLS'):
-    from setuptools import Extension, setup
-
-    print('Using setuptools')
-else:
-    from distutils.core import setup
-    from distutils.extension import Extension
-
-    print('Using distutils')
-
-try:
-    from Cython.Build import cythonize
-    from Cython.Distutils import build_ext
-
-    have_cython = True
-except ImportError:
-    have_cython = False
 import sys
+from os import environ
+from os.path import exists, join
+
+from Cython.Build import cythonize
+from setuptools import Extension, setup
 
 platform = sys.platform
 cstdarg = '-std=gnu99'
@@ -80,20 +65,6 @@ cymunk_modules = {
     ],
 }
 
-cymunk_modules_c = {
-    'kivent_cymunk.physics': [
-        'kivent_cymunk/physics.c',
-    ],
-    'kivent_cymunk.interaction': [
-        'kivent_cymunk/interaction.c',
-    ],
-}
-
-check_for_removal = [
-    'kivent_cymunk/physics.c',
-    'kivent_cymunk/interaction.c',
-]
-
 
 def build_ext(ext_name, files):
     return Extension(
@@ -109,7 +80,6 @@ def build_ext(ext_name, files):
 
 extensions = []
 cymunk_extensions = []
-cmdclass = {}
 
 
 def build_extensions_for_modules_cython(ext_list, modules):
@@ -132,28 +102,15 @@ def build_extensions_for_modules(ext_list, modules):
     return ext_list
 
 
-if have_cython:
-    if do_clear_existing:
-        for file_name in check_for_removal:
-            if isfile(file_name):
-                remove(file_name)
-    cymunk_extensions = build_extensions_for_modules_cython(
-        cymunk_extensions, cymunk_modules
-    )
-else:
-    cymunk_extensions = build_extensions_for_modules(
-        cymunk_extensions, cymunk_modules_c
-    )
+cymunk_extensions = build_extensions_for_modules_cython(
+    cymunk_extensions, cymunk_modules
+)
+
 
 setup(
     name='KivEnt Cymunk',
     version='2.0.0',
-    description="""A game engine for the Kivy Framework.
-        https://github.com/Kovak/KivEnt for more info.""",
-    author='Jacob Kovac',
-    author_email='kovac1066@gmail.com',
     ext_modules=cymunk_extensions,
-    cmdclass=cmdclass,
     packages=['kivent_cymunk'],
     package_dir={'kivent_cymunk': 'kivent_cymunk'},
     package_data={'kivent_cymunk': ['*.pxd']},

@@ -1,0 +1,2 @@
+recursive-include kivent_particles *.pxd *.pxi *.pyx
+global-exclude *.c

@@ -1,0 +1,2 @@
+recursive-include kivent_maps *.pxd *.pxi *.pyx
+global-exclude *.c

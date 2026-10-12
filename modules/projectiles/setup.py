@@ -1,24 +1,9 @@
-from os import environ, remove
-from os.path import exists, isfile, join
-
-if environ.get('KIVENT_USE_SETUPTOOLS'):
-    from setuptools import Extension, setup
-
-    print('Using setuptools')
-else:
-    from distutils.core import setup
-    from distutils.extension import Extension
-
-    print('Using distutils')
-
-try:
-    from Cython.Build import cythonize
-    from Cython.Distutils import build_ext
-
-    have_cython = True
-except ImportError:
-    have_cython = False
 import sys
+from os import environ
+from os.path import exists, join
+
+from Cython.Build import cythonize
+from setuptools import Extension, setup
 
 platform = sys.platform
 cstdarg = '-std=gnu99'
@@ -77,20 +62,6 @@ projectiles_modules = {
     'kivent_projectiles.weapon_ai': ['kivent_projectiles/weapon_ai.pyx'],
 }
 
-projectiles_modules_c = {
-    'kivent_projectiles.weapons': ['kivent_projectiles/weapons.c'],
-    'kivent_projectiles.projectiles': ['kivent_projectiles/projectiles.c'],
-    'kivent_projectiles.combatstats': ['kivent_projectiles/combatstats.c'],
-    'kivent_projectiles.weapon_ai': ['kivent_projectiles/weapon_ai.c'],
-}
-
-check_for_removal = [
-    'kivent_projectiles/weapons.c',
-    'kivent_projectiles/projectiles.c',
-    'kivent_projectiles/combatstats.c',
-    'kivent_projectiles/weapon_ai.c',
-]
-
 
 def build_ext(ext_name, files):
     return Extension(
@@ -106,7 +77,6 @@ def build_ext(ext_name, files):
 
 extensions = []
 projectiles_extensions = []
-cmdclass = {}
 
 
 def build_extensions_for_modules_cython(ext_list, modules):
@@ -129,28 +99,14 @@ def build_extensions_for_modules(ext_list, modules):
     return ext_list
 
 
-if have_cython:
-    if do_clear_existing:
-        for file_name in check_for_removal:
-            if isfile(file_name):
-                remove(file_name)
-    projectiles_extensions = build_extensions_for_modules_cython(
-        projectiles_extensions, projectiles_modules
-    )
-else:
-    projectiles_extensions = build_extensions_for_modules(
-        projectiles_extensions, projectiles_modules_c
-    )
+projectiles_extensions = build_extensions_for_modules_cython(
+    projectiles_extensions, projectiles_modules
+)
 
 setup(
     name='KivEnt projectiles',
     version='2.0.0',
-    description="""A game engine for the Kivy Framework.
-        https://github.com/Kovak/KivEnt for more info.""",
-    author='Jacob Kovac',
-    author_email='kovac1066@gmail.com',
     ext_modules=projectiles_extensions,
-    cmdclass=cmdclass,
     packages=[
         'kivent_projectiles',
     ],

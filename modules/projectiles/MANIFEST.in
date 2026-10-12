@@ -1,0 +1,2 @@
+recursive-include kivent_projectiles *.pxd *.pxi *.pyx
+global-exclude *.c

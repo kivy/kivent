@@ -169,6 +169,7 @@ def build_extensions_for_modules(ext_list, modules):
         ext_a(ext)
     return ext_list
 
+
 core_extensions = build_extensions_for_modules_cython(extensions, core_modules)
 
 setup(

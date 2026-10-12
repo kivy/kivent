@@ -60,3 +60,9 @@ include-package-data = false
 # 4. Map the name to the relative directory path here
 kivent_core = { path = "../core" }
 kivent_cymunk = { path = "../cymunk" }
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
